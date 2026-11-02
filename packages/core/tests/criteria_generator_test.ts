@@ -112,7 +112,8 @@ Deno.test("[CriteriaGenerator] sort order: higher weight criteria survive trunca
   const criteria = generator.fromAnalysis(analysis);
   assertEquals(criteria.length, MAX_DYNAMIC_CRITERIA);
   const names = criteria.map((c) => c.name);
-  assertEquals(names.includes("goal_priority_1_goal"), true);
+  const assertionResult: boolean = names.includes("goal_priority_1_goal");
+  assertEquals(assertionResult, true);
   assertFalse(names.includes("goal_priority_7_goal"));
 });
 
@@ -170,7 +171,8 @@ Deno.test("[CriteriaGenerator] generates from goals only when acceptanceCriteria
   const criteria = generator.fromAnalysis(analysis);
   assertEquals(criteria.length, 3);
   criteria.forEach((c) => {
-    assertEquals(c.name.startsWith("goal_"), true);
+    const assertionResult2: boolean = c.name.startsWith("goal_");
+    assertEquals(assertionResult2, true);
   });
 });
 
@@ -182,7 +184,8 @@ Deno.test("[CriteriaGenerator] generates from acceptanceCriteria only when goals
   const criteria = generator.fromAnalysis(analysis);
   assertEquals(criteria.length, 3);
   criteria.forEach((c) => {
-    assertEquals(c.name.startsWith("ac_"), true);
+    const assertionResult3: boolean = c.name.startsWith("ac_");
+    assertEquals(assertionResult3, true);
   });
 });
 

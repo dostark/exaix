@@ -7,7 +7,7 @@
  * grouping toggle functionality, and efficient rendering of nested activity hierarchies.
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { StructuredLogViewer } from "../src/structured_log_viewer.ts";
 import type { ILogService } from "@exaix/core/types";
 import type { ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
@@ -159,7 +159,8 @@ Deno.test("StructuredLogViewer: Search and Filter", async () => {
   // Verify dialog title by rendering
   // dialog.render needs options
   const rendered = dialog.render({ useColors: false, width: 80, height: 20 }).join(" ");
-  assert(rendered.includes("Search Logs"));
+  const assertionResult: boolean = rendered.includes("Search Logs");
+  assert(assertionResult);
 
   // Check input interaction works using viewer.handleKey to ensure lifecycle events fire
   if (dialog instanceof InputDialog) {
@@ -212,7 +213,10 @@ Deno.test("StructuredLogViewer: the level filter dialog limits the logs to the n
   await viewer.handleKey(KEYS.F);
   const dialog = viewer.getActiveDialog();
   assertExists(dialog);
-  assert(dialog.render({ useColors: false, width: 80, height: 20 }).join(" ").includes("Filter by Log Level"));
+  const assertionResult2: boolean = dialog.render({ useColors: false, width: 80, height: 20 }).join(" ").includes(
+    "Filter by Log Level",
+  );
+  assert(assertionResult2);
 
   await submitLevelFilter(viewer, "Error, fatal");
 
@@ -261,7 +265,7 @@ Deno.test("StructuredLogViewer: Detail View", async () => {
   await viewer.handleKey(KEYS.ENTER);
   const extensions = viewer.getExtensions();
   assert(extensions.showDetail);
-  assert(extensions.detailContent.includes("Log message 0"));
+  assertStringIncludes(extensions.detailContent, "Log message 0");
 
   // Close details
   await viewer.handleKey(KEYS.ESCAPE);
@@ -281,7 +285,7 @@ Deno.test("StructuredLogViewer: Format Entry", () => {
   };
 
   const formatted = viewer.formatLogEntryForTest(entry);
-  assert(formatted.includes("WARN"));
-  assert(formatted.includes("Test message"));
-  assert(formatted.includes("trace=abcdef12"));
+  assertStringIncludes(formatted, "WARN");
+  assertStringIncludes(formatted, "Test message");
+  assertStringIncludes(formatted, "trace=abcdef12");
 });

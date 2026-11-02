@@ -8,7 +8,7 @@
  *   phase label on plan.execution_* events. Each option is opt-in.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
 import { PlanExecutor } from "@exaix/core/planning";
@@ -249,7 +249,7 @@ Deno.test("[plan-executor] the repair options are opt-in: defaults keep branch c
     const probe = amendmentProbe();
     await runExecutor(repo, { onCodeChangesDelegate: writingDelegate(), ...probe.options }, captured, AMENDMENT_CONFIG);
 
-    assert((await git(["branch", "--show-current"], repo)).startsWith("feat/"), "a default run creates a branch");
+    assertMatch(await git(["branch", "--show-current"], repo), /^feat\//, "a default run creates a branch");
     assert(probe.shouldAmendCalls > 0, "a default low-confidence step consults amendments");
     const started = captured.find((event) => event.action === DomainEventType.PlanExecutionStarted);
     assertEquals(started?.payload?.phase, undefined, "a default run carries no phase");
@@ -261,7 +261,7 @@ Deno.test("[plan-executor] the repair options are opt-in: defaults keep branch c
   try {
     await runExecutor(leftoverRepo, { onCodeChangesDelegate: abandoningDelegate() });
     const subject = await git(["log", "-1", "--format=%s"], leftoverRepo);
-    assert(subject.startsWith("Complete plan:"), `a default run commits leftover changes; got ${subject}`);
+    assertMatch(subject, /^Complete plan:/, `a default run commits leftover changes; got ${subject}`);
   } finally {
     await Deno.remove(leftoverRepo, { recursive: true });
   }

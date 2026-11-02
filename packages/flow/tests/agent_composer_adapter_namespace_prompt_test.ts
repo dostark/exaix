@@ -8,7 +8,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
@@ -65,7 +65,7 @@ Deno.test("[config] flow.namespace_prompt_max_bytes bounds the evidence block th
     await defaulted.run("software-architect", request);
     assert(blockBytes(prompts[0]) <= BOUND, `bounded block was ${blockBytes(prompts[0])} bytes`);
     assert(blockBytes(prompts[1]) > BOUND, "without the key the default bound applies");
-    assert(prompts[0].includes(TASK));
+    assertStringIncludes(prompts[0], TASK);
   } finally {
     await dbService.cleanup();
   }

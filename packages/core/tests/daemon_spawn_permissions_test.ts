@@ -29,21 +29,27 @@ Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS includes net, read, write, ru
 });
 
 Deno.test("[daemon_perms] run allowlist includes git, deno, opencode, claude", () => {
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("git"), true);
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("deno"), true);
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("opencode"), true);
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("claude"), true);
+  const assertionResult: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("git");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("deno");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("opencode");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("claude");
+  assertEquals(assertionResult4, true);
 });
 
 Deno.test("[daemon_perms][security] run allowlist includes Codex and excludes arbitrary executables", () => {
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes(SESSION_BIN_CODEX), true);
+  const assertionResult5: boolean = DAEMON_SPAWN_RUN_BINARIES.includes(SESSION_BIN_CODEX);
+  assertEquals(assertionResult5, true);
   assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("arbitrary-executable"));
 });
 
 Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
   // Regression: a historical typo (`exoctl`) leaked into the daemon --allow-run set, so
   // the daemon could never spawn the real `exactl` CLI.
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exactl"), true, "must allow the real `exactl` binary");
+  const assertionResult6: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("exactl");
+  assertEquals(assertionResult6, true, "must allow the real `exactl` binary");
   assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), "must not list the non-existent `exoctl`");
 });
 
@@ -52,7 +58,10 @@ Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS.run is the same reference as 
 });
 
 Deno.test("[daemon_perms] default net hosts cover the built-in providers", () => {
-  assertEquals(DAEMON_DEFAULT_NET_HOSTS.includes("api.anthropic.com"), true);
-  assertEquals(DAEMON_DEFAULT_NET_HOSTS.includes("api.openai.com"), true);
-  assertEquals(DAEMON_DEFAULT_NET_HOSTS.includes("localhost:11434"), true);
+  const assertionResult7: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("api.anthropic.com");
+  assertEquals(assertionResult7, true);
+  const assertionResult8: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("api.openai.com");
+  assertEquals(assertionResult8, true);
+  const assertionResult9: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("localhost:11434");
+  assertEquals(assertionResult9, true);
 });

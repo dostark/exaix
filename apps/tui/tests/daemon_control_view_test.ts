@@ -7,7 +7,7 @@
  * over the Exaix daemon, including lifecycle actions and real-time log streaming.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { DaemonStatus } from "@exaix/core";
 import { DaemonKeyAction } from "@exaix/tui";
 import { setupDaemonTest } from "./daemon_test_utils.ts";
@@ -81,7 +81,7 @@ Deno.test("DaemonControlView: displays errors and handles error state", async ()
   service.errors = ["Crash detected", "Permission denied"];
   const view = new DaemonControlView(service);
   assertEquals((await view.getErrors()).length, 2);
-  assert((await view.getErrors())[0].includes("Crash"));
+  assertStringIncludes((await view.getErrors())[0], "Crash");
 });
 
 Deno.test("DaemonControlView: handles rapid state changes and recovers", async () => {

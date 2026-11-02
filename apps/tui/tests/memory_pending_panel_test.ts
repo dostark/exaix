@@ -85,7 +85,8 @@ Deno.test("renderPendingPanel: marks selected item", () => {
   // Find line with API Rate Limiting
   const selectedLine = lines.find((l) => l.includes("API Rate Limiting"));
   assertExists(selectedLine);
-  assertEquals(selectedLine.startsWith(">"), true);
+  const assertionResult: boolean = selectedLine.startsWith(">");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("renderPendingPanel: handles empty list", () => {
@@ -265,7 +266,8 @@ Deno.test("MemoryViewTuiSession: renderDialog returns dialog content", async () 
 
   const dialogContent = session.renderDialog(80, 20);
   assertExists(dialogContent);
-  assertEquals(dialogContent.includes("Approve All"), true);
+  const assertionResult2: boolean = dialogContent.includes("Approve All");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("MemoryViewTuiSession: approve action updates count", async () => {

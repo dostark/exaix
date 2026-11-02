@@ -183,8 +183,9 @@ Deno.test("[planning_tool_loop] a tool-call round executes through the registry 
   assertEquals(registry.calls[0].name, "read_file");
   assertExists(generate.calls[1].options.priorTurn);
   assertEquals(generate.calls[1].options.priorTurn?.toolUseId, "toolu_1");
-  assert(
-    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("file contents"),
+  assertStringIncludes(
+    String(generate.calls[1].options.priorTurn?.toolResultContent),
+    "file contents",
     "round 2's priorTurn must carry round 1's tool result",
   );
 });
@@ -238,7 +239,7 @@ Deno.test("[planning_tool_loop] round 1 of a multi-round loop tells the model to
 
   await loop.run(makeOptions({ maxRounds: 3 }));
 
-  assert(generate.calls[0].prompt.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
+  assertStringIncludes(generate.calls[0].prompt, PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION);
 });
 
 Deno.test("[planning_tool_loop][native] round 1 carries no priorTurn/transcript and the explore roundInstruction", async () => {
@@ -286,7 +287,7 @@ Deno.test("[planning_tool_loop][native] a tool call is appended to the snapshot'
     const turns = generate.calls[1].options.nativeConversation?.turns;
     assertEquals(turns?.length, 1);
     assertEquals(turns?.[0].toolUseId, "toolu_1");
-    assert(String(turns?.[0].toolResultContent).includes("file contents"));
+    assertStringIncludes(String(turns?.[0].toolResultContent), "file contents");
   } finally {
     ProviderRegistry.clear();
   }
@@ -463,8 +464,12 @@ Deno.test("[planning_tool_loop] round 3's prompt contains round 1's tool result 
   await loop.run(makeOptions({ maxRounds: 3 }));
 
   const round3Prompt = generate.calls[2].prompt;
-  assert(round3Prompt.includes('<planning_tool_result tool="read_file" round="1">'));
-  assert(round3Prompt.includes("contents of @myportal/a.ts"), "round 1's result must survive into round 3's prompt");
+  assertStringIncludes(round3Prompt, '<planning_tool_result tool="read_file" round="1">');
+  assertStringIncludes(
+    round3Prompt,
+    "contents of @myportal/a.ts",
+    "round 1's result must survive into round 3's prompt",
+  );
 });
 
 Deno.test("[planning_tool_loop] parallel toolCalls in one round are all executed and all results reach the next round", async () => {
@@ -486,9 +491,10 @@ Deno.test("[planning_tool_loop] parallel toolCalls in one round are all executed
   assertEquals(registry.calls.length, 2, "both parallel calls must be executed");
   assertEquals(result.toolCalls, 2);
   // The last call (b.ts) becomes priorTurn; the earlier one (a.ts) is folded into the transcript.
-  assert(String(generate.calls[1].options.priorTurn?.toolResultContent).includes("contents of @myportal/b.ts"));
-  assert(
-    generate.calls[1].prompt.includes("contents of @myportal/a.ts"),
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "contents of @myportal/b.ts");
+  assertStringIncludes(
+    generate.calls[1].prompt,
+    "contents of @myportal/a.ts",
     "the earlier parallel call's result must not be lost",
   );
 });
@@ -512,9 +518,9 @@ Deno.test("[planning_tool_loop] in a parallel round the signed call (Gemini thou
 
   const priorTurn = generate.calls[1].options.priorTurn;
   assertEquals(priorTurn?.thoughtSignature, "sig-first");
-  assert(String(priorTurn?.toolResultContent).includes("contents of @myportal/a.ts"));
-  assert(generate.calls[1].prompt.includes("contents of @myportal/b.ts"));
-  assert(generate.calls[1].prompt.includes("contents of @myportal/c.ts"));
+  assertStringIncludes(String(priorTurn?.toolResultContent), "contents of @myportal/a.ts");
+  assertStringIncludes(generate.calls[1].prompt, "contents of @myportal/b.ts");
+  assertStringIncludes(generate.calls[1].prompt, "contents of @myportal/c.ts");
 });
 
 Deno.test("[planning_tool_loop] calls beyond maxToolCallsPerRound are answered with an error result and never executed", async () => {
@@ -538,7 +544,7 @@ Deno.test("[planning_tool_loop] calls beyond maxToolCallsPerRound are answered w
   assertEquals(result.toolCalls, 2);
   const priorTurn = generate.calls[1].options.priorTurn;
   assertEquals(priorTurn?.toolResultIsError, true);
-  assert(String(priorTurn?.toolResultContent).includes("tool call limit"));
+  assertStringIncludes(String(priorTurn?.toolResultContent), "tool call limit");
 });
 
 Deno.test("[planning_tool_loop] final-round prompt growth stays within the per-call headroom (cap x (result tokens + overhead))", async () => {
@@ -603,7 +609,8 @@ Deno.test("[planning_tool_loop] a tool result exceeding maxToolResultTokens is t
   const carried = String(generate.calls[1].options.priorTurn?.toolResultContent);
   assert(carried.length > 0, "truncated content must not be dropped entirely");
   assert(carried.length < longContent.length, "content must actually be shortened");
-  assert(carried.endsWith("[truncated]"), "a truncation marker must be appended");
+  const hasTruncationMarker: boolean = carried.endsWith("[truncated]");
+  assert(hasTruncationMarker, "a truncation marker must be appended");
   const tokenCount = await realTokenizer.countTokens(carried.replace(" [truncated]", ""), "gpt-4");
   assert(tokenCount <= 50, `expected <=50 tokens, got ${tokenCount}`);
 });
@@ -670,7 +677,7 @@ Deno.test("[planning_tool_loop] a tool name outside the catalog is refused with 
 
   assertEquals(registry.calls.length, 0, "an unlisted tool must never reach ToolRegistry.execute");
   assertEquals(generate.calls[1].options.priorTurn?.toolResultIsError, true);
-  assert(String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"));
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "not in the planning catalog");
 });
 
 Deno.test("[planning_tool_loop] a tool returning success:false is fed back with toolResultIsError=true", async () => {
@@ -702,7 +709,7 @@ Deno.test("[planning_tool_loop] a tool that throws is caught and fed back as an 
 
   assertEquals(result.final, round2);
   assertEquals(generate.calls[1].options.priorTurn?.toolResultIsError, true);
-  assert(String(generate.calls[1].options.priorTurn?.toolResultContent).includes("disk exploded"));
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "disk exploded");
 });
 
 Deno.test('[planning_tool_loop] an empty tool result is fed back as "{}"', async () => {

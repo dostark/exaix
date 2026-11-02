@@ -11,7 +11,7 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/func/prompt_formatter.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner } from "@exaix/execution";
 import type { IBlueprint, IParsedRequest } from "@exaix/execution";
@@ -75,7 +75,7 @@ async function captureAssembledPrompt(
 Deno.test("[IAgentRunner] a matched skill's examples reach the assembled prompt by default (full mode)", async () => {
   const svc = makeSkillsService({ id: "ordinary-skill", critical: false, examples: "EXAMPLE_MARKER_TEXT" });
   const prompt = await captureAssembledPrompt(svc);
-  assert(prompt.includes("EXAMPLE_MARKER_TEXT"), "examples must be included under default (full) render mode");
+  assertStringIncludes(prompt, "EXAMPLE_MARKER_TEXT", "examples must be included under default (full) render mode");
 });
 
 Deno.test("[IAgentRunner] render_mode: 'trimmed' omits an ordinary skill's examples from the assembled prompt", async () => {
@@ -87,7 +87,7 @@ Deno.test("[IAgentRunner] render_mode: 'trimmed' omits an ordinary skill's examp
 Deno.test("[IAgentRunner] render_mode: 'trimmed' still includes a CRITICAL skill's examples", async () => {
   const svc = makeSkillsService({ id: "critical-skill", critical: true, examples: "CRITICAL_EXAMPLE_MARKER" });
   const prompt = await captureAssembledPrompt(svc, { skills: { render_mode: "trimmed" } });
-  assert(prompt.includes("CRITICAL_EXAMPLE_MARKER"), "critical skill examples must survive trimmed mode");
+  assertStringIncludes(prompt, "CRITICAL_EXAMPLE_MARKER", "critical skill examples must survive trimmed mode");
 });
 
 Deno.test("[IAgentRunner] render_mode: 'full' is byte-identical to the default (unset) rendering", async () => {

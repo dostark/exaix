@@ -288,8 +288,8 @@ Deno.test("PlanReviewerView: renderPlanList and renderDiff", () => {
     { id: "p2", subject: "T2", status: PlanStatus.APPROVED },
   ];
   const list = view.renderPlanList(plans);
-  assert(list.includes("p1 T1 [pending]"));
-  assert(list.includes("p2 T2 [approved]"));
+  assertStringIncludes(list, "p1 T1 [pending]");
+  assertStringIncludes(list, "p2 T2 [approved]");
   const diff = view.renderDiff("SOME_DIFF");
   assertEquals(diff, "SOME_DIFF");
 });
@@ -595,7 +595,7 @@ Deno.test("Phase 13.4: Diff view toggle", async () => {
   // Press enter to view diff
   await session.handleKey(KEYS.ENTER);
   assertEquals(session.isDiffVisible(), true, "Diff should be visible after enter");
-  assert(session.getDiffContent().includes("+ added line"), "Diff content should include added line");
+  assertStringIncludes(session.getDiffContent(), "+ added line", "Diff content should include added line");
 
   // Press escape to close diff
   await session.handleKey(KEYS.ESCAPE);
@@ -656,8 +656,10 @@ Deno.test("Phase 13.4: Approve all pending", async () => {
 
   // Should have approved 2 plans
   assertEquals(approved.length, 2, "Should approve 2 pending plans");
-  assert(approved.includes("p1"), "Should include p1");
-  assert(approved.includes("p2"), "Should include p2");
+  const includesResult: boolean = approved.includes("p1");
+  assert(includesResult, "Should include p1");
+  const includesResult2: boolean = approved.includes("p2");
+  assert(includesResult2, "Should include p2");
 });
 
 Deno.test("Phase 13.4: Refresh view with R key", async () => {
@@ -695,7 +697,8 @@ Deno.test("Phase 13.4: Loading state management", async () => {
 
   // Should be loading now
   assertEquals(session.isLoading(), true, "Should be loading during operation");
-  assert(session.getLoadingMessage().includes("Loading diff"), "Loading message should mention diff");
+  const assertionResult: boolean = session.getLoadingMessage().includes("Loading diff");
+  assert(assertionResult, "Loading message should mention diff");
 
   // Complete the operation
   resolvePromise!();
@@ -710,9 +713,9 @@ Deno.test("Phase 13.4: Action buttons include help shortcut", () => {
   const session = new PlanReviewerTuiSession(plans, new MinimalPlanServiceMock());
 
   const buttons = session.renderActionButtons();
-  assert(buttons.includes("Help"), "Should include Help in action buttons");
-  assert(buttons.includes("?"), "Should show ? shortcut");
-  assert(buttons.includes("Approve all"), "Should show Approve all");
+  assertStringIncludes(buttons, "Help", "Should include Help in action buttons");
+  assertStringIncludes(buttons, "?", "Should show ? shortcut");
+  assertStringIncludes(buttons, "Approve all", "Should show Approve all");
 });
 
 Deno.test("Phase 13.4: View name getter", () => {
@@ -728,12 +731,18 @@ Deno.test("Phase 13.4: Key bindings are defined", () => {
   assert(bindings.length > 0, "Should have bindings");
 
   const keys = bindings.map((b) => b.key);
-  assert(keys.includes("up"), "Should have up key");
-  assert(keys.includes("down"), "Should have down key");
-  assert(keys.includes("a"), "Should have a key (approve)");
-  assert(keys.includes("r"), "Should have r key (reject)");
-  assert(keys.includes("A"), "Should have A key (approve all)");
-  assert(keys.includes("?"), "Should have ? key");
+  const includesResult3: boolean = keys.includes("up");
+  assert(includesResult3, "Should have up key");
+  const includesResult4: boolean = keys.includes("down");
+  assert(includesResult4, "Should have down key");
+  const includesResult5: boolean = keys.includes("a");
+  assert(includesResult5, "Should have a key (approve)");
+  const includesResult6: boolean = keys.includes("r");
+  assert(includesResult6, "Should have r key (reject)");
+  const includesResult7: boolean = keys.includes("A");
+  assert(includesResult7, "Should have A key (approve all)");
+  const includesResult8: boolean = keys.includes("?");
+  assert(includesResult8, "Should have ? key");
 });
 
 Deno.test("Phase 13.4: Empty plan list creates empty tree", () => {
@@ -772,8 +781,10 @@ Deno.test("Phase 13.4: Focusable elements", () => {
 
   const focusables = session.getFocusableElements();
   assert(Array.isArray(focusables), "Should be array");
-  assert(focusables.includes("plan-list"), "Should include plan-list");
-  assert(focusables.includes("action-buttons"), "Should include action-buttons");
+  const includesResult9: boolean = focusables.includes("plan-list");
+  assert(includesResult9, "Should include plan-list");
+  const includesResult10: boolean = focusables.includes("action-buttons");
+  assert(includesResult10, "Should include action-buttons");
 });
 
 Deno.test("Phase 13.4: Left arrow collapses expanded group", async () => {

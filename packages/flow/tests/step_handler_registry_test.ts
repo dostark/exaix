@@ -77,9 +77,12 @@ Deno.test("[flow] FlowStepHandlerRegistry — keys() returns all registered type
 
   const keys = registry.keys();
   assertEquals(keys.length, 3);
-  assert(keys.includes(FlowStepType.AGENT));
-  assert(keys.includes(FlowStepType.GATE));
-  assert(keys.includes(FlowStepType.BRANCH));
+  const assertionResult: boolean = keys.includes(FlowStepType.AGENT);
+  assert(assertionResult);
+  const assertionResult2: boolean = keys.includes(FlowStepType.GATE);
+  assert(assertionResult2);
+  const assertionResult3: boolean = keys.includes(FlowStepType.BRANCH);
+  assert(assertionResult3);
 });
 
 Deno.test("[flow] FlowStepHandlerRegistry — registerWithKey registers under alias key", () => {
@@ -136,17 +139,23 @@ Deno.test("[flow] UnknownFlowStepError — message includes step type and id", (
   assertEquals(error.name, "UnknownFlowStepError");
   assertEquals(error.stepType, "voting_group");
   assertEquals(error.stepId, "step-42");
-  assert(error.message.includes("voting_group"));
-  assert(error.message.includes("step-42"));
+  const assertionResult4: boolean = error.message.includes("voting_group");
+  assert(assertionResult4);
+  const assertionResult5: boolean = error.message.includes("step-42");
+  assert(assertionResult5);
 });
 
 Deno.test("[flow] UnknownFlowStepError — message includes known types when provided", () => {
   const error = new UnknownFlowStepError("unknown", "step-1", ["agent", "gate"]);
 
-  assert(error.message.includes("unknown"));
-  assert(error.message.includes("step-1"));
-  assert(error.message.includes("agent"));
-  assert(error.message.includes("gate"));
+  const assertionResult6: boolean = error.message.includes("unknown");
+  assert(assertionResult6);
+  const assertionResult7: boolean = error.message.includes("step-1");
+  assert(assertionResult7);
+  const assertionResult8: boolean = error.message.includes("agent");
+  assert(assertionResult8);
+  const assertionResult9: boolean = error.message.includes("gate");
+  assert(assertionResult9);
   assertEquals(error.knownTypes, ["agent", "gate"]);
 });
 

@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { DaemonStatus, DialogStatus, MemoryBankSource } from "@exaix/core";
 import { GroupingMode, LogGroupingMode } from "@exaix/tui";
 import { LOG_COLORS, LOG_ICONS } from "@exaix/tui/config.ts";
@@ -101,8 +101,8 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
   const { db: _db, monitorView } = createMonitorViewWithLogs(logs);
   monitorView.setFilter({});
   const output = monitorView.renderLogs();
-  assert(output.includes("\x1b[31m")); // red for error
-  assert(output.includes("\x1b[37m")); // white for unknown
+  assertStringIncludes(output, "\x1b[31m"); // red for error
+  assertStringIncludes(output, "\x1b[37m"); // white for unknown
   // Empty logs
   const { db: _emptyDb, monitorView: emptyView } = createMonitorViewWithLogs([]);
   assertEquals(emptyView.renderLogs(), "");
@@ -235,7 +235,7 @@ Deno.test("MonitorView - should export logs to file", () => {
   const exportData = monitorView.exportLogs();
   assertExists(exportData);
   assertEquals(typeof exportData, "string");
-  assert(exportData.includes("request_created"));
+  assertStringIncludes(exportData, "request_created");
 });
 
 Deno.test("MonitorView - should handle large log volumes without crashing", async () => {
@@ -428,7 +428,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - detail view", async () => {
   // Open detail
   await session.handleKey(KEYS.ENTER);
   assertEquals(session.isDetailVisible(), true);
-  assert(session.getDetailContent().includes("ID: 1"));
+  assertStringIncludes(session.getDetailContent(), "ID: 1");
 
   // Close detail
   await session.handleKey(KEYS.ESCAPE);
@@ -461,7 +461,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - render methods", () => {
   assert(buttons.some((b) => b.includes("Help")));
 
   const status = session.renderStatusLine();
-  assert(status.includes("log"));
+  assertStringIncludes(status, "log");
 });
 
 Deno.test("Phase 13.5: MonitorTuiSession - key bindings", () => {
@@ -471,19 +471,24 @@ Deno.test("Phase 13.5: MonitorTuiSession - key bindings", () => {
   assert(bindings.length > 0);
 
   const keys = bindings.map((b) => b.key);
-  assert(keys.includes("up"));
-  assert(keys.includes("down"));
-  assert(keys.includes("space"));
-  assert(keys.includes("b"));
-  assert(keys.includes("?"));
+  const includesResult: boolean = keys.includes("up");
+  assert(includesResult);
+  const includesResult2: boolean = keys.includes("down");
+  assert(includesResult2);
+  const includesResult3: boolean = keys.includes("space");
+  assert(includesResult3);
+  const includesResult4: boolean = keys.includes("b");
+  assert(includesResult4);
+  const includesResult5: boolean = keys.includes("?");
+  assert(includesResult5);
 });
 
 Deno.test("Phase 13.5: MonitorTuiSession - export logs", () => {
   const { session } = createMonitorSession(sampleSingleMonitorLog());
 
   const exported = session.exportLogs();
-  assert(exported.includes("request_created"));
-  assert(exported.includes("2025-12-22T10:00:00Z"));
+  assertStringIncludes(exported, "request_created");
+  assertStringIncludes(exported, "2025-12-22T10:00:00Z");
 });
 
 Deno.test("Phase 13.5: MonitorTuiSession - auto refresh toggle", async () => {
@@ -503,8 +508,10 @@ Deno.test("Phase 13.5: MonitorTuiSession - focusable elements", () => {
   const { session } = createMonitorSession([]);
 
   const elements = session.getFocusableElements();
-  assert(elements.includes("log-list"));
-  assert(elements.includes("action-buttons"));
+  const includesResult6: boolean = elements.includes("log-list");
+  assert(includesResult6);
+  const includesResult7: boolean = elements.includes("action-buttons");
+  assert(includesResult7);
 });
 
 // Helper to access protected/private members of MonitorTuiSession for testing

@@ -251,7 +251,8 @@ describe("DaemonCommands", {
       assertExists(payload.log_file);
       assertEquals(payload.via, RequestSource.CLI);
       assertExists(payload.command);
-      assertEquals(payload.command.startsWith("exactl "), true);
+      const assertionResult: boolean = payload.command.startsWith("exactl ");
+      assertEquals(assertionResult, true);
       assertExists(payload.timestamp);
     });
 

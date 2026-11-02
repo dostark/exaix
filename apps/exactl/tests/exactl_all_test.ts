@@ -90,7 +90,7 @@ Deno.test("portal add invokes portalCommands.add", async () => {
     ctx.portalCommands.add = (target: string, alias: string) => {
       called = true;
       assertEquals(alias, "MyAlias");
-      assert(target.includes("/tmp"));
+      assertStringIncludes(target, "/tmp");
       return Promise.resolve();
     };
     await mod.__test_command.parse(["portal", MemoryOperation.ADD, "/tmp/some/path", "MyAlias"]);
@@ -113,7 +113,7 @@ Deno.test("git branches prints list (calls gitCommands.listBranches)", async () 
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([PortalOperation.GIT, "branches"]);
     });
-    assert(out.includes("main"));
+    assertStringIncludes(out, "main");
   });
 });
 
@@ -124,7 +124,7 @@ Deno.test("daemon status prints info (calls daemonCommands.status)", async () =>
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["daemon", "status"]);
     });
-    assert(out.includes("daemon"));
+    assertStringIncludes(out, "daemon");
   });
 });
 
@@ -219,7 +219,7 @@ Deno.test("request show prints content when request exists", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "show", "trace-1"]);
     });
-    assert(out.includes("Hello world"));
+    assertStringIncludes(out, "Hello world");
   });
 });
 
@@ -313,7 +313,7 @@ Deno.test("blueprint list prints hint when empty and list when present", async (
     const emptyOut = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["blueprint", "list"]);
     });
-    assert(emptyOut.includes("Create a blueprint"));
+    assertStringIncludes(emptyOut, "Create a blueprint");
     ctx.blueprintCommands.list = () =>
       Promise.resolve([{
         agent_role: "a1",
@@ -435,7 +435,7 @@ Deno.test("plan show prints content", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["plan", "show", "plan-1"]);
     });
-    assert(out.includes("Plan details here"));
+    assertStringIncludes(out, "Plan details here");
   });
 });
 
@@ -870,7 +870,7 @@ Deno.test("plan list passes status filter to planCommands.list", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["plan", "list", "--status", "review"]);
     });
-    assert(out.includes("p-filter"));
+    assertStringIncludes(out, "p-filter");
   });
 });
 

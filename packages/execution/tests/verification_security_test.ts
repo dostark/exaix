@@ -9,7 +9,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { stub } from "@std/testing/mock";
@@ -213,9 +213,9 @@ Deno.test("[verification-security] a configured secret value printed by a test i
   try {
     await handle.db.waitForFlush();
     assertEquals(repairContents.length, 1);
-    assert(repairContents[0].includes(REDACTION_MARKER), repairContents[0]);
+    assertStringIncludes(repairContents[0], REDACTION_MARKER, repairContents[0]);
     assertFalse(repairContents[0].includes(CONFIGURED_SECRET));
-    assert(repairContents[0].includes("untrusted tool output"), repairContents[0]);
+    assertStringIncludes(repairContents[0], "untrusted tool output", repairContents[0]);
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });
@@ -289,7 +289,7 @@ Deno.test("[verification-security] the sentinel appears in no journal row of the
     await handle.db.waitForFlush();
     const joinedSentinel = "REALSENTINEL";
     assertEquals(repairContents.length, 1, "the real repair step must run");
-    assert(repairContents[0].includes(joinedSentinel), "the repair prompt carries the check output");
+    assertStringIncludes(repairContents[0], joinedSentinel, "the repair prompt carries the check output");
     const rows = handle.db.getActivitiesByTrace(handle.traceId);
     assert(rows.some((row) => row.action_type === "plan.execution_completed"), "the repair run must reach the journal");
     const leaked = rows.filter((row) => row.payload.includes(joinedSentinel));

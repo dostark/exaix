@@ -9,7 +9,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/command_builders/request_actions.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { captureConsoleOutput, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import type { ExaCtlTestContext } from "../src/exactl.ts";
 import type { IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
@@ -106,7 +106,7 @@ Deno.test("request show reports a rejected file as failed with its error (GAP-7)
     const output = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "show", "request-rejected"]);
     });
-    assert(output.includes("failed"), `request show must report the failed status: ${output}`);
-    assert(output.includes("effort"), `request show must surface the offending field: ${output}`);
+    assertStringIncludes(output, "failed", `request show must report the failed status: ${output}`);
+    assertStringIncludes(output, "effort", `request show must surface the offending field: ${output}`);
   });
 });

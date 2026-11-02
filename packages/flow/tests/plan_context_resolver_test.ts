@@ -30,7 +30,10 @@ Deno.test("[integration] resolves a valid plan_context_ref beneath executionRoot
       planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
     assertEquals(result.content, "# Phase 174\n");
-    assertEquals(result.absolutePath.endsWith(pathBuilders.runtimePath("", "PlanContext", "phase-174.md")), true);
+    const assertionResult: boolean = result.absolutePath.endsWith(
+      pathBuilders.runtimePath("", "PlanContext", "phase-174.md"),
+    );
+    assertEquals(assertionResult, true);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

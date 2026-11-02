@@ -262,10 +262,14 @@ Deno.test("AddLearningDialog: getFocusableElements returns all fields", () => {
 
   const elements = dialog.getFocusableElements();
   assertEquals(elements.length, 8);
-  assertEquals(elements.includes("title-input"), true);
-  assertEquals(elements.includes("category-select"), true);
-  assertEquals(elements.includes("save-btn"), true);
-  assertEquals(elements.includes("cancel-btn"), true);
+  const assertionResult: boolean = elements.includes("title-input");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = elements.includes("category-select");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = elements.includes("save-btn");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = elements.includes("cancel-btn");
+  assertEquals(assertionResult4, true);
 });
 
 // PromoteDialog Tests

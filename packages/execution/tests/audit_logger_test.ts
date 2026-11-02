@@ -164,11 +164,13 @@ Deno.test("AuditLogger: masks sensitive data in logs (comprehensive)", async () 
     // API Key (long)
     assertFalse(metadata.api_key.includes("very-long"));
     assertStringIncludes(metadata.api_key, "***");
-    assertEquals(metadata.api_key.startsWith("sk-a"), true);
+    const assertionResult: boolean = metadata.api_key.startsWith("sk-a");
+    assertEquals(assertionResult, true);
 
     // Token (long)
     assertFalse(metadata.token.includes("sometoken"));
-    assertEquals(metadata.token.startsWith("ghp_"), true);
+    const assertionResult2: boolean = metadata.token.startsWith("ghp_");
+    assertEquals(assertionResult2, true);
 
     // Password
     assertEquals(metadata.password, "***");

@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { EXECUTION_REPORT_FILENAME, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
@@ -434,7 +434,8 @@ agent_role: test-role
 
     // Report should contain trace_id
     const reportContent = await Deno.readTextFile(reportPath);
-    assert(reportContent.includes(traceId), "Report should include trace_id");
+    const assertionResult: boolean = reportContent.includes(traceId);
+    assert(assertionResult, "Report should include trace_id");
   });
 });
 
@@ -696,10 +697,7 @@ Memory/
       stderr: "piped",
     }).output();
     const currentBranch = new TextDecoder().decode(branchAfter.stdout).trim();
-    assert(
-      currentBranch.startsWith("feat/nochanges-test-"),
-      `Expected the no-op execution branch, got: ${currentBranch}`,
-    );
+    assertMatch(currentBranch, /^feat\/nochanges-test-/, `Expected the no-op execution branch, got: ${currentBranch}`);
 
     await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-nochanges");

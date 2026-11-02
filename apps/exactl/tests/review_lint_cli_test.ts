@@ -10,7 +10,7 @@
 
 import { createReviewJournalFixture } from "./helpers/review_journal_fixture.ts";
 import { LintErrorClass } from "@exaix/schemas";
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { formatLintSummary, type IReviewLintSummary } from "../src/commands/review_commands.ts";
 
 const capOne: IReviewLintSummary = {
@@ -61,8 +61,8 @@ Deno.test("real-cli-cap-error-security / actual-cli-error-notes", async () => {
   try {
     await fixture.log();
     const capped = await fixture.cli();
-    assert(capped.includes("lint: 2 remaining finding(s)"), capped);
-    assert(capped.includes("(1 more not listed)"), capped);
+    assertStringIncludes(capped, "lint: 2 remaining finding(s)", capped);
+    assertStringIncludes(capped, "(1 more not listed)", capped);
     for (const errorClass of Object.values(LintErrorClass)) {
       await fixture.log({
         total: null,
@@ -71,10 +71,10 @@ Deno.test("real-cli-cap-error-security / actual-cli-error-notes", async () => {
         checks: [{ check_index: 0, outcome: "error", total: null, error_class: errorClass }],
       }, "error");
       const output = await fixture.cli();
-      assert(output.includes(errorClass), output);
-      assert(output.includes("coverage incomplete"), output);
-      assert(output.includes("verification could not complete; check the policy and source"), output);
-      assert(output.includes("verification error"), output);
+      assertStringIncludes(output, errorClass, output);
+      assertStringIncludes(output, "coverage incomplete", output);
+      assertStringIncludes(output, "verification could not complete; check the policy and source", output);
+      assertStringIncludes(output, "verification error", output);
     }
   } finally {
     await fixture.cleanup();

@@ -219,6 +219,10 @@ Deno.test("an anchored literal stays anchored", () => {
   const s: string = "xabc";
   assertEquals(s.startsWith("abc"), true);
 });
+Deno.test("a final newline is not part of the expected suffix", () => {
+  const s: string = "abc\\n";
+  assertEquals(s.endsWith("abc"), true);
+});
 `;
 const SEMANTIC_CONTROLS = `import { assertEquals } from "@std/assert";
 Deno.test("NaN is found by SameValueZero", () => {
@@ -243,7 +247,7 @@ Deno.test("a dot in the literal is not a wildcard", () => {
 Deno.test("seeded defects still fail and controls still pass after the rewrite, and the output type-checks", async () => {
   await withTempDir(async (dir) => {
     for (
-      const [name, source, expectedFailures] of [["defects", SEMANTIC_DEFECTS, 4], [
+      const [name, source, expectedFailures] of [["defects", SEMANTIC_DEFECTS, 5], [
         "controls",
         SEMANTIC_CONTROLS,
         0,

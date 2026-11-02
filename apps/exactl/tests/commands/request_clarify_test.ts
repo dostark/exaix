@@ -185,7 +185,8 @@ Deno.test("[request clarify] proceed finalizes session", async () => {
 
     // Request file status should now be PENDING
     const content = await Deno.readTextFile(setup.filePath);
-    assertEquals(content.includes(RequestStatus.PENDING), true);
+    const assertionResult: boolean = content.includes(RequestStatus.PENDING);
+    assertEquals(assertionResult, true);
   } finally {
     await setup.cleanup();
   }
@@ -204,7 +205,8 @@ Deno.test("[request clarify] cancel reverts session", async () => {
 
     // Request file status should now be PENDING (re-queued)
     const content = await Deno.readTextFile(setup.filePath);
-    assertEquals(content.includes(RequestStatus.PENDING), true);
+    const assertionResult2: boolean = content.includes(RequestStatus.PENDING);
+    assertEquals(assertionResult2, true);
   } finally {
     await setup.cleanup();
   }

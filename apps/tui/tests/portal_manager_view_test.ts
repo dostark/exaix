@@ -8,7 +8,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import type { IPortalService } from "@exaix/core/types";
 import { PortalManagerView } from "../src/portal_manager_view.ts";
 import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
@@ -109,9 +109,9 @@ Deno.test("renderPortalList shows error for non-active status", () => {
     },
   ];
   const output = view.renderPortalList(portals);
-  assert(output.includes("Main [active]"));
-  assert(output.includes("Docs [broken]"));
-  assert(output.includes("ERROR: broken"));
+  assertStringIncludes(output, "Main [active]");
+  assertStringIncludes(output, "Docs [broken]");
+  assertStringIncludes(output, "ERROR: broken");
 });
 
 Deno.test("renderPortalList handles empty and malformed portal list", () => {
@@ -127,7 +127,7 @@ Deno.test("renderPortalList handles empty and malformed portal list", () => {
     contextCardPath: "",
   }];
   const out2 = view.renderPortalList(portals);
-  assert(out2.includes("X"));
+  assertStringIncludes(out2, "X");
 });
 
 // Mock IPortalService for TDD - use `createMockIPortalService` in `tests/tui/helpers.ts` instead
@@ -214,7 +214,8 @@ Deno.test("TUI: error display and recovery", () => {
   ]);
   tui.setSelectedIndex(1); // out of bounds
   tui.handleKey(KEYS.ENTER);
-  assert(tui.getStatusMessage().includes("Error"), "Error message shown");
+  const assertionResult: boolean = tui.getStatusMessage().includes("Error");
+  assert(assertionResult, "Error message shown");
   tui.setSelectedIndex(0);
   tui.handleKey(KEYS.R);
   assertEquals(service.actions[0], { type: "refresh", id: "Main" });
@@ -727,7 +728,8 @@ Deno.test("Phase 13.3: Loading state management", async () => {
 
   // Should be loading now
   assertEquals(tui.isLoading(), true, "Should be loading during operation");
-  assert(tui.getLoadingMessage().includes("Opening"), "Loading message should mention opening");
+  const assertionResult2: boolean = tui.getLoadingMessage().includes("Opening");
+  assert(assertionResult2, "Loading message should mention opening");
 
   // Complete the operation
   resolvePromise!();
@@ -785,8 +787,8 @@ Deno.test("Phase 13.3: Action buttons include help shortcut", () => {
   ]);
 
   const buttons = tui.renderActionButtons();
-  assert(buttons.includes("Help"), "Should include Help in action buttons");
-  assert(buttons.includes("?"), "Should show ? shortcut");
+  assertStringIncludes(buttons, "Help", "Should include Help in action buttons");
+  assertStringIncludes(buttons, "?", "Should show ? shortcut");
 });
 
 Deno.test("Phase 13.3: Status bar shows loading spinner", async () => {
@@ -847,10 +849,14 @@ Deno.test("Phase 13.3: Key bindings are defined", () => {
 
   // Check for expected bindings
   const keys = bindings.map((b) => b.key);
-  assert(keys.includes("up"), "Should have up key");
-  assert(keys.includes("down"), "Should have down key");
-  assert(keys.includes("enter"), "Should have enter key");
-  assert(keys.includes("?"), "Should have ? key");
+  const includesResult: boolean = keys.includes("up");
+  assert(includesResult, "Should have up key");
+  const includesResult2: boolean = keys.includes("down");
+  assert(includesResult2, "Should have down key");
+  const includesResult3: boolean = keys.includes("enter");
+  assert(includesResult3, "Should have enter key");
+  const includesResult4: boolean = keys.includes("?");
+  assert(includesResult4, "Should have ? key");
 });
 
 Deno.test("Phase 13.3: Confirm dialog for remove", async () => {

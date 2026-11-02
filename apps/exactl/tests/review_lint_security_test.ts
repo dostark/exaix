@@ -9,7 +9,7 @@
  */
 
 import { createReviewJournalFixture } from "./helpers/review_journal_fixture.ts";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { formatLintSummary, isDisplaySafeText } from "../src/commands/review_commands.ts";
 
 Deno.test("[security] the review projection rejects raw terminal controls", () => {
@@ -109,13 +109,13 @@ Deno.test("actual-cli-journal-security", async () => {
   try {
     await fixture.log({ findings: [{ check_index: 0, file: "src/é.ts", line: 3, rule: "unslop/\u001b[31mSECRET" }] });
     const forged = await fixture.cli();
-    assert(forged.includes("verification failed"), forged);
-    assert(forged.includes("lint details unavailable"), forged);
-    assertEquals(forged.includes("SECRET"), false);
-    assertEquals(forged.includes("\u001b[31m"), false);
+    assertStringIncludes(forged, "verification failed", forged);
+    assertStringIncludes(forged, "lint details unavailable", forged);
+    assertFalse(forged.includes("SECRET"));
+    assertFalse(forged.includes("\u001b[31m"));
     await fixture.log();
     const normal = await fixture.cli();
-    assert(normal.includes("src/é.ts:3 unslop/no-chained-type-assertions"), normal);
+    assertStringIncludes(normal, "src/é.ts:3 unslop/no-chained-type-assertions", normal);
   } finally {
     await fixture.cleanup();
   }

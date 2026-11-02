@@ -124,7 +124,8 @@ Deno.test("[revisions] ensureRevisions durably snapshots the exact content a rea
     );
     assertEquals(rows.length, 1);
     assertEquals(rows[0].revision_id, skill!.id);
-    assertEquals(rows[0].skill_md.includes("Shared body."), true);
+    const assertionResult: boolean = rows[0].skill_md.includes("Shared body.");
+    assertEquals(assertionResult, true);
     await fx.db.waitForFlush();
     const events = await fx.db.getActivitiesByActionTypeSafe(DomainEventType.SkillsRevisionRecorded);
     assertEquals(events.length, 1);

@@ -7,7 +7,7 @@
  * @related-files [packages/execution/src/deno_lint_check.ts, packages/execution/src/deno_lint_process.ts]
  */
 
-import { assert, assertEquals, assertMatch } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertMatch } from "@std/assert";
 import { dirname, join, toFileUrl } from "@std/path";
 import { createNoopEventLogger } from "@exaix/core/logger";
 import type { GitService } from "@exaix/git";
@@ -218,7 +218,7 @@ Deno.test("deno-lint-check", async (test) => {
       try {
         const outcome = errored(await runnerFor(systemRoot, settingsOf()).run(contextFor(syntax)));
         assertEquals(outcome.error_class, "LintSourceInvalid");
-        assertEquals(JSON.stringify(outcome).includes("PRIVATE_SOURCE"), false);
+        assertFalse(JSON.stringify(outcome).includes("PRIVATE_SOURCE"));
       } finally {
         await syntax.cleanup();
       }
@@ -365,8 +365,8 @@ Deno.test("lint-dead-surface", async () => {
     Deno.readTextFile(new URL("../src/lint_snapshot.ts", import.meta.url)),
     Deno.readTextFile(new URL("../src/deno_lint_check.ts", import.meta.url)),
   ]);
-  assertEquals(snapshotSource.includes("ILintCollectedFindings"), false);
-  assertEquals(checkSource.includes("hostExitCodes"), false);
+  assertFalse(snapshotSource.includes("ILintCollectedFindings"));
+  assertFalse(checkSource.includes("hostExitCodes"));
 
   const systemRoot = await Deno.makeTempDir({ prefix: "deno-lint-surface-" });
   const repo = await makeRepo("deno-lint-surface-repo-", { "seed.ts": CAST_SEED });

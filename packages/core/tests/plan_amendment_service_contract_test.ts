@@ -307,11 +307,16 @@ Deno.test("applyApprovedAmendment preserves non-step content in plan", () => {
   const updated = service.applyApprovedAmendment(planContent, patch);
 
   // Verify non-step sections are preserved
-  assertEquals(updated.includes("# Implementation Plan"), true);
-  assertEquals(updated.includes("## Overview"), true);
-  assertEquals(updated.includes("This is the overview section"), true);
-  assertEquals(updated.includes("## Notes"), true);
-  assertEquals(updated.includes("Additional notes section"), true);
+  const assertionResult: boolean = updated.includes("# Implementation Plan");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = updated.includes("## Overview");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = updated.includes("This is the overview section");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = updated.includes("## Notes");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = updated.includes("Additional notes section");
+  assertEquals(assertionResult5, true);
 });
 
 Deno.test("applyApprovedAmendment throws on invalid plan content", () => {

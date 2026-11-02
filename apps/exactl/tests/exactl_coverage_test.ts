@@ -9,7 +9,7 @@
 
 import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import "./helpers/set_test_mode.ts";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import {
   BlueprintStatus,
   FlowInputSource,
@@ -375,7 +375,7 @@ Deno.test("portal verify logs warnings and summary", async () => {
     });
 
     assert(warns.length >= 1);
-    assert(logs.join(" ").includes("portal.verify.summary"));
+    assertStringIncludes(logs.join(" "), "portal.verify.summary");
   });
 });
 
@@ -400,7 +400,7 @@ Deno.test("review show --diff prints diff only", async () => {
       await mod.__test_command.parse(["review", "show", "cs-1", "--diff"]);
     });
 
-    assert(output.includes("DIFF ONLY"));
+    assertStringIncludes(output, "DIFF ONLY");
   });
 });
 
@@ -425,7 +425,7 @@ Deno.test("review show renders approved decision", async () => {
       await mod.__test_command.parse(["review", "show", "cs-1"]);
     });
 
-    assert(logs.join(" ").includes("approved"));
+    assertStringIncludes(logs.join(" "), "approved");
   });
 });
 
@@ -451,7 +451,7 @@ Deno.test("review show renders rejected decision", async () => {
       await mod.__test_command.parse(["review", "show", "cs-2"]);
     });
 
-    assert(logs.join(" ").includes("rejected"));
+    assertStringIncludes(logs.join(" "), "rejected");
   });
 });
 
@@ -698,7 +698,7 @@ Deno.test("memory default action shows list", async () => {
       await mod.__test_command.parse(["memory"]);
     });
     assert(called);
-    assert(out.includes("Memory list output"));
+    assertStringIncludes(out, "Memory list output");
   });
 });
 
@@ -711,7 +711,7 @@ Deno.test("memory list with format option", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["memory", "list", "--format", UIOutputFormat.JSON]);
     });
-    assert(out.includes('{"data": []}'));
+    assertStringIncludes(out, '{"data": []}');
   });
 });
 
@@ -745,7 +745,7 @@ Deno.test("memory search passes all options", async () => {
         "-e",
       ]);
     });
-    assert(out.includes("Search results"));
+    assertStringIncludes(out, "Search results");
   });
 });
 
@@ -760,7 +760,7 @@ Deno.test("memory project default action lists projects", async () => {
       await mod.__test_command.parse(["memory", MemoryScope.PROJECT]);
     });
     assert(called);
-    assert(out.includes("Projects list"));
+    assertStringIncludes(out, "Projects list");
   });
 });
 
@@ -775,7 +775,7 @@ Deno.test("memory execution default action lists executions", async () => {
       await mod.__test_command.parse(["memory", MemoryBankSource.EXECUTION]);
     });
     assert(called);
-    assert(out.includes("Executions list"));
+    assertStringIncludes(out, "Executions list");
   });
 });
 
@@ -790,7 +790,7 @@ Deno.test("memory pending default action lists pending", async () => {
       await mod.__test_command.parse(["memory", MemoryStatus.PENDING]);
     });
     assert(called);
-    assert(out.includes("Pending proposals"));
+    assertStringIncludes(out, "Pending proposals");
   });
 });
 
@@ -805,7 +805,7 @@ Deno.test("memory pending approve-all calls pendingApproveAll", async () => {
       await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve-all"]);
     });
     assert(called);
-    assert(out.includes("All approved"));
+    assertStringIncludes(out, "All approved");
   });
 });
 
@@ -820,7 +820,7 @@ Deno.test("memory pending list --eligible filters eligible proposals", async () 
       await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "list", "--eligible"]);
     });
     assert(called);
-    assert(out.includes("Eligible proposals"));
+    assertStringIncludes(out, "Eligible proposals");
   });
 });
 
@@ -835,7 +835,7 @@ Deno.test("memory pending approve --dry-run previews auto-approvals", async () =
       await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve", "--dry-run"]);
     });
     assert(called);
-    assert(out.includes("Dry run preview"));
+    assertStringIncludes(out, "Dry run preview");
   });
 });
 
@@ -1128,22 +1128,22 @@ Deno.test("end-to-end flow request workflow", async () => {
         "web-dev-flow",
       ]);
     });
-    assert(createOutput.includes("trace_id: flow-test-123"));
-    assert(createOutput.includes("flow: web-dev-flow"));
+    assertStringIncludes(createOutput, "trace_id: flow-test-123");
+    assertStringIncludes(createOutput, "flow: web-dev-flow");
 
     // Test 2: List requests includes flow request
     const listOutput = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "list"]);
     });
-    assert(listOutput.includes("flow-test-123"));
-    assert(listOutput.includes("web-dev-flow"));
+    assertStringIncludes(listOutput, "flow-test-123");
+    assertStringIncludes(listOutput, "web-dev-flow");
 
     // Test 3: Show request displays flow information
     const showOutput = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "show", "flow-test-123"]);
     });
-    assert(showOutput.includes("flow-test-123"));
-    assert(showOutput.includes("web-dev-flow"));
-    assert(showOutput.includes("Build a web application"));
+    assertStringIncludes(showOutput, "flow-test-123");
+    assertStringIncludes(showOutput, "web-dev-flow");
+    assertStringIncludes(showOutput, "Build a web application");
   });
 });

@@ -25,7 +25,8 @@ Deno.test("StatusManager.updateStatus: rewrites status in frontmatter", async ()
     await mgr.updateStatus(filePath, RequestStatus.FAILED);
 
     const updatedContent = await Deno.readTextFile(filePath);
-    assertEquals(updatedContent.includes("status: failed"), true);
+    const assertionResult: boolean = updatedContent.includes("status: failed");
+    assertEquals(assertionResult, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

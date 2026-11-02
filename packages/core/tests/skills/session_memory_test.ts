@@ -558,11 +558,16 @@ Deno.test("SessionMemoryService - extracts key terms from query", async () => {
   assertFalse(terms.includes("how"));
 
   // Should include meaningful terms
-  assertEquals(terms.includes("implement"), true);
-  assertEquals(terms.includes("repository"), true);
-  assertEquals(terms.includes(LearningCategory.PATTERN), true);
-  assertEquals(terms.includes("database"), true);
-  assertEquals(terms.includes("operations"), true);
+  const assertionResult: boolean = terms.includes("implement");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = terms.includes("repository");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = terms.includes(LearningCategory.PATTERN);
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = terms.includes("database");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = terms.includes("operations");
+  assertEquals(assertionResult5, true);
 });
 
 // Memory Item Formatting Tests

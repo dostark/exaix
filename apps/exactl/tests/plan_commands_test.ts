@@ -106,9 +106,12 @@ describe("PlanCommands", () => {
 
       // Verify frontmatter updated
       const updatedContent = await Deno.readTextFile(activePlanPath);
-      assertEquals(updatedContent.includes("status: approved"), true, "Status should be 'approved'");
-      assertEquals(updatedContent.includes("approved_by:"), true, "Should have approved_by field");
-      assertEquals(updatedContent.includes("approved_at:"), true, "Should have approved_at field");
+      const assertionResult: boolean = updatedContent.includes("status: approved");
+      assertEquals(assertionResult, true, "Status should be 'approved'");
+      const assertionResult2: boolean = updatedContent.includes("approved_by:");
+      assertEquals(assertionResult2, true, "Should have approved_by field");
+      const assertionResult3: boolean = updatedContent.includes("approved_at:");
+      assertEquals(assertionResult3, true, "Should have approved_at field");
 
       // Verify activity logged
       const activities = await db.getRecentActivity(10);
@@ -167,7 +170,8 @@ status: review
 
       // Verify new content in Active
       const activeContent = await Deno.readTextFile(join(activeDir, `${planId}.md`));
-      assertEquals(activeContent.includes("# Test Plan (New)"), true, "New plan should be in Active");
+      const assertionResult4: boolean = activeContent.includes("# Test Plan (New)");
+      assertEquals(assertionResult4, true, "New plan should be in Active");
 
       // Verify old content archived
       const archiveDir = getWorkspaceArchiveDir(tempDir);
@@ -210,10 +214,14 @@ status: review
 
       // Verify frontmatter updated
       const rejectedContent = await Deno.readTextFile(rejectedPath);
-      assertEquals(rejectedContent.includes("status: rejected"), true);
-      assertEquals(rejectedContent.includes("rejected_by:"), true);
-      assertEquals(rejectedContent.includes("rejected_at:"), true);
-      assertEquals(rejectedContent.includes(`rejection_reason: ${reason}`), true);
+      const assertionResult5: boolean = rejectedContent.includes("status: rejected");
+      assertEquals(assertionResult5, true);
+      const assertionResult6: boolean = rejectedContent.includes("rejected_by:");
+      assertEquals(assertionResult6, true);
+      const assertionResult7: boolean = rejectedContent.includes("rejected_at:");
+      assertEquals(assertionResult7, true);
+      const assertionResult8: boolean = rejectedContent.includes(`rejection_reason: ${reason}`);
+      assertEquals(assertionResult8, true);
 
       // Verify activity logged
       const activities = await db.getRecentActivity(10);
@@ -264,11 +272,16 @@ status: review
 
       // Verify content updated
       const updatedContent = await Deno.readTextFile(planPath);
-      assertEquals(updatedContent.includes("status: needs_revision"), true);
-      assertEquals(updatedContent.includes("reviewed_by:"), true);
-      assertEquals(updatedContent.includes("reviewed_at:"), true);
-      assertEquals(updatedContent.includes(PLAN_REVIEW_COMMENTS_HEADER), true);
-      assertEquals(updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}${comment}`), true);
+      const assertionResult9: boolean = updatedContent.includes("status: needs_revision");
+      assertEquals(assertionResult9, true);
+      const assertionResult10: boolean = updatedContent.includes("reviewed_by:");
+      assertEquals(assertionResult10, true);
+      const assertionResult11: boolean = updatedContent.includes("reviewed_at:");
+      assertEquals(assertionResult11, true);
+      const assertionResult12: boolean = updatedContent.includes(PLAN_REVIEW_COMMENTS_HEADER);
+      assertEquals(assertionResult12, true);
+      const assertionResult13: boolean = updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}${comment}`);
+      assertEquals(assertionResult13, true);
 
       // Verify activity logged
       const activities = await db.getRecentActivity(10);
@@ -300,7 +313,8 @@ status: review
 
       // Verify all comments present
       for (const comment of comments) {
-        assertEquals(updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}${comment}`), true);
+        const assertionResult14: boolean = updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}${comment}`);
+        assertEquals(assertionResult14, true);
       }
 
       // Verify activity logged with correct count
@@ -339,8 +353,10 @@ status: review
       await planCommands.revise(planId, ["New comment"]);
 
       const updatedContent = await Deno.readTextFile(join(inboxPlansDir, `${planId}.md`));
-      assertEquals(updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}Previous comment`), true);
-      assertEquals(updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}New comment`), true);
+      const assertionResult15: boolean = updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}Previous comment`);
+      assertEquals(assertionResult15, true);
+      const assertionResult16: boolean = updatedContent.includes(`${PLAN_REVIEW_COMMENT_PREFIX}New comment`);
+      assertEquals(assertionResult16, true);
     });
 
     it("should reset request status and append revision instructions", async () => {
@@ -378,9 +394,12 @@ status: review
       await planCommands.revise(planId, [comment]);
 
       const updatedRequest = await Deno.readTextFile(requestPath);
-      assertEquals(updatedRequest.includes(`status: ${RequestStatus.PENDING}`), true);
-      assertEquals(updatedRequest.includes(REQUEST_REVISION_COMMENTS_HEADER), true);
-      assertEquals(updatedRequest.includes(`${REQUEST_REVISION_COMMENT_PREFIX}${comment}`), true);
+      const assertionResult17: boolean = updatedRequest.includes(`status: ${RequestStatus.PENDING}`);
+      assertEquals(assertionResult17, true);
+      const assertionResult18: boolean = updatedRequest.includes(REQUEST_REVISION_COMMENTS_HEADER);
+      assertEquals(assertionResult18, true);
+      const assertionResult19: boolean = updatedRequest.includes(`${REQUEST_REVISION_COMMENT_PREFIX}${comment}`);
+      assertEquals(assertionResult19, true);
     });
   });
 
@@ -539,8 +558,10 @@ This plan is currently being executed.
       assertEquals(result.metadata.id, planId);
       assertEquals(result.metadata.status, PlanStatus.REVIEW);
       assertEquals(result.metadata.trace_id, "trace-show-001");
-      assertEquals(result.content.includes("# Test Plan"), true);
-      assertEquals(result.content.includes("## Actions"), true);
+      const assertionResult20: boolean = result.content.includes("# Test Plan");
+      assertEquals(assertionResult20, true);
+      const assertionResult21: boolean = result.content.includes("## Actions");
+      assertEquals(assertionResult21, true);
     });
 
     it("should throw error if plan does not exist", async () => {
@@ -563,7 +584,8 @@ Just some content.
 
       assertEquals(result.metadata.id, planId);
       assertEquals(result.metadata.status, PlanStatus.REVIEW);
-      assertEquals(result.content.includes("# Plan without frontmatter"), true);
+      const assertionResult22: boolean = result.content.includes("# Plan without frontmatter");
+      assertEquals(assertionResult22, true);
     });
 
     it("should show rejected plans from Workspace/Rejected directory", async () => {
@@ -603,7 +625,8 @@ This plan was rejected for testing purposes.
       assertEquals(result.metadata.rejected_at, rejectedAt);
       assertEquals(result.metadata.rejected_by, rejectedBy);
       assertEquals(result.metadata.rejection_reason, rejectionReason);
-      assertEquals(result.content.includes("# Rejected Test Plan"), true);
+      const assertionResult23: boolean = result.content.includes("# Rejected Test Plan");
+      assertEquals(assertionResult23, true);
     });
   });
 

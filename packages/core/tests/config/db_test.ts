@@ -85,12 +85,18 @@ Deno.test("[configuring] migrateConfigDb creates config_overrides table", () => 
       pk: number;
     }>();
     const columnNames = columns.map((c) => c.name);
-    assertEquals(columnNames.includes("id"), true);
-    assertEquals(columnNames.includes("key"), true);
-    assertEquals(columnNames.includes("value"), true);
-    assertEquals(columnNames.includes("source"), true);
-    assertEquals(columnNames.includes("swap_class"), true);
-    assertEquals(columnNames.includes("created_at"), true);
+    const assertionResult: boolean = columnNames.includes("id");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = columnNames.includes("key");
+    assertEquals(assertionResult2, true);
+    const assertionResult3: boolean = columnNames.includes("value");
+    assertEquals(assertionResult3, true);
+    const assertionResult4: boolean = columnNames.includes("source");
+    assertEquals(assertionResult4, true);
+    const assertionResult5: boolean = columnNames.includes("swap_class");
+    assertEquals(assertionResult5, true);
+    const assertionResult6: boolean = columnNames.includes("created_at");
+    assertEquals(assertionResult6, true);
   } finally {
     cleanUp(dir, db);
   }

@@ -7,7 +7,7 @@
  * of the request list, content preview, and interactive status management.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import { RequestGroupingMode } from "@exaix/tui";
 import { RequestStatus } from "@exaix/core/status";
@@ -52,9 +52,9 @@ Deno.test("RequestManagerView - renders request list correctly", async () => {
   const requests = await _service.listRequests();
   const output = view.renderRequestList(requests);
 
-  assert(output.includes("Requests:"));
-  assert(output.includes("⏳ ⚪ IRequest 12345678 - default"));
-  assert(output.includes("📋 🟠 IRequest 87654321 - code-reviewer"));
+  assertStringIncludes(output, "Requests:");
+  assertStringIncludes(output, "⏳ ⚪ IRequest 12345678 - default");
+  assertStringIncludes(output, "📋 🟠 IRequest 87654321 - code-reviewer");
 });
 
 Deno.test("RequestManagerView - handles empty request list", async () => {
@@ -463,7 +463,7 @@ Deno.test("Phase 13.6: Render methods return strings", () => {
   // render returns string
   const output = tui.render();
   assertEquals(typeof output, "string");
-  assert(output.includes("REQUEST MANAGER"));
+  assertStringIncludes(output, "REQUEST MANAGER");
 });
 
 Deno.test("Phase 13.6: PRIORITY_ICONS and STATUS_ICONS", () => {
@@ -548,7 +548,8 @@ Deno.test("Phase 13.6: Focusable elements", () => {
 
   const focusable = tui.getFocusableElements();
   assert(Array.isArray(focusable));
-  assert(focusable.includes("request-list"));
+  const includesResult: boolean = focusable.includes("request-list");
+  assert(includesResult);
 });
 
 Deno.test("Phase 13.6: setRequests updates tree", () => {

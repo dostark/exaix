@@ -227,8 +227,10 @@ Deno.test("[execution-verification] a passing check completes with verification_
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "passed");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    assert(events.includes("execution.verification.started"), events.join(","));
-    assert(events.includes("execution.verification.passed"), events.join(","));
+    const assertionResult: boolean = events.includes("execution.verification.started");
+    assert(assertionResult, events.join(","));
+    const assertionResult2: boolean = events.includes("execution.verification.passed");
+    assert(assertionResult2, events.join(","));
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {
@@ -248,7 +250,8 @@ Deno.test("[execution-verification] a failing check still registers the review a
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "failed");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    assert(events.includes("execution.verification.failed"), events.join(","));
+    const assertionResult3: boolean = events.includes("execution.verification.failed");
+    assert(assertionResult3, events.join(","));
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {
@@ -574,11 +577,11 @@ Deno.test("secret-file-name-not-journaled", async () => {
       .filter((row) => row.action_type.startsWith("execution.verification."));
     assert(rows.length > 0);
     for (const row of rows) {
-      assertEquals(row.payload.includes("secret-token-abc"), false, row.action_type);
+      assertFalse(row.payload.includes("secret-token-abc"), row.action_type);
     }
     const snapshots = lintSnapshots(handle.db, handle.traceId);
     assertEquals(snapshots.length, 1);
-    assertEquals(JSON.stringify(snapshots[0]).includes("secret-token-abc"), false);
+    assertFalse(JSON.stringify(snapshots[0]).includes("secret-token-abc"));
     assert((snapshots[0].findings as JSONValue[]).length > 0);
   } finally {
     await handle.cleanupDb();

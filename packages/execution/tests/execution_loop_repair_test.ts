@@ -9,7 +9,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { exists } from "@std/fs/exists";
@@ -452,9 +452,9 @@ Deno.test("[execution-repair] the repair step carries the original step titles a
     await handle.db.waitForFlush();
     assertEquals(calls.length, 1);
     const step = calls[0].steps[0];
-    assert(step.content.includes("Original plan steps:"), step.content);
-    assert(step.content.includes("Original step one"), step.content);
-    assert(step.content.includes("untrusted tool output"), step.content);
+    assertStringIncludes(step.content, "Original plan steps:", step.content);
+    assertStringIncludes(step.content, "Original step one", step.content);
+    assertStringIncludes(step.content, "untrusted tool output", step.content);
     assertEquals(step.successCriteria, ["deno test . exits 0"]);
   } finally {
     await handle.cleanupDb();
@@ -547,8 +547,10 @@ Deno.test("[execution-repair] the repair step content fits the agent request lim
     const content = calls[0].steps[0].content;
     assert(content.length <= USER_REQUEST_MAX_LENGTH, `${content.length}`);
     assert(UserRequestSchema.safeParse(content).success, "repair content must pass agent input validation");
-    for (const task of tasks) assert(content.includes(marker(task)), `the tail of the ${task} failure must survive`);
-    assert(content.includes("Original plan steps:"), content.slice(0, 300));
+    for (const task of tasks) {
+      assertStringIncludes(content, marker(task), `the tail of the ${task} failure must survive`);
+    }
+    assertStringIncludes(content, "Original plan steps:", content.slice(0, 300));
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

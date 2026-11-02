@@ -35,9 +35,12 @@ function makeContext(overrides: Partial<ISkillsContext["matched"][number]> = {})
 Deno.test("[renderSkillsSection] full mode keeps the Examples section in its authored position (byte-identical body)", () => {
   const ctx = makeContext();
   const output = renderSkillsSection(ctx);
-  assert(output.includes("## Examples"), "full mode must keep the Examples heading in place");
-  assert(output.includes("Example content here."), "full mode must include examples content");
-  assert(output.includes("## Later\n\nKept in order."), "content after Examples stays after it");
+  const assertionResult: boolean = output.includes("## Examples");
+  assert(assertionResult, "full mode must keep the Examples heading in place");
+  const assertionResult2: boolean = output.includes("Example content here.");
+  assert(assertionResult2, "full mode must include examples content");
+  const assertionResult3: boolean = output.includes("## Later\n\nKept in order.");
+  assert(assertionResult3, "content after Examples stays after it");
   assert(
     output.indexOf("## Examples") < output.indexOf("## Later"),
     "Examples must precede the Later section in full mode (original ordering preserved)",
@@ -49,8 +52,10 @@ Deno.test("[renderSkillsSection] trimmed mode strips the Examples section but ke
   const output = renderSkillsSection(ctx, true);
   assert(!output.includes("## Examples"), "trimmed mode must remove the Examples heading");
   assert(!output.includes("Example content here."), "trimmed mode must remove examples content");
-  assert(output.includes("Do the thing."), "content before Examples survives");
-  assert(output.includes("## Later\n\nKept in order."), "content after Examples survives");
+  const assertionResult4: boolean = output.includes("Do the thing.");
+  assert(assertionResult4, "content before Examples survives");
+  const assertionResult5: boolean = output.includes("## Later\n\nKept in order.");
+  assert(assertionResult5, "content after Examples survives");
   assert(
     output.indexOf("## Later") > output.indexOf("Do the thing."),
     "surrounding sections keep their relative order in trimmed mode",
@@ -65,6 +70,8 @@ Deno.test("[renderSkillsSection] a skill with no Examples section renders identi
 Deno.test("[renderCriticalSkillsSection] always renders the full body including Examples, ignoring any trimmed intent", () => {
   const ctx = makeContext({ critical: true });
   const output = renderCriticalSkillsSection(ctx);
-  assert(output.includes("## Examples"), "critical skills render their Examples section in full");
-  assert(output.includes("Example content here."), "critical skill examples content must survive");
+  const assertionResult6: boolean = output.includes("## Examples");
+  assert(assertionResult6, "critical skills render their Examples section in full");
+  const assertionResult7: boolean = output.includes("Example content here.");
+  assert(assertionResult7, "critical skill examples content must survive");
 });

@@ -39,13 +39,20 @@ Deno.test("PlanAmendmentService.applyApprovedAmendment correctly applies patches
 
   const updated = service.applyApprovedAmendment(planContent, patch);
 
-  assertEquals(updated.includes(`status: ${PlanStatus.APPROVED}`), true);
-  assertEquals(updated.includes("## Step 2: title 2 updated"), true);
-  assertEquals(updated.includes("content 2 updated"), true);
-  assertEquals(updated.includes("## Step 3: title 3"), true);
-  assertEquals(updated.includes("content 3"), true);
-  assertEquals(updated.includes("## Next Steps"), true);
-  assertEquals(updated.includes("## Step 1: title 1"), true);
+  const assertionResult: boolean = updated.includes(`status: ${PlanStatus.APPROVED}`);
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = updated.includes("## Step 2: title 2 updated");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = updated.includes("content 2 updated");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = updated.includes("## Step 3: title 3");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = updated.includes("content 3");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = updated.includes("## Next Steps");
+  assertEquals(assertionResult6, true);
+  const assertionResult7: boolean = updated.includes("## Step 1: title 1");
+  assertEquals(assertionResult7, true);
 });
 
 Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => {
@@ -71,6 +78,7 @@ Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => 
 
   const updated = service.applyApprovedAmendment(planContent, patch);
 
-  assertEquals(updated.includes("## Step 1: title 1"), true);
+  const assertionResult8: boolean = updated.includes("## Step 1: title 1");
+  assertEquals(assertionResult8, true);
   assertFalse(updated.includes("## Step 2: title 2"));
 });

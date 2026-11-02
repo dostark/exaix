@@ -210,7 +210,8 @@ Deno.test("[usage] byTrace returns every use on one trace joined to its canonica
     const rows = await usage.byTrace(CTX.traceId, CTX);
     assertEquals(rows.length, 1);
     assertEquals(rows[0].callId, "c1");
-    assertEquals(rows[0].snapshot.skill_md.includes("Body A"), true);
+    const assertionResult: boolean = rows[0].snapshot.skill_md.includes("Body A");
+    assertEquals(assertionResult, true);
     assertEquals(rows[0].flowId, "flow-1");
   });
 });

@@ -126,7 +126,8 @@ Deno.test("[ContextBudgetManager] drops lowest-priority segments first when over
 
   // tool_result (lowest priority) dropped; system (highest) kept
   const keptKinds = out.map((s) => s.kind);
-  assertEquals(keptKinds.includes("system"), true);
+  const assertionResult: boolean = keptKinds.includes("system");
+  assertEquals(assertionResult, true);
   assertFalse(keptKinds.includes("tool_result"));
 });
 
@@ -151,7 +152,8 @@ Deno.test("[ContextBudgetManager] never drops segments with priority >= CONTEXT_
   });
 
   const keptKinds = out.map((s) => s.kind);
-  assertEquals(keptKinds.includes("acceptance_criteria"), true);
+  const assertionResult2: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("[ContextBudgetManager] snapshot.decisions count equals number of segments processed", async () => {
@@ -277,7 +279,8 @@ Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_k
     .filter((d) => d.action === "drop")
     .map((d) => d.kind);
 
-  assertEquals(droppedKinds.includes("tool_result"), true);
+  const assertionResult3: boolean = droppedKinds.includes("tool_result");
+  assertEquals(assertionResult3, true);
   // portal_knowledge maps to portalKnowledge section which has budget, so it's kept
   assertFalse(droppedKinds.includes("portal_knowledge"));
 });
@@ -307,8 +310,10 @@ Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segm
   });
 
   const keptKinds = out.map((s) => s.kind);
-  assertEquals(keptKinds.includes("system"), true);
-  assertEquals(keptKinds.includes("acceptance_criteria"), true);
+  const assertionResult4: boolean = keptKinds.includes("system");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(assertionResult5, true);
   assertFalse(keptKinds.includes("tool_result"));
 });
 
@@ -457,7 +462,8 @@ Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan resp
 
   // acceptance_criteria is protected: always kept
   const keptKinds = out.map((s) => s.kind);
-  assertEquals(keptKinds.includes("acceptance_criteria"), true);
+  const assertionResult6: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(assertionResult6, true);
 
   // plan_step (70) cannot fit the remaining 40 tokens — must be trimmed or dropped
   const planStepDecision = snapshot.decisions.find((d) => d.kind === "plan_step");
@@ -711,10 +717,14 @@ Deno.test(
       await db.waitForFlush();
 
       const actions = db.getActivitiesByTrace(traceId).map((activity) => activity.action_type);
-      assertEquals(actions.includes(DomainEventType.ContextBudgetAllocated), true);
-      assertEquals(actions.includes(DomainEventType.ContextSectionTruncated), true);
-      assertEquals(actions.includes(DomainEventType.ContextBudgetConsumed), true);
-      assertEquals(actions.includes(DomainEventType.ExecutionContextCompacted), true);
+      const assertionResult7: boolean = actions.includes(DomainEventType.ContextBudgetAllocated);
+      assertEquals(assertionResult7, true);
+      const assertionResult8: boolean = actions.includes(DomainEventType.ContextSectionTruncated);
+      assertEquals(assertionResult8, true);
+      const assertionResult9: boolean = actions.includes(DomainEventType.ContextBudgetConsumed);
+      assertEquals(assertionResult9, true);
+      const assertionResult10: boolean = actions.includes(DomainEventType.ExecutionContextCompacted);
+      assertEquals(assertionResult10, true);
     } finally {
       await cleanup();
     }

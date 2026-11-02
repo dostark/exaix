@@ -118,6 +118,7 @@ Deno.test("[SkillSuppression] an empty suppression list suppresses nothing", asy
     const request = { userPrompt: "do the thing", taskType: "feature" };
 
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
-    assertEquals(result.skillIds.includes("tdd-methodology"), true);
+    const assertionResult: boolean = result.skillIds.includes("tdd-methodology");
+    assertEquals(assertionResult, true);
   });
 });

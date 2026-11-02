@@ -147,7 +147,8 @@ Deno.test("[service] createSkill publishes a draft folder that is hidden from ma
     const sidecar = await Deno.readTextFile(
       pathBuilders.memorySkillsPath(fx.memoryDir, "learned", "fresh-skill", "exaix.yaml"),
     );
-    assertEquals(sidecar.includes("status: draft"), true);
+    const assertionResult: boolean = sidecar.includes("status: draft");
+    assertEquals(assertionResult, true);
   } finally {
     await fx.cleanup();
   }

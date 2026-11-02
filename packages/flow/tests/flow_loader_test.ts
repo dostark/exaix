@@ -78,7 +78,8 @@ Deno.test("FlowLoader: throws error for non-existent flow", async () => {
     throw new Error("Expected error");
   } catch (error) {
     assert(error instanceof Error);
-    assert(error.message.includes("Failed to load flow 'nonexistent'"));
+    const assertionResult: boolean = error.message.includes("Failed to load flow 'nonexistent'");
+    assert(assertionResult);
   }
 });
 
@@ -201,8 +202,10 @@ output: { from: "s2", format: "markdown" }
 
     flowIds = await loader.listFlowIds();
     assertEquals(flowIds.length, 2);
-    assert(flowIds.includes("flow-one"));
-    assert(flowIds.includes("flow-two"));
+    const assertionResult2: boolean = flowIds.includes("flow-one");
+    assert(assertionResult2);
+    const assertionResult3: boolean = flowIds.includes("flow-two");
+    assert(assertionResult3);
     assert(!flowIds.includes("not-a-flow"));
   } finally {
     await Deno.remove(mockFlowsDir, { recursive: true });

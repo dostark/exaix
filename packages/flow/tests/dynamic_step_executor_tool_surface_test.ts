@@ -207,13 +207,9 @@ Deno.test(
       mcpClient.capturedTools.includes(McpToolName.APPROVE_PLAN),
       "approve_plan must be filtered out (requires_human_approval: true)",
     );
-    assert(
-      mcpClient.capturedTools.includes(McpToolName.LIST_PLANS),
-      "list_plans must be included (requires_human_approval: false)",
-    );
-    assert(
-      mcpClient.capturedTools.includes(McpToolName.READ_FILE),
-      "read_file must be included",
-    );
+    const includesResult: boolean = mcpClient.capturedTools.includes(McpToolName.LIST_PLANS);
+    assert(includesResult, "list_plans must be included (requires_human_approval: false)");
+    const includesResult2: boolean = mcpClient.capturedTools.includes(McpToolName.READ_FILE);
+    assert(includesResult2, "read_file must be included");
   },
 );

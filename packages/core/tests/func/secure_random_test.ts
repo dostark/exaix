@@ -62,7 +62,8 @@ Deno.test("[SecureRandom] generates secure tokens", () => {
 
 Deno.test("[SecureRandom] generates prefixed IDs", () => {
   const id = SecureRandom.generateId("test");
-  assert(id.startsWith("test_"));
+  const assertionResult: boolean = id.startsWith("test_");
+  assert(assertionResult);
   assert(id.length > 5);
 });
 

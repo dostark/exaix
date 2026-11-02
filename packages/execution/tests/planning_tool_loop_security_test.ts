@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
@@ -97,7 +97,7 @@ Deno.test("[planning_tool_loop][security] a path prefixed with another portal's 
 
     assertEquals(executed, false, "ToolRegistry.execute must never be reached");
     assertEquals(turnIsError, true);
-    assert(turnContent.includes("Access denied"));
+    assertStringIncludes(turnContent, "Access denied");
   } finally {
     fixture.cleanup();
   }
@@ -122,7 +122,7 @@ Deno.test("[planning_tool_loop][security][integration] a denied path journals on
     assertEquals(denied.length, 1);
     const payload = JSON.parse(denied[0].payload) as { tool: string; error: string };
     assertEquals(payload.tool, "read_file");
-    assert(payload.error.includes("Access denied"));
+    assertStringIncludes(payload.error, "Access denied");
     assertEquals(registry.calls.length, 0);
   } finally {
     await cleanup();
@@ -145,7 +145,7 @@ Deno.test("[planning_tool_loop][security][integration] a glob alias with a ../ p
 
     assertEquals(registry.calls.length, 0, "ToolRegistry.execute must never be reached");
     assertEquals(turnIsError, true);
-    assert(turnContent.includes("Access denied"));
+    assertStringIncludes(turnContent, "Access denied");
     const denied = db.getActivitiesByTrace(traceId).filter((r) =>
       r.action_type === DomainEventType.SecurityPathAccessDenied
     );
@@ -322,7 +322,7 @@ Deno.test("[planning_tool_loop][security] a guardrail blocking violation on a to
     assertEquals(generate.calls.length, 2, "the guardrail must force round 2 to be the final round, not run all 5");
     assertEquals(generate.calls[1].options.toolChoice?.type, "none");
     assertEquals(generate.calls[1].options.priorTurn?.toolResultIsError, true);
-    assert(String(generate.calls[1].options.priorTurn?.toolResultContent).includes("blocked by guardrail"));
+    assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "blocked by guardrail");
     assertEquals(result.stopReason, "guardrail_blocked");
   } finally {
     fixture.cleanup();
@@ -363,7 +363,7 @@ Deno.test("[planning_tool_loop][security][native] a guardrail-blocked result rea
     const turns = generate.calls[1].options.nativeConversation?.turns;
     assertEquals(turns?.length, 1);
     assertEquals(turns?.[0].toolResultIsError, true);
-    assert(String(turns?.[0].toolResultContent).includes("blocked by guardrail"));
+    assertStringIncludes(String(turns?.[0].toolResultContent), "blocked by guardrail");
     assertEquals(result.stopReason, "guardrail_blocked");
   } finally {
     ProviderRegistry.clear();

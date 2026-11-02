@@ -34,9 +34,12 @@ Deno.test("[RequestStatus] includes ENRICHING", () => {
 });
 
 Deno.test("[REQUEST_STATUS_VALUES] includes all new status values", () => {
-  assertEquals(REQUEST_STATUS_VALUES.includes("needs_clarification" as never), true);
-  assertEquals(REQUEST_STATUS_VALUES.includes("refining" as never), true);
-  assertEquals(REQUEST_STATUS_VALUES.includes("enriching" as never), true);
+  const assertionResult: boolean = REQUEST_STATUS_VALUES.includes("needs_clarification" as never);
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = REQUEST_STATUS_VALUES.includes("refining" as never);
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = REQUEST_STATUS_VALUES.includes("enriching" as never);
+  assertEquals(assertionResult3, true);
 });
 
 Deno.test("[isRequestStatus] recognises new status values", () => {

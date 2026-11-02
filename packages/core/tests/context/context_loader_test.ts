@@ -123,7 +123,8 @@ describe("Token Limit Enforcement", () => {
     assertEquals(result.totalTokens <= 50000, true);
 
     // Should include smallest files
-    assertEquals(result.includedFiles.includes(file1), true);
+    const assertionResult: boolean = result.includedFiles.includes(file1);
+    assertEquals(assertionResult, true);
   });
 
   it("should track total tokens accurately", async () => {
@@ -372,7 +373,8 @@ describe("Truncation Strategies", () => {
     const result = await loader.loadWithLimit([large, medium, small]);
 
     // Should include smallest files first
-    assertEquals(result.includedFiles.includes(small), true);
+    const assertionResult2: boolean = result.includedFiles.includes(small);
+    assertEquals(assertionResult2, true);
   });
 
   it("drop-oldest should prioritize newest files", async () => {
@@ -392,7 +394,8 @@ describe("Truncation Strategies", () => {
     const result = await loader.loadWithLimit([old, recent]);
 
     // Should include the more recent file
-    assertEquals(result.includedFiles.includes(recent), true);
+    const assertionResult3: boolean = result.includedFiles.includes(recent);
+    assertEquals(assertionResult3, true);
   });
 
   it("truncate-each should include partial content from files", async () => {
@@ -519,7 +522,8 @@ describe("Error Handling", () => {
     const result = await loader.loadWithLimit([existing, missing]);
 
     // Should still load the existing file
-    assertEquals(result.includedFiles.includes(existing), true);
+    const assertionResult4: boolean = result.includedFiles.includes(existing);
+    assertEquals(assertionResult4, true);
 
     // Missing file should not cause failure
     assertFalse(result.includedFiles.includes(missing));
@@ -542,8 +546,10 @@ describe("Error Handling", () => {
 
     // Should load both existing files
     assertEquals(result.includedFiles.length, 2);
-    assertEquals(result.includedFiles.includes(file1), true);
-    assertEquals(result.includedFiles.includes(file2), true);
+    const assertionResult5: boolean = result.includedFiles.includes(file1);
+    assertEquals(assertionResult5, true);
+    const assertionResult6: boolean = result.includedFiles.includes(file2);
+    assertEquals(assertionResult6, true);
   });
 });
 
@@ -639,11 +645,13 @@ describe("Token Budget Boundary Cases", () => {
     const result = await loader.loadWithLimit([file1, file2]);
 
     // file1 fits, file2 can't fit meaningfully (remaining < 100)
-    assertEquals(result.includedFiles.includes(file1), true);
+    const assertionResult7: boolean = result.includedFiles.includes(file1);
+    assertEquals(assertionResult7, true);
 
     // With truncate-each, file2 should be skipped if remaining < 100
     if (result.totalTokens > 7900) {
-      assertEquals(result.skippedFiles.includes(file2), true);
+      const assertionResult8: boolean = result.skippedFiles.includes(file2);
+      assertEquals(assertionResult8, true);
     }
   });
 
@@ -683,11 +691,14 @@ describe("Token Budget Boundary Cases", () => {
     const result = await loader.loadWithLimit([large, medium, small2, small1]);
 
     // Should prioritize smallest files: small1 (1000) + small2 (1500) + medium (3000) = ~5500
-    assertEquals(result.includedFiles.includes(small1), true);
-    assertEquals(result.includedFiles.includes(small2), true);
+    const assertionResult9: boolean = result.includedFiles.includes(small1);
+    assertEquals(assertionResult9, true);
+    const assertionResult10: boolean = result.includedFiles.includes(small2);
+    assertEquals(assertionResult10, true);
 
     // Large should be skipped
-    assertEquals(result.skippedFiles.includes(large), true);
+    const assertionResult11: boolean = result.skippedFiles.includes(large);
+    assertEquals(assertionResult11, true);
   });
 });
 
@@ -713,7 +724,8 @@ describe("File System Error Handling", () => {
       const result = await loader.loadWithLimit([readable, restricted]);
 
       // Should load readable file
-      assertEquals(result.includedFiles.includes(readable), true);
+      const assertionResult12: boolean = result.includedFiles.includes(readable);
+      assertEquals(assertionResult12, true);
 
       // Restricted file should be excluded (not in included or skipped)
       assertFalse(result.includedFiles.includes(restricted));
@@ -771,7 +783,8 @@ describe("File System Error Handling", () => {
     const result = await loader.loadWithLimit([brokenLink, validFile]);
 
     // Should skip broken link, load valid file
-    assertEquals(result.includedFiles.includes(validFile), true);
+    const assertionResult13: boolean = result.includedFiles.includes(validFile);
+    assertEquals(assertionResult13, true);
     assertFalse(result.includedFiles.includes(brokenLink));
   });
 
@@ -793,7 +806,8 @@ describe("File System Error Handling", () => {
     assertFalse(result.includedFiles.includes(empty));
 
     // File with content should be included
-    assertEquals(result.includedFiles.includes(withContent), true);
+    const assertionResult14: boolean = result.includedFiles.includes(withContent);
+    assertEquals(assertionResult14, true);
   });
 
   it("should handle files modified during loading", async () => {
@@ -912,9 +926,11 @@ describe("Drop-Largest Strategy", () => {
     const result = await loader.loadWithLimit([large, medium, small]);
 
     // drop-largest sorts smallest first, so small (1000) + medium (3000) = 4000 should fit
-    assertEquals(result.includedFiles.includes(small), true);
+    const assertionResult15: boolean = result.includedFiles.includes(small);
+    assertEquals(assertionResult15, true);
     // Large file should be skipped (dropped)
-    assertEquals(result.skippedFiles.includes(large), true);
+    const assertionResult16: boolean = result.skippedFiles.includes(large);
+    assertEquals(assertionResult16, true);
   });
 
   it("should drop largest files when budget exceeded", async () => {
@@ -933,10 +949,13 @@ describe("Drop-Largest Strategy", () => {
     const result = await loader.loadWithLimit([file3, file2, file1]);
 
     // Should include smaller files: 2000 + 4000 = 6000 tokens
-    assertEquals(result.includedFiles.includes(file1), true);
-    assertEquals(result.includedFiles.includes(file2), true);
+    const assertionResult17: boolean = result.includedFiles.includes(file1);
+    assertEquals(assertionResult17, true);
+    const assertionResult18: boolean = result.includedFiles.includes(file2);
+    assertEquals(assertionResult18, true);
     // Largest should be skipped
-    assertEquals(result.skippedFiles.includes(file3), true);
+    const assertionResult19: boolean = result.skippedFiles.includes(file3);
+    assertEquals(assertionResult19, true);
   });
 });
 

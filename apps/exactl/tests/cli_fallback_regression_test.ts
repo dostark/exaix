@@ -8,7 +8,7 @@
  */
 
 import { ExaPathDefaults } from "@exaix/shared";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubConfig, createStubContext, createStubDb, withEnv } from "@exaix/testing";
@@ -109,10 +109,7 @@ Deno.test("[regression] EventLogger works with empty db (no methods) - should no
   } catch (error) {
     // This is NOT expected after the fix - EventLogger should handle missing methods
     // But we include this test to document the behavior
-    assert(
-      (error as Error).message.includes("logActivity"),
-      "If error occurs, it should be about logActivity",
-    );
+    assertStringIncludes((error as Error).message, "logActivity", "If error occurs, it should be about logActivity");
   }
 });
 

@@ -5,7 +5,7 @@
  * state propagation between steps, and fail-fast behavior during workflow interruptions.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   FLOW_EVENT_STEP_RETRY,
@@ -181,7 +181,7 @@ async function assertFlowExecutionError(flow: IFlowInput, messagePart: string, u
     throw new Error("Expected FlowExecutionError to be thrown");
   } catch (error) {
     assert(error instanceof FlowExecutionError);
-    assert((error as Error).message.includes(messagePart));
+    assertStringIncludes((error as Error).message, messagePart);
   }
 }
 
@@ -210,9 +210,12 @@ Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts
   assertEquals(result.success, true);
   assertEquals(received.length, 1);
   const prompt = received[0].userPrompt;
-  assert(prompt.includes("test request"), "the request text is still present");
-  assert(prompt.includes("<content>"), "the prompt instructs the <content> envelope");
-  assert(prompt.includes("MUST be valid JSON"), "the prompt demands valid JSON in <content>");
+  const assertionResult: boolean = prompt.includes("test request");
+  assert(assertionResult, "the request text is still present");
+  const assertionResult2: boolean = prompt.includes("<content>");
+  assert(assertionResult2, "the prompt instructs the <content> envelope");
+  const assertionResult3: boolean = prompt.includes("MUST be valid JSON");
+  assert(assertionResult3, "the prompt demands valid JSON in <content>");
   assert(
     /final step of a multi-agent flow/i.test(prompt),
     "the final output step's instruction is plan-shaped",
@@ -249,7 +252,8 @@ Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction 
   assertEquals(result.success, true);
   assertEquals(received.length, 2);
   const firstPrompt = received[0].userPrompt;
-  assert(firstPrompt.includes("<content>"), "every agent step prompt carries the envelope instruction");
+  const assertionResult4: boolean = firstPrompt.includes("<content>");
+  assert(assertionResult4, "every agent step prompt carries the envelope instruction");
   assert(
     !/final step of a multi-agent flow/i.test(firstPrompt),
     "a non-final step must not claim to be the final step",
@@ -460,7 +464,8 @@ Deno.test("FlowRunner: handles failFast behavior", async () => {
     throw new Error("Expected FlowExecutionError to be thrown");
   } catch (error) {
     assert(error instanceof FlowExecutionError);
-    assert(error.message.includes("Step step2 failed"));
+    const assertionResult5: boolean = error.message.includes("Step step2 failed");
+    assert(assertionResult5);
   }
 });
 
@@ -950,7 +955,8 @@ Deno.test("FlowRunner: handles empty flow", async () => {
     throw new Error("Expected FlowExecutionError to be thrown");
   } catch (error) {
     assert(error instanceof FlowExecutionError);
-    assert(error.message.includes("Flow must have at least one step"));
+    const assertionResult6: boolean = error.message.includes("Flow must have at least one step");
+    assert(assertionResult6);
   }
 });
 

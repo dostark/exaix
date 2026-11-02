@@ -51,8 +51,10 @@ Deno.test("[security] an approval-required tool is refused in a dynamic step eve
   const errors = validateDynamicStepTools([dynamicStep(["exaix_config_set"])]);
 
   assertEquals(errors.length, 1, `expected exaix_config_set to be refused, got: ${errors.join("; ")}`);
-  assert(errors[0].includes("exaix_config_set"), errors[0]);
-  assert(errors[0].includes("approval"), `the message must say why: ${errors[0]}`);
+  const assertionResult: boolean = errors[0].includes("exaix_config_set");
+  assert(assertionResult, errors[0]);
+  const assertionResult2: boolean = errors[0].includes("approval");
+  assert(assertionResult2, `the message must say why: ${errors[0]}`);
 });
 
 Deno.test("[security] exaix_config_apply is refused for the same reason", () => {
@@ -64,7 +66,8 @@ Deno.test("[security] a write tool is still refused, and still says it is a writ
   // The pre-existing rule must not regress: `dynamic-permission-boundary` asserts this message.
   const errors = validateDynamicStepTools([dynamicStep(["write_file"])]);
   assertEquals(errors.length, 1);
-  assert(errors[0].includes("write tool"), errors[0]);
+  const assertionResult3: boolean = errors[0].includes("write tool");
+  assert(assertionResult3, errors[0]);
 });
 
 Deno.test("[security] an approval-required WRITE tool is reported once, not twice", () => {

@@ -110,8 +110,12 @@ Deno.test("[ReActLoopAci] enabled read_file injection reaches the exact prompt, 
       createOptions(["read_file"]),
       skipToolProse,
     );
-    assert(prompt.includes("ACI TOOL GUIDANCE"), `skipToolProse=${skipToolProse}: ACI section must be present`);
-    assert(prompt.includes(JSON.stringify(readFileAciDoc.summary)), "prompt must carry the JSON-encoded ACI summary");
+    assertStringIncludes(prompt, "ACI TOOL GUIDANCE", `skipToolProse=${skipToolProse}: ACI section must be present`);
+    assertStringIncludes(
+      prompt,
+      JSON.stringify(readFileAciDoc.summary),
+      "prompt must carry the JSON-encoded ACI summary",
+    );
   }
 });
 

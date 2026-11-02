@@ -483,8 +483,10 @@ Deno.test("TUI dashboard help sections include navigation and layout keys", () =
 
   const navigation = sections.find((section) => section.title === "Navigation");
   const navigationKeys = navigation?.items.map((item) => item.key) ?? [];
-  assertEquals(navigationKeys.includes(KEYS.TAB), true);
-  assertEquals(navigationKeys.includes(KEYS.SHIFT_TAB), true);
+  const assertionResult: boolean = navigationKeys.includes(KEYS.TAB);
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = navigationKeys.includes(KEYS.SHIFT_TAB);
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("TUI dashboard help overlay toggle", async () => {

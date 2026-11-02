@@ -160,7 +160,8 @@ Deno.test("FlowRunner: a plain no-strategy agent step keeps the <content> plan-e
 
   assertEquals(executor.received.length, 1);
   const prompt = executor.received[0].request.userPrompt;
-  assert(prompt.includes("<content>"), "a plain agent step keeps the <content> envelope instruction");
+  const assertionResult: boolean = prompt.includes("<content>");
+  assert(assertionResult, "a plain agent step keeps the <content> envelope instruction");
   assert(/must be valid JSON/i.test(prompt), "a plain agent step still demands valid JSON in <content>");
   assert(/step of a multi-agent flow/i.test(prompt), "a plain agent step is still framed as a flow step");
 });
@@ -181,7 +182,8 @@ Deno.test("FlowRunner: a final strategy step in a JSON-output flow receives the 
 
   assertEquals(executor.received.length, 1);
   const prompt = executor.received[0].request.userPrompt;
-  assert(prompt.includes("<content>"), "a terminal JSON strategy step must receive the plan-envelope instruction");
+  const assertionResult2: boolean = prompt.includes("<content>");
+  assert(assertionResult2, "a terminal JSON strategy step must receive the plan-envelope instruction");
   assert(/must parse as a plan/i.test(prompt), "a terminal JSON strategy step must be told its output becomes a plan");
   assert(/must be valid JSON/i.test(prompt), "a terminal JSON strategy step must be told to emit valid JSON");
 });

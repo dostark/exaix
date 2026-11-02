@@ -83,7 +83,8 @@ Deno.test("[integration] real flow run persists namespace state through Executio
       result.namespaceArtifactPath.endsWith("namespace.md"),
       "the markdown namespace artifact must be retired",
     );
-    assertEquals(result.namespaceArtifactPath.endsWith("scratchpad.jsonl"), true);
+    const assertionResult: boolean = result.namespaceArtifactPath.endsWith("scratchpad.jsonl");
+    assertEquals(assertionResult, true);
 
     // namespace.md must not exist anywhere under the run's execution directory.
     const executionRoot = join(config.system.root, resolveMemoryExecutionRoot(config.paths));

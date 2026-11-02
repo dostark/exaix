@@ -29,7 +29,8 @@ Deno.test("[subprocess] maxOutputChars keeps only the tail of a child that print
 
   assertEquals(result.code, 0);
   assertEquals(result.stdout.length, TAIL_CHARS);
-  assert(result.stdout.endsWith(END_MARKER), result.stdout);
+  const assertionResult: boolean = result.stdout.endsWith(END_MARKER);
+  assert(assertionResult, result.stdout);
 });
 
 Deno.test("[subprocess] maxOutputChars bounds stderr the same way", async () => {
@@ -39,7 +40,8 @@ Deno.test("[subprocess] maxOutputChars bounds stderr the same way", async () => 
   });
 
   assertEquals(result.stderr.length, TAIL_CHARS);
-  assert(result.stderr.endsWith(END_MARKER), result.stderr);
+  const assertionResult2: boolean = result.stderr.endsWith(END_MARKER);
+  assert(assertionResult2, result.stderr);
 });
 
 Deno.test("[subprocess] without maxOutputChars the full output is returned unchanged", async () => {

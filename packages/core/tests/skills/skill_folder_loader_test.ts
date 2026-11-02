@@ -160,8 +160,10 @@ Deno.test("[loader] the first root wins even when its entry is invalid or draft,
     assertEquals(await loader.list(CTX), []);
     assertEquals(await loader.get("shared-skill", CTX), null);
     const reasons = (await loader.diagnostics(CTX)).map((d) => `${d.safe_path}:${d.reason}`);
-    assertEquals(reasons.includes(`shared-skill:${SkillDiagnosticReason.INACTIVE}`), true);
-    assertEquals(reasons.includes(`other-skill:${SkillDiagnosticReason.INVALID_FRONTMATTER}`), true);
+    const assertionResult: boolean = reasons.includes(`shared-skill:${SkillDiagnosticReason.INACTIVE}`);
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = reasons.includes(`other-skill:${SkillDiagnosticReason.INVALID_FRONTMATTER}`);
+    assertEquals(assertionResult2, true);
   } finally {
     await fx.cleanup();
   }

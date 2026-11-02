@@ -77,14 +77,18 @@ Deno.test("DependencyResolver: handles parallel steps", () => {
 
   assertEquals(topoOrder[0], "start");
   assertEquals(topoOrder[topoOrder.length - 1], "end");
-  assertEquals(topoOrder.includes("parallel1"), true);
-  assertEquals(topoOrder.includes("parallel2"), true);
+  const assertionResult: boolean = topoOrder.includes("parallel1");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = topoOrder.includes("parallel2");
+  assertEquals(assertionResult2, true);
 
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 3);
   assertEquals(waves[0], ["start"]);
-  assertEquals(waves[1].includes("parallel1"), true);
-  assertEquals(waves[1].includes("parallel2"), true);
+  const assertionResult3: boolean = waves[1].includes("parallel1");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = waves[1].includes("parallel2");
+  assertEquals(assertionResult4, true);
   assertEquals(waves[2], ["end"]);
 });
 
@@ -147,8 +151,10 @@ Deno.test("DependencyResolver: handles diamond pattern", () => {
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 3);
   assertEquals(waves[0], ["start"]);
-  assertEquals(waves[1].includes("branch1"), true);
-  assertEquals(waves[1].includes("branch2"), true);
+  const assertionResult5: boolean = waves[1].includes("branch1");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = waves[1].includes("branch2");
+  assertEquals(assertionResult6, true);
   assertEquals(waves[2], ["merge"]);
 });
 
@@ -172,7 +178,10 @@ Deno.test("DependencyResolver: handles all parallel steps", () => {
   const resolver = new DependencyResolver(steps as IFlowStep[]);
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 1);
-  assertEquals(waves[0].includes("step1"), true);
-  assertEquals(waves[0].includes("step2"), true);
-  assertEquals(waves[0].includes("step3"), true);
+  const assertionResult7: boolean = waves[0].includes("step1");
+  assertEquals(assertionResult7, true);
+  const assertionResult8: boolean = waves[0].includes("step2");
+  assertEquals(assertionResult8, true);
+  const assertionResult9: boolean = waves[0].includes("step3");
+  assertEquals(assertionResult9, true);
 });

@@ -134,8 +134,10 @@ Deno.test("[model_tool_round_docs] documented bounds match ConfigSchema at the d
     const max = Number(maxCell);
     assertEquals(issueCodesFor(key, min).filter((code) => code === "too_small"), [], `min of ${key} is accepted`);
     assertEquals(issueCodesFor(key, max).filter((code) => code === "too_big"), [], `max of ${key} is accepted`);
-    assert(issueCodesFor(key, min - 1).includes("too_small"), `min - 1 of ${key} is rejected`);
-    assert(issueCodesFor(key, max + 1).includes("too_big"), `max + 1 of ${key} is rejected`);
+    const includesResult: boolean = issueCodesFor(key, min - 1).includes("too_small");
+    assert(includesResult, `min - 1 of ${key} is rejected`);
+    const includesResult2: boolean = issueCodesFor(key, max + 1).includes("too_big");
+    assert(includesResult2, `max + 1 of ${key} is rejected`);
   }
 });
 

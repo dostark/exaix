@@ -471,7 +471,8 @@ orchestratorTest("AgentComposer: loads blueprint from file", async () => {
   assertEquals(blueprint.name, "test-agent");
   assertEquals(blueprint.model, "mock-model");
   assertEquals(blueprint.provider, "mock");
-  assert(blueprint.capabilities.includes("code_generation"));
+  const assertionResult: boolean = blueprint.capabilities.includes("code_generation");
+  assert(assertionResult);
 });
 
 orchestratorTest("AgentComposer: throws error for missing blueprint", async () => {
@@ -1761,7 +1762,8 @@ orchestratorTest("GitAuditService: getChangedFiles returns list of modifications
   await Deno.writeTextFile(join(portalDir, "README.md"), "New content");
   const changed = await auditService.getChangedFiles(portalDir);
 
-  assert(changed.includes("README.md"));
+  const includesResult: boolean = changed.includes("README.md");
+  assert(includesResult);
 });
 
 orchestratorTest("AgentComposer: checkToolCallLimit validates threshold", () => {
@@ -1783,15 +1785,21 @@ Deno.test({
 
       // Sandboxed
       const sandboxed = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalPath);
-      assert(sandboxed.includes("--allow-read=NONE"));
-      assert(sandboxed.includes("--allow-write=NONE"));
-      assert(sandboxed.includes("--allow-net"));
+      const assertionResult2: boolean = sandboxed.includes("--allow-read=NONE");
+      assert(assertionResult2);
+      const assertionResult3: boolean = sandboxed.includes("--allow-write=NONE");
+      assert(assertionResult3);
+      const assertionResult4: boolean = sandboxed.includes("--allow-net");
+      assert(assertionResult4);
 
       // Hybrid
       const hybrid = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalPath);
-      assert(hybrid.includes(`--allow-read=${portalPath}`));
-      assert(hybrid.includes("--allow-write=NONE"));
-      assert(hybrid.includes("--allow-net"));
+      const assertionResult5: boolean = hybrid.includes(`--allow-read=${portalPath}`);
+      assert(assertionResult5);
+      const assertionResult6: boolean = hybrid.includes("--allow-write=NONE");
+      assert(assertionResult6);
+      const assertionResult7: boolean = hybrid.includes("--allow-net");
+      assert(assertionResult7);
 
       // Note: Open mode is not explicitly handled in buildSubprocessPermissions yet,
       // it would probably use default Deno permissions or another set.
@@ -1883,7 +1891,10 @@ Deno.test({
         () => executor.loadBlueprint("bad-yaml"),
         SafeError,
       );
-      assert(["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes((error as SafeError).errorCode));
+      const includesResult2: boolean = ["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes(
+        (error as SafeError).errorCode,
+      );
+      assert(includesResult2);
 
       // 2. Invalid Schema (missing required field: model)
       const badSchemaPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "bad-schema.md");

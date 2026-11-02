@@ -98,13 +98,20 @@ Deno.test("TransitionWaitStateInputSchema requires waitStateId, action, resumeTo
 
 Deno.test("WaitStateStatusSchema has all required values", () => {
   const statuses = WaitStateStatusSchema.options;
-  assertEquals(statuses.includes("pending"), true);
-  assertEquals(statuses.includes("resumed"), true);
-  assertEquals(statuses.includes("fulfilled"), true);
-  assertEquals(statuses.includes("rejected"), true);
-  assertEquals(statuses.includes("amended"), true);
-  assertEquals(statuses.includes("expired"), true);
-  assertEquals(statuses.includes("cancelled"), true);
+  const assertionResult: boolean = statuses.includes("pending");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = statuses.includes("resumed");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = statuses.includes("fulfilled");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = statuses.includes("rejected");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = statuses.includes("amended");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = statuses.includes("expired");
+  assertEquals(assertionResult6, true);
+  const assertionResult7: boolean = statuses.includes("cancelled");
+  assertEquals(assertionResult7, true);
 });
 
 Deno.test("DefaultWaitStateTransitionPolicy: pending allows all transitions", () => {
