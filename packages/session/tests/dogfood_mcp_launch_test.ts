@@ -105,9 +105,14 @@ Deno.test("[dogfood_mcp_config] buildOpencodeMcpFragment produces a remote serve
 Deno.test("[dogfood_mcp_config] buildCodexMcpArgs never includes the credential value, only the env var NAME", () => {
   const args = buildCodexMcpArgs(CONNECTION);
   const joined = args.join(" ");
-  assert(joined.includes(`bearer_token_env_var="EXAIX_CONTEXT_BEARER"`));
-  assert(joined.includes(`url="${CONNECTION.endpoint}"`));
-  assert(joined.includes(`enabled_tools=["query_relationships","who_depends_on","search_memory"]`));
+  const assertionResult: boolean = joined.includes(`bearer_token_env_var="EXAIX_CONTEXT_BEARER"`);
+  assert(assertionResult);
+  const assertionResult2: boolean = joined.includes(`url="${CONNECTION.endpoint}"`);
+  assert(assertionResult2);
+  const assertionResult3: boolean = joined.includes(
+    `enabled_tools=["query_relationships","who_depends_on","search_memory"]`,
+  );
+  assert(assertionResult3);
 });
 
 Deno.test("[dogfood_mcp_config] writeClaudeMcpConfig writes owner-only-permissioned JSON under @Runtime/<trace>/context-client/", async () => {
@@ -163,7 +168,8 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-co
       CONNECTION,
     );
 
-    assertEquals(launch.args.includes("--strict-mcp-config"), true);
+    const assertionResult4: boolean = launch.args.includes("--strict-mcp-config");
+    assertEquals(assertionResult4, true);
     const mcpConfigIndex = launch.args.indexOf("--mcp-config");
     assert(mcpConfigIndex !== -1);
     const configPath = launch.args[mcpConfigIndex + 1];
@@ -173,9 +179,12 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-co
     const allowedToolsIndex = launch.args.indexOf("--allowedTools");
     const allowedToolsValue = launch.args[allowedToolsIndex + 1];
     // Existing scoped grant is preserved (not replaced) alongside the new MCP tools.
-    assert(allowedToolsValue.includes("Read"));
-    assert(allowedToolsValue.includes("Edit"));
-    assert(allowedToolsValue.includes("mcp__exaix_context__query_relationships"));
+    const assertionResult5: boolean = allowedToolsValue.includes("Read");
+    assert(assertionResult5);
+    const assertionResult6: boolean = allowedToolsValue.includes("Edit");
+    assert(assertionResult6);
+    const assertionResult7: boolean = allowedToolsValue.includes("mcp__exaix_context__query_relationships");
+    assert(assertionResult7);
 
     // The credential VALUE never appears anywhere in argv.
     assert(
@@ -230,8 +239,14 @@ Deno.test("[resolveHardenedLaunch+mcp] Codex: -c overrides are appended and the 
     assertEquals(sandboxOccurrences, 1, "hardening must not duplicate --sandbox");
 
     const joined = launch.args.join(" ");
-    assert(joined.includes(`mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.url="${CONNECTION.endpoint}"`));
-    assert(joined.includes(`mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.bearer_token_env_var="EXAIX_CONTEXT_BEARER"`));
+    const assertionResult8: boolean = joined.includes(
+      `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.url="${CONNECTION.endpoint}"`,
+    );
+    assert(assertionResult8);
+    const assertionResult9: boolean = joined.includes(
+      `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.bearer_token_env_var="EXAIX_CONTEXT_BEARER"`,
+    );
+    assert(assertionResult9);
     assert(!joined.includes("actual-secret-value"));
   }, { prefix: "dogfood-mcp-launch-" });
 });

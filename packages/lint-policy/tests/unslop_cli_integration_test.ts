@@ -62,7 +62,8 @@ function assertListsCompiledRules(stdout: string): void {
   const ids = listed.map((rule) => rule.id);
   assertEquals(ids.length, Object.keys(POLICY_COMPILED.rules).length);
   for (const id of Object.keys(POLICY_COMPILED.rules)) {
-    assertEquals(ids.includes(id), true, id);
+    const includesResult: boolean = ids.includes(id);
+    assertEquals(includesResult, true, id);
   }
 }
 
@@ -83,7 +84,8 @@ Deno.test("exaix_unslop_cli_lists_the_compiled_rules_and_reports_a_seeded_violat
       rules: { rule: { id: string }; observedChecked: number; coverage: string }[];
     };
     assertEquals(report.completion, "complete");
-    assert(report.filesObserved.includes("scripts/.report_fixture.ts"));
+    const includesResult2: boolean = report.filesObserved.includes("scripts/.report_fixture.ts");
+    assert(includesResult2);
     assert(report.findings.some((finding) => finding.file === "scripts/.report_fixture.ts"));
     const observed = report.rules.filter((rule) => rule.observedChecked > 0);
     assert(observed.length > 0);

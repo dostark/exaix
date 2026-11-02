@@ -10,7 +10,7 @@
  * stays the agent build/test path and keeps spawning the deno binary.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { cleanupTempDir, createTestGitServiceFactory, createToolRegistryForTests } from "./helpers.ts";
 import { ToolName } from "@exaix/core";
@@ -246,7 +246,7 @@ Deno.test("[security] run_command recursive grep does not follow an in-root syml
     });
     assert(result.success, result.error);
     const output = (result.data as { output: string }).output;
-    assert(output.includes(INSIDE_CONTENT), output);
+    assertStringIncludes(output, INSIDE_CONTENT, output);
     assert(!output.includes(OUTSIDE_CONTENT), `recursive grep crossed the root: ${output}`);
   } finally {
     await cleanupTempDir(fixture.parentDir);
@@ -282,7 +282,7 @@ Deno.test("[security] run_command still runs in-root grep and ls", async () => {
       args: ["-n", "-C", "1", SEARCH_PATTERN, "inside.txt"],
     });
     assert(grep.success, grep.error);
-    assert((grep.data as { output: string }).output.includes(INSIDE_CONTENT));
+    assertStringIncludes((grep.data as { output: string }).output, INSIDE_CONTENT);
 
     const ls = await registry.execute(ToolName.RUN_COMMAND, { command: "ls", args: ["-l", "inside.txt"] });
     assert(ls.success, ls.error);

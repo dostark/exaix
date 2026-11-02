@@ -6,7 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -497,8 +497,8 @@ parallelSafeTest("deployed-config-closure", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json")));
   const stripped = stripDevOnlyConfig(config);
   assertEquals("unslop-ts:policy" in (stripped.tasks ?? {}), false);
-  assertEquals(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"), false);
-  assertEquals(stripped.workspace?.includes("./unslop-ts"), false);
+  assertFalse(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"));
+  assertFalse(stripped.workspace?.includes("./unslop-ts"));
 });
 
 parallelSafeTest("deployed-scripts-import-only-deployed-siblings", async () => {

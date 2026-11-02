@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/helpers/phase_base_checker.ts, packages/lint-policy/tests/helpers/script_port_parity.ts]
  */
 
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, globToRegExp, join } from "@std/path";
 import ts from "typescript";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
@@ -246,7 +246,7 @@ Deno.test("shared_tree_inventory_is_nonempty_and_consumed", async () => {
     "the dropped surface is a minority of the tracked files",
   );
   assertNotEquals(tree.partition.scriptOnly.length, 0, "no dropped surface was found");
-  assert(tree.baselineOutput.includes(COMPLETION_LINE), "the base checker did not finish a scan");
+  assertStringIncludes(tree.baselineOutput, COMPLETION_LINE, "the base checker did not finish a scan");
   assert(tree.diagnosticCount > 0, "the plugin run reported no diagnostic at all");
   assert(tree.parity.compared > 0, "no finding was compared");
   assert(tree.moved.length > 0, "no moved rule was compared");

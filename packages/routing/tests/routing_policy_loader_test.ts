@@ -17,7 +17,8 @@ Deno.test("RoutingPolicyLoader: missing file returns default policy", async () =
 
     assertEquals(result.success, true);
     assertEquals(result.policy.rules.length, 0);
-    assertEquals(result.path.endsWith(".exaix/routing.policy.yaml"), true);
+    const assertionResult: boolean = result.path.endsWith(".exaix/routing.policy.yaml");
+    assertEquals(assertionResult, true);
   }, { prefix: "routing-policy-loader-missing-" });
 });
 

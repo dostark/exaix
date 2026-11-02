@@ -162,25 +162,6 @@
     "scripts": 1
   },
   "exaix/no-boolean-assert": {
-    "apps/daemon": 25,
-    "exaix-team": 121,
-    "packages/ai": 33,
-    "packages/ai-clidelegate": 1,
-    "packages/ai-openai": 1,
-    "packages/ai-openrouter": 6,
-    "packages/eval-history": 7,
-    "packages/git": 18,
-    "packages/lint-policy": 27,
-    "packages/mcp": 8,
-    "packages/memory": 12,
-    "packages/portal": 41,
-    "packages/quality-gate": 17,
-    "packages/request": 22,
-    "packages/routing": 26,
-    "packages/schemas": 7,
-    "packages/session": 22,
-    "packages/tool-runtime": 36,
-    "packages/tui": 43,
     "tests": 662
   },
   "exaix/max-params": {

@@ -233,7 +233,8 @@ Deno.test("[RequestProcessor] enters Q&A loop for poor requests", async () => {
 
     // Request file should now have status REFINING
     const content = await Deno.readTextFile(filePath);
-    assertEquals(content.includes(RequestStatus.REFINING), true);
+    const assertionResult: boolean = content.includes(RequestStatus.REFINING);
+    assertEquals(assertionResult, true);
   } finally {
     await env.cleanup();
   }
@@ -374,7 +375,8 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
     // The quality gate (built from config) should have set status to REFINING
     // before the processor reached blueprint lookup.
     const content = await Deno.readTextFile(filePath);
-    assertEquals(content.includes(RequestStatus.REFINING), true);
+    const assertionResult2: boolean = content.includes(RequestStatus.REFINING);
+    assertEquals(assertionResult2, true);
   } finally {
     await env.cleanup();
   }

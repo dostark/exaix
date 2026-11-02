@@ -68,8 +68,10 @@ Deno.test("[crash_recovery] recovers an orphaned delegation (launched without te
     );
     const content = await Deno.readTextFile(requestFile);
     assertExists(content);
-    assertEquals(content.includes("Crash-Recovery Request"), true);
-    assertEquals(content.includes(traceId), true);
+    const assertionResult: boolean = content.includes("Crash-Recovery Request");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = content.includes(traceId);
+    assertEquals(assertionResult2, true);
 
     await Deno.remove(workspaceRoot, { recursive: true });
   } finally {
@@ -174,7 +176,8 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     const request = await Deno.readTextFile(
       pathBuilders.workspacePath(workspaceRoot, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`),
     );
-    assertEquals(request.includes("Validated recovery objective"), true);
+    const assertionResult3: boolean = request.includes("Validated recovery objective");
+    assertEquals(assertionResult3, true);
 
     await db.waitForFlush();
     const event = (await db.getActivitiesByTraceSafe(traceId)).find(

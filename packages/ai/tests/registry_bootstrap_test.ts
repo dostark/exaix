@@ -14,14 +14,20 @@ Deno.test("bootstrapProviderRegistry registers Solo-tier providers (incl. OpenRo
   bootstrapProviderRegistry();
 
   const supported = ProviderRegistry.getSupportedProviders();
-  assertEquals(supported.includes("mock"), true);
-  assertEquals(supported.includes("anthropic"), true);
-  assertEquals(supported.includes("openai"), true);
-  assertEquals(supported.includes("google"), true);
+  const assertionResult: boolean = supported.includes("mock");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = supported.includes("anthropic");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = supported.includes("openai");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = supported.includes("google");
+  assertEquals(assertionResult4, true);
   assertFalse(supported.includes("vertex-ai"));
   // OpenRouter ships in Solo (all editions) — D5b/D-providers.
-  assertEquals(supported.includes("openrouter"), true);
-  assertEquals(supported.includes("ollama"), true);
+  const assertionResult5: boolean = supported.includes("openrouter");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = supported.includes("ollama");
+  assertEquals(assertionResult6, true);
   assertExists(ProviderRegistry.getFactory("mock"));
   assertExists(ProviderRegistry.getFactory("anthropic"));
   assertExists(ProviderRegistry.getFactory("openai"));

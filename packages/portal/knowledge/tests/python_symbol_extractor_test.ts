@@ -65,8 +65,10 @@ Deno.test(
     assert(result.find((s) => s.name === "DEFAULT_TIMEOUT")!.kind === "const", "DEFAULT_TIMEOUT should be const");
 
     // Verify signatures (no body — signature is the first line before the docstring)
-    assert(result.find((s) => s.name === "greet")!.signature.includes("greet"));
-    assert(result.find((s) => s.name === "Calculator")!.signature.includes("Calculator"));
+    const assertionResult: boolean = result.find((s) => s.name === "greet")!.signature.includes("greet");
+    assert(assertionResult);
+    const assertionResult2: boolean = result.find((s) => s.name === "Calculator")!.signature.includes("Calculator");
+    assert(assertionResult2);
 
     // Verify docs (docstrings)
     assert(result.find((s) => s.name === "greet")!.doc?.includes("Greet"));

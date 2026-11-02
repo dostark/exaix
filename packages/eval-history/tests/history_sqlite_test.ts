@@ -22,10 +22,14 @@ Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and ap
     ).all<{ name: string }>();
 
     const tableNames = tables.map((t) => t.name).sort();
-    assertEquals(tableNames.includes("eval_runs"), true);
-    assertEquals(tableNames.includes("eval_run_steps"), true);
-    assertEquals(tableNames.includes("eval_criteria_results"), true);
-    assertEquals(tableNames.includes("eval_schema_version"), true);
+    const assertionResult: boolean = tableNames.includes("eval_runs");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = tableNames.includes("eval_run_steps");
+    assertEquals(assertionResult2, true);
+    const assertionResult3: boolean = tableNames.includes("eval_criteria_results");
+    assertEquals(assertionResult3, true);
+    const assertionResult4: boolean = tableNames.includes("eval_schema_version");
+    assertEquals(assertionResult4, true);
 
     // Verify all migrations applied
     const versions = store["db"].prepare(

@@ -79,6 +79,7 @@ Deno.test("LlamaProvider: generate handles partial JSON object extraction", asyn
 
 Deno.test("LlamaProvider: constructor uses default endpoint and retry settings", () => {
   const provider = new LlamaProvider({ model: "llama3:latest" });
-  assertEquals(provider.endpoint.includes("localhost:11434"), true);
+  const assertionResult: boolean = provider.endpoint.includes("localhost:11434");
+  assertEquals(assertionResult, true);
   assertEquals(provider.timeoutMs > 0, true);
 });

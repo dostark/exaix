@@ -47,7 +47,8 @@ describe("PlanStepSchema", () => {
         const step: IPlanStep = result.data;
         assertEquals(step.step, 1);
         assertEquals(step.title, "Create User Database Schema");
-        assertEquals(step.description.includes("migration file"), true);
+        const assertionResult: boolean = step.description.includes("migration file");
+        assertEquals(assertionResult, true);
         assertEquals(step.actions?.length, 2);
         assertEquals(step.successCriteria?.length, 3);
         assertEquals(step.dependencies?.length, 2);

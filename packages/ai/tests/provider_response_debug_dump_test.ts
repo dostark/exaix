@@ -10,7 +10,7 @@
  * alone, symmetric with the existing provider.request_debug_dump.
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { performProviderCall } from "../src/provider_common_utils.ts";
 import { PROVIDER_EVENT_RESPONSE_DEBUG_DUMP } from "@exaix/core";
@@ -74,12 +74,9 @@ Deno.test("[response-dump] performProviderCall journals the complete raw respons
   assertExists(dump, "the raw response body must be journaled for follow-up investigation");
   assertEquals(dump.target, PROVIDER_ID);
   const body = JSON.stringify(dump.payload?.response_body ?? {});
-  assert(
-    body.includes(THINKING_TEXT),
-    "the dump must preserve thinking blocks that content extraction strips",
-  );
-  assert(body.includes(ANSWER_TEXT), "the dump must contain the text content");
-  assert(body.includes("end_turn"), "the dump must contain stop_reason");
+  assertStringIncludes(body, THINKING_TEXT, "the dump must preserve thinking blocks that content extraction strips");
+  assertStringIncludes(body, ANSWER_TEXT, "the dump must contain the text content");
+  assertStringIncludes(body, "end_turn", "the dump must contain stop_reason");
 });
 
 Deno.test("[response-dump] no logger means no dump and no crash", async () => {

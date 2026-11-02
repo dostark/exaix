@@ -63,7 +63,8 @@ Deno.test("[reconcile][security] GAP-3 — an out-of-scope path hard-blocks", ()
     worktreeRoot: WORKTREE,
   });
   assertEquals(result.accepted, false);
-  assertEquals(result.scopeViolations.includes(".env"), true);
+  const assertionResult: boolean = result.scopeViolations.includes(".env");
+  assertEquals(assertionResult, true);
   assertEquals(result.rejection, "scope_violation");
 });
 
@@ -130,7 +131,8 @@ Deno.test("[reconcile][security] traversal in paths_touched is a scope violation
     worktreeRoot: WORKTREE,
   });
   assertEquals(result.accepted, false);
-  assertEquals(result.scopeViolations.includes("../escape.ts"), true);
+  const assertionResult2: boolean = result.scopeViolations.includes("../escape.ts");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("[reconcile] an empty diff with a valid token is accepted", () => {

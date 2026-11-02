@@ -68,9 +68,12 @@ Deno.test("[PromptBudgetConstants] uses 4:1 chars-to-token heuristic", () => {
 
 Deno.test("[PromptBudgetConstants] exports local provider prefixes", () => {
   assertEquals(Array.isArray(LOCAL_PROVIDER_PREFIXES), true);
-  assertEquals(LOCAL_PROVIDER_PREFIXES.includes("ollama:"), true);
-  assertEquals(LOCAL_PROVIDER_PREFIXES.includes("lmstudio:"), true);
-  assertEquals(LOCAL_PROVIDER_PREFIXES.includes("local:"), true);
+  const assertionResult: boolean = LOCAL_PROVIDER_PREFIXES.includes("ollama:");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = LOCAL_PROVIDER_PREFIXES.includes("lmstudio:");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = LOCAL_PROVIDER_PREFIXES.includes("local:");
+  assertEquals(assertionResult3, true);
 });
 
 Deno.test("[PromptBudgetConstants] exports local fallback context window", () => {

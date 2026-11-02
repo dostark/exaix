@@ -525,7 +525,8 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
     // Should not throw; architectureOverview falls back to heuristic
     assertEquals(result.architectureOverview.length > 0, true);
-    assertEquals(result.architectureOverview.includes("Heuristic"), true);
+    const assertionResult: boolean = result.architectureOverview.includes("Heuristic");
+    assertEquals(assertionResult, true);
     assertEquals(result.metadata.architectureInferenceFailed, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -636,7 +637,8 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext
     const result = await scenario.svc.getRelevantContext("TypeScript architecture constants export", portalDir, 5000);
     assert(result, "getRelevantContext should return a result after indexing");
     assert(result.length > 0, "context string should not be empty");
-    assert(result.includes("TypeScript"), "context should contain relevant content");
+    const assertionResult2: boolean = result.includes("TypeScript");
+    assert(assertionResult2, "context should contain relevant content");
   }));
 
 Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", () =>
@@ -704,8 +706,9 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
     assert(result, "should return context for bcrypt query");
     // With overlapping groups, the chunk containing "bcrypt" should also
     // contain its preceding sentence for context
+    const assertionResult3: boolean = result.includes("database stores user credentials");
     assert(
-      result.includes("database stores user credentials"),
+      assertionResult3,
       "overlapping group should include preceding sentence for context",
     );
   }));
@@ -875,7 +878,8 @@ Deno.test("[PortalKnowledgeService] routes portal.analyzed through IEventLogger 
       runner: makeMockDocRunner(),
     });
     await svc.analyze("ev-portal", tempDir, PortalAnalysisMode.QUICK);
-    assertEquals(logger.actions.includes("portal.analyzed"), true);
+    const assertionResult4: boolean = logger.actions.includes("portal.analyzed");
+    assertEquals(assertionResult4, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

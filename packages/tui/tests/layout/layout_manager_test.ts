@@ -407,8 +407,10 @@ Deno.test("LayoutManager: listNamedLayouts returns layout names", () => {
 
   const names = manager.listNamedLayouts();
   assertEquals(names.length, 2);
-  assertEquals(names.includes("layout-1"), true);
-  assertEquals(names.includes("layout-2"), true);
+  const assertionResult: boolean = names.includes("layout-1");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = names.includes("layout-2");
+  assertEquals(assertionResult2, true);
 });
 
 // Serialization Tests
@@ -503,8 +505,10 @@ Deno.test("renderPaneBorder: renders focused pane", () => {
   };
 
   const result = renderPaneBorder(pane, theme);
-  assertEquals(result.includes("●"), true);
-  assertEquals(result.includes("PortalManager"), true);
+  const assertionResult3: boolean = result.includes("●");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = result.includes("PortalManager");
+  assertEquals(assertionResult4, true);
 });
 
 Deno.test("renderPaneBorder: renders maximized pane", () => {
@@ -520,14 +524,19 @@ Deno.test("renderPaneBorder: renders maximized pane", () => {
   };
 
   const result = renderPaneBorder(pane, theme);
-  assertEquals(result.includes("[MAX]"), true);
+  const assertionResult5: boolean = result.includes("[MAX]");
+  assertEquals(assertionResult5, true);
 });
 
 Deno.test("renderResizeIndicator: renders direction arrows", () => {
-  assertEquals(renderResizeIndicator(ResizeDirection.LEFT, theme).includes("◀"), true);
-  assertEquals(renderResizeIndicator(ResizeDirection.RIGHT, theme).includes("▶"), true);
-  assertEquals(renderResizeIndicator(ResizeDirection.UP, theme).includes("▲"), true);
-  assertEquals(renderResizeIndicator(ResizeDirection.DOWN, theme).includes("▼"), true);
+  const assertionResult6: boolean = renderResizeIndicator(ResizeDirection.LEFT, theme).includes("◀");
+  assertEquals(assertionResult6, true);
+  const assertionResult7: boolean = renderResizeIndicator(ResizeDirection.RIGHT, theme).includes("▶");
+  assertEquals(assertionResult7, true);
+  const assertionResult8: boolean = renderResizeIndicator(ResizeDirection.UP, theme).includes("▲");
+  assertEquals(assertionResult8, true);
+  const assertionResult9: boolean = renderResizeIndicator(ResizeDirection.DOWN, theme).includes("▼");
+  assertEquals(assertionResult9, true);
 });
 
 // View Picker Dialog Tests
@@ -703,7 +712,8 @@ Deno.test("handleNamedLayoutKey: saves on enter with name", () => {
 
 Deno.test("renderSwapIndicator: renders swap mode", () => {
   const result = renderSwapIndicator("pane-1", null, theme);
-  assertEquals(result.includes("Swapping from"), true);
+  const assertionResult10: boolean = result.includes("Swapping from");
+  assertEquals(assertionResult10, true);
 });
 
 Deno.test("renderSwapIndicator: renders swap with target", () => {
@@ -823,7 +833,8 @@ Deno.test("renderResizeModeIndicator: renders nothing when inactive", () => {
 Deno.test("renderResizeModeIndicator: renders when active", () => {
   const state = { isActive: true, paneId: "main" };
   const result = renderResizeModeIndicator(state, theme);
-  assertEquals(result.includes("RESIZE MODE"), true);
+  const assertionResult11: boolean = result.includes("RESIZE MODE");
+  assertEquals(assertionResult11, true);
 });
 
 // Normalization Tests

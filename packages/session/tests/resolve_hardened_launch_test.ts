@@ -217,7 +217,8 @@ Deno.test("[delegate_hardening][security] unhardened Codex launch (resolveLaunch
   const sessionDir = "/tmp/test-unhardened-codex-sandbox";
   const svc = makeService(sessionDir);
   const launch = svc.resolveLaunch(codexBrief(), "headless");
-  assertEquals(launch.args.includes("--sandbox"), true);
+  const assertionResult: boolean = launch.args.includes("--sandbox");
+  assertEquals(assertionResult, true);
   assertEquals(launch.args[launch.args.indexOf("--sandbox") + 1], "read-only");
 });
 

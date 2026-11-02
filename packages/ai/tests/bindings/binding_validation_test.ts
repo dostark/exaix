@@ -70,7 +70,8 @@ Deno.test("[validation] capability_missing for native tools when the model or ad
       supportsNativeTools: false,
     }),
   });
-  assertEquals(result.map((issue) => issue.code).includes("capability_missing"), true);
+  const assertionResult: boolean = result.map((issue) => issue.code).includes("capability_missing");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("[validation] capability_missing for effort and thinking", async () => {
@@ -109,7 +110,8 @@ Deno.test("[validation] interface_unsupported when a non-cli-delegate step gets 
     probe: { hasKey: () => true, hasOptIn: () => true },
     adapterKeyEnv: {},
   });
-  assertEquals(result.map((issue) => issue.code).includes("interface_unsupported"), true);
+  const assertionResult2: boolean = result.map((issue) => issue.code).includes("interface_unsupported");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("[validation] key_missing when the credential is absent, and when the variable name is wrong", async () => {
@@ -119,7 +121,8 @@ Deno.test("[validation] key_missing when the credential is absent, and when the 
     service: { adapter: "mock", transport: "cloud", interface: "api", serves: {}, key_env: "KEY_ONE" },
     adapterKeyEnv: {},
   });
-  assertEquals(absent.map((issue) => issue.code).includes("key_missing"), true);
+  const assertionResult3: boolean = absent.map((issue) => issue.code).includes("key_missing");
+  assertEquals(assertionResult3, true);
 
   // key_env differs from the adapter's fixed key variable.
   const wrong = await validateBinding(ref, {
@@ -128,7 +131,8 @@ Deno.test("[validation] key_missing when the credential is absent, and when the 
     service: { adapter: "mock", transport: "cloud", interface: "api", serves: {}, key_env: "WRONG_KEY" },
     adapterKeyEnv: { [adapterKeyId("mock", undefined)]: "MOCK_API_KEY" },
   });
-  assertEquals(wrong.map((issue) => issue.code).includes("key_missing"), true);
+  const assertionResult4: boolean = wrong.map((issue) => issue.code).includes("key_missing");
+  assertEquals(assertionResult4, true);
 });
 
 Deno.test("[validation] optin_missing when the opt-in variable is unset", async () => {
@@ -138,7 +142,8 @@ Deno.test("[validation] optin_missing when the opt-in variable is unset", async 
     service: { adapter: "mock", transport: "cloud", interface: "api", serves: {}, requires_optin: "SOME_FEATURE" },
     adapterKeyEnv: {},
   });
-  assertEquals(result.map((issue) => issue.code).includes("optin_missing"), true);
+  const assertionResult5: boolean = result.map((issue) => issue.code).includes("optin_missing");
+  assertEquals(assertionResult5, true);
 });
 
 Deno.test("[validation][security] endpoint_invalid for plain HTTP to a public host, userinfo, query and fragment", async () => {

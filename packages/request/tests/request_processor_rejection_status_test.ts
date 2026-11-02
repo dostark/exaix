@@ -87,8 +87,9 @@ Do the thing.
     await db.waitForFlush();
 
     const fileContent = await Deno.readTextFile(requestPath);
+    const assertionResult: boolean = fileContent.includes("status: failed");
     assertEquals(
-      fileContent.includes("status: failed"),
+      assertionResult,
       true,
       "the request file must be visibly failed, not left pending",
     );

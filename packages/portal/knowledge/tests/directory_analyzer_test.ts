@@ -111,8 +111,10 @@ Deno.test("[DirectoryAnalyzer] detects architecture layers from standard directo
 
     assertExists(result.layers);
     const layerNames = result.layers!.map((l) => l.name);
-    assertEquals(layerNames.includes("services"), true);
-    assertEquals(layerNames.includes("tests"), true);
+    const assertionResult: boolean = layerNames.includes("services");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = layerNames.includes("tests");
+    assertEquals(assertionResult2, true);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

@@ -71,12 +71,16 @@ Deno.test("Plan Executor - Parsing", async (t) => {
       const step1Content = stepMatches[0][2];
 
       // Check description
-      assertEquals(step1Content.includes("Create the database schema"), true);
+      const assertionResult: boolean = step1Content.includes("Create the database schema");
+      assertEquals(assertionResult, true);
 
       // Check tasks
-      assertEquals(step1Content.includes("- Create users table"), true);
-      assertEquals(step1Content.includes("- Add indexes"), true);
-      assertEquals(step1Content.includes("- Set up migrations"), true);
+      const assertionResult2: boolean = step1Content.includes("- Create users table");
+      assertEquals(assertionResult2, true);
+      const assertionResult3: boolean = step1Content.includes("- Add indexes");
+      assertEquals(assertionResult3, true);
+      const assertionResult4: boolean = step1Content.includes("- Set up migrations");
+      assertEquals(assertionResult4, true);
     });
 
     await t.step("should handle plans with single step", async () => {
@@ -299,7 +303,8 @@ trace_id: test-trace-123
       assertEquals(step1Content, "");
 
       const step2Content = stepMatches[1][2].trim();
-      assertEquals(step2Content.includes("Some content here"), true);
+      const assertionResult5: boolean = step2Content.includes("Some content here");
+      assertEquals(assertionResult5, true);
     });
   });
 
@@ -342,15 +347,18 @@ trace_id: test-trace-123
 
       assertEquals(stepMatches[0][1], "1");
       assertEquals(stepMatches[0][2], "Create User Model");
-      assertEquals(stepMatches[0][3].includes("Add User interface"), true);
+      const assertionResult6: boolean = stepMatches[0][3].includes("Add User interface");
+      assertEquals(assertionResult6, true);
 
       assertEquals(stepMatches[1][1], "2");
       assertEquals(stepMatches[1][2], "Add Authentication Routes");
-      assertEquals(stepMatches[1][3].includes("POST /api/auth/signup"), true);
+      const assertionResult7: boolean = stepMatches[1][3].includes("POST /api/auth/signup");
+      assertEquals(assertionResult7, true);
 
       assertEquals(stepMatches[2][1], "3");
       assertEquals(stepMatches[2][2], "Add Middleware");
-      assertEquals(stepMatches[2][3].includes("Verify JWT tokens"), true);
+      const assertionResult8: boolean = stepMatches[2][3].includes("Verify JWT tokens");
+      assertEquals(assertionResult8, true);
     });
 
     await t.step("should parse plan from Workspace/Active directory", async () => {

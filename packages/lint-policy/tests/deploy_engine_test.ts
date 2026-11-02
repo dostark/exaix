@@ -184,7 +184,7 @@ Deno.test("a non-interactive deploy without --yes stops after the incoming log a
     assertEquals(result.code, FAILURE_EXIT, result.stdout + result.stderr);
     assertStringIncludes(result.stdout, "engine 2.0.0 breaks the catalog");
     assertStringIncludes(result.stderr, "--yes");
-    assertEquals(result.stdout.includes("passed"), false, "no test may run before approval");
+    assertFalse(result.stdout.includes("passed"), "no test may run before approval");
     assertEquals(await submoduleHead(superproject), before);
     assertEquals(await git(superproject, "diff", "--cached", "--name-only"), "");
   });

@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/fixtures/port/duplication_corpus.ts, packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { walk } from "@std/fs";
 import { fromFileUrl, globToRegExp, relative } from "@std/path";
 import { z } from "zod";
@@ -90,10 +90,12 @@ const HOST_SCRIPTS = [
 Deno.test("duplication parity: the host scripts import the library and keep no local copy", async () => {
   for (const script of HOST_SCRIPTS) {
     const text = await Deno.readTextFile(fromFileUrl(new URL(`../${script.path}`, import.meta.url)));
-    assertEquals(text.includes(script.defines), false, `${script.path} still defines ${script.imports}`);
-    assertEquals(text.includes(`${script.imports},`), true, `${script.path} does not import ${script.imports}`);
+    assertFalse(text.includes(script.defines), `${script.path} still defines ${script.imports}`);
+    const assertionResult: boolean = text.includes(`${script.imports},`);
+    assertEquals(assertionResult, true, `${script.path} does not import ${script.imports}`);
+    const assertionResult2: boolean = text.includes("@dostark/unslop-ts/whole-tree");
     assertEquals(
-      text.includes("@dostark/unslop-ts/whole-tree"),
+      assertionResult2,
       true,
       `${script.path} does not use the whole-tree entry`,
     );

@@ -62,7 +62,8 @@ Deno.test("[checkToolCatalogParity] required-param set mismatch produces a named
 
   assertEquals(result.success, false);
   assertEquals(result.errors.length, 1);
-  assertEquals(result.errors[0].includes("example_tool"), true);
+  const assertionResult: boolean = result.errors[0].includes("example_tool");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("[checkToolCatalogParity] matching required-param sets produce zero errors", () => {
@@ -131,7 +132,8 @@ Deno.test("[checkToolCatalogParity] ToolRegistry-only tool produces a warning, n
   assertEquals(result.success, true);
   assertEquals(result.errors, []);
   assertEquals(result.warnings.length, 1);
-  assertEquals(result.warnings[0].includes("deno_task"), true);
+  const assertionResult2: boolean = result.warnings[0].includes("deno_task");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("[checkToolCatalogParity] side-effect scope mismatch produces a blocking error when both catalogs declare a scope", () => {
@@ -158,8 +160,10 @@ Deno.test("[checkToolCatalogParity] side-effect scope mismatch produces a blocki
 
   assertEquals(result.success, false);
   assertEquals(result.errors.length, 1);
-  assertEquals(result.errors[0].includes("example_tool"), true);
-  assertEquals(result.errors[0].includes("side-effect"), true);
+  const assertionResult3: boolean = result.errors[0].includes("example_tool");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = result.errors[0].includes("side-effect");
+  assertEquals(assertionResult4, true);
 });
 
 Deno.test("[checkToolCatalogParity] side-effect scope mismatch is caught even when the manifest entry has no input_schema (internal-only tool, mirroring fetch_url)", () => {
@@ -182,8 +186,10 @@ Deno.test("[checkToolCatalogParity] side-effect scope mismatch is caught even wh
 
   assertEquals(result.success, false);
   assertEquals(result.errors.length, 1);
-  assertEquals(result.errors[0].includes("fetch_url_like"), true);
-  assertEquals(result.errors[0].includes("side-effect"), true);
+  const assertionResult5: boolean = result.errors[0].includes("fetch_url_like");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = result.errors[0].includes("side-effect");
+  assertEquals(assertionResult6, true);
 });
 
 Deno.test("[checkToolCatalogParity] matching side-effect scopes produce zero errors", () => {

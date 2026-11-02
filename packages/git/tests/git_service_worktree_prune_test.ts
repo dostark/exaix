@@ -118,8 +118,9 @@ Deno.test("GitService: removeWorktree without deleteBranch keeps the branch", as
   await gitService.removeWorktree(worktreeDir, { force: true });
 
   const branches = await helper.listBranches();
+  const assertionResult: boolean = branches.includes("feat/request-keep-999");
   assert(
-    branches.includes("feat/request-keep-999"),
+    assertionResult,
     `Expected branch feat/request-keep-999 to be kept, but it is gone: ${branches.join(", ")}`,
   );
 
@@ -169,8 +170,9 @@ Deno.test("GitService: pruneWorktrees removes orphaned feat/request-* branches a
     !branches.includes("feat/request-orphan-111"),
     `Expected orphaned branch feat/request-orphan-111 to be pruned, but it remains: ${branches.join(", ")}`,
   );
+  const assertionResult2: boolean = branches.includes("feat/request-live-222");
   assert(
-    branches.includes("feat/request-live-222"),
+    assertionResult2,
     `Expected live-worktree branch feat/request-live-222 to be kept, but it is gone: ${branches.join(", ")}`,
   );
 
@@ -204,8 +206,9 @@ Deno.test("GitService: pruneWorktrees dry-run does not delete orphaned request b
   await gitService.pruneWorktrees({ dryRun: true });
 
   const branches = await helper.listBranches();
+  const assertionResult3: boolean = branches.includes("feat/request-dry-333");
   assert(
-    branches.includes("feat/request-dry-333"),
+    assertionResult3,
     `Expected dry-run to keep orphaned branch feat/request-dry-333, but it was deleted: ${branches.join(", ")}`,
   );
 

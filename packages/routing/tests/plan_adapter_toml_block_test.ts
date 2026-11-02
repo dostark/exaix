@@ -81,7 +81,8 @@ content = "a"
     () => adapter.parse(rawContent),
     PlanValidationError,
   );
-  assertEquals((error as PlanValidationError).message.includes("TOML_BLOCK:99"), true);
+  const assertionResult: boolean = (error as PlanValidationError).message.includes("TOML_BLOCK:99");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("PlanAdapter.parse: a malformed JSON envelope (after TOML extraction) still throws PlanValidationError with rawContent", () => {

@@ -131,7 +131,8 @@ Deno.test("the root deno.json registers lint-policy and points the gates at it",
   const imports = config.imports as { [alias: string]: string };
   const lint = config.lint as { plugins: string[] };
   const tasks = config.tasks as { [name: string]: string };
-  assert(workspace.includes(`./${POLICY_ROOT}`));
+  const includesResult: boolean = workspace.includes(`./${POLICY_ROOT}`);
+  assert(includesResult);
   assertEquals(imports["@exaix/lint-policy"], `./${POLICY_ROOT}/mod.ts`);
   assertEquals(imports["@exaix/lint-policy/"], `./${POLICY_ROOT}/src/`);
   assertEquals(imports["@exaix/lint-policy/catalog.json"], `./${POLICY_ROOT}/tests/fixtures/catalog_v1.json`);
@@ -362,7 +363,8 @@ Deno.test("every line the deleted script rules reported is still reported, excep
     if (testCase.oldFalsePositive) continue;
     const reported = pluginLines(testCase);
     for (const line of testCase.oldLines) {
-      assertEquals(reported.includes(line), true, `${testCase.name}: line ${line} must stay reported`);
+      const includesResult2: boolean = reported.includes(line);
+      assertEquals(includesResult2, true, `${testCase.name}: line ${line} must stay reported`);
     }
   }
 });
@@ -585,7 +587,8 @@ Deno.test("the root deno.json resolves the engine from unslop-ts only", async ()
   const workspace = config.workspace as string[];
   const imports = config.imports as { [alias: string]: string };
   const tasks = config.tasks as { [name: string]: string };
-  assert(workspace.includes(`./${ENGINE_ROOT}`));
+  const includesResult3: boolean = workspace.includes(`./${ENGINE_ROOT}`);
+  assert(includesResult3);
   assertFalse(workspace.includes(`./${REMOVED_ENGINE_PATH}`));
   assertEquals(Object.keys(imports).filter((alias) => alias.startsWith(REMOVED_ENGINE_ALIAS)), []);
   for (const name of ["check:god-objects", "check:complexity"]) {

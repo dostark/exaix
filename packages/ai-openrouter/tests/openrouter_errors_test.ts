@@ -7,7 +7,7 @@
  * shape into one typed error, keeps the upstream reason, and never copies verbatim upstream payloads.
  */
 
-import { assert, assertEquals, assertFalse, assertStrictEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStrictEquals, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import {
   AuthenticationError,
@@ -277,7 +277,7 @@ Deno.test("mapOpenRouterError strips control characters and caps every upstream 
   );
   assertFalse(/\p{Cc}/u.test(err.message), "control characters must be stripped");
   assertFalse(err.message.includes("x".repeat(OPENROUTER_ERROR_FIELD_MAX_CHARS + 1)), "each field is capped");
-  assert(err.message.includes("x".repeat(20)));
+  assertStringIncludes(err.message, "x".repeat(20));
 });
 
 Deno.test("402 budget fields are parsed, and the class never depends on remedy_hint", () => {

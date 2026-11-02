@@ -28,12 +28,14 @@ Deno.test("calculateDialogWidth: respects min/max bounds", () => {
 Deno.test("createDialogBorder: adds title and bottom border", () => {
   const bordered = createDialogBorder(["a", "b"], "Title", noColorTheme);
   assertEquals(bordered.length, 4);
-  assertEquals(bordered[0].includes("Title"), true);
+  const assertionResult: boolean = bordered[0].includes("Title");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("renderInputField: truncates long values with ellipsis", () => {
   const out = renderInputField("Label", "0123456789", 9, 6, noColorTheme);
-  assertEquals(out.includes("..."), true);
+  const assertionResult2: boolean = out.includes("...");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("renderDialogButtons: right-aligns buttons within width", () => {
@@ -46,6 +48,8 @@ Deno.test("renderDialogButtons: right-aligns buttons within width", () => {
     noColorTheme,
   );
 
-  assertEquals(line.includes("[OK]"), true);
-  assertEquals(line.includes("[Cancel]"), true);
+  const assertionResult3: boolean = line.includes("[OK]");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = line.includes("[Cancel]");
+  assertEquals(assertionResult4, true);
 });

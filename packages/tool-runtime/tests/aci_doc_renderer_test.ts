@@ -55,8 +55,10 @@ Deno.test("[AciDocRenderer] renders a valid complete fragment with the derived s
   assertEquals(result.invalidToolIds, []);
   assertEquals(result.fragmentCount, 1);
   assertEquals(result.truncated, false);
-  assertEquals(result.text.includes("read_file"), true);
-  assertEquals(result.text.includes(ToolSideEffectScope.PORTAL), true);
+  const assertionResult: boolean = result.text.includes("read_file");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = result.text.includes(ToolSideEffectScope.PORTAL);
+  assertEquals(assertionResult2, true);
   assertEquals(result.fragmentChars, result.text.length);
 });
 
@@ -68,7 +70,8 @@ Deno.test("[security] delimiter-like newlines and backticks remain JSON-encoded"
 
   // The exact JSON-string-encoded form of the malicious value is present verbatim —
   // proving the renderer used JSON.stringify rather than raw interpolation.
-  assertEquals(result.text.includes(JSON.stringify(maliciousText)), true);
+  const assertionResult3: boolean = result.text.includes(JSON.stringify(maliciousText));
+  assertEquals(assertionResult3, true);
   // No raw newline was introduced. The fragment has as many physical lines as one built from harmless text.
   // The embedded newline escape stays inside the JSON string, so it cannot forge a prompt line.
   assertEquals(result.text.split("\n").length, cleanResult.text.split("\n").length);

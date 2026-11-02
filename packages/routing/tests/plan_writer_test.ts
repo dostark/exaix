@@ -142,7 +142,8 @@ describe("PlanWriter - JSON Integration", () => {
       const result = await planWriter.writePlan(agentResult, metadata);
 
       // Check frontmatter structure
-      assert(result.content.startsWith("---\n"));
+      const assertionResult: boolean = result.content.startsWith("---\n");
+      assert(assertionResult);
       assertStringIncludes(result.content, "trace_id: trace-123");
       assertStringIncludes(result.content, "request_id: test-id");
       assertStringIncludes(result.content, "status: review");

@@ -79,7 +79,8 @@ Deno.test("[recovery] a legacy (non-cycle) orphan still creates a human-review r
     const content = await Deno.readTextFile(
       pathBuilders.requestsPath(pathBuilders.workspacePath(workspaceRoot), `${traceId}_crash_recovery.md`),
     );
-    assertEquals(content.includes("Crash-Recovery Request"), true);
+    const assertionResult: boolean = content.includes("Crash-Recovery Request");
+    assertEquals(assertionResult, true);
 
     await Deno.remove(workspaceRoot, { recursive: true });
   } finally {

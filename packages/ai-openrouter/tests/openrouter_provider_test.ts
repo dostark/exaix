@@ -91,7 +91,8 @@ Deno.test("OPENROUTER_PROVIDER_METADATA has no supportsThinking, supportsEffort,
 
 Deno.test("OPENROUTER_PROVIDER_METADATA describes the openrouter provider", () => {
   assertEquals(OPENROUTER_PROVIDER_METADATA.name, "openrouter");
-  assert(OPENROUTER_PROVIDER_METADATA.capabilities.includes("multi-model"));
+  const assertionResult: boolean = OPENROUTER_PROVIDER_METADATA.capabilities.includes("multi-model");
+  assert(assertionResult);
 });
 
 Deno.test("each capability that a model declares produces its request field without provider-wide flags", async () => {

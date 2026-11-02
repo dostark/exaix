@@ -168,7 +168,8 @@ Deno.test("[security] PathResolver: handles Windows-style path traversal", async
     // Windows backslash path traversal attempt (treated as literal filename on POSIX).
     const resolved = await resolver.resolve("@Blueprints/..\\secret.txt");
     // Resolution succeeds because path is within Blueprints root
-    assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
+    const assertionResult: boolean = resolved.includes("Blueprints");
+    assert(assertionResult, "Resolved path should include Blueprints");
   }, { prefix: "resolver-test-windows-" });
 });
 
@@ -185,7 +186,8 @@ Deno.test("[security] PathResolver: handles multiple path traversal attempts", a
 
     // Try valid path within allowed root - no ../ escape
     const resolved = await resolver.resolve("@Blueprints/secret.txt");
-    assert(resolved.includes("secret.txt"), "Resolved path should include filename");
+    const assertionResult2: boolean = resolved.includes("secret.txt");
+    assert(assertionResult2, "Resolved path should include filename");
   }, { prefix: "resolver-test-multi-" });
 });
 
@@ -200,8 +202,10 @@ Deno.test("PathResolver: handles non-existent file in valid directory", async ()
     // Try to resolve a non-existent file
     // PathResolver only validates path is within allowed root, doesn't check file existence
     const resolved = await resolver.resolve("@Blueprints/nonexistent.md");
-    assert(resolved.includes("nonexistent.md"), "Resolved path should include filename");
-    assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
+    const assertionResult3: boolean = resolved.includes("nonexistent.md");
+    assert(assertionResult3, "Resolved path should include filename");
+    const assertionResult4: boolean = resolved.includes("Blueprints");
+    assert(assertionResult4, "Resolved path should include Blueprints");
   }, { prefix: "resolver-test-nonexist-" });
 });
 

@@ -102,7 +102,8 @@ describe("ReviewRegistry Portal Support", () => {
       );
 
       const portalBranches = await new GitTestHelper(portalRepoDir).listBranches();
-      assertEquals(portalBranches.includes(branchName), true);
+      const assertionResult: boolean = portalBranches.includes(branchName);
+      assertEquals(assertionResult, true);
 
       const workspaceBranches = await new GitTestHelper(workspaceRepoDir).listBranches();
       assertFalse(workspaceBranches.includes(branchName));
@@ -134,8 +135,10 @@ describe("ReviewRegistry Portal Support", () => {
 
       const diff = await registry.getDiff(reviewId);
 
-      assertEquals(diff.includes("portal content"), true);
-      assertEquals(diff.includes("test.txt"), true);
+      const assertionResult2: boolean = diff.includes("portal content");
+      assertEquals(assertionResult2, true);
+      const assertionResult3: boolean = diff.includes("test.txt");
+      assertEquals(assertionResult3, true);
     });
 
     it("logs review.diff.read to IActivity Journal", async () => {
@@ -219,10 +222,12 @@ describe("ReviewRegistry Portal Support", () => {
       const portalDiff = await registry.getDiff(portalReviewId);
       const workspaceDiff = await registry.getDiff(workspaceReviewId);
 
-      assertEquals(portalDiff.includes("portal.txt"), true);
+      const assertionResult4: boolean = portalDiff.includes("portal.txt");
+      assertEquals(assertionResult4, true);
       assertFalse(portalDiff.includes("workspace.txt"));
 
-      assertEquals(workspaceDiff.includes("workspace.txt"), true);
+      const assertionResult5: boolean = workspaceDiff.includes("workspace.txt");
+      assertEquals(assertionResult5, true);
       assertFalse(workspaceDiff.includes("portal.txt"));
     });
   });

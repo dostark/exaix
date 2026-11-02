@@ -67,7 +67,8 @@ Deno.test("[ConfigParser] parses package.json dependencies", async () => {
       assertEquals(result.dependencies![0].configFile, "package.json");
       assertExists(result.dependencies![0].keyDependencies);
       const names = result.dependencies![0].keyDependencies.map((d) => d.name);
-      assertEquals(names.includes("express"), true);
+      const assertionResult: boolean = names.includes("express");
+      assertEquals(assertionResult, true);
     },
   );
 });
@@ -93,7 +94,8 @@ Deno.test("[ConfigParser] parses deno.json imports and tasks", async () => {
       assertEquals(result.dependencies![0].packageManager, "deno");
       assertEquals(result.dependencies![0].configFile, "deno.json");
       const names = result.dependencies![0].keyDependencies.map((d) => d.name);
-      assertEquals(names.includes("zod"), true);
+      const assertionResult2: boolean = names.includes("zod");
+      assertEquals(assertionResult2, true);
     },
   );
 });
@@ -183,9 +185,12 @@ Deno.test("[ConfigParser] reads .gitignore and adds patterns to ignorePatterns",
     async (root) => {
       const result = await parseConfigFiles(root, [".gitignore"]);
       assertExists(result.ignorePatterns);
-      assertEquals(result.ignorePatterns!.includes("dist"), true);
-      assertEquals(result.ignorePatterns!.includes("*.log"), true);
-      assertEquals(result.ignorePatterns!.includes("node_modules"), true);
+      const assertionResult3: boolean = result.ignorePatterns!.includes("dist");
+      assertEquals(assertionResult3, true);
+      const assertionResult4: boolean = result.ignorePatterns!.includes("*.log");
+      assertEquals(assertionResult4, true);
+      const assertionResult5: boolean = result.ignorePatterns!.includes("node_modules");
+      assertEquals(assertionResult5, true);
       // Comments and empty lines should be excluded
       assertEquals(result.ignorePatterns!.some((p) => p.startsWith("#")), false);
     },

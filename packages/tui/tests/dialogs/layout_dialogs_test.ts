@@ -36,15 +36,18 @@ Deno.test("layout dialogs: render view picker with purpose titles", () => {
 
   const splitState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.SPLIT as const };
   const splitLines = renderViewPickerDialog(splitState, theme).join("\n");
-  assert(splitLines.includes("Select View for New IPane"));
+  const assertionResult: boolean = splitLines.includes("Select View for New IPane");
+  assert(assertionResult);
 
   const changeState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.CHANGE as const };
   const changeLines = renderViewPickerDialog(changeState, theme).join("\n");
-  assert(changeLines.includes("Change View"));
+  const assertionResult2: boolean = changeLines.includes("Change View");
+  assert(assertionResult2);
 
   const newState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.NEW as const };
   const newLines = renderViewPickerDialog(newState, theme).join("\n");
-  assert(newLines.includes("Select View"));
+  const assertionResult3: boolean = newLines.includes("Select View");
+  assert(assertionResult3);
 });
 
 Deno.test("layout dialogs: view picker key handling", () => {
@@ -131,14 +134,17 @@ Deno.test("layout dialogs: render named layout dialog empty state", () => {
   const theme = getTheme(true);
   const state = { ...createNamedLayoutState(), isOpen: true, mode: LayoutMode.LOAD as const };
   const lines = renderNamedLayoutDialog(state, theme).join("\n");
-  assert(lines.includes("No saved layouts"));
+  const assertionResult4: boolean = lines.includes("No saved layouts");
+  assert(assertionResult4);
 });
 
 Deno.test("layout dialogs: render swap indicator", () => {
   const theme = getTheme(true);
   const pending = renderSwapIndicator("pane-a", null, theme);
-  assert(pending.includes("Swapping from"));
+  const assertionResult5: boolean = pending.includes("Swapping from");
+  assert(assertionResult5);
 
   const swap = renderSwapIndicator("pane-a", "pane-b", theme);
-  assert(swap.includes("Swap: pane-a ⇄ pane-b"));
+  const assertionResult6: boolean = swap.includes("Swap: pane-a ⇄ pane-b");
+  assert(assertionResult6);
 });

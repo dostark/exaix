@@ -73,8 +73,10 @@ Deno.test("PlanService.approve: moves plan from Plans to Active", async () => {
 
     // Target should exist
     const targetContent = await Deno.readTextFile(join(activeDir, `${planId}.md`));
-    assertEquals(targetContent.includes(`status: "${PlanStatus.APPROVED}"`), true);
-    assertEquals(targetContent.includes("approved_by"), true);
+    const assertionResult: boolean = targetContent.includes(`status: "${PlanStatus.APPROVED}"`);
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = targetContent.includes("approved_by");
+    assertEquals(assertionResult2, true);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }
@@ -146,9 +148,12 @@ Deno.test("PlanService.reject: moves plan to Rejected directory", async () => {
 
     // Rejected file should exist
     const rejectedContent = await Deno.readTextFile(join(rejectedDir, `${planId}_rejected.md`));
-    assertEquals(rejectedContent.includes(`status: "${PlanStatus.REJECTED}"`), true);
-    assertEquals(rejectedContent.includes("rejection_reason"), true);
-    assertEquals(rejectedContent.includes("Not good enough"), true);
+    const assertionResult3: boolean = rejectedContent.includes(`status: "${PlanStatus.REJECTED}"`);
+    assertEquals(assertionResult3, true);
+    const assertionResult4: boolean = rejectedContent.includes("rejection_reason");
+    assertEquals(assertionResult4, true);
+    const assertionResult5: boolean = rejectedContent.includes("Not good enough");
+    assertEquals(assertionResult5, true);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }
@@ -251,7 +256,8 @@ Deno.test("PlanService.show: returns details for existing plan", async () => {
     assertEquals(details.metadata.id, "show-plan");
     assertEquals(details.metadata.status, PlanStatus.REVIEW);
     assertEquals(details.metadata.subject, "Show this plan");
-    assertEquals(details.content.includes("Step one"), true);
+    const assertionResult6: boolean = details.content.includes("Step one");
+    assertEquals(assertionResult6, true);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }
@@ -288,10 +294,14 @@ Deno.test("PlanService.revise: appends revision comments to plan", async () => {
     await service.revise(planId, ["Fix the SQL injection", "Add unit tests"]);
 
     const content = await Deno.readTextFile(join(plansDir, `${planId}.md`));
-    assertEquals(content.includes(`status: "${PlanStatus.NEEDS_REVISION}"`), true);
-    assertEquals(content.includes("Revision Comments"), true);
-    assertEquals(content.includes("Fix the SQL injection"), true);
-    assertEquals(content.includes("Add unit tests"), true);
+    const assertionResult7: boolean = content.includes(`status: "${PlanStatus.NEEDS_REVISION}"`);
+    assertEquals(assertionResult7, true);
+    const assertionResult8: boolean = content.includes("Revision Comments");
+    assertEquals(assertionResult8, true);
+    const assertionResult9: boolean = content.includes("Fix the SQL injection");
+    assertEquals(assertionResult9, true);
+    const assertionResult10: boolean = content.includes("Add unit tests");
+    assertEquals(assertionResult10, true);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }

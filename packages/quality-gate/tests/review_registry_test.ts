@@ -712,7 +712,8 @@ describe("ReviewRegistry", () => {
       });
 
       const diff = await registry.getDiff(reviewId);
-      assertEquals(diff.includes("+after"), true);
+      const assertionResult: boolean = diff.includes("+after");
+      assertEquals(assertionResult, true);
       await db.waitForFlush();
 
       const rows = db.getActivitiesByTrace(traceId).filter(

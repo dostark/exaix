@@ -117,9 +117,12 @@ Deno.test("every field of the widest requests is in the README table", async () 
   const wide = fieldPaths(await sentBody(WIDE_OPTIONS, WIDE_ROUTING));
   const ordered = fieldPaths(await sentBody({ ...WIDE_OPTIONS, traceId: undefined }, ORDER_ROUTING));
   const paths = [...new Set([...wide, ...ordered])];
-  assert(paths.includes("session_id"), "the widest request must carry the sticky session key");
-  assert(paths.includes("provider.order"), "the ordered request must carry provider.order");
-  assert(paths.includes(CACHE_PATH), "the widest request must carry a cache breakpoint");
+  const includesResult: boolean = paths.includes("session_id");
+  assert(includesResult, "the widest request must carry the sticky session key");
+  const includesResult2: boolean = paths.includes("provider.order");
+  assert(includesResult2, "the ordered request must carry provider.order");
+  const includesResult3: boolean = paths.includes(CACHE_PATH);
+  assert(includesResult3, "the widest request must carry a cache breakpoint");
   assert(paths.includes("reasoning") && paths.includes("response_format") && paths.includes("tool_choice"));
   assertEquals(undocumented(paths, README_TEXT), []);
 });

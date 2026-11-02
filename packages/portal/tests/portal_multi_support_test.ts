@@ -105,8 +105,10 @@ Deno.test("[portal-multi] listPortalAliases() returns all configured portals", a
     const portals = service.listPortalAliases();
 
     assertEquals(portals.length, 2);
-    assertEquals(portals.includes("portal-1"), true);
-    assertEquals(portals.includes("portal-2"), true);
+    const assertionResult: boolean = portals.includes("portal-1");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = portals.includes("portal-2");
+    assertEquals(assertionResult2, true);
   } finally {
     await env.cleanup();
   }

@@ -56,7 +56,8 @@ Deno.test("a ported rule with the decision extend-scripts-run is selected in the
     )
   ) {
     for (const part of row.parts.filter((candidate) => candidate.pack !== "exaix")) {
-      assert(task.scriptsRunRules.includes(`${PLUGIN_NAME}/${part.key}`), `${row.id} is not selected for scripts/`);
+      const includesResult: boolean = task.scriptsRunRules.includes(`${PLUGIN_NAME}/${part.key}`);
+      assert(includesResult, `${row.id} is not selected for scripts/`);
     }
   }
 });
@@ -66,7 +67,8 @@ Deno.test("the comment rules record the non-TypeScript surfaces that leave their
   const row = tables.rules.find((candidate) => candidate.id === COMMENT_RULE);
   assert(row !== undefined);
   for (const surface of NON_TYPESCRIPT_SURFACES) {
-    assert(row.scope.dropped.includes(surface), `long-comment does not record ${surface}`);
+    const includesResult2: boolean = row.scope.dropped.includes(surface);
+    assert(includesResult2, `long-comment does not record ${surface}`);
   }
 });
 

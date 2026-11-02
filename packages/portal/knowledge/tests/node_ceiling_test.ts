@@ -48,7 +48,8 @@ Deno.test("[node ceiling] an ordinary file is still extracted", async () => {
       primaryLanguage: "python",
       allFilePaths: ["normal.py"],
     } as never);
-    assertEquals(symbols.map((s) => s.name).includes("small"), true, "the ceiling must not reject normal files");
+    const assertionResult: boolean = symbols.map((s) => s.name).includes("small");
+    assertEquals(assertionResult, true, "the ceiling must not reject normal files");
     assertEquals(SYMBOL_EXTRACT_MAX_NODES > 0, true);
   }, { prefix: "exa_node_ok_" });
 });

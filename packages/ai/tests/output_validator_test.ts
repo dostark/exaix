@@ -71,10 +71,14 @@ Deno.test("[OutputValidator] preserves multiline content", () => {
 
   const result = validator.parseXMLTags(content);
 
-  assert(result.thought.includes("Step 1"));
-  assert(result.thought.includes("Step 3"));
-  assert(result.content.includes("Line 1"));
-  assert(result.content.includes("Line 3"));
+  const assertionResult: boolean = result.thought.includes("Step 1");
+  assert(assertionResult);
+  const assertionResult2: boolean = result.thought.includes("Step 3");
+  assert(assertionResult2);
+  const assertionResult3: boolean = result.content.includes("Line 1");
+  assert(assertionResult3);
+  const assertionResult4: boolean = result.content.includes("Line 3");
+  assert(assertionResult4);
 });
 
 // JSON Validation Tests

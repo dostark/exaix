@@ -103,7 +103,8 @@ Deno.test("GitService: handles duplicate branch names", async () => {
 
     // Second branch should have timestamp suffix
     assertEquals(branch1, "feat/test-feature-abc123");
-    assertEquals(branch2.startsWith("feat/test-feature-abc123-"), true);
+    const assertionResult: boolean = branch2.startsWith("feat/test-feature-abc123-");
+    assertEquals(assertionResult, true);
     assertEquals(branch1 !== branch2, true);
   } finally {
     await cleanup();
@@ -125,8 +126,10 @@ Deno.test("GitService: commits with trace_id footer", async () => {
     });
 
     const commitMsg = await helper.getLastCommitMessage();
-    assertEquals(commitMsg.includes("Add test file"), true);
-    assertEquals(commitMsg.includes("[ExaTrace: 550e8400-e29b-41d4-a716-446655440000]"), true);
+    const assertionResult2: boolean = commitMsg.includes("Add test file");
+    assertEquals(assertionResult2, true);
+    const assertionResult3: boolean = commitMsg.includes("[ExaTrace: 550e8400-e29b-41d4-a716-446655440000]");
+    assertEquals(assertionResult3, true);
   } finally {
     await cleanup();
   }
@@ -219,9 +222,12 @@ Deno.test("GitService: commit message format is correct", async () => {
     });
 
     const commitMsg = await helper.getLastCommitMessage();
-    assertEquals(commitMsg.includes("Implement feature X"), true);
-    assertEquals(commitMsg.includes("Added function to handle user input"), true);
-    assertEquals(commitMsg.includes("[ExaTrace: trace-123]"), true);
+    const assertionResult4: boolean = commitMsg.includes("Implement feature X");
+    assertEquals(assertionResult4, true);
+    const assertionResult5: boolean = commitMsg.includes("Added function to handle user input");
+    assertEquals(assertionResult5, true);
+    const assertionResult6: boolean = commitMsg.includes("[ExaTrace: trace-123]");
+    assertEquals(assertionResult6, true);
   } finally {
     await cleanup();
   }
@@ -346,8 +352,10 @@ Deno.test("GitService: createBranch - generates unique branch names on conflict"
 
     // Both should exist but be different
     assertEquals(branch1 !== branch2, true);
-    assertEquals(branch1.startsWith("feat/request-999-"), true);
-    assertEquals(branch2.startsWith("feat/request-999-"), true);
+    const assertionResult7: boolean = branch1.startsWith("feat/request-999-");
+    assertEquals(assertionResult7, true);
+    const assertionResult8: boolean = branch2.startsWith("feat/request-999-");
+    assertEquals(assertionResult8, true);
   } finally {
     await cleanup();
   }
@@ -443,9 +451,12 @@ Deno.test("GitService: commit - includes description in commit message", async (
     // Verify commit message includes description
     const commitMsg = await helper.getLastCommitMessage();
 
-    assertEquals(commitMsg.includes("Add file"), true);
-    assertEquals(commitMsg.includes("This is a longer description"), true);
-    assertEquals(commitMsg.includes("ExaTrace: trace-789"), true);
+    const assertionResult9: boolean = commitMsg.includes("Add file");
+    assertEquals(assertionResult9, true);
+    const assertionResult10: boolean = commitMsg.includes("This is a longer description");
+    assertEquals(assertionResult10, true);
+    const assertionResult11: boolean = commitMsg.includes("ExaTrace: trace-789");
+    assertEquals(assertionResult11, true);
   } finally {
     await cleanup();
   }
@@ -549,8 +560,10 @@ Deno.test("GitService: runGitCommand via commit - handles various message format
     // Verify commit message
     const commitMsg = await helper.getLastCommitMessage();
 
-    assertEquals(commitMsg.includes("feat: add file"), true);
-    assertEquals(commitMsg.includes("special-chars-trace"), true);
+    const assertionResult12: boolean = commitMsg.includes("feat: add file");
+    assertEquals(assertionResult12, true);
+    const assertionResult13: boolean = commitMsg.includes("special-chars-trace");
+    assertEquals(assertionResult13, true);
   } finally {
     await cleanup();
   }
@@ -664,7 +677,8 @@ Deno.test("GitService: timeout protection is configurable", async () => {
 
     assert(typeof result.exitCode === "number");
     assert(result.exitCode === 0);
-    assert(result.output.includes("Initial commit"));
+    const assertionResult14: boolean = result.output.includes("Initial commit");
+    assert(assertionResult14);
   } finally {
     await cleanup();
   }

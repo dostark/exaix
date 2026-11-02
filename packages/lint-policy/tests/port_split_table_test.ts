@@ -36,8 +36,10 @@ Deno.test("a row is marked emitted exactly when the catalog does not list it", a
 Deno.test("the table also covers the plugin rule and the magic-literal checker", async () => {
   const tables = await loadPortTables();
   const ids = tables.rules.map((row) => row.id);
-  assert(ids.includes(PLUGIN_RULE_ID));
-  assert(ids.includes(MAGIC_CHECKER_ROW));
+  const includesResult: boolean = ids.includes(PLUGIN_RULE_ID);
+  assert(includesResult);
+  const includesResult2: boolean = ids.includes(MAGIC_CHECKER_ROW);
+  assert(includesResult2);
 });
 
 Deno.test("each row has a unique id and its parts match its outcome", async () => {

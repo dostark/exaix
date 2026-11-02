@@ -29,8 +29,9 @@ Deno.test("[daemon-wiring] the daemon passes knownSecrets to ExecutionLoop when 
   assert(derivationIndex < executionLoopIndex, "the derivation must precede the ExecutionLoop");
 
   const executionLoopBlock = source.slice(executionLoopIndex, source.indexOf("});", executionLoopIndex));
+  const assertionResult: boolean = executionLoopBlock.includes("knownSecrets");
   assert(
-    executionLoopBlock.includes("knownSecrets"),
+    assertionResult,
     "the ExecutionLoop construction must receive knownSecrets",
   );
 });

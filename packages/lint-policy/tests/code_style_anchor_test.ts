@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 
@@ -78,7 +78,7 @@ Deno.test("each generic section of the guide exists and names its rule ids", asy
   const guide = await read(GUIDE);
   for (const [anchor, ids] of Object.entries(GUIDE_SECTIONS)) {
     const section = sectionOf(guide, anchor);
-    for (const id of ids) assert(section.includes(`\`${id}\``), `section ${anchor} does not name ${id}`);
+    for (const id of ids) assertStringIncludes(section, `\`${id}\``, `section ${anchor} does not name ${id}`);
   }
 });
 
@@ -88,6 +88,7 @@ Deno.test("every generic rule that the catalog ports points at the guide", () =>
   for (const id of ids) {
     const entry = rules[id] ?? rules[`exaix/${id}`];
     if (entry === undefined || entry.codeStyle === undefined) continue;
-    assert(entry.codeStyle.startsWith(GUIDE), `${id} points at ${entry.codeStyle}, not the guide`);
+    const assertionResult: boolean = entry.codeStyle.startsWith(GUIDE);
+    assert(assertionResult, `${id} points at ${entry.codeStyle}, not the guide`);
   }
 });

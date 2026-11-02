@@ -144,14 +144,16 @@ content = "Hello World"
       // Verify commit
       const commitMsg = await helper.getLastCommitMessage();
       // Since final commit had no changes, the last commit is the step commit
-      assertEquals(commitMsg.includes("Step 1: Create File"), true);
+      const assertionResult: boolean = commitMsg.includes("Step 1: Create File");
+      assertEquals(assertionResult, true);
       assertFalse(commitMsg.includes("Executed by agent")); // Final commit message not present
 
       // Verify step commit exists in the log.
       const log = await helper.runGit(["log", "--oneline"]);
       const commits = log.trim().split("\n");
       assert(commits.length >= 2, "Should have at least 2 commits");
-      assert(log.includes("Step 1: Create File"), "Should have step commit");
+      const assertionResult2: boolean = log.includes("Step 1: Create File");
+      assert(assertionResult2, "Should have step commit");
     },
   );
 });

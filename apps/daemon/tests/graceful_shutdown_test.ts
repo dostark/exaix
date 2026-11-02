@@ -146,8 +146,10 @@ Deno.test("GracefulShutdown: registerSignalHandlers registers SIGINT/SIGTERM", (
     shutdown.registerSignalHandlers();
     assertSpyCalls(addSignalSpy, 2);
     const signals = addSignalSpy.calls.map((call) => call.args[0] as Deno.Signal);
-    assert(signals.includes(TEST_SIGNAL_SIGINT));
-    assert(signals.includes(TEST_SIGNAL_SIGTERM));
+    const assertionResult: boolean = signals.includes(TEST_SIGNAL_SIGINT);
+    assert(assertionResult);
+    const assertionResult2: boolean = signals.includes(TEST_SIGNAL_SIGTERM);
+    assert(assertionResult2);
     assertEquals(mockLogger.info.calls[0].args[1], LOG_MSG_SIGNAL_HANDLERS_REGISTERED);
   } finally {
     addSignalStub.restore();
@@ -163,8 +165,10 @@ Deno.test("GracefulShutdown: registerErrorHandlers registers error listeners", (
     shutdown.registerErrorHandlers();
     assertSpyCalls(addEventSpy, 2);
     const events = addEventSpy.calls.map((call) => call.args[0] as string);
-    assert(events.includes(TEST_EVENT_UNHANDLED_REJECTION));
-    assert(events.includes(TEST_EVENT_ERROR));
+    const assertionResult3: boolean = events.includes(TEST_EVENT_UNHANDLED_REJECTION);
+    assert(assertionResult3);
+    const assertionResult4: boolean = events.includes(TEST_EVENT_ERROR);
+    assert(assertionResult4);
     assertEquals(mockLogger.info.calls[0].args[1], LOG_MSG_ERROR_HANDLERS_REGISTERED);
   } finally {
     addEventStub.restore();

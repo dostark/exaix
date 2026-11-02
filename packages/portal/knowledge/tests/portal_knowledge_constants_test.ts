@@ -68,16 +68,21 @@ Deno.test("[PortalKnowledgeConstants] DENO_DOC_TIMEOUT_MS is 15000", () => {
 Deno.test("[PortalKnowledgeConstants] DEFAULT_IGNORE_PATTERNS contains node_modules", () => {
   assertExists(DEFAULT_IGNORE_PATTERNS);
   assertEquals(Array.isArray(DEFAULT_IGNORE_PATTERNS), true);
-  assertEquals(DEFAULT_IGNORE_PATTERNS.includes("node_modules"), true);
-  assertEquals(DEFAULT_IGNORE_PATTERNS.includes(".git"), true);
+  const assertionResult: boolean = DEFAULT_IGNORE_PATTERNS.includes("node_modules");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = DEFAULT_IGNORE_PATTERNS.includes(".git");
+  assertEquals(assertionResult2, true);
 });
 
 Deno.test("[PortalKnowledgeConstants] PORTAL_ENTRYPOINT_NAMES contains main.ts", () => {
   assertExists(PORTAL_ENTRYPOINT_NAMES);
   assertEquals(Array.isArray(PORTAL_ENTRYPOINT_NAMES), true);
-  assertEquals(PORTAL_ENTRYPOINT_NAMES.includes("main.ts"), true);
-  assertEquals(PORTAL_ENTRYPOINT_NAMES.includes("mod.ts"), true);
-  assertEquals(PORTAL_ENTRYPOINT_NAMES.includes("index.ts"), true);
+  const assertionResult3: boolean = PORTAL_ENTRYPOINT_NAMES.includes("main.ts");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = PORTAL_ENTRYPOINT_NAMES.includes("mod.ts");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = PORTAL_ENTRYPOINT_NAMES.includes("index.ts");
+  assertEquals(assertionResult5, true);
 });
 
 Deno.test("[PortalKnowledgeConstants] PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS is non-empty array", () => {

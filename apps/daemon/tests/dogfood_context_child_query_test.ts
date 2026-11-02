@@ -13,7 +13,7 @@
  * @related-files [apps/daemon/src/dogfood_context_service.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, apps/daemon/src/session_delegation_coordinator.ts, apps/daemon/src/headless_session_launcher.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -197,8 +197,8 @@ Deno.test({
       assertEquals(result.toolNames, ["find_dependents", "query_relationships", "search_memory"]);
       assert(result.searchMemoryResult, "search_memory result must be present");
       const text = result.searchMemoryResult![0].text;
-      assert(text.includes(SEEDED_TITLE), `expected the seeded fact's title in: ${text}`);
-      assert(text.includes(SEEDED_CONTENT), `expected the seeded fact's content in: ${text}`);
+      assertStringIncludes(text, SEEDED_TITLE, `expected the seeded fact's title in: ${text}`);
+      assertStringIncludes(text, SEEDED_CONTENT, `expected the seeded fact's content in: ${text}`);
 
       // The strategy closes the connection once the turn completes.
       assertEquals(closes.length, 1);
@@ -420,7 +420,7 @@ Deno.test({
       assertEquals(result.ok, true, `child reported failure: ${result.error}`);
       assert(result.searchMemoryResult, "search_memory result must be present");
       const text = result.searchMemoryResult![0].text;
-      assert(text.includes(SEEDED_TITLE), `expected the seeded fact's title in: ${text}`);
+      assertStringIncludes(text, SEEDED_TITLE, `expected the seeded fact's title in: ${text}`);
 
       assertEquals(closes.length, 1);
       assertEquals(closes[0].reason, "completed");

@@ -8,7 +8,7 @@
  */
 
 import type { JSONObject } from "@exaix/core";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type ICatalog, type JsonValue, parseCatalog } from "@dostark/unslop-ts";
 import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
@@ -232,7 +232,7 @@ Deno.test("extended-parent-transition: the parent gate and a default engine fixt
   const source = wideSource();
   const defaults = cyclomaticMessages(defaultVariantCatalog(), source);
   assertEquals(defaults.length, 1);
-  assert(defaults[0].includes(`${NULLISH_EXTENDED} (limit ${PARENT_LIMIT})`), defaults[0]);
+  assertStringIncludes(defaults[0], `${NULLISH_EXTENDED} (limit ${PARENT_LIMIT})`, defaults[0]);
   assertEquals(cyclomaticMessages(POLICY_CATALOG, source).length, 1);
 });
 
@@ -269,7 +269,7 @@ Deno.test("complexity-host-completeness: all three gates refuse an unobserved pl
         "--fail",
       ], dir);
       assert(result.code !== 0, `${rule} passed without its plugin`);
-      assert(result.stderr.includes("reported no observation"), result.stderr);
+      assertStringIncludes(result.stderr, "reported no observation", result.stderr);
       assertEquals(result.stdout, "");
     }
   }, { plugin: false });
@@ -314,6 +314,6 @@ Deno.test("health-task-run: the declared health task reaches the full report", a
   if (result.code !== 0) result = await runDeno(["task", "health"], REPO_ROOT.pathname);
   assertEquals(result.code, 0, result.stderr.slice(-2000));
   for (const marker of ["UNSLOP HEALTH", "Score ", "Coverage    none", "Graph", "SCORE SIGNALS", "HOTSPOTS"]) {
-    assert(result.stdout.includes(marker), marker);
+    assertStringIncludes(result.stdout, marker, marker);
   }
 });

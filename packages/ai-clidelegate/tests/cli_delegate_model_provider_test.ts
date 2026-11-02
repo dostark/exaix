@@ -291,7 +291,8 @@ Deno.test("CliDelegateModelProvider: the OPENCODE_CONFIG file is written under c
 
     const configPath = seenEnv?.OPENCODE_CONFIG;
     assertEquals(typeof configPath, "string");
-    assertEquals(configPath!.startsWith(cwd), true);
+    const assertionResult: boolean = configPath!.startsWith(cwd);
+    assertEquals(assertionResult, true);
   } finally {
     await Deno.remove(cwd, { recursive: true });
   }

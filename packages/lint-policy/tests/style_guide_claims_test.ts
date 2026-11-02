@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json, packages/lint-policy/tests/code_style_anchor_test.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
@@ -107,7 +107,7 @@ Deno.test("final_guide_claims_match_policy_and_engine", async () => {
       "tests/fixtures/catalog_v1.json",
     ]
   ) {
-    assert(guide.includes(token), `the guide does not name ${token}`);
+    assertStringIncludes(guide, token, `the guide does not name ${token}`);
   }
   assertEquals(POLICY_CATALOG.rules["duplicate-type"].limits !== null, true);
   assertEquals(POLICY_CATALOG.rules["exaix/no-explicit-unknown"].engine, "plugin");
@@ -116,7 +116,7 @@ Deno.test("final_guide_claims_match_policy_and_engine", async () => {
 Deno.test("guide_claims_follow_the_compiled_policy", async () => {
   const guide = await read(POLICY_GUIDE);
   for (const token of ["unslop.config.json", "layout.json", "lint:report", "tests/fixtures/catalog_v1.json"]) {
-    assert(guide.includes(token), `the guide does not name ${token}`);
+    assertStringIncludes(guide, token, `the guide does not name ${token}`);
   }
   assertEquals(POLICY_CATALOG.rules["exaix/no-explicit-unknown"].engine, "plugin");
 });

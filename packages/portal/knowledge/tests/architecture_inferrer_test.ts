@@ -81,6 +81,17 @@ class MockOutputValidator implements IArchitectureValidator {
 
 const MOCK_OVERVIEW = "## Architecture\n\nThis project uses a service pattern.";
 
+function emptyInferenceInput(): Parameters<ArchitectureInferrer["infer"]>[0] {
+  return {
+    portalPath: "/portal",
+    directoryTree: [],
+    keyFiles: [],
+    conventions: [],
+    configSummary: "",
+    dependencySummary: "",
+  };
+}
+
 const KEY_FILES: IFileSignificance[] = [
   { path: "src/main.ts", role: "entrypoint", description: "Entry point" },
   { path: "src/services/auth_service.ts", role: "core-service", description: "Auth" },
@@ -152,17 +163,10 @@ Deno.test("[ArchitectureInferrer] handles LLM failure gracefully", async () => {
     generate: (): Promise<IGenerateResult> => Promise.reject(new Error("network error")),
   };
   const inferrer = new ArchitectureInferrer(failingProvider, new MockOutputValidator(true));
-  const result = await inferrer.infer({
-    portalPath: "/portal",
-    directoryTree: [],
-    keyFiles: [],
-    conventions: [],
-    configSummary: "",
-    dependencySummary: "",
-  });
+  const result = await inferrer.infer(emptyInferenceInput());
   // Now returns heuristic fallback instead of empty string
   assertEquals(result.length > 0, true);
-  assertEquals(result.includes("Heuristic"), true);
+  assertStringIncludes(result, "Heuristic");
 });
 
 Deno.test("[ArchitectureInferrer] returns fallback overview on invalid LLM output", async () => {
@@ -170,17 +174,10 @@ Deno.test("[ArchitectureInferrer] returns fallback overview on invalid LLM outpu
     makeMockProvider("garbage output"),
     new MockOutputValidator(false),
   );
-  const result = await inferrer.infer({
-    portalPath: "/portal",
-    directoryTree: [],
-    keyFiles: [],
-    conventions: [],
-    configSummary: "",
-    dependencySummary: "",
-  });
+  const result = await inferrer.infer(emptyInferenceInput());
   // Falls back to heuristic after all retries
   assertEquals(result.length > 0, true);
-  assertEquals(result.includes("Heuristic"), true);
+  assertStringIncludes(result, "Heuristic");
   assertEquals(inferrer.architectureInferenceFailed, true);
 });
 

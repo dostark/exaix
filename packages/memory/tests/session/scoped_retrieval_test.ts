@@ -82,7 +82,8 @@ Deno.test("[SessionMemoryService] scoped lookup denies another portal's pattern 
     });
     const sources = memories.filter((m) => m.type === MemoryType.PATTERN).map((m) => m.source);
 
-    assertEquals(sources.includes(`pattern:${patternA.id}`), true, "portal-a's own pattern must surface");
+    const assertionResult: boolean = sources.includes(`pattern:${patternA.id}`);
+    assertEquals(assertionResult, true, "portal-a's own pattern must surface");
     assertFalse(sources.includes(`pattern:${patternB.id}`), "portal-b's pattern must never leak into scope");
   } finally {
     await cleanup();
@@ -164,7 +165,8 @@ Deno.test("[SessionMemoryService] scoped lookup denies a PENDING global learning
     });
     const sources = memories.filter((m) => m.type === MemoryType.LEARNING).map((m) => m.source);
 
-    assertEquals(sources.includes(`learning:${approved.id}`), true);
+    const assertionResult2: boolean = sources.includes(`learning:${approved.id}`);
+    assertEquals(assertionResult2, true);
     assertFalse(sources.includes(`learning:${pending.id}`), "a PENDING learning must never surface");
   } finally {
     await cleanup();
@@ -320,8 +322,10 @@ Deno.test("[SessionMemoryService] legacy unscoped (3-argument) call keeps its ex
     const memories = await sessionMemory.lookupMemories("pattern", undefined);
     const sources = memories.filter((m) => m.type === MemoryType.PATTERN).map((m) => m.source);
 
-    assertEquals(sources.includes(`pattern:${patternA.id}`), true);
-    assertEquals(sources.includes(`pattern:${patternB.id}`), true, "unscoped calls must still see both portals");
+    const assertionResult3: boolean = sources.includes(`pattern:${patternA.id}`);
+    assertEquals(assertionResult3, true);
+    const assertionResult4: boolean = sources.includes(`pattern:${patternB.id}`);
+    assertEquals(assertionResult4, true, "unscoped calls must still see both portals");
   } finally {
     await cleanup();
   }

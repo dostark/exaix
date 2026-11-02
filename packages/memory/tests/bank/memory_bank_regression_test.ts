@@ -89,12 +89,16 @@ Deno.test("[regression] searchByKeyword finds patterns, decisions and overview",
   const results = await searchByKeyword("X", { portal: "projA", limit: 10 }, deps);
   // Expect at least pattern, decision, project overview, and learning entries
   const types = results.map((r) => r.type);
-  assert(types.includes(MemoryType.PATTERN));
-  assert(types.includes(MemoryType.DECISION));
+  const assertionResult: boolean = types.includes(MemoryType.PATTERN);
+  assert(assertionResult);
+  const assertionResult2: boolean = types.includes(MemoryType.DECISION);
+  assert(assertionResult2);
   // `searchByKeyword` checks project overviews (PROJECT) and does not
   // currently include execution search results, so expect PROJECT here.
-  assert(types.includes(MemoryType.PROJECT));
-  assert(types.includes(MemoryType.LEARNING));
+  const assertionResult3: boolean = types.includes(MemoryType.PROJECT);
+  assert(assertionResult3);
+  const assertionResult4: boolean = types.includes(MemoryType.LEARNING);
+  assert(assertionResult4);
 
   // cleanup
   await Deno.remove(projectsDir, { recursive: true });
@@ -129,9 +133,12 @@ Deno.test("[regression] searchByTags returns matching items and learnings", asyn
 
   const results = await searchByTags(["t1"], { portal: "projA", limit: 10 }, deps);
   const types = results.map((r) => r.type);
-  assert(types.includes(MemoryType.PATTERN));
-  assert(types.includes(MemoryType.DECISION));
-  assert(types.includes(MemoryType.LEARNING));
+  const assertionResult5: boolean = types.includes(MemoryType.PATTERN);
+  assert(assertionResult5);
+  const assertionResult6: boolean = types.includes(MemoryType.DECISION);
+  assert(assertionResult6);
+  const assertionResult7: boolean = types.includes(MemoryType.LEARNING);
+  assert(assertionResult7);
 
   await Deno.remove(projectsDir, { recursive: true });
 });

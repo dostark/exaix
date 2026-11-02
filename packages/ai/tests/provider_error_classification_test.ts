@@ -12,7 +12,7 @@
  * (authentication_error, permission_error) do not.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { BillingError } from "@exaix/ai/providers";
 import { handleProviderResponse, type ProviderErrorMapper as ErrorMapper } from "../src/provider_common_utils.ts";
 import {
@@ -114,11 +114,12 @@ Deno.test("[anthropic-errors] every documented error type maps to the right clas
 
 Deno.test("[anthropic-errors] the machine-readable error type is surfaced in the message", async () => {
   const err = await classify(400, "invalid_request_error", "`temperature` is deprecated for this model.");
-  assert(
-    err.message.includes("invalid_request_error"),
+  assertStringIncludes(
+    err.message,
+    "invalid_request_error",
     `message should carry the API's error type for diagnosis, got: "${err.message}"`,
   );
-  assert(err.message.includes("`temperature` is deprecated for this model."));
+  assertStringIncludes(err.message, "`temperature` is deprecated for this model.");
 });
 
 Deno.test("[anthropic-errors] error type wins over an unexpected HTTP status", async () => {

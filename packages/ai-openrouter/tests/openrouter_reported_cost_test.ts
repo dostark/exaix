@@ -153,7 +153,8 @@ Deno.test("a response model with control characters and a huge length is cleaned
   const mapped = tokenMapperOpenRouter(CONFIGURED_MODEL)({ model: hostile, usage: USAGE });
   assertEquals(/\p{Cc}/u.test(mapped?.model ?? ""), false);
   assertEquals((mapped?.model ?? "").length <= OPENROUTER_MODEL_ID_MAX_CHARS, true);
-  assertEquals((mapped?.model ?? "").startsWith("vendor/model"), true);
+  const assertionResult: boolean = (mapped?.model ?? "").startsWith("vendor/model");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("a response model that is empty after cleaning keeps the configured id", () => {

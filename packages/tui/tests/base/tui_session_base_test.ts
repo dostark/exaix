@@ -282,7 +282,8 @@ Deno.test("TuiSessionBase: performAction clears status on success", async () => 
 Deno.test("TuiSessionBase: performAction sets error on failure", async () => {
   const session = new TestSession();
   await session.testPerformAction(() => Promise.reject(new Error("Test error")));
-  assertEquals(session.getStatusMessage().includes("Test error"), true);
+  const assertionResult: boolean = session.getStatusMessage().includes("Test error");
+  assertEquals(assertionResult, true);
 });
 
 Deno.test("TuiSessionBase: getViewName returns name", () => {

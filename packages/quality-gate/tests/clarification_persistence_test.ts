@@ -133,13 +133,20 @@ const MINIMAL_SPEC: IRequestSpecification = {
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt produces all sections for full spec", () => {
   const result = renderSpecificationAsPrompt(FULL_SPEC);
-  assertEquals(result.includes("## Summary"), true);
-  assertEquals(result.includes("Implement JWT authentication"), true);
-  assertEquals(result.includes("## Goals"), true);
-  assertEquals(result.includes("## Success Criteria"), true);
-  assertEquals(result.includes("## Scope"), true);
-  assertEquals(result.includes("## Constraints"), true);
-  assertEquals(result.includes("## Context"), true);
+  const assertionResult: boolean = result.includes("## Summary");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = result.includes("Implement JWT authentication");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = result.includes("## Goals");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = result.includes("## Success Criteria");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = result.includes("## Scope");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = result.includes("## Constraints");
+  assertEquals(assertionResult6, true);
+  const assertionResult7: boolean = result.includes("## Context");
+  assertEquals(assertionResult7, true);
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt omits empty sections", () => {
@@ -149,17 +156,21 @@ Deno.test("[clarification_persistence] renderSpecificationAsPrompt omits empty s
   assertFalse(result.includes("## Scope"));
   assertFalse(result.includes("## Constraints"));
   assertFalse(result.includes("## Context"));
-  assertEquals(result.includes("## Summary"), true);
+  const assertionResult8: boolean = result.includes("## Summary");
+  assertEquals(assertionResult8, true);
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt always includes summary", () => {
   const result = renderSpecificationAsPrompt(MINIMAL_SPEC);
-  assertEquals(result.includes("## Summary"), true);
-  assertEquals(result.includes("Deploy to production"), true);
+  const assertionResult9: boolean = result.includes("## Summary");
+  assertEquals(assertionResult9, true);
+  const assertionResult10: boolean = result.includes("Deploy to production");
+  assertEquals(assertionResult10, true);
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt handles minimal spec (summary only)", () => {
   const result = renderSpecificationAsPrompt(MINIMAL_SPEC);
   assertEquals(result.trim().length > 0, true);
-  assertEquals(result.includes("## Summary\nDeploy to production"), true);
+  const assertionResult11: boolean = result.includes("## Summary\nDeploy to production");
+  assertEquals(assertionResult11, true);
 });

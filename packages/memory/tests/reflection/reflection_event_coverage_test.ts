@@ -32,8 +32,9 @@ function embedding(similar: Array<{ id: string; similarity: number }>): IMemoryE
 
 Deno.test("the MemoryReflectionService class is @visible-tagged", async () => {
   const source = await Deno.readTextFile(SERVICE_SOURCE_URL);
+  const assertionResult: boolean = source.includes("@visible");
   assertEquals(
-    source.includes("@visible"),
+    assertionResult,
     true,
     "the reflection service mutates the store unattended and must be @visible",
   );

@@ -40,7 +40,8 @@ Deno.test("HealthCheckService: checkHealth logs through the injected logger", as
 
   await service.checkHealth();
 
-  assertEquals(actions.includes(DomainEventType.HealthCheckAll), true);
+  const includesResult: boolean = actions.includes(DomainEventType.HealthCheckAll);
+  assertEquals(includesResult, true);
 });
 
 Deno.test("HealthCheckService: registers health checks", () => {
@@ -444,13 +445,16 @@ Deno.test("[integration] initializeHealthChecks returns operational health check
     assertEquals(typeof report.checks.database.metadata?.response_time_ms, "number");
     assertEquals(report.checks.llm_provider.status, "pass");
     assertEquals(typeof report.checks.llm_provider.metadata?.response_time_ms, "number");
-    assert(["pass", "warn"].includes(report.checks.disk_space.status));
+    const includesResult2: boolean = ["pass", "warn"].includes(report.checks.disk_space.status);
+    assert(includesResult2);
     assertEquals(typeof report.checks.disk_space.metadata?.used_percent, "number");
-    assert(["pass", "warn"].includes(report.checks.memory.status));
+    const includesResult3: boolean = ["pass", "warn"].includes(report.checks.memory.status);
+    assert(includesResult3);
     assertEquals(typeof report.checks.memory.metadata?.used_mb, "number");
 
     // Report metadata — allow healthy or degraded (memory/disk may warn in constrained env)
-    assert(["healthy", "degraded"].includes(report.status));
+    const includesResult4: boolean = ["healthy", "degraded"].includes(report.status);
+    assert(includesResult4);
     assertEquals(typeof report.uptime_seconds, "number");
     assertEquals(typeof report.timestamp, "string");
   } finally {

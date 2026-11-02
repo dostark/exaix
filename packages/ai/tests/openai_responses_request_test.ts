@@ -57,8 +57,10 @@ Deno.test("an incomplete reply with no output throws ProviderTruncationError nam
     };
     const error = assertThrows(() => assertResponsesNotFailed(response, "openai-fixture"), ProviderTruncationError);
     assertEquals(error.provider, "openai-fixture");
-    assertEquals(error.message.includes("max_output_tokens"), true);
-    assertEquals(error.message.includes("incomplete_details.reason=max_output_tokens"), true);
+    const assertionResult: boolean = error.message.includes("max_output_tokens");
+    assertEquals(assertionResult, true);
+    const assertionResult2: boolean = error.message.includes("incomplete_details.reason=max_output_tokens");
+    assertEquals(assertionResult2, true);
     assertEquals(error instanceof ModelProviderError, true);
     assertEquals(isRetryable(error), false);
   }
@@ -70,7 +72,8 @@ Deno.test("an incomplete reply without incomplete_details is still typed and nam
       () => assertResponsesNotFailed({ status: "incomplete", incomplete_details }, "openai-fixture"),
       ProviderTruncationError,
     );
-    assertEquals(error.message.includes("incomplete_details.reason=unknown"), true);
+    const assertionResult3: boolean = error.message.includes("incomplete_details.reason=unknown");
+    assertEquals(assertionResult3, true);
   }
 });
 

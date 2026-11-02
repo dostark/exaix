@@ -633,21 +633,17 @@ Deno.test("Default patterns: handles generic requests with catch-all", async () 
 
 // Test 13: Plan Format Validation
 
+const DEFAULT_PATTERN_PROMPTS = ["Implement feature X", "Fix bug Y", "Random request"];
+
 Deno.test("Default patterns: responses include required <thought> tags", async () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, {
     recordings: [],
   });
 
-  const prompts = [
-    "Implement feature X",
-    "Fix bug Y",
-    "Random request",
-  ];
-
-  for (const prompt of prompts) {
+  for (const prompt of DEFAULT_PATTERN_PROMPTS) {
     const result = await provider.generate(prompt);
-    assert(result.content.includes("<thought>"), `Missing <thought> tag in response to: ${prompt}`);
-    assert(result.content.includes("</thought>"), `Missing </thought> tag in response to: ${prompt}`);
+    assertStringIncludes(result.content, "<thought>", `Missing <thought> tag in response to: ${prompt}`);
+    assertStringIncludes(result.content, "</thought>", `Missing </thought> tag in response to: ${prompt}`);
   }
 });
 
@@ -656,16 +652,10 @@ Deno.test("Default patterns: responses include required <content> tags", async (
     recordings: [],
   });
 
-  const prompts = [
-    "Implement feature X",
-    "Fix bug Y",
-    "Random request",
-  ];
-
-  for (const prompt of prompts) {
+  for (const prompt of DEFAULT_PATTERN_PROMPTS) {
     const result = await provider.generate(prompt);
-    assert(result.content.includes("<content>"), `Missing <content> tag in response to: ${prompt}`);
-    assert(result.content.includes("</content>"), `Missing </content> tag in response to: ${prompt}`);
+    assertStringIncludes(result.content, "<content>", `Missing <content> tag in response to: ${prompt}`);
+    assertStringIncludes(result.content, "</content>", `Missing </content> tag in response to: ${prompt}`);
   }
 });
 

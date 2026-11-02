@@ -115,7 +115,8 @@ Deno.test("installed portal policy", async (test) => {
 
     await test.step("installed-policy-lints-offline", async () => {
       const codes = await lintSeed(policyDir, CAST_SEED);
-      assert(codes.includes(CAST_CODE), codes.join(","));
+      const includesResult: boolean = codes.includes(CAST_CODE);
+      assert(includesResult, codes.join(","));
     });
 
     await test.step("installed-policy-rejects-named-ignores", async () => {
@@ -123,7 +124,8 @@ Deno.test("installed portal policy", async (test) => {
       const namedLine = `// deno-lint-ignore ${CAST_CODE} -- typed upstream\n${CAST_SEED}`;
       for (const [name, source] of [["file", namedFile], ["line", namedLine]] as const) {
         const codes = await lintSeed(policyDir, source);
-        assert(codes.includes(IGNORE_CODE), `${name}: ${codes.join(",")}`);
+        const includesResult2: boolean = codes.includes(IGNORE_CODE);
+        assert(includesResult2, `${name}: ${codes.join(",")}`);
       }
     });
 
@@ -134,7 +136,8 @@ Deno.test("installed portal policy", async (test) => {
         CAST_SEED,
       ].join("");
       const codes = await lintSeed(policyDir, source);
-      assert(codes.includes(IGNORE_CODE), codes.join(","));
+      const includesResult3: boolean = codes.includes(IGNORE_CODE);
+      assert(includesResult3, codes.join(","));
     });
   }, { prefix: "portal-policy-out-" });
 });

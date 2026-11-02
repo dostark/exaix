@@ -88,7 +88,8 @@ Deno.test("[skill_folder] runtime view carries no removed counter, UUID or versi
     assert(!keys.includes(removed), `runtime view must not expose ${removed}`);
   }
   for (const required of ["title", "references", "root_kind", "content_sha256", "skill_id"]) {
-    assert(keys.includes(required), `runtime view must expose ${required}`);
+    const includesResult: boolean = keys.includes(required);
+    assert(includesResult, `runtime view must expose ${required}`);
   }
 });
 

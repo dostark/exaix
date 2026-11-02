@@ -281,6 +281,22 @@ Deno.test("inventory-scopes-and-buckets: new and removed-zero buckets remain pro
   }
 });
 
+Deno.test("boolean-other-partition-guard: cleared parent and Team buckets still reject findings", () => {
+  const rule = "exaix/no-boolean-assert";
+  const ceilings: ICeilings = { [rule]: { tests: 2 } };
+  const measured: ICeilings = { [rule]: { "packages/core": 1, "exaix-team": 1, tests: 2 } };
+  const result = evaluateCeilings(ceilings, ceilingCounts(ceilings, measured), [rule], [
+    "packages/core",
+    "exaix-team",
+    "tests",
+  ]);
+  assertEquals(result.over, [
+    { rule, packageName: "packages/core", count: 1, ceiling: 0, delta: 1 },
+    { rule, packageName: "exaix-team", count: 1, ceiling: 0, delta: 1 },
+  ]);
+  assertEquals(result.under, []);
+});
+
 Deno.test("the committed ceilings file names only known rules and packages", async () => {
   const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
   const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, await workspacePackages());
@@ -345,7 +361,10 @@ Deno.test("exaix-ceilings-match: the three complexity rows cover the measured bu
   for (const rule of rules) {
     const row = ceilings[rule];
     assert(row !== undefined, rule);
-    for (const packageName of Object.keys(row)) assert(known.includes(packageName), `${rule}: ${packageName}`);
+    for (const packageName of Object.keys(row)) {
+      const knownPackage: boolean = known.includes(packageName);
+      assert(knownPackage, `${rule}: ${packageName}`);
+    }
   }
   assertEquals(evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, known).over, []);
   const lower = structuredClone(ceilings);

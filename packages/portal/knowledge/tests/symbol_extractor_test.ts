@@ -68,12 +68,18 @@ Deno.test("[SymbolExtractor] assigns correct kind for function/class/interface/c
     primaryLanguage: "typescript",
   });
   const kinds = result.map((r) => r.kind);
-  assertEquals(kinds.includes("function"), true);
-  assertEquals(kinds.includes("class"), true);
-  assertEquals(kinds.includes("interface"), true);
-  assertEquals(kinds.includes("const"), true);
-  assertEquals(kinds.includes("type"), true);
-  assertEquals(kinds.includes("enum"), true);
+  const assertionResult: boolean = kinds.includes("function");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = kinds.includes("class");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = kinds.includes("interface");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = kinds.includes("const");
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = kinds.includes("type");
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = kinds.includes("enum");
+  assertEquals(assertionResult6, true);
 });
 
 Deno.test("[SymbolExtractor] populates signature from functionDef", async () => {
@@ -86,8 +92,10 @@ Deno.test("[SymbolExtractor] populates signature from functionDef", async () => 
   const result = await extractor.extractSymbols("/portal", ["src/main.ts"], {
     primaryLanguage: "typescript",
   });
-  assertEquals(result[0].signature.includes("doWork"), true);
-  assertEquals(result[0].signature.includes("input"), true);
+  const assertionResult7: boolean = result[0].signature.includes("doWork");
+  assertEquals(assertionResult7, true);
+  const assertionResult8: boolean = result[0].signature.includes("input");
+  assertEquals(assertionResult8, true);
 });
 
 Deno.test("[SymbolExtractor] extracts JSDoc summary as doc field", async () => {

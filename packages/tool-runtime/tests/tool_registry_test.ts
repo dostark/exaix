@@ -77,7 +77,8 @@ Deno.test("ToolRegistry: registers tools with JSON schemas", () => {
   // Check read_file tool schema
   const readFile = tools.find((t: { name: string }) => t.name === ToolName.READ_FILE);
   assertExists(readFile, "read_file tool should be registered");
-  assertEquals(readFile.description.includes("Return"), true);
+  const assertionResult: boolean = readFile.description.includes("Return");
+  assertEquals(assertionResult, true);
   assertExists(readFile.parameters);
   assertExists(readFile.parameters.properties);
   assertExists(readFile.parameters.properties.path);
@@ -381,20 +382,34 @@ Deno.test("ToolRegistry: getTools - returns all registered tools", () => {
 
   assertEquals(tools.length, createCoreToolSchemas().length);
   const toolNames = tools.map((t) => t.name);
-  assertEquals(toolNames.includes(ToolName.READ_FILE), true);
-  assertEquals(toolNames.includes(ToolName.WRITE_FILE), true);
-  assertEquals(toolNames.includes(ToolName.LIST_DIRECTORY), true);
-  assertEquals(toolNames.includes(ToolName.SEARCH_FILES), true);
-  assertEquals(toolNames.includes(ToolName.RUN_COMMAND), true);
-  assertEquals(toolNames.includes(ToolName.CREATE_DIRECTORY), true);
-  assertEquals(toolNames.includes(ToolName.FETCH_URL), true);
-  assertEquals(toolNames.includes(ToolName.GREP_SEARCH), true);
-  assertEquals(toolNames.includes(ToolName.MOVE_FILE), true);
-  assertEquals(toolNames.includes(ToolName.COPY_FILE), true);
-  assertEquals(toolNames.includes(ToolName.DELETE_FILE), true);
-  assertEquals(toolNames.includes(ToolName.GIT_INFO), true);
-  assertEquals(toolNames.includes(ToolName.DENO_TASK), true);
-  assertEquals(toolNames.includes(ToolName.PATCH_FILE), true);
+  const assertionResult2: boolean = toolNames.includes(ToolName.READ_FILE);
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = toolNames.includes(ToolName.WRITE_FILE);
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = toolNames.includes(ToolName.LIST_DIRECTORY);
+  assertEquals(assertionResult4, true);
+  const assertionResult5: boolean = toolNames.includes(ToolName.SEARCH_FILES);
+  assertEquals(assertionResult5, true);
+  const assertionResult6: boolean = toolNames.includes(ToolName.RUN_COMMAND);
+  assertEquals(assertionResult6, true);
+  const assertionResult7: boolean = toolNames.includes(ToolName.CREATE_DIRECTORY);
+  assertEquals(assertionResult7, true);
+  const assertionResult8: boolean = toolNames.includes(ToolName.FETCH_URL);
+  assertEquals(assertionResult8, true);
+  const assertionResult9: boolean = toolNames.includes(ToolName.GREP_SEARCH);
+  assertEquals(assertionResult9, true);
+  const assertionResult10: boolean = toolNames.includes(ToolName.MOVE_FILE);
+  assertEquals(assertionResult10, true);
+  const assertionResult11: boolean = toolNames.includes(ToolName.COPY_FILE);
+  assertEquals(assertionResult11, true);
+  const assertionResult12: boolean = toolNames.includes(ToolName.DELETE_FILE);
+  assertEquals(assertionResult12, true);
+  const assertionResult13: boolean = toolNames.includes(ToolName.GIT_INFO);
+  assertEquals(assertionResult13, true);
+  const assertionResult14: boolean = toolNames.includes(ToolName.DENO_TASK);
+  assertEquals(assertionResult14, true);
+  const assertionResult15: boolean = toolNames.includes(ToolName.PATCH_FILE);
+  assertEquals(assertionResult15, true);
 });
 
 Deno.test("ToolRegistry: execute - validates required parameters", async () => {

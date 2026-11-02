@@ -8,7 +8,7 @@
  * @related-files [packages/tool-runtime/src/tool_registry.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig, withTempDir } from "@exaix/testing";
 
@@ -29,7 +29,7 @@ Deno.test("[security] search_files rejects a pattern with .. segments instead of
   await withPortal(async (registry) => {
     const result = await registry.execute("search_files", { pattern: "../*.txt", path: "@p/." });
     assertEquals(result.success, false);
-    assert(String(result.error).includes(ACCESS_DENIED), `expected access denied, got ${result.error}`);
+    assertStringIncludes(String(result.error), ACCESS_DENIED, `expected access denied, got ${result.error}`);
   });
 });
 
@@ -37,7 +37,7 @@ Deno.test("[security] search_files rejects an absolute pattern", async () => {
   await withPortal(async (registry, root) => {
     const result = await registry.execute("search_files", { pattern: `${root}/*.txt`, path: "@p/." });
     assertEquals(result.success, false);
-    assert(String(result.error).includes(ACCESS_DENIED), `expected access denied, got ${result.error}`);
+    assertStringIncludes(String(result.error), ACCESS_DENIED, `expected access denied, got ${result.error}`);
   });
 });
 
@@ -47,6 +47,7 @@ Deno.test("search_files still returns in-root matches for a normal pattern", asy
     assertEquals(result.success, true);
     const files = (result.data as { files: string[] }).files;
     assertEquals(files.length, 1);
-    assert(files[0].startsWith(`${root}/portal/`));
+    const assertionResult: boolean = files[0].startsWith(`${root}/portal/`);
+    assert(assertionResult);
   });
 });

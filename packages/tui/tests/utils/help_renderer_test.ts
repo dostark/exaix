@@ -201,16 +201,21 @@ Deno.test("renderQuickHelp: renders quick help bar", () => {
     { key: "q", action: "Quit" },
   ];
   const result = renderQuickHelp(items, false);
-  assertEquals(result.includes("?"), true);
-  assertEquals(result.includes("Help"), true);
-  assertEquals(result.includes("q"), true);
-  assertEquals(result.includes("Quit"), true);
+  const assertionResult: boolean = result.includes("?");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = result.includes("Help");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = result.includes("q");
+  assertEquals(assertionResult3, true);
+  const assertionResult4: boolean = result.includes("Quit");
+  assertEquals(assertionResult4, true);
 });
 
 Deno.test("renderQuickHelp: renders with colors", () => {
   const items = [{ key: "x", action: "Test" }];
   const result = renderQuickHelp(items, true);
-  assertEquals(result.includes("\x1b["), true);
+  const assertionResult5: boolean = result.includes("\x1b[");
+  assertEquals(assertionResult5, true);
 });
 
 Deno.test("renderQuickHelp: separates items with spaces", () => {
@@ -219,7 +224,8 @@ Deno.test("renderQuickHelp: separates items with spaces", () => {
     { key: "b", action: "B" },
   ];
   const result = renderQuickHelp(items, false);
-  assertEquals(result.includes("  "), true);
+  const assertionResult6: boolean = result.includes("  ");
+  assertEquals(assertionResult6, true);
 });
 
 Deno.test("getStandardQuickHelp: returns standard items", () => {

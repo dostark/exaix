@@ -21,9 +21,12 @@ Deno.test("[HeuristicAnalyzer] detects file references in request text", () => {
   `;
   const result = analyzeHeuristic(text);
   assertExists(result.referencedFiles);
-  assertEquals(result.referencedFiles!.includes("src/services/foo.ts"), true);
-  assertEquals(result.referencedFiles!.includes("tests/services/foo_test.ts"), true);
-  assertEquals(result.referencedFiles!.includes("@exaix/schemas/bar.ts"), true);
+  const assertionResult: boolean = result.referencedFiles!.includes("src/services/foo.ts");
+  assertEquals(assertionResult, true);
+  const assertionResult2: boolean = result.referencedFiles!.includes("tests/services/foo_test.ts");
+  assertEquals(assertionResult2, true);
+  const assertionResult3: boolean = result.referencedFiles!.includes("@exaix/schemas/bar.ts");
+  assertEquals(assertionResult3, true);
 });
 
 Deno.test("[HeuristicAnalyzer] detects unquoted file paths with extensions", () => {

@@ -8,7 +8,7 @@
  */
 
 import type { JSONObject } from "@exaix/core";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import {
   DEFAULT_VERIFICATION_CHECK_TIMEOUT_MS,
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
@@ -327,5 +327,5 @@ Deno.test("[verification-schema] the finding rule pattern accepts plugin and bui
 
 Deno.test("[verification-schema] schema-names-generic: the snapshot module keeps no Unslop identifier", async () => {
   const source = await Deno.readTextFile(new URL("../src/portal_verification.ts", import.meta.url));
-  assertEquals(source.includes("Unslop"), false);
+  assertFalse(source.includes("Unslop"));
 });
