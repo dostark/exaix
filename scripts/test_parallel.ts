@@ -28,6 +28,7 @@ import {
   ensureDenoCacheVolume,
   ensureDevTestImage,
   MIN_TEST_CONTAINER_JOBS,
+  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   runBatch2InContainers,
   selectBatch2Strategy,
@@ -939,7 +940,7 @@ async function main(args: string[]): Promise<number> {
   if (strategy.mode === "container") {
     const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
     const bounds = resolveContainerResourceBounds(Deno.env.toObject());
-    await ensureDevTestImage(image);
+    if (await ensureDevTestImage(image)) await pruneStaleBuildCache();
     const denoCacheVolume = await ensureDenoCacheVolume(image);
     await preparePortalLintAssetsForOfflineTest();
     const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {

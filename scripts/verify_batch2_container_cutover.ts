@@ -22,6 +22,7 @@ import {
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
   ensureDenoCacheVolume,
   ensureDevTestImage,
+  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   runBatch2InContainers,
   TEST_CONTAINER_IMAGE_ENV,
@@ -148,7 +149,7 @@ async function runSerialBatch2(): Promise<{ wallSec: number; counts: Map<string,
 async function main(args: readonly string[] = Deno.args): Promise<number> {
   const jobs = parseJobs(args);
   const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
-  await ensureDevTestImage(image);
+  if (await ensureDevTestImage(image)) await pruneStaleBuildCache();
 
   console.log(`› Batch 2 container cutover verification: ${jobs} worker(s), image ${image}`);
   const skipSerial = Deno.env.get("EXA_VERIFY_SKIP_SERIAL") === "1";

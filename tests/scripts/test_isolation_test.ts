@@ -29,6 +29,7 @@ import {
   MIN_TEST_CONTAINER_JOBS,
   parseDockerTimestamp,
   parseWorkerResultLine,
+  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   resolveDockerBuildEnv,
   runBatch2InContainers,
@@ -174,6 +175,80 @@ Deno.test("parseDockerTimestamp reads docker's nanosecond RFC 3339 timestamp", (
     "2026-10-13T12:56:00.392Z",
   );
   assertEquals(parseDockerTimestamp("not a time"), undefined);
+});
+
+/** Fakes for a stale-image rebuild. `ids` holds the image id before and after the build. */
+function fakeRebuild(ids: { before: string | undefined; after: string | undefined }, tagsOfOldImage = 0) {
+  const calls = { removed: [] as string[], built: 0 };
+  let built = false;
+  return {
+    calls,
+    options: {
+      dockerOnPath: () => true,
+      imageExists: () => Promise.resolve(ids.before !== undefined),
+      imageCreatedAt: () => Promise.resolve(new Date("2026-10-13T12:00:00Z")),
+      buildInputsModifiedAt: () => Promise.resolve(new Date("2026-10-16T09:00:00Z")),
+      build: () => {
+        calls.built++;
+        built = true;
+        return Promise.resolve(0);
+      },
+      imageId: (_image: string) => Promise.resolve(built ? ids.after : ids.before),
+      imageTagCount: (_id: string) => Promise.resolve(tagsOfOldImage),
+      removeImage: (id: string) => {
+        calls.removed.push(id);
+        return Promise.resolve();
+      },
+    },
+  };
+}
+
+Deno.test("a rebuild removes the replaced image once it has lost its tag", async () => {
+  const docker = fakeRebuild({ before: "sha256:old", after: "sha256:new" });
+  assertEquals(await ensureDevTestImage("exaix-dev-test:test", docker.options), true);
+  assertEquals(docker.calls.removed, ["sha256:old"]);
+});
+
+Deno.test("a rebuild keeps a replaced image that still carries another tag", async () => {
+  const docker = fakeRebuild({ before: "sha256:old", after: "sha256:new" }, 1);
+  await ensureDevTestImage("exaix-dev-test:test", docker.options);
+  assertEquals(docker.calls.removed, []);
+});
+
+Deno.test("a first build and an unchanged image id remove nothing", async () => {
+  const first = fakeRebuild({ before: undefined, after: "sha256:new" });
+  await ensureDevTestImage("exaix-dev-test:test", first.options);
+  assertEquals(first.calls.removed, []);
+  const same = fakeRebuild({ before: "sha256:same", after: "sha256:same" });
+  await ensureDevTestImage("exaix-dev-test:test", same.options);
+  assertEquals(same.calls.removed, []);
+});
+
+Deno.test("a fresh image is neither rebuilt nor cleaned and the result says so", async () => {
+  const docker = fakeRebuild({ before: "sha256:old", after: "sha256:new" });
+  const fresh = { ...docker.options, buildInputsModifiedAt: () => Promise.resolve(new Date(0)) };
+  assertEquals(await ensureDevTestImage("exaix-dev-test:test", fresh), false);
+  assertEquals(docker.calls, { removed: [], built: 0 });
+});
+
+Deno.test("a failed removal of the replaced image never fails the run", async () => {
+  const docker = fakeRebuild({ before: "sha256:old", after: "sha256:new" });
+  const busy = { ...docker.options, removeImage: () => Promise.reject(new Error("image is in use")) };
+  assertEquals(await ensureDevTestImage("exaix-dev-test:test", busy), true);
+});
+
+Deno.test("pruneStaleBuildCache trims only old unused cache and tolerates failure", async () => {
+  const seen: string[] = [];
+  await pruneStaleBuildCache({
+    dockerOnPath: () => true,
+    prune: (maxAge: string) => {
+      seen.push(maxAge);
+      return Promise.resolve(0);
+    },
+  });
+  assertEquals(seen, ["168h"]);
+  await pruneStaleBuildCache({ dockerOnPath: () => true, prune: () => Promise.resolve(1) });
+  await pruneStaleBuildCache({ dockerOnPath: () => false, prune: () => Promise.reject(new Error("must not run")) });
 });
 
 Deno.test("ensureDevTestImage surfaces a build failure", async () => {
@@ -362,6 +437,7 @@ Deno.test({
     );
     const timeoutMs = 30_000;
     const file = "packages/lint-policy/tests/policy_config_test.ts";
+    const smokeVolume = `${DENO_CACHE_VOLUME_PREFIX}smoke-${crypto.randomUUID().slice(0, 8)}`;
     const worker = startWorkerContainer({
       repoRoot: fromFileUrl(new URL("../../", import.meta.url)),
       image: DEFAULT_TEST_CONTAINER_IMAGE,
@@ -372,7 +448,7 @@ Deno.test({
       memory: DEFAULT_TEST_CONTAINER_MEMORY,
       cpus: DEFAULT_TEST_CONTAINER_CPUS,
       watchdogMs: timeoutMs,
-      denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
+      denoCacheVolume: smokeVolume,
     });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -390,6 +466,8 @@ Deno.test({
     } finally {
       clearTimeout(timer);
       await worker.kill();
+      await new Deno.Command("docker", { args: ["volume", "rm", "-f", smokeVolume], stdout: "null", stderr: "null" })
+        .output();
     }
   },
 });
@@ -1018,8 +1096,8 @@ const IT_REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url)).replace(/\/
 const IT_CACHE_VOLUME = `${DENO_CACHE_VOLUME_PREFIX}it`;
 let itWorkerSeq = 0;
 
-let imageReady: Promise<void> | undefined;
-function ensureImageOnce(): Promise<void> {
+let imageReady: Promise<boolean> | undefined;
+function ensureImageOnce(): Promise<boolean> {
   imageReady ??= ensureDevTestImage(IT_IMAGE);
   return imageReady;
 }
