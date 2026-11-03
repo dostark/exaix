@@ -8,7 +8,7 @@
  * @related-files [tests/integration/skill_revision_cutover_e2e_test.ts, tests/integration/skill_revision_cutover_evidence_test.ts]
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 
 export interface ICutoverUsageRow {
   call_id: string;
@@ -65,8 +65,9 @@ function assertOneUse(
 /** Throws unless the evidence proves the cutover: exact approved content, one use per call, two stored revisions, one drift. */
 export function verifyCutoverEvidence(evidence: ICutoverEvidence): void {
   assert(evidence.revisionA !== evidence.revisionB, "the edit must create a new revision");
-  assert(
-    evidence.executionPromptA.includes(evidence.canonicalBlockA),
+  assertStringIncludes(
+    evidence.executionPromptA,
+    evidence.canonicalBlockA,
     "the execution prompt of A must carry the exact canonical block of the approved revision",
   );
   assertFalse(

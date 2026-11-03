@@ -15,7 +15,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { ensureDir } from "@std/fs";
@@ -140,8 +140,9 @@ Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an act
       await loader.load("legacy-toml");
     } catch (e) {
       threw = true;
-      assert(
-        (e instanceof Error ? e.message : String(e)).includes("TOML"),
+      assertStringIncludes(
+        e instanceof Error ? e.message : String(e),
+        "TOML",
         "error must name the retired TOML format",
       );
     }

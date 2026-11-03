@@ -5,7 +5,7 @@
  *   round-trips, hot vs restart, MCP tool registration, profile scoping.
  */
 import { Database } from "@db/sqlite";
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertNotEquals } from "@std/assert";
 import { configurable, getRegisteredDefaults } from "@exaix/core/config";
 import { createConfigAdapter, DirectConfigAdapter, InMemoryConfigStore } from "@exaix/core/config";
 import { ensureConfigDb, getAllEffectiveValues, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
@@ -83,11 +83,7 @@ Deno.test(
     ];
     const manifestNames = TOOL_MANIFEST.map((e) => e.name);
     for (const name of configToolNames) {
-      assertEquals(
-        manifestNames.includes(name),
-        true,
-        `Missing manifest entry: ${name}`,
-      );
+      assertArrayIncludes(manifestNames, [name], `Missing manifest entry: ${name}`);
     }
   },
 );

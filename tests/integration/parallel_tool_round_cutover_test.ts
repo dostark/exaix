@@ -17,7 +17,7 @@
  * ]
  */
 
-import { assert, assertEquals, AssertionError, assertRejects } from "@std/assert";
+import { assert, assertEquals, AssertionError, assertRejects, assertStringIncludes } from "@std/assert";
 import { type IFixtureBody, payloadOf } from "./helpers/compatible_daemon.ts";
 import {
   FILE_NAMES,
@@ -58,7 +58,7 @@ Deno.test({
     assertEquals(exploration.parallel_tool_calls, undefined, "auto sends no parallel flag");
     assertEquals(assistantToolCallIds(replay), [PLANNING_CALL_IDS]);
     assertEquals(toolMessages(replay).map((message) => message.id), PLANNING_CALL_IDS);
-    toolMessages(replay).forEach((message, index) => assert(message.content.includes(markers[index])));
+    toolMessages(replay).forEach((message, index) => assertStringIncludes(message.content, markers[index]));
     const completed = payloadOf<ITerminalPayload>(rows, "planning.tools.completed");
     assertEquals(completed?.rounds, 2);
     assertEquals(completed?.toolCalls, FILE_NAMES.length);
@@ -117,10 +117,10 @@ Deno.test({
     assertEquals(completed?.toolCalls, 1);
     const calls = toolRows(rows);
     assertEquals(calls.length, FILE_NAMES.length, "every position is journaled, executed or refused");
-    assert(calls[0].resultSummary.includes(markers[0]), "the first call executes");
+    assertStringIncludes(calls[0].resultSummary, markers[0], "the first call executes");
     assertEquals(calls.slice(1).map((call) => call.resultSummary.includes(REFUSAL)), [true, true]);
     assertEquals(toolMessages(replay).map((message) => message.id), PLANNING_CALL_IDS);
-    assert(toolMessages(replay)[0].content.includes(markers[0]));
+    assertStringIncludes(toolMessages(replay)[0].content, markers[0]);
     assertEquals(toolMessages(replay).slice(1).map((message) => message.content.includes(REFUSAL)), [true, true]);
   },
 });
@@ -144,8 +144,12 @@ Deno.test({
     assertEquals(execution.parallel_tool_calls, false, "the execution request asks for one call per response");
     const replay = fixture.bodies[2];
     assertEquals(toolMessages(replay).map((message) => message.id), ["REACT_CALL_A", "REACT_CALL_B"]);
-    assert(toolMessages(replay)[0].content.includes(markers[0]), "the executed call carries its marker");
-    assert(toolMessages(replay)[1].content.includes(REFUSAL), "the second call is refused, and replayed as refused");
+    assertStringIncludes(toolMessages(replay)[0].content, markers[0], "the executed call carries its marker");
+    assertStringIncludes(
+      toolMessages(replay)[1].content,
+      REFUSAL,
+      "the second call is refused, and replayed as refused",
+    );
     assertFirstExecutedSecondRefused(rows);
     assert(rows.some((row) => row.action_type === "execution.completed"));
   },
@@ -162,8 +166,8 @@ Deno.test({
     const execution = fixture.bodies[1];
     assertEquals(execution.parallel_tool_calls, undefined, "auto sends no parallel flag");
     const replay = fixture.bodies[2];
-    assert(toolMessages(replay)[0].content.includes(markers[0]));
-    assert(toolMessages(replay)[1].content.includes(REFUSAL));
+    assertStringIncludes(toolMessages(replay)[0].content, markers[0]);
+    assertStringIncludes(toolMessages(replay)[1].content, REFUSAL);
     assertFirstExecutedSecondRefused(rows);
     assert(rows.some((row) => row.action_type === "execution.completed"));
   },

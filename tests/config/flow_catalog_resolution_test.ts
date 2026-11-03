@@ -18,7 +18,7 @@
  */
 
 import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, ExaPathDefaults } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
@@ -116,9 +116,9 @@ Deno.test("[path-defaults] a stale bare paths.flows value is rejected at config 
 
   assertEquals(result.success, false, 'a config carrying the stale bare `flows = "Flows"` must not parse');
   const message = result.success ? "" : result.error.issues.map((i) => i.message).join(" ");
-  assertEquals(
-    message.includes(ExaPathDefaults.flows),
-    true,
+  assertStringIncludes(
+    message,
+    ExaPathDefaults.flows,
     `the rejection must name the composite form (${ExaPathDefaults.flows}); got: ${message}`,
   );
 });

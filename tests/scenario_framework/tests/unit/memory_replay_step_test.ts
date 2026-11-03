@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/scripts/run_memory_replay.ts, tests/scenario_framework/runner/retrieval_metrics.ts, tests/scenario_framework/schema/memory_task_schema.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { runMemoryReplay } from "../../scripts/run_memory_replay.ts";
 import { computeRecallAtK } from "../../runner/retrieval_metrics.ts";
 import type { IMemoryTaskJson } from "../../schema/memory_task_schema.ts";
@@ -105,8 +105,8 @@ Deno.test("[MemoryReplayStep] writes a query/expected-answer context file when t
   await withTempDir(async (workspaceRoot) => {
     await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
     const context = await Deno.readTextFile(`${workspaceRoot}/memory-task-context.md`);
-    assertEquals(context.includes(EXEMPLAR_TASK.queries[0].text), true);
-    assertEquals(context.includes(EXEMPLAR_TASK.queries[0].expected_answer!), true);
+    assertStringIncludes(context, EXEMPLAR_TASK.queries[0].text);
+    assertStringIncludes(context, EXEMPLAR_TASK.queries[0].expected_answer!);
   });
 });
 

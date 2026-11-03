@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/runner/pack_mutations.ts, scripts/verify_pack_mutations.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IPackMutation, withMutation } from "../../runner/pack_mutations.ts";
 
@@ -50,7 +50,7 @@ Deno.test("[mutation] applying a mutation changes the anchored bytes and reverti
       observed = await Deno.readTextFile(join(root, file));
     });
 
-    assert(observed.includes("ToolRegistry_MUTATED"), "the tree must be mutated while the callback runs");
+    assertStringIncludes(observed, "ToolRegistry_MUTATED", "the tree must be mutated while the callback runs");
     assertEquals(
       await Deno.readTextFile(join(root, file)),
       FIXTURE_SOURCE,

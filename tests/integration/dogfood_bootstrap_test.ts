@@ -4,7 +4,7 @@
  * @description Integration test for the dogfood bootstrap script
  */
 
-import { assert, assertStringIncludes } from "@std/assert";
+import { assert, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
@@ -190,7 +190,7 @@ Deno.test({
       const stat = await Deno.stat(worktreeGitDir);
       assert(stat.isFile, "Worktree .git should be a file (not a directory) in a linked worktree");
       const gitContent = Deno.readTextFileSync(worktreeGitDir);
-      assert(gitContent.startsWith("gitdir:"), ".git should contain gitdir: pointer to main repo");
+      assertMatch(gitContent, /^gitdir:/, ".git should contain gitdir: pointer to main repo");
 
       // Verify sandbox was created with workspace and config
       const workspaceConfig = join(sandboxRoot, "workspace", "exa.config.toml");

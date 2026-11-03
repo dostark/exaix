@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/main.ts, tests/scenario_framework/runner/binding_layers.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parseScenarioBindSpecs } from "../../runner/binding_layers.ts";
 
@@ -37,17 +37,19 @@ Deno.test("[cli] parseScenarioBindSpecs rejects a malformed spec with overlay_in
 Deno.test("[cli] the runner declares --overlay and --bind as repeatable options", async () => {
   const source = await Deno.readTextFile(join(REPO_ROOT, "tests", "scenario_framework", "runner", "main.ts"));
   for (const flag of ["--overlay <file:string>", "--bind <spec:string>"]) {
-    assert(source.includes(flag), `main.ts must declare ${flag}`);
+    assertStringIncludes(source, flag, `main.ts must declare ${flag}`);
   }
   // Each declaration must carry collect: true, or a second occurrence would overwrite the first.
   const overlayOptions = source.slice(source.indexOf("--overlay <file:string>"));
-  assert(
-    overlayOptions.slice(0, overlayOptions.indexOf(".option")).includes("collect: true"),
+  assertStringIncludes(
+    overlayOptions.slice(0, overlayOptions.indexOf(".option")),
+    "collect: true",
     "--overlay must be a repeatable (collect) option",
   );
   const bindOptions = source.slice(source.indexOf("--bind <spec:string>"));
-  assert(
-    bindOptions.slice(0, bindOptions.indexOf(".option")).includes("collect: true"),
+  assertStringIncludes(
+    bindOptions.slice(0, bindOptions.indexOf(".option")),
+    "collect: true",
     "--bind must be a repeatable (collect) option",
   );
 });

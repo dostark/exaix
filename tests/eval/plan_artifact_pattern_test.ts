@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/scenarios/, apps/daemon/main.ts]
  */
 import { DEFAULT_ARCHIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { walk } from "@std/fs";
 import { globToRegExp } from "@std/path";
@@ -32,9 +32,9 @@ const PLAN_SUFFIX = "_plan.md";
 
 Deno.test("plan_artifact_pattern — PlanWriter still emits the suffix scenarios rely on", async () => {
   const source = await Deno.readTextFile(PLAN_WRITER);
-  assertEquals(
-    source.includes(`${"$"}{requestId}${PLAN_SUFFIX}`),
-    true,
+  assertStringIncludes(
+    source,
+    `${"$"}{requestId}${PLAN_SUFFIX}`,
     `PlanWriter no longer emits "${PLAN_SUFFIX}" — every scenario waiting on that pattern is now broken`,
   );
 });

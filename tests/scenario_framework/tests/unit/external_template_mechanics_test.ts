@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { renderExternalBenchTaskTemplate } from "../../runner/scenario_templates.ts";
 
@@ -49,8 +49,9 @@ Deno.test("[ExternalTemplateMechanics] renders exactly delegate + verify-tests a
 
 Deno.test("[ExternalTemplateMechanics] the delegate step refreshes credentials into a STABLE, gitignored path — never a generation-time-random temp dir that would go stale before a later re-run", () => {
   const yaml = render();
-  assert(
-    yaml.includes("$FRAMEWORK_HOME/output/.eval-jail-creds/claude"),
+  assertStringIncludes(
+    yaml,
+    "$FRAMEWORK_HOME/output/.eval-jail-creds/claude",
     "the delegate step's --credential-staging-dir must reference a stable, run-time-expanded path",
   );
   assert(
@@ -81,8 +82,9 @@ Deno.test("[ExternalTemplateMechanics] pack is external_terminal_bench, distinct
 
 Deno.test("[ExternalTemplateMechanics] the portal mount is sentinel-based against the given portalDir — never the hardcoded todo-app path", () => {
   const yaml = render();
-  assert(
-    yaml.includes("$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary"),
+  assertStringIncludes(
+    yaml,
+    "$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary",
     "mount source must reference the given external portal directory",
   );
   assert(!yaml.includes("todo-app"), "external tasks must never mount the internal todo-app fixture");
@@ -90,14 +92,19 @@ Deno.test("[ExternalTemplateMechanics] the portal mount is sentinel-based agains
 
 Deno.test("[ExternalTemplateMechanics] the request fixture content sentinel is threaded into the delegate step", () => {
   const yaml = render();
-  assert(yaml.includes("$REQUEST_FIXTURE_CONTENT"), "delegate args must carry the content sentinel");
-  assert(yaml.includes(`request_fixture: "${REQUEST_FIXTURE}"`), "request_fixture must be set to the given fixture");
+  assertStringIncludes(yaml, "$REQUEST_FIXTURE_CONTENT", "delegate args must carry the content sentinel");
+  assertStringIncludes(
+    yaml,
+    `request_fixture: "${REQUEST_FIXTURE}"`,
+    "request_fixture must be set to the given fixture",
+  );
 });
 
 Deno.test("[ExternalTemplateMechanics] the verify step runs the task's own scoped_test_cmd inside the same jailed mount, unmodified", () => {
   const yaml = render();
-  assert(
-    yaml.includes("cd /app && pytest tests/test_outputs.py -rA"),
+  assertStringIncludes(
+    yaml,
+    "cd /app && pytest tests/test_outputs.py -rA",
     "verify step must run the benchmark's own scoped_test_cmd verbatim — no Exaix-authored assertions (Design Decision 3)",
   );
 });

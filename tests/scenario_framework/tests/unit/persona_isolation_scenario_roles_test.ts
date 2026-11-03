@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/scenarios/swe_tasks/map-dependencies.yaml, tests/scenario_framework/scenarios/swe_tasks/injection-sanitisation.yaml, tests/scenario_framework/scenarios/swe_tasks/path-traversal-storage.yaml]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -48,8 +48,8 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios expose Claude CLI and
     const scenario = ScenarioSchema.parse(parseYaml(source));
     assert(scenario.matrix, `${scenarioId}: missing matrix`);
     const tools = resolveScenarioMatrixCells(scenario.matrix, catalog).map((cell) => cell.tool);
-    assert(tools.includes("claude-code"), `${scenarioId}: missing Claude CLI cell`);
-    assert(tools.includes("codex"), `${scenarioId}: missing Codex CLI cell`);
+    assertArrayIncludes(tools, ["claude-code"], `${scenarioId}: missing Claude CLI cell`);
+    assertArrayIncludes(tools, ["codex"], `${scenarioId}: missing Codex CLI cell`);
     for (const step of scenario.steps.filter((candidate) => candidate.add_capabilities?.includes("cli_delegate"))) {
       assert(step.cells && !step.cells.includes("codex"), `${scenarioId}: Codex must use its ReAct provider path`);
     }

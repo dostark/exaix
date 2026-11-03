@@ -272,7 +272,7 @@ for (const portalIndex of [0, 1] as const) {
 
       for (const id of portal.relevantRecordIds) {
         const record = portal.records.find((r) => r.id === id)!;
-        assert(delivered.includes(record.text), `expected relevant record ${id} in the composed prompt`);
+        assertStringIncludes(delivered, record.text, `expected relevant record ${id} in the composed prompt`);
       }
       for (const record of otherPortal.records) {
         assertFalse(delivered.includes(record.text), `foreign-portal record leaked: ${record.id}`);
@@ -403,8 +403,8 @@ Deno.test("[dogfood_context_cutover][live-mcp] CliDelegateStrategy stock path: a
     assertEquals(result.ok, true, `child reported failure: ${result.error}`);
     assert(result.searchMemoryResult, "search_memory result must be present");
     const text = result.searchMemoryResult![0].text;
-    assert(text.includes(fixture.memory.approvedAnswerMemory.nonce), `expected the nonce in: ${text}`);
-    assert(text.includes(fixture.memory.approvedAnswerMemory.citation), `expected the citation in: ${text}`);
+    assertStringIncludes(text, fixture.memory.approvedAnswerMemory.nonce, `expected the nonce in: ${text}`);
+    assertStringIncludes(text, fixture.memory.approvedAnswerMemory.citation, `expected the citation in: ${text}`);
 
     assertEquals(closes.length, 1);
     assertEquals(closes[0].reason, "completed");
@@ -473,7 +473,7 @@ Deno.test("[dogfood_context_cutover][live-mcp] SessionDelegationCoordinator cycl
     assertEquals(result.ok, true, `child reported failure: ${result.error}`);
     assert(result.searchMemoryResult, "search_memory result must be present");
     const text = result.searchMemoryResult![0].text;
-    assert(text.includes(fixture.memory.approvedAnswerMemory.nonce), `expected the nonce in: ${text}`);
+    assertStringIncludes(text, fixture.memory.approvedAnswerMemory.nonce, `expected the nonce in: ${text}`);
 
     assertEquals(closes.length, 1);
     assertEquals(closes[0].reason, "completed");

@@ -17,7 +17,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml, tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
 import type { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -107,8 +107,9 @@ Deno.test("[delegate_matrix] each cell's config preset + EXA_SESSION_DELEGATE_TO
 Deno.test("[delegate_matrix] dry parse: every cell terminates in journal-assert steps for reconciled + scope_violation-absent", async () => {
   const scenario = await parseMatrixScenario();
   const events = journalEventTypes(scenario.steps);
-  assert(
-    events.includes("session.delegate.reconciled"),
+  assertArrayIncludes(
+    events,
+    ["session.delegate.reconciled"],
     `matrix steps must assert session.delegate.reconciled; found ${JSON.stringify(events)}`,
   );
   assert(
@@ -129,8 +130,9 @@ Deno.test("[delegate_hardening] the hardening scenario parses and has correct ta
 Deno.test("[delegate_hardening] the hardening scenario asserts reconciled WITHOUT scope_violation (pre-flight proof)", async () => {
   const scenario = await parseHardeningScenario();
   const events = journalEventTypes(scenario.steps);
-  assert(
-    events.includes("session.delegate.reconciled"),
+  assertArrayIncludes(
+    events,
+    ["session.delegate.reconciled"],
     `hardening scenario must assert session.delegate.reconciled; found ${JSON.stringify(events)}`,
   );
   assert(

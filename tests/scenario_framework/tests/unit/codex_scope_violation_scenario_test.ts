@@ -23,7 +23,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_codex_scope_violation_live.yaml, packages/core/src/events/domain_event_types.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parseScenario, REPO_ROOT } from "./helpers/codex_scope_violation_fixture.ts";
 
@@ -47,9 +47,10 @@ Deno.test("[codex_scope_violation_live] the request fixture asks for both an in-
   const scenario = await parseScenario();
   const fixturePath = join(REPO_ROOT, "tests/scenario_framework", scenario.request_fixture);
   const body = await Deno.readTextFile(fixturePath);
-  assert(body.includes("README.md"), "fixture must target README.md (outside permitted_paths src/**, tests/**)");
-  assert(
-    body.includes("/tmp/exaix-codex-external-scope-violation-sentinel.txt"),
+  assertStringIncludes(body, "README.md", "fixture must target README.md (outside permitted_paths src/**, tests/**)");
+  assertStringIncludes(
+    body,
+    "/tmp/exaix-codex-external-scope-violation-sentinel.txt",
     "fixture must name the exact external sentinel absolute path the scenario asserts absent",
   );
 });

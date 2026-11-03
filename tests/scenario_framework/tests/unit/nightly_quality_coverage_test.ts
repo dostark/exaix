@@ -7,7 +7,7 @@
  */
 import { ConfigService } from "@exaix/core/config";
 import { loadBindingLayers, resolveBinding } from "@exaix/ai";
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
@@ -57,8 +57,8 @@ Deno.test("nightly quality: every production role smoke has an opt-in judged pla
 Deno.test("nightly quality: five current skills prove injection and judge plan effectiveness", async () => {
   for (const skill of QUALITY_SKILLS) {
     const scenario = await readScenario(`scenarios/skill_eval/effectiveness-${skill}.yaml`);
-    assert(scenario.tags.includes("provider-live"));
-    assert(scenario.tags.includes(`entity:${skill}`));
+    assertArrayIncludes(scenario.tags, ["provider-live"]);
+    assertArrayIncludes(scenario.tags, [`entity:${skill}`]);
     assertJudge(scenario);
     const injection = scenario.steps.flatMap((step) => step.output_criteria).find((criterion) =>
       criterion.kind === "journal-event-exists" && criterion.event_type === "skills.resolved"
@@ -74,12 +74,12 @@ Deno.test("nightly quality: five current skills prove injection and judge plan e
 Deno.test("nightly quality: representative shipped flows have judged artifact variants", async () => {
   for (const flow of QUALITY_FLOWS) {
     const scenario = await readScenario(`scenarios/flow_blueprints/quality-${flow}.yaml`);
-    assert(scenario.tags.includes("provider-live"));
-    assert(scenario.tags.includes(`entity:${flow}.flow`));
+    assertArrayIncludes(scenario.tags, ["provider-live"]);
+    assertArrayIncludes(scenario.tags, [`entity:${flow}.flow`]);
     assertEquals(scenario.flow_fixture, undefined, "quality runs must execute the shipped blueprint");
     assertJudge(scenario);
     const request = await Deno.readTextFile(resolve(FRAMEWORK_HOME, scenario.request_fixture!));
-    assert(request.includes(`flow: ${flow}`));
+    assertStringIncludes(request, `flow: ${flow}`);
     await Deno.stat(resolve(REPO_ROOT, "Blueprints/Flows", `${flow}.flow.yaml`));
   }
 });
@@ -109,11 +109,11 @@ Deno.test("nightly quality: shipped flow steps bind to the qualified DeepSeek se
 Deno.test("nightly quality: judge roles receive concrete evidence and comparison options", async () => {
   const judge = await readScenario("scenarios/agent_role_eval/quality-judge-smoke.yaml");
   const judgeRequest = await Deno.readTextFile(resolve(FRAMEWORK_HOME, judge.request_fixture!));
-  assert(judgeRequest.includes("PortalPermissionsService.checkAgentAllowed"));
-  assert(judgeRequest.includes('agentRolesAllowed.includes("*")'));
+  assertStringIncludes(judgeRequest, "PortalPermissionsService.checkAgentAllowed");
+  assertStringIncludes(judgeRequest, 'agentRolesAllowed.includes("*")');
   const voting = await readScenario("scenarios/agent_role_eval/voting-judge-smoke.yaml");
   const votingRequest = await Deno.readTextFile(resolve(FRAMEWORK_HOME, voting.request_fixture!));
-  for (const label of ["Approach A", "Approach B", "Approach C"]) assert(votingRequest.includes(label));
+  for (const label of ["Approach A", "Approach B", "Approach C"]) assertStringIncludes(votingRequest, label);
 });
 
 Deno.test("nightly quality: implementation-plan judges use the requested stage", async () => {

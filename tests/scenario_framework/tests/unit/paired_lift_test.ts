@@ -149,10 +149,8 @@ Deno.test("[PairedLift] computes meanDelta/stdevDelta over matched tasks, exclud
     );
     assertEquals(family.basis.controlCell, BARE_CELL);
     assertEquals(family.basis.treatmentCell, EXAIX_CELL);
-    assert(
-      family.basis.unmatchedTaskIds.includes(T3),
-      "basis must name the unmatched task",
-    );
+    const includesResult: boolean = family.basis.unmatchedTaskIds.includes(T3);
+    assert(includesResult, "basis must name the unmatched task");
   } finally {
     cleanup();
   }

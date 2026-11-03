@@ -4,7 +4,7 @@
  * @description Integration tests for verifying plan amendment triggers and artifact persistence.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ConfidenceScorer } from "@exaix/execution";
@@ -102,7 +102,7 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
 
       const amendment = JSON.parse(amendmentContent);
       assertEquals(amendment.planId, requestId);
-      assertEquals(amendment.summary.includes("Tool failed"), true);
+      assertStringIncludes(amendment.summary, "Tool failed");
     },
   );
 });

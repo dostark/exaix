@@ -9,7 +9,7 @@
  *   packages/portal/knowledge/symbol_extractor_registry.ts]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { PortalAnalysisMode } from "@exaix/core";
@@ -124,8 +124,8 @@ Deno.test({
       assertExists(result.symbolMap, "symbolMap should exist for Python portal");
       assert(result.symbolMap.length > 0, "Python portal should have non-empty symbolMap");
       const names = result.symbolMap.map((s) => s.name);
-      assert(names.includes("hello"), "hello function should be in symbolMap");
-      assert(names.includes("world"), "world function should be in symbolMap");
+      assertArrayIncludes(names, ["hello"], "hello function should be in symbolMap");
+      assertArrayIncludes(names, ["world"], "world function should be in symbolMap");
     }, { prefix: "p119_py_e2e_" });
   },
 });
@@ -154,7 +154,7 @@ Deno.test({
       // Python is dominant — should have symbols
       assert(result.symbolMap.length > 0, "Mixed portal should have symbols from dominant Python");
       const names = result.symbolMap.map((s) => s.name);
-      assert(names.includes("start"), "start (Python) should be in symbolMap");
+      assertArrayIncludes(names, ["start"], "start (Python) should be in symbolMap");
       // Rust files should not cause an error (fail-soft)
       // The portal should not crash despite having unextractable files
     }, { prefix: "p119_mixed_e2e_" });

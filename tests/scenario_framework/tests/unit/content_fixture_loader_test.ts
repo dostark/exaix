@@ -7,13 +7,13 @@
  * @related-files [tests/scenario_framework/runner/content_fixtures.ts]
  */
 
-import { assert, assertRejects } from "@std/assert";
+import { assertRejects, assertStringIncludes } from "@std/assert";
 import { loadContentFixture } from "../../runner/content_fixtures.ts";
 
 Deno.test("[content-fixtures] loads a framework-relative fixture", async () => {
   const text = await loadContentFixture("fixtures/configs/aci-doc-injection-enabled-write-config.toml");
-  assert(text.includes("[system]"), "the fixture holds the system section");
-  assert(text.includes('root = "$WORKSPACE_ROOT"'), "the fixture keeps the root sentinel");
+  assertStringIncludes(text, "[system]", "the fixture holds the system section");
+  assertStringIncludes(text, 'root = "$WORKSPACE_ROOT"', "the fixture keeps the root sentinel");
 });
 
 Deno.test("[content-fixtures] rejects an absolute path", async () => {

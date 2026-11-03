@@ -17,7 +17,7 @@
  * @related-files [apps/exactl/src/exactl.ts, tests/scenario_framework/runner/step_executor.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { walk } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
@@ -122,6 +122,6 @@ Deno.test("[cli-surface] the tree is read from the real root command", () => {
   // Guards the reader: were the export renamed or the tree built lazily, both checks above
   // would pass vacuously by finding no commands to compare against.
   const top = namesOf(__test_command.getCommands());
-  assert(top.includes("flow"), `expected a 'flow' command, got: ${top.join(", ")}`);
-  assert(namesOf(findCommand("flow")!.getCommands()).includes("validate"));
+  assertArrayIncludes(top, ["flow"], `expected a 'flow' command, got: ${top.join(", ")}`);
+  assertArrayIncludes(namesOf(findCommand("flow")!.getCommands()), ["validate"]);
 });

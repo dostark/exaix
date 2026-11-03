@@ -17,7 +17,7 @@
  * ]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { PlanningToolLoop } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -112,7 +112,9 @@ async function runThreeFileRound(baseOptions: IModelOptions, round: IRoundObserv
     });
     const outcome = `after ${result.rounds} rounds, ${result.toolCalls} tool calls, stop ${result.stopReason}; ` +
       `final answer: ${JSON.stringify(result.final.content)}`;
-    for (const marker of markers) assert(result.final.content.includes(marker), `missing marker ${marker} ${outcome}`);
+    for (const marker of markers) {
+      assertStringIncludes(result.final.content, marker, `missing marker ${marker} ${outcome}`);
+    }
     assertEquals(result.toolCalls >= LIVE_FILES.length, true, outcome);
   } finally {
     ProviderRegistry.clear();

@@ -3,7 +3,7 @@
  * @path tests/scenario_framework/tests/plan_amendment_scenario_test.ts
  * @description Integration test for the Plan Amendment Safety Gate scenario.
  */
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
@@ -38,18 +38,20 @@ Deno.test({
         },
       }).output();
 
-      const outputDir = join(Deno.cwd(), "tests/scenario_framework/output/plan-amendment");
-      await ensureDir(outputDir);
+      const outputDir = await Deno.makeTempDir({ prefix: "exaix-plan-amendment-output-" });
+      try {
+        const { code, output } = await runScenario(runnerPath, "plan-amendment-lifecycle", workspacePath, outputDir);
 
-      const { code, output } = await runScenario(runnerPath, "plan-amendment-lifecycle", workspacePath, outputDir);
+        if (code !== 0) {
+          console.error("Scenario failed with exit code:", code);
+        }
 
-      if (code !== 0) {
-        console.error("Scenario failed with exit code:", code);
+        assertEquals(code, 0, `Scenario should pass successfully. Output: ${output.substring(0, 500)}`);
+        assertStringIncludes(output, "plan-amendment-lifecycle", "Output should contain scenario name");
+        assert(output.includes("success") || output.includes("PASSED"), "Output should contain success indicator");
+      } finally {
+        await Deno.remove(outputDir, { recursive: true });
       }
-
-      assertEquals(code, 0, `Scenario should pass successfully. Output: ${output.substring(0, 500)}`);
-      assert(output.includes("plan-amendment-lifecycle"), "Output should contain scenario name");
-      assert(output.includes("success") || output.includes("PASSED"), "Output should contain success indicator");
     });
   },
 });

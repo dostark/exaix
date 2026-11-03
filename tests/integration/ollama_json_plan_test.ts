@@ -6,13 +6,20 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AgentRunner } from "@exaix/execution";
 import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanAdapter } from "@exaix/core/planning";
 import { initTestDbService } from "@exaix/testing";
 import { getWorkspacePlansDir } from "@exaix/testing";
+import { parse as parseYaml } from "@std/yaml";
+
+interface IPlanFrontmatter {
+  trace_id: string;
+  request_id: string;
+  status: string;
+}
 
 // Test Configuration
 
@@ -174,16 +181,18 @@ Deno.test({
 
     const writeResult = await planWriter.writePlan(agentResult, metadata);
     assertExists(writeResult.planPath, "Should have plan path");
-    assert(writeResult.planPath.endsWith("_plan.md"), "Plan file should end with _plan.md");
+    assertMatch(writeResult.planPath, /_plan\.md$/, "Plan file should end with _plan.md");
 
     console.log(`✅ Plan written to: ${writeResult.planPath}`);
 
     const planContent = await Deno.readTextFile(writeResult.planPath);
 
-    // Checkfrontmatter
-    assertStringIncludes(planContent, `trace_id: "${request.traceId}"`, "Should include trace_id");
-    assertStringIncludes(planContent, `request_id: "${request.requestId}"`, "Should include request_id");
-    assertStringIncludes(planContent, "status: review", "Should have review status");
+    const frontmatterMatch = planContent.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    assertExists(frontmatterMatch, "Plan must start with YAML frontmatter");
+    const frontmatter = parseYaml(frontmatterMatch[1]) as IPlanFrontmatter;
+    assertEquals(frontmatter.trace_id, request.traceId, "Should include trace_id");
+    assertEquals(frontmatter.request_id, request.requestId, "Should include request_id");
+    assertEquals(frontmatter.status, "review", "Should have review status");
 
     // Check content sections (Reasoning is optional if no thought provided)
     assertStringIncludes(planContent, "## Execution Steps", "Should include Execution Steps section");

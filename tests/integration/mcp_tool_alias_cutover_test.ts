@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { z } from "zod";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -308,7 +308,7 @@ Deno.test({
           }),
         ]);
         for (const read of reads) {
-          assert(replyText(read).includes(FILE_MARKER), `Read must return the file: ${replyText(read)}`);
+          assertStringIncludes(replyText(read), FILE_MARKER, `Read must return the file: ${replyText(read)}`);
         }
         assertEquals(
           await callTool(client, "Read", { ...readArgs, file_path: "missing.txt" }),
@@ -372,7 +372,7 @@ Deno.test({
           agent_role: AGENT_ROLE,
           path: "notes.txt",
         });
-        assert(replyText(canonical).includes(FILE_MARKER));
+        assertStringIncludes(replyText(canonical), FILE_MARKER);
         await reader.flush(client, exited);
       });
       const stdioRewrites = await reader.rows("tool.alias.rewritten");
@@ -402,7 +402,7 @@ Deno.test({
         expectedRewrites: number,
       ): Promise<void> => {
         const names = await listedNames(client);
-        assert(names.includes("query_symbols"), JSON.stringify(names));
+        assertArrayIncludes(names, ["query_symbols"], JSON.stringify(names));
         for (const retired of ["exaix_portal_symbols", "list_symbols"]) {
           assertFalse(names.includes(retired), retired);
         }

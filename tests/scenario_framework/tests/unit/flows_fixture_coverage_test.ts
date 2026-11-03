@@ -20,7 +20,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { CI_EXCLUDED_TAGS, type IScenarioCatalogEntry, loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
@@ -147,7 +147,7 @@ Deno.test("[flows_fixture_coverage] every opted-in scenario has an independent e
   const optedIn = catalog.filter(optsIntoRecordingLanes).map((scenario) => scenario.id).sort();
   const manifests = (await loadManifests(FRAMEWORK_HOME)).map((manifest) => manifest.scenarioId);
   assertEquals(manifests, optedIn);
-  assert(optedIn.includes("self-correcting-implementation"));
+  assertArrayIncludes(optedIn, ["self-correcting-implementation"]);
 });
 
 Deno.test("[flows_fixture_coverage] manifests reconcile with schema-valid flows, editions and keyed recordings", async () => {

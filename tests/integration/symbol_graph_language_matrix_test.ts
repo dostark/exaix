@@ -20,7 +20,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   LANG_GO,
@@ -464,8 +464,9 @@ for (const fixture of FIXTURES) {
     try {
       const recorded = pairs(knowledge);
       for (const edge of fixture.chain) {
-        assert(
-          recorded.includes(`${edge.from}->${edge.to}`),
+        assertArrayIncludes(
+          recorded,
+          [`${edge.from}->${edge.to}`],
           `${label}: expected chain edge ${edge.from}->${edge.to}, got ${JSON.stringify(recorded)}`,
         );
       }
@@ -483,7 +484,7 @@ for (const fixture of FIXTURES) {
       const answer = whoDependsOn(knowledge, target).map((e) => e.from).sort();
 
       for (const caller of fixture.directCallers) {
-        assert(answer.includes(caller), `${label}: ${caller} must be reported as a caller of ${target}`);
+        assertArrayIncludes(answer, [caller], `${label}: ${caller} must be reported as a caller of ${target}`);
       }
       // The transitive caller reaches the target through intermediates, so it is
       // NOT a direct caller. Reporting it would be a wrong answer.
@@ -504,8 +505,9 @@ for (const fixture of FIXTURES) {
         .filter((e) => e.kind === "symbol_references_symbol")
         .map((e) => e.to);
 
-      assert(
-        answer.includes(`${fixture.targetFile}#${fixture.targetSymbol}`),
+      assertArrayIncludes(
+        answer,
+        [`${fixture.targetFile}#${fixture.targetSymbol}`],
         `${label}: ${deepest} must report the target as an out-edge, got ${JSON.stringify(answer)}`,
       );
     } finally {
@@ -520,8 +522,8 @@ for (const fixture of FIXTURES) {
       assert(edges.length > 0, `${label}: expected at least one reference edge`);
       for (const edge of edges) {
         assertEquals(edge.kind, "symbol_references_symbol");
-        assert(edge.from.includes("#"), `${label}: from must be <file>#<symbol>, got ${edge.from}`);
-        assert(edge.to.includes("#"), `${label}: to must be <file>#<symbol>, got ${edge.to}`);
+        assertStringIncludes(edge.from, "#", `${label}: from must be <file>#<symbol>, got ${edge.from}`);
+        assertStringIncludes(edge.to, "#", `${label}: to must be <file>#<symbol>, got ${edge.to}`);
         // A composite key must never be walked as a module path.
         const modules = queryRelationships(knowledge, edge.from).filter(
           (e) => e.kind === "file_imports_file_internal",
@@ -594,7 +596,7 @@ Deno.test("[matrix] the agent-facing tool answers who-calls-X in a structured, p
       }
       const callers = records.map((r) => `${r.from_file}#${r.from_symbol}`).sort();
       for (const expected of GO_FIXTURE.directCallers) {
-        assert(callers.includes(expected), `tool must report ${expected}, got ${JSON.stringify(callers)}`);
+        assertArrayIncludes(callers, [expected], `tool must report ${expected}, got ${JSON.stringify(callers)}`);
       }
 
       // The text block must be the same JSON, so a text-only client is not degraded.
@@ -643,8 +645,8 @@ Deno.test("[java] a receiver-typed call reports both the type and the method it 
       .map((e) => e.to)
       .sort();
     // Both forms are real resolution outcomes for `Target.target(v)`.
-    assert(answer.includes("src/com/example/core/Target.java#Target"), JSON.stringify(answer));
-    assert(answer.includes("src/com/example/core/Target.java#target"), JSON.stringify(answer));
+    assertArrayIncludes(answer, ["src/com/example/core/Target.java#Target"], JSON.stringify(answer));
+    assertArrayIncludes(answer, ["src/com/example/core/Target.java#target"], JSON.stringify(answer));
   } finally {
     await Deno.remove(portalRoot, { recursive: true });
   }

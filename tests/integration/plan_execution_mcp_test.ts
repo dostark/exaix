@@ -6,7 +6,7 @@
  */
 
 import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryOperation, PortalOperation, SecurityMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { ReviewStatus } from "@exaix/core/status";
@@ -253,7 +253,7 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     });
 
     const planFile = await Deno.readTextFile(planPath);
-    assert(planFile.includes(traceId), "Plan should contain trace_id");
+    assertStringIncludes(planFile, traceId, "Plan should contain trace_id");
 
     const frontmatter = await parsePlanFrontmatter(planPath);
     assertEquals(frontmatter.trace_id, traceId);
@@ -332,7 +332,7 @@ Deno.test("Integration Test 15.2: Happy Path - Hybrid Mode", async () => {
     // Verify portal files are readable
     const readmePath = join(portalPath, "README.md");
     const readmeContent = await Deno.readTextFile(readmePath);
-    assert(readmeContent.includes("# Test Portal"), "Portal files should be readable");
+    assertStringIncludes(readmeContent, "# Test Portal", "Portal files should be readable");
 
     // Register review as if execution completed
     const reviewRegistry = createReviewRegistry(dbService);

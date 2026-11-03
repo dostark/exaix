@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertExists, assertMatch } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { SkillsService } from "@exaix/core/skills";
@@ -38,7 +38,7 @@ Deno.test("[dogfood-e2e] dogfood-developer agent role loads through IBlueprintLo
   // skill that flow depends on. It used to assert `skills.length === 8`, which broke when the
   // list was legitimately curated and told a reader nothing; skill defaults are `dogfood_agent_role_test.ts`'s concern.
   const skills = blueprint.frontmatter.default_skills ?? [];
-  assertEquals(skills.includes("tdd-methodology"), true, "the generator flow assumes TDD guidance is loaded");
+  assertArrayIncludes(skills, ["tdd-methodology"], "the generator flow assumes TDD guidance is loaded");
 });
 
 Deno.test("[dogfood-e2e] gap-analysis and step-execution load through SkillsService.getSkill", async () => {

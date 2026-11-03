@@ -7,7 +7,7 @@
  * @related-files [tests/scenario_framework/scripts/scenario_repo_root.ts, tests/scenario_framework/scripts/call_mcp_tool.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { withEnv } from "@exaix/testing";
 import { resolve } from "@std/path";
 import { SCENARIO_REPO_ROOT_ENV, scenarioRepoRoot } from "../../scripts/scenario_repo_root.ts";
@@ -29,10 +29,7 @@ Deno.test("[script-repo-root] scenarioRepoRoot derives the root without the over
 Deno.test("[script-repo-root] the MCP and SSE scripts use the shared resolver, not a walk-up", async () => {
   for (const name of SCRIPTS) {
     const text = await Deno.readTextFile(resolve(import.meta.dirname!, "..", "..", "scripts", name));
-    assert(
-      text.includes("scenarioRepoRoot("),
-      `${name} must resolve the repo root through scenarioRepoRoot`,
-    );
+    assertStringIncludes(text, "scenarioRepoRoot(", `${name} must resolve the repo root through scenarioRepoRoot`);
     assert(
       !text.includes('resolve(SCRIPTS_DIR, "..", "..", "..")'),
       `${name} must not derive the repo root with a raw walk-up`,

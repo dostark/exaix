@@ -10,7 +10,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
@@ -43,7 +43,7 @@ Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blue
     });
     assertEquals(result.exitCode, 0, `expected patch to succeed, got: ${result.stderr}`);
     const updated = await Deno.readTextFile(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md"));
-    assertEquals(updated.includes('"cli_delegate"'), true, "capability must be added");
+    assertStringIncludes(updated, '"cli_delegate"', "capability must be added");
   });
 });
 
@@ -91,6 +91,6 @@ Deno.test("[setup_steps] prepare-evidence copies a cwd-relative source to the wo
     });
     assertEquals(result.exitCode, 0, `expected evidence copy, got: ${result.stderr}`);
     const content = await Deno.readTextFile(join(ws, "llm-judge-input.txt"));
-    assertEquals(content.includes("export const x = 1"), true, "evidence must contain the source content");
+    assertStringIncludes(content, "export const x = 1", "evidence must contain the source content");
   });
 });

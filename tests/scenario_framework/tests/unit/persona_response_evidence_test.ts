@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/runner/persona_response_evidence.ts]
  */
 import { DEFAULT_PLANS_PATH, DEFAULT_PORTALS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { capturePersonaRoleResponse, preparePersonaJudgeContext } from "../../runner/persona_response_evidence.ts";
 import { join } from "@std/path";
 import { createPersonaResponseFixture, personaCaptureInput } from "../helpers/persona_response_fixture.ts";
@@ -39,8 +39,8 @@ Deno.test("[PersonaResponse] judge context preserves task and initial source bef
     );
     const path = await preparePersonaJudgeContext(ctx.config, "Explain the flow", ["@Portals/task"]);
     const context = await Deno.readTextFile(path);
-    assertEquals(context.includes("Explain the flow"), true);
-    assertEquals(context.includes("export const original = true;"), true);
+    assertStringIncludes(context, "Explain the flow");
+    assertStringIncludes(context, "export const original = true;");
     await Deno.writeTextFile(join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src/api.ts`), "changed");
     assertEquals(await Deno.readTextFile(path), context);
   } finally {
@@ -62,9 +62,9 @@ Deno.test("[PersonaResponse] explicit judge files include only the selected sour
       [{ alias: "@Portals/task", path: "src/api.ts" }],
     );
     const context = await Deno.readTextFile(contextPath);
-    assertEquals(context.includes("export const selected = true;"), true);
+    assertStringIncludes(context, "export const selected = true;");
     assertFalse(context.includes("export const excluded = true;"));
-    assertEquals(context.includes("Source @Portals/task/src/api.ts:"), true);
+    assertStringIncludes(context, "Source @Portals/task/src/api.ts:");
   } finally {
     await ctx.cleanup();
   }
@@ -79,8 +79,8 @@ Deno.test("[PersonaResponse] no judge file list still walks every source file", 
     await Deno.writeTextFile(join(root, "storage.ts"), "storage fixture");
     const contextPath = await preparePersonaJudgeContext(ctx.config, "Read both", ["@Portals/task"]);
     const context = await Deno.readTextFile(contextPath);
-    assertEquals(context.includes("api fixture"), true);
-    assertEquals(context.includes("storage fixture"), true);
+    assertStringIncludes(context, "api fixture");
+    assertStringIncludes(context, "storage fixture");
   } finally {
     await ctx.cleanup();
   }

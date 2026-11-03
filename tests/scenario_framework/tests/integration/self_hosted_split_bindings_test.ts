@@ -15,7 +15,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BindingIncompatibleError } from "@exaix/ai";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
@@ -157,8 +157,8 @@ Deno.test({
       );
       const issue = refusal.issues[0];
       assertEquals(issue.code, "pinned");
-      assert(issue.detail.includes(COMPOSE_PIN_REASON), issue.detail);
-      assert(issue.detail.includes(COMPOSE_SELECTOR), issue.detail);
+      assertStringIncludes(issue.detail, COMPOSE_PIN_REASON, issue.detail);
+      assertStringIncludes(issue.detail, COMPOSE_SELECTOR, issue.detail);
 
       // Run 4: a --bind broader than the pin loses the pinned field.
       // The daemon keeps the pinned value, and the evidence records what the pin held.
@@ -188,9 +188,10 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const catalog = await Deno.readTextFile(join(FRAMEWORK_HOME, "..", "..", "configs", "eval-cells.toml"));
-    assert(catalog.includes("supports_tool_choice = false"), "the fixture must declare no tool-choice support");
-    assert(
-      catalog.includes('requires_optin = "EXA_COMPAT_FIXTURE_PORT"'),
+    assertStringIncludes(catalog, "supports_tool_choice = false", "the fixture must declare no tool-choice support");
+    assertStringIncludes(
+      catalog,
+      'requires_optin = "EXA_COMPAT_FIXTURE_PORT"',
       "the fixture preset must only run when the fixture port exists",
     );
     // The selector the operator overlay targets and the pin protects must stay in step.

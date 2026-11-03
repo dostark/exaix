@@ -14,7 +14,7 @@
  * @related-files [apps/daemon/main.ts, apps/daemon/src/watcher.ts]
  */
 
-import { assert } from "@std/assert";
+import { assert, assertArrayIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -60,8 +60,9 @@ Deno.test({
       await bootRealDaemon(configPath);
       const events = await readJournalOrdered(configPath);
       const types = events.map((e) => e.action_type);
-      assert(
-        types.includes("watcher.started"),
+      assertArrayIncludes(
+        types,
+        ["watcher.started"],
         `journal must contain watcher.started (Bug 1: watchers built without db). got: ${
           [...new Set(types)].join(", ")
         }`,

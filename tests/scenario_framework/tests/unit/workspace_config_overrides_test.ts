@@ -7,7 +7,7 @@
  * @architectural-layer Test
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { parse } from "@std/toml";
 import { join } from "@std/path";
 import { WorkspaceConfigOverridesSchema } from "../../schema/scenario_schema.ts";
@@ -47,7 +47,7 @@ Deno.test("[workspace_config] replaces an existing key in place and keeps commen
     "portal_knowledge.enable_symbol_level_dependency_graph": true,
   });
 
-  assert(patched.includes("# Framework template"), "the leading comment must survive");
+  assertStringIncludes(patched, "# Framework template", "the leading comment must survive");
   const parsed = parse(patched) as {
     portal_knowledge: { enable_symbol_level_dependency_graph: boolean; default_mode: string };
   };
@@ -126,7 +126,7 @@ Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches an operator-
 
     const parsed = parse(await Deno.readTextFile(configPath)) as { system: { log_level: string; root: string } };
     assertEquals(parsed.system.log_level, "debug");
-    assert((await Deno.readTextFile(configPath)).includes("# operator config"));
+    assertStringIncludes(await Deno.readTextFile(configPath), "# operator config");
   }, { prefix: "ws-cfg-existing-" });
 });
 

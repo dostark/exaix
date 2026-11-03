@@ -11,7 +11,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -244,8 +244,8 @@ Deno.test({
     const { activities } = await bootCutoverPlan("p208-cutover-pass-", PASSING_TEST, verificationBlock(0));
     assertEquals(completedStatus(activities), "passed");
     const types = activities.map((r) => r.action_type);
-    assert(types.includes("execution.verification.started"), types.join(","));
-    assert(types.includes("execution.verification.passed"), types.join(","));
+    assertArrayIncludes(types, ["execution.verification.started"], types.join(","));
+    assertArrayIncludes(types, ["execution.verification.passed"], types.join(","));
   },
 });
 
@@ -258,7 +258,7 @@ Deno.test({
     const { activities } = await bootCutoverPlan("p208-cutover-fail-", FAILING_TEST, verificationBlock(0));
     assertEquals(completedStatus(activities), "failed");
     const types = activities.map((r) => r.action_type);
-    assert(types.includes("execution.verification.failed"), types.join(","));
+    assertArrayIncludes(types, ["execution.verification.failed"], types.join(","));
   },
 });
 
@@ -287,7 +287,7 @@ Deno.test({
       error_class: string | null;
     };
     assert(repair.commit_sha !== null, "the repair must commit");
-    assert(repair.changed_files.includes("src/utils.ts"), JSON.stringify(repair.changed_files));
+    assertArrayIncludes(repair.changed_files, ["src/utils.ts"], JSON.stringify(repair.changed_files));
     assertEquals(repair.error_class, null);
   },
 });

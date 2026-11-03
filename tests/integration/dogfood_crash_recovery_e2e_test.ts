@@ -16,7 +16,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -109,10 +109,7 @@ Deno.test({
         try {
           const events = await db.getActivitiesByTraceSafe(traceId);
           const actions = events.map((e) => e.action_type);
-          assert(
-            actions.includes(DomainEventType.SessionDelegateLaunched),
-            "launched must be present",
-          );
+          assertArrayIncludes(actions, [DomainEventType.SessionDelegateLaunched], "launched must be present");
           const terminal = [
             "session.delegate.returned",
             "session.delegate.reconciled",

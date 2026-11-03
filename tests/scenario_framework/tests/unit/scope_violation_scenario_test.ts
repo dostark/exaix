@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_scope_violation_live.yaml, packages/core/src/events/domain_event_types.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { DomainEventType } from "@exaix/core/events";
@@ -46,12 +46,14 @@ function journalEventTypes(scenario: ReturnType<typeof ScenarioSchema.parse>): s
 Deno.test("[scope_violation_live] the negative scenario parses against ScenarioSchema and is tagged provider-live", async () => {
   const raw = await Deno.readTextFile(SCOPE_VIOLATION_SCENARIO);
   const scenario = ScenarioSchema.parse(parseYaml(raw));
-  assert(
-    scenario.tags.includes("provider-live"),
+  assertArrayIncludes(
+    scenario.tags,
+    ["provider-live"],
     "scope-violation scenario must be provider-live (excluded from CI auto-runs)",
   );
-  assert(
-    scenario.tags.includes("safety-gate"),
+  assertArrayIncludes(
+    scenario.tags,
+    ["safety-gate"],
     "scope-violation scenario must be tagged safety-gate (correctness invariant)",
   );
 });
@@ -60,8 +62,9 @@ Deno.test("[scope_violation_live] the scenario asserts session.delegate.scope_vi
   const raw = await Deno.readTextFile(SCOPE_VIOLATION_SCENARIO);
   const scenario = ScenarioSchema.parse(parseYaml(raw));
   const events = journalEventTypes(scenario);
+  const includesResult3: boolean = events.includes(DomainEventType.SessionDelegateScopeViolation);
   assert(
-    events.includes(DomainEventType.SessionDelegateScopeViolation),
+    includesResult3,
     `scenario must assert ${DomainEventType.SessionDelegateScopeViolation}; found ${JSON.stringify(events)}`,
   );
 });

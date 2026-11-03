@@ -15,7 +15,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -100,8 +100,9 @@ Implement the feature.
     assertEquals(planningEffort, "high", "the request-level effort must reach the planning generate()");
 
     const planContent = await Deno.readTextFile(String(planPath));
-    assert(
-      planContent.includes("request_effort_declaration"),
+    assertStringIncludes(
+      planContent,
+      "request_effort_declaration",
       "the written plan must persist the request effort declaration passthrough",
     );
   } finally {
@@ -280,10 +281,7 @@ Review the response contract for injection risks and fix the login handler.
     assertEquals(planningEffort, "medium", "the pinned skill floor must raise plan generation to medium");
 
     const planContent = await Deno.readTextFile(String(planPath));
-    assert(
-      planContent.includes("resolved_skills"),
-      "the written plan must persist the final pin vector",
-    );
+    assertStringIncludes(planContent, "resolved_skills", "the written plan must persist the final pin vector");
 
     // Execution path: thread the written plan's frontmatter exactly as ExecutionLoop does
     // and drive a real PlanExecutor (frontmatter carries resolved_skills + request

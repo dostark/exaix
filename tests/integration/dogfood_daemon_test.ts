@@ -6,7 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { assertDaemonPidIsDead, readDaemonPid } from "./helpers/daemon_config.ts";
 
 const DAEMON_SCRIPT = "scripts/dogfood_daemon.ts";
@@ -63,8 +63,9 @@ Deno.test({
         // Verify status reports running
         const statusResult = await runScript(["status"], env);
         assertEquals(statusResult.code, 0, "status should exit 0 when running");
-        assert(
-          statusResult.stdout.includes("running"),
+        assertStringIncludes(
+          statusResult.stdout,
+          "running",
           `expected "running" in status output: ${statusResult.stdout}`,
         );
 
@@ -87,8 +88,9 @@ Deno.test({
         // Verify status reports not running
         const statusAfterResult = await runScript(["status"], env);
         assertEquals(statusAfterResult.code, 1, "status should exit 1 when not running");
-        assert(
-          statusAfterResult.stdout.includes("not running"),
+        assertStringIncludes(
+          statusAfterResult.stdout,
+          "not running",
           `expected "not running" in status output: ${statusAfterResult.stdout}`,
         );
       } finally {

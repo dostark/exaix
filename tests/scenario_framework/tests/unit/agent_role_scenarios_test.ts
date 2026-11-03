@@ -14,7 +14,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/runner/judge_bindings.ts]
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { fromFileUrl, join } from "@std/path";
@@ -134,7 +134,8 @@ Deno.test("[agent_role_merge] each merged role keeps the smoke id, pack, tags an
     assertEquals(scenario.pack, "agent_role_eval", `${role} must keep the smoke pack`);
     assertFalse(scenario.tags.includes("provider-live"), `${role} must not carry the provider-live tag`);
     for (const tag of ["smoke", "subsystem:agent_roles", `entity:${role}`]) {
-      assert(scenario.tags.includes(tag), `${role} must keep the '${tag}' tag`);
+      const includesResult: boolean = scenario.tags.includes(tag);
+      assert(includesResult, `${role} must keep the '${tag}' tag`);
     }
     // The union of ["auto"] and ["auto", "step"], so `step` mode still runs the live cell.
     assertEquals(scenario.mode_support, MERGED_MODE_SUPPORT, `${role} mode_support must be the union`);
@@ -172,13 +173,15 @@ Deno.test("[agent_role_merge] the mock cell keeps the smoke criteria and the liv
 
     const mockKinds = criterionKinds(mockSteps);
     for (const kind of ["frontmatter-field-equals", "frontmatter-field-exists", "text-matches"]) {
-      assert(mockKinds.includes(kind), `${role} mock cell must keep the '${kind}' criterion`);
+      const includesResult2: boolean = mockKinds.includes(kind);
+      assert(includesResult2, `${role} mock cell must keep the '${kind}' criterion`);
     }
     assertEquals(judgePreset(mockSteps), undefined, `${role} mock cell must not run a judge`);
 
     const liveKinds = criterionKinds(liveSteps);
     for (const kind of ["frontmatter-field-equals", "llm-judge"]) {
-      assert(liveKinds.includes(kind), `${role} live cell must keep the '${kind}' criterion`);
+      const includesResult3: boolean = liveKinds.includes(kind);
+      assert(includesResult3, `${role} live cell must keep the '${kind}' criterion`);
     }
     assertEquals(judgePreset(liveSteps), preset, `${role} live cell judge preset`);
     for (const judgeStep of liveSteps.filter(isJudgeBearingStep)) {
@@ -230,8 +233,8 @@ Deno.test("[agent_role_merge] code-analyst preserves both operations and both as
     "the validation must still wait for an analysis",
   );
   const kinds = criterionKinds(validation.steps);
-  assert(kinds.includes("json-path-exists"), "the validation keeps its json-path criteria");
-  assert(kinds.includes("llm-judge"), "the validation keeps its judge criterion");
+  assertArrayIncludes(kinds, ["json-path-exists"], "the validation keeps its json-path criteria");
+  assertArrayIncludes(kinds, ["llm-judge"], "the validation keeps its judge criterion");
 });
 
 Deno.test("[agent_role_merge] the judge is skipped in the mock cell and bound in the live cell", async () => {

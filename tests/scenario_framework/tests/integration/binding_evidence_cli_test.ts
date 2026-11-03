@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/main.ts, tests/scenario_framework/runner/provider_live_evidence.ts]
  */
 
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { IBindingSpec } from "@exaix/schemas";
 import { startToolChoiceRefusingFixture } from "./synthetic_test_helpers.ts";
@@ -74,7 +74,7 @@ Deno.test({
     try {
       assertEquals(run.code, 0, run.log);
       // The runner reclaimed its own sandbox after the pass, and the evidence in the output directory survives it.
-      assert(run.log.includes("Sandbox reclaimed:"), run.log);
+      assertStringIncludes(run.log, "Sandbox reclaimed:", run.log);
       const evidence = await readEvidence(run.output, "senior-coder-smoke");
       assertEquals(evidence.outcome, "success");
       assertEquals(evidence.overlays.map((overlay) => overlay.role).sort(), ["operator", "scenario"]);

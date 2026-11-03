@@ -5,7 +5,7 @@
  * ensuring correct mapping to quality metrics like correctness and completeness.
  */
 
-import { assertEquals, assertExists, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import {
   buildEvaluationPrompt,
   calculateWeightedScore,
@@ -75,7 +75,7 @@ Deno.test("CRITERION_SETS: contains SECURITY_REVIEW set", () => {
 
 Deno.test("CRITERION_SETS: CODE_REVIEW includes key criteria", () => {
   const criteriaNames = CRITERION_SETS.CODE_REVIEW.map((c) => c.name);
-  assertEquals(criteriaNames.includes("code_correctness"), true);
+  assertArrayIncludes(criteriaNames, ["code_correctness"]);
 });
 
 // getCriteriaByNames Tests
@@ -91,9 +91,9 @@ Deno.test("getCriteriaByNames: retrieves multiple criteria", () => {
   assertEquals(criteria.length, 3);
 
   const names = criteria.map((c) => c.name);
-  assertEquals(names.includes("code_correctness"), true);
-  assertEquals(names.includes("has_tests"), true);
-  assertEquals(names.includes("code_completeness"), true);
+  assertArrayIncludes(names, ["code_correctness"]);
+  assertArrayIncludes(names, ["has_tests"]);
+  assertArrayIncludes(names, ["code_completeness"]);
 });
 
 Deno.test("getCriteriaByNames: handles hyphenated names", () => {
@@ -322,7 +322,7 @@ Deno.test("buildEvaluationPrompt: includes content", () => {
   const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
   const prompt = buildEvaluationPrompt("function test() {}", criteria);
 
-  assertEquals(prompt.includes("function test() {}"), true);
+  assertStringIncludes(prompt, "function test() {}");
 });
 
 Deno.test("buildEvaluationPrompt: includes criteria descriptions", () => {
@@ -332,8 +332,8 @@ Deno.test("buildEvaluationPrompt: includes criteria descriptions", () => {
   ];
   const prompt = buildEvaluationPrompt("Test content", criteria);
 
-  assertEquals(prompt.includes("code_correctness"), true);
-  assertEquals(prompt.includes("has_tests"), true);
+  assertStringIncludes(prompt, "code_correctness");
+  assertStringIncludes(prompt, "has_tests");
 });
 
 Deno.test("buildEvaluationPrompt: includes context when provided", () => {
@@ -344,8 +344,8 @@ Deno.test("buildEvaluationPrompt: includes context when provided", () => {
     "This is a utility function for parsing JSON",
   );
 
-  assertEquals(prompt.includes("Context"), true);
-  assertEquals(prompt.includes("utility function for parsing JSON"), true);
+  assertStringIncludes(prompt, "Context");
+  assertStringIncludes(prompt, "utility function for parsing JSON");
 });
 
 Deno.test("buildEvaluationPrompt: omits context section when not provided", () => {
@@ -375,7 +375,7 @@ Deno.test("buildEvaluationPrompt: marks required criteria", () => {
   ];
   const prompt = buildEvaluationPrompt("Content", criteria);
 
-  assertEquals(prompt.includes("REQUIRED"), true);
+  assertStringIncludes(prompt, "REQUIRED");
 });
 
 Deno.test("buildEvaluationPrompt: shows weights", () => {
@@ -397,17 +397,17 @@ Deno.test("buildEvaluationPrompt: shows weights", () => {
   ];
   const prompt = buildEvaluationPrompt("Content", criteria);
 
-  assertEquals(prompt.includes("weight: 0.9"), true);
-  assertEquals(prompt.includes("weight: 0.3"), true);
+  assertStringIncludes(prompt, "weight: 0.9");
+  assertStringIncludes(prompt, "weight: 0.3");
 });
 
 Deno.test("buildEvaluationPrompt: includes JSON format instructions", () => {
   const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
   const prompt = buildEvaluationPrompt("Content", criteria);
 
-  assertEquals(prompt.includes("score"), true);
-  assertEquals(prompt.includes("reasoning"), true);
-  assertEquals(prompt.includes("JSON"), true);
+  assertStringIncludes(prompt, "score");
+  assertStringIncludes(prompt, "reasoning");
+  assertStringIncludes(prompt, "JSON");
 });
 
 Deno.test("buildEvaluationPrompt: forbids the <thought>/<content> wrapper explicitly", () => {
@@ -417,8 +417,8 @@ Deno.test("buildEvaluationPrompt: forbids the <thought>/<content> wrapper explic
   const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
   const prompt = buildEvaluationPrompt("Content", criteria);
 
-  assertEquals(prompt.includes("<thought>"), true, "prompt must name the wrapper it forbids");
-  assertEquals(prompt.includes("<content>"), true, "prompt must name the wrapper it forbids");
+  assertStringIncludes(prompt, "<thought>", "prompt must name the wrapper it forbids");
+  assertStringIncludes(prompt, "<content>", "prompt must name the wrapper it forbids");
 });
 
 Deno.test("buildEvaluationPrompt (multi): example JSON shows every criterion name, not a fixed 2-criterion sample", () => {
@@ -434,11 +434,7 @@ Deno.test("buildEvaluationPrompt (multi): example JSON shows every criterion nam
 
   for (const criterion of criteria) {
     const marker = `"${criterion.name}"`;
-    assertEquals(
-      prompt.includes(marker),
-      true,
-      `example JSON must include every real criterion name (missing ${marker})`,
-    );
+    assertStringIncludes(prompt, marker, `example JSON must include every real criterion name (missing ${marker})`);
   }
   // Every criterion's example object must itself carry "passed" — not just the first two.
   const passedCount = (prompt.match(/"passed":\s*(?:true|false)/g) ?? []).length;

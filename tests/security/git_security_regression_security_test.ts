@@ -75,7 +75,10 @@ Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanE
     await db.waitForFlush();
     const toolCalls = await db.queryActivity({ traceId: context.trace_id, actionType: "dynamic_tool_call" });
     assertEquals(toolCalls.length, 1);
-    assertEquals(JSON.parse(toolCalls[0].payload).resultSummary.includes("Destructive git operation prohibited"), true);
+    const rejectedDestructiveOperation = JSON.parse(toolCalls[0].payload).resultSummary.includes(
+      "Destructive git operation prohibited",
+    );
+    assertEquals(rejectedDestructiveOperation, true);
   } finally {
     await cleanup();
   }
@@ -114,7 +117,10 @@ Deno.test("[security] Git Security: blocks checkout to main branch", async () =>
     await db.waitForFlush();
     const toolCalls = await db.queryActivity({ traceId: context.trace_id, actionType: "dynamic_tool_call" });
     assertEquals(toolCalls.length, 1);
-    assertEquals(JSON.parse(toolCalls[0].payload).resultSummary.includes("Operations on protected branches"), true);
+    const rejectedProtectedBranch = JSON.parse(toolCalls[0].payload).resultSummary.includes(
+      "Operations on protected branches",
+    );
+    assertEquals(rejectedProtectedBranch, true);
   } finally {
     await cleanup();
   }

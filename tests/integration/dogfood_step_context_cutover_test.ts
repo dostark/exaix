@@ -15,7 +15,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assertEquals, assertExists, assertFalse } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
@@ -90,7 +90,7 @@ Deno.test(
       assertFalse(run.stderr.includes("Unsafe"));
 
       const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
-      assertEquals(request.includes("## Why This Step Exists"), true, "inline context block present");
+      assertStringIncludes(request, "## Why This Step Exists", "inline context block present");
       assertEquals(request.indexOf("## Why This Step Exists") < request.indexOf("## Actions"), true);
       const pointerMatch = request.match(POINTER_RE);
       assertExists(pointerMatch, "request names the PlanContext path explicitly");

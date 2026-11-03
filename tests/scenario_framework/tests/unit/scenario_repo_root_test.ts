@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, scripts/ci.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { withEnv } from "@exaix/testing";
 import { resolveScenarioRepoRoot, SCENARIO_REPO_ROOT_ENV } from "../../runner/synthetic_runner.ts";
 
@@ -33,8 +33,9 @@ Deno.test("[repo_root] the scenarios command exports EXA_SCENARIO_REPO_ROOT so a
   const scenariosEnd = CI_SOURCE.indexOf("const evalCommand");
   assert(scenariosStart >= 0 && scenariosEnd > scenariosStart, "could not locate scenariosCommand body");
   const body = CI_SOURCE.slice(scenariosStart, scenariosEnd);
-  assert(
-    body.includes("EXA_SCENARIO_REPO_ROOT"),
+  assertStringIncludes(
+    body,
+    "EXA_SCENARIO_REPO_ROOT",
     "scripts/ci.ts scenarios must set EXA_SCENARIO_REPO_ROOT for the deployed runner",
   );
 });

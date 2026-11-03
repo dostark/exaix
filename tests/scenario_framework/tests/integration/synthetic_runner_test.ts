@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/scenario_catalog.ts, tests/scenario_framework/runner/modes.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import { CriterionStatus, ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -342,7 +342,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] stops a started daemon even when a
     // Teardown must have force-invoked `daemon stop` anyway, so no daemon process leaks
     // out of this run regardless of where scenario execution stopped.
     const invocations = (await Deno.readTextFile(invocationLog)).trim().split("\n");
-    assertEquals(invocations.includes("daemon stop"), true);
+    assertArrayIncludes(invocations, ["daemon stop"]);
   });
 });
 

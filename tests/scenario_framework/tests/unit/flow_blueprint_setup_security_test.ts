@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/fixtures/cli/flow_blueprint_delegate.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 const DELEGATE = new URL("../../fixtures/cli/flow_blueprint_delegate.ts", import.meta.url);
 
@@ -16,8 +16,9 @@ for (const model of ["../exa.config", "unknown__submit__gate__0"]) {
     }).output();
     assertEquals(run.code, 1);
     assertEquals(new TextDecoder().decode(run.stdout), "");
-    assert(
-      new TextDecoder().decode(run.stderr).includes(model.startsWith("../") ? "Invalid recording key" : "No such file"),
+    assertStringIncludes(
+      new TextDecoder().decode(run.stderr),
+      model.startsWith("../") ? "Invalid recording key" : "No such file",
     );
   });
 }

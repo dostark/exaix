@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -197,10 +197,8 @@ Add a hello world function.
           )
         }`,
       );
-      assert(
-        (JSON.parse(assembled.payload).skillIdsUsed as string[]).includes(SKILL_NAME),
-        "the pinned folder skill is injected into the assembled prompt",
-      );
+      const includesResult: boolean = (JSON.parse(assembled.payload).skillIdsUsed as string[]).includes(SKILL_NAME);
+      assert(includesResult, "the pinned folder skill is injected into the assembled prompt");
 
       assertEquals(
         await snapshotTree(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH)),
@@ -232,7 +230,7 @@ Add a hello world function.
       const snapshot = await readRevision(configPath);
       assert(snapshot, "the injected skill revision must be durably snapshotted in the journal");
       assertEquals(snapshot.skill_name, SKILL_NAME);
-      assert(snapshot.skill_md.includes(SKILL_MARKER), "the snapshot holds the canonical skill body");
+      assertStringIncludes(snapshot.skill_md, SKILL_MARKER, "the snapshot holds the canonical skill body");
       assertEquals(snapshot.exaix_yaml, "title: E2E Folder Skill");
       assert(
         activity.some((row) => row.trace_id === traceId && row.action_type === REVISION_RECORDED_EVENT),

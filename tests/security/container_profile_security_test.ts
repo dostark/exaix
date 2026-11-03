@@ -41,7 +41,8 @@ Deno.test("[security] the sandbox Compose profile builds the runtime stage expli
   assertEquals(compose.services.exaix.build?.target, RUNTIME_STAGE);
 
   const stageNames = [...(await readDockerfileStages()).keys()];
-  assert(stageNames.includes(RUNTIME_STAGE), "the Dockerfile must define the runtime stage");
+  const includesResult: boolean = stageNames.includes(RUNTIME_STAGE);
+  assert(includesResult, "the Dockerfile must define the runtime stage");
 });
 
 Deno.test("[security] the runtime stage copies every deno.json workspace member root", async () => {
@@ -55,6 +56,7 @@ Deno.test("[security] the runtime stage copies every deno.json workspace member 
 
   for (const member of denoJson.workspace) {
     const topLevel = member.replace(/^\.\//, "").split("/")[0];
-    assert(copied.includes(topLevel), `runtime stage does not copy workspace root '${topLevel}/'`);
+    const includesResult2: boolean = copied.includes(topLevel);
+    assert(includesResult2, `runtime stage does not copy workspace root '${topLevel}/'`);
   }
 });

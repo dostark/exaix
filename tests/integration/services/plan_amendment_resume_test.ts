@@ -5,7 +5,7 @@
  * @related-files [@exaix/core/planning, @exaix/core/planning]
  */
 
-import { assertEquals, assertFalse, assertThrows } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes, assertThrows } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -45,23 +45,23 @@ Deno.test("applyApprovedAmendment preserves original plan structure", async () =
     const updated = service.applyApprovedAmendment(planContent, patch);
 
     // Verify structure preserved
-    assertEquals(updated.includes("# Resume Test Plan"), true);
-    assertEquals(updated.includes("## Overview"), true);
-    assertEquals(updated.includes("This plan tests the resume functionality"), true);
-    assertEquals(updated.includes("## Notes"), true);
-    assertEquals(updated.includes("All steps must pass validation"), true);
+    assertStringIncludes(updated, "# Resume Test Plan");
+    assertStringIncludes(updated, "## Overview");
+    assertStringIncludes(updated, "This plan tests the resume functionality");
+    assertStringIncludes(updated, "## Notes");
+    assertStringIncludes(updated, "All steps must pass validation");
 
     // Verify updates applied
-    assertEquals(updated.includes("## Step 2: Process Data Enhanced"), true);
-    assertEquals(updated.includes("## Step 3: Validate Results Enhanced"), true);
+    assertStringIncludes(updated, "## Step 2: Process Data Enhanced");
+    assertStringIncludes(updated, "## Step 3: Validate Results Enhanced");
 
     // Verify status updated
-    assertEquals(updated.includes("status: approved"), true);
+    assertStringIncludes(updated, "status: approved");
     assertFalse(updated.includes("status: amendment_pending"));
 
     // Verify first step unchanged
-    assertEquals(updated.includes("## Step 1: Setup Environment"), true);
-    assertEquals(updated.includes("Initialize all required dependencies"), true);
+    assertStringIncludes(updated, "## Step 1: Setup Environment");
+    assertStringIncludes(updated, "Initialize all required dependencies");
   } finally {
     await cleanup();
   }
@@ -99,8 +99,8 @@ Deno.test("applyApprovedAmendment handles step removal correctly", async () => {
     assertFalse(updated.includes("This step should be removed"));
 
     // Verify other steps preserved
-    assertEquals(updated.includes("## Step 1: First"), true);
-    assertEquals(updated.includes("## Step 3: Third"), true);
+    assertStringIncludes(updated, "## Step 1: First");
+    assertStringIncludes(updated, "## Step 3: Third");
   } finally {
     await cleanup();
   }
@@ -136,11 +136,11 @@ Deno.test("applyApprovedAmendment handles step addition correctly", async () => 
     const updated = service.applyApprovedAmendment(planContent, patch);
 
     // Verify new step added
-    assertEquals(updated.includes("## Step 2: Cleanup Resources"), true);
-    assertEquals(updated.includes("Release all allocated resources"), true);
+    assertStringIncludes(updated, "## Step 2: Cleanup Resources");
+    assertStringIncludes(updated, "Release all allocated resources");
 
     // Verify original step preserved
-    assertEquals(updated.includes("## Step 1: First"), true);
+    assertStringIncludes(updated, "## Step 1: First");
   } finally {
     await cleanup();
   }

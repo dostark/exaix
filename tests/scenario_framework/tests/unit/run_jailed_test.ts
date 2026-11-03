@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/scripts/run_jailed.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertThrows } from "@std/assert";
 import { buildRunJailedLaunch, parseRunJailedArgs, stageCredentials } from "../../scripts/run_jailed.ts";
 
 Deno.test("[RunJailed] parses required flags and the inner args after --", () => {
@@ -202,11 +202,11 @@ Deno.test("[RunJailed] buildRunJailedLaunch produces a hardened docker launch wi
     innerArgs: ["-c", "pytest -rA"],
   });
   assertEquals(launch.bin, "docker");
-  assert(launch.args.includes("--cap-drop=ALL"));
-  assert(launch.args.includes("--security-opt=no-new-privileges"));
-  assert(launch.args.includes("bash"));
-  assert(launch.args.includes("-c"));
-  assert(launch.args.includes("pytest -rA"));
+  assertArrayIncludes(launch.args, ["--cap-drop=ALL"]);
+  assertArrayIncludes(launch.args, ["--security-opt=no-new-privileges"]);
+  assertArrayIncludes(launch.args, ["bash"]);
+  assertArrayIncludes(launch.args, ["-c"]);
+  assertArrayIncludes(launch.args, ["pytest -rA"]);
   assert(!launch.args.some((a) => a.startsWith("type=bind") && a.includes("/tmp/.local")));
 });
 
@@ -219,7 +219,7 @@ Deno.test("[RunJailed] buildRunJailedLaunch includes extraMounts verbatim", asyn
     bin: "bash",
     innerArgs: ["-c", "true"],
   });
-  assert(launch.args.includes("type=bind,src=/oracle,dst=/oracle_tests,ro"));
+  assertArrayIncludes(launch.args, ["type=bind,src=/oracle,dst=/oracle_tests,ro"]);
 });
 
 Deno.test("[RunJailed] buildRunJailedLaunch stages and mounts credentials when credentialBin is set", async () => {
@@ -240,7 +240,7 @@ Deno.test("[RunJailed] buildRunJailedLaunch stages and mounts credentials when c
       bin: "opencode",
       innerArgs: ["run", "--format", "json"],
     });
-    assert(launch.args.includes(`type=bind,src=${stagingDir},dst=/tmp/.local`));
+    assertArrayIncludes(launch.args, [`type=bind,src=${stagingDir},dst=/tmp/.local`]);
   } finally {
     if (previousHome !== undefined) Deno.env.set("HOME", previousHome);
   }

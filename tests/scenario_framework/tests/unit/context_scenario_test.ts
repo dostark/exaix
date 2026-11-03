@@ -12,7 +12,7 @@
  */
 
 import { DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES } from "@exaix/core";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
@@ -57,14 +57,15 @@ Deno.test("[context_scenario] flow_blueprints/dogfood_context.yaml parses and is
 Deno.test("[context_scenario] flow_blueprints/dogfood_context.yaml embeds no credential values and uses only the mock provider", async () => {
   const raw = await Deno.readTextFile(FLOW_SCENARIO);
   assertNoEmbeddedCredentialValues(raw, "flow_blueprints/dogfood_context.yaml");
-  assert(raw.includes('EXA_LLM_PROVIDER: "mock"'), "the CI-safe scenario must run on the mock provider");
+  assertStringIncludes(raw, 'EXA_LLM_PROVIDER: "mock"', "the CI-safe scenario must run on the mock provider");
 });
 
 Deno.test("[context_scenario] provider_live/dogfood_context_live.yaml parses, is catalog-discoverable, and carries the provider-live tag", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
   assertEquals(scenario.pack, "provider_live");
-  assert(
-    scenario.tags.includes("provider-live"),
+  assertArrayIncludes(
+    scenario.tags,
+    ["provider-live"],
     "must be tagged provider-live so the CI-safety filter excludes it by default",
   );
 

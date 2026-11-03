@@ -5,7 +5,7 @@
  * expose the expected fields, and expect only tools Exaix actually has.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { McpToolName, ToolName } from "@exaix/core";
@@ -54,7 +54,7 @@ Deno.test("[TrajectoryScenario] every trajectory-assert step in the catalog expe
 Deno.test("[TrajectoryScenario] live partial-credit control captures a completed multi-tool flow", async () => {
   const raw = await Deno.readTextFile(join(SCENARIOS_DIR, "selection-multi-tool-partial-credit.yaml"));
   const scenario = ScenarioSchema.parse(parseYaml(raw));
-  assert(scenario.tags.includes("provider-live"));
+  assertArrayIncludes(scenario.tags, ["provider-live"]);
   assert(scenario.portals.length > 0, "live tools need a mounted fixture");
   const submit = scenario.steps.find((step) => step.id === "submit-request");
   const barrier = scenario.steps.find((step) => step.id === "await-flow");

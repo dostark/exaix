@@ -11,7 +11,7 @@
  * @related-files [packages/tool-runtime/src/tool_registry.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -50,8 +50,9 @@ Deno.test("[security] operational deno tasks scope --allow-run to an allowlist",
   for (const name of OPERATIONAL_TASKS) {
     const command = tasks[name];
     // A scoped grant uses `--allow-run=<list>`; a bare `--allow-run` (any binary) is rejected.
-    assert(
-      command.includes("--allow-run="),
+    assertStringIncludes(
+      command,
+      "--allow-run=",
       `operational task '${name}' must scope --allow-run to an allowlist: ${command}`,
     );
     assert(

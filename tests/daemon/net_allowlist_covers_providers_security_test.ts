@@ -24,7 +24,7 @@
  * @related-files [packages/core/src/types/constants.ts, apps/daemon/main.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { DAEMON_DEFAULT_NET_HOSTS } from "@exaix/core";
 
@@ -87,8 +87,9 @@ Deno.test("[security] the daemon logs the allowlist from the constant, not a lit
   const main = await Deno.readTextFile(join(REPO_ROOT, "apps", "daemon", "main.ts"));
   const stale = main.match(/hosts:\s*"api\.anthropic\.com[^"]*"/);
   assertEquals(stale, null, `main.ts hardcodes the allowlist: ${stale?.[0]}`);
-  assert(
-    main.includes("DAEMON_DEFAULT_NET_HOSTS"),
+  assertStringIncludes(
+    main,
+    "DAEMON_DEFAULT_NET_HOSTS",
     "the default-allowlist log must read the constant it describes",
   );
 });

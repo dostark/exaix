@@ -12,7 +12,7 @@ import {
   DEFAULT_PLANS_PATH,
   DEFAULT_REQUESTS_PATH,
 } from "@exaix/shared";
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -364,7 +364,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
         const artifact = await Deno.readTextFile(
           pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "summary.md"),
         );
-        assert(artifact.includes(fixtureMarker), "the final execution artifact must contain the fixture marker");
+        assertStringIncludes(artifact, fixtureMarker, "the final execution artifact must contain the fixture marker");
       } finally {
         await fixture.shutdown();
         await Deno.remove(root, { recursive: true }).catch(() => {});
@@ -544,7 +544,7 @@ Deno.test({
       assert(first.tools?.some((tool) => tool.type === "function" && tool.function?.name === "read_file"));
       assertEquals(first.tools?.some((tool) => tool.function?.name === "write_file"), false);
       const firstMessages = JSON.stringify(first.messages);
-      assert(firstMessages.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
+      assertStringIncludes(firstMessages, PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION);
       assertFalse(firstMessages.includes("Respond with a single json object matching the supplied schema."));
       assertEquals(final.response_format?.type, "json_object");
       assertEquals(final.tools, undefined);
@@ -559,7 +559,7 @@ Deno.test({
       const toolPayload = JSON.parse(toolRow.payload) as { tool: string; phase: string; resultSummary: string };
       assertEquals(toolPayload.tool, "read_file");
       assertEquals(toolPayload.phase, "planning");
-      assert(toolPayload.resultSummary.includes(marker));
+      assertStringIncludes(toolPayload.resultSummary, marker);
       const completed = rows.find((row) => row.action_type === "planning.tools.completed");
       assert(completed, JSON.stringify(rows.map((row) => row.action_type)));
       const completedPayload = JSON.parse(completed.payload) as { rounds: number; toolCalls: number };
@@ -578,8 +578,8 @@ Deno.test({
       const planFile = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
       assert(planFile);
       const planText = await Deno.readTextFile(join(plansDir, planFile.name));
-      assert(planText.includes("Phase 155 structured planning cutover"));
-      assert(planText.includes(marker));
+      assertStringIncludes(planText, "Phase 155 structured planning cutover");
+      assertStringIncludes(planText, marker);
     } finally {
       await fixture.shutdown();
       await Deno.remove(root, { recursive: true }).catch(() => {});

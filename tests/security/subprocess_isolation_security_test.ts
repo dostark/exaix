@@ -13,7 +13,7 @@
  * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts]
  */
 
-import { assert, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertFalse } from "@std/assert";
 import { McpAgentStrategy } from "@exaix/execution";
 import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_composer.ts";
@@ -62,20 +62,14 @@ function withStrategy(fn: (strategy: BuildArgsFn) => void): void {
 Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs includes --allow-read", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, SANDBOXED_OPTIONS);
-    assert(
-      args.includes("--allow-read"),
-      `SANDBOXED args must include --allow-read, got: ${args.join(" ")}`,
-    );
+    assertArrayIncludes(args, ["--allow-read"], `SANDBOXED args must include --allow-read, got: ${args.join(" ")}`);
   });
 });
 
 Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs includes --allow-net", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, SANDBOXED_OPTIONS);
-    assert(
-      args.includes("--allow-net"),
-      `SANDBOXED args must include --allow-net, got: ${args.join(" ")}`,
-    );
+    assertArrayIncludes(args, ["--allow-net"], `SANDBOXED args must include --allow-net, got: ${args.join(" ")}`);
   });
 });
 
@@ -92,20 +86,14 @@ Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs excludes --
 Deno.test("[security] subprocess isolation: HYBRID buildAgentArgs includes --allow-read (Phase 170)", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, HYBRID_OPTIONS);
-    assert(
-      args.includes("--allow-read"),
-      `Non-SANDBOXED args must include --allow-read, got: ${args.join(" ")}`,
-    );
+    assertArrayIncludes(args, ["--allow-read"], `Non-SANDBOXED args must include --allow-read, got: ${args.join(" ")}`);
   });
 });
 
 Deno.test("[security] subprocess isolation: HYBRID buildAgentArgs includes --allow-net (Phase 170)", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, HYBRID_OPTIONS);
-    assert(
-      args.includes("--allow-net"),
-      `Non-SANDBOXED args must include --allow-net, got: ${args.join(" ")}`,
-    );
+    assertArrayIncludes(args, ["--allow-net"], `Non-SANDBOXED args must include --allow-net, got: ${args.join(" ")}`);
   });
 });
 

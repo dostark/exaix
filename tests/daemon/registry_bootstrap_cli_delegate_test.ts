@@ -7,7 +7,7 @@
  * silent mock fallback ProviderFactory.resolveOptions() uses for unregistered types.
  */
 
-import { assertEquals, assertExists, assertInstanceOf } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertInstanceOf } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai";
 import { CliDelegateModelProvider } from "@exaix/ai-clidelegate";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
@@ -16,8 +16,8 @@ Deno.test("registry_bootstrap: claude-cli and opencode-cli are registered as sup
   bootstrapProviderRegistry();
 
   const supported = ProviderRegistry.getSupportedProviders();
-  assertEquals(supported.includes("claude-cli"), true);
-  assertEquals(supported.includes("opencode-cli"), true);
+  assertArrayIncludes(supported, ["claude-cli"]);
+  assertArrayIncludes(supported, ["opencode-cli"]);
 });
 
 Deno.test("registry_bootstrap: claude-cli factory resolves to a CliDelegateModelProvider", async () => {

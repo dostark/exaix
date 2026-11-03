@@ -30,7 +30,14 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertFalse, assertLessOrEqual } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertFalse,
+  assertLessOrEqual,
+  assertStringIncludes,
+} from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService, createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
@@ -164,7 +171,7 @@ Deno.test({
       try {
         const columns = await db.preparedAll<{ name: string }>("PRAGMA table_info(activity);");
         const names = columns.map((c) => c.name);
-        assert(names.includes("runner_kind"), `activity table must have runner_kind, got: ${names.join(", ")}`);
+        assertArrayIncludes(names, ["runner_kind"], `activity table must have runner_kind, got: ${names.join(", ")}`);
         assert(!names.includes("agent_kind"), `activity table must NOT have agent_kind, got: ${names.join(", ")}`);
       } finally {
         await db.close();
@@ -754,8 +761,9 @@ Deno.test({
       const promptDump = activities.find((a) => a.action_type === "agent.prompt_debug_dump");
       assert(promptDump, "agent.prompt_debug_dump must be journaled at log_level=debug");
       const promptPayload = JSON.parse(promptDump!.payload) as { full_prompt: string };
-      assert(
-        promptPayload.full_prompt.includes(PAYMENT_ROUTER_SYMBOL),
+      assertStringIncludes(
+        promptPayload.full_prompt,
+        PAYMENT_ROUTER_SYMBOL,
         `the accepted final prompt must include the named fixture symbol '${PAYMENT_ROUTER_SYMBOL}'`,
       );
     } finally {
@@ -785,8 +793,9 @@ Deno.test({
       const promptDump = activities.find((a) => a.action_type === "agent.prompt_debug_dump");
       assert(promptDump, "agent.prompt_debug_dump must be journaled at log_level=debug");
       const promptPayload = JSON.parse(promptDump!.payload) as { full_prompt: string };
-      assert(
-        promptPayload.full_prompt.includes("## Portal Knowledge Summary"),
+      assertStringIncludes(
+        promptPayload.full_prompt,
+        "## Portal Knowledge Summary",
         "summary mode must still run the pre-phase-198 resolveKnowledgeContext fallback unchanged",
       );
     } finally {
@@ -1148,8 +1157,9 @@ Deno.test({
       assertEquals(toolPayload.phase, "planning");
       // The journaled resultSummary is the exact content the loop feeds to the next round's
       // priorTurn (planning_tool_loop.ts: capToTokenLimit → buildPriorTurn → logDynamicToolCall).
-      assert(
-        toolPayload.resultSummary.includes("EXAIX_PHASE199_MARKER_"),
+      assertStringIncludes(
+        toolPayload.resultSummary,
+        "EXAIX_PHASE199_MARKER_",
         `the read_file result must carry the fixture marker, got ${toolPayload.resultSummary}`,
       );
 
@@ -1168,8 +1178,8 @@ Deno.test({
         "a flag-on run whose gate passed must not journal a skip event",
       );
 
-      assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the written plan must carry the fixture marker");
-      assert(planText.includes(traceId.slice(0, 8)), "the plan file must be the run's own (trace-prefixed)");
+      assertStringIncludes(planText, "EXAIX_PHASE199_MARKER_", "the written plan must carry the fixture marker");
+      assertStringIncludes(planText, traceId.slice(0, 8), "the plan file must be the run's own (trace-prefixed)");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
@@ -1230,7 +1240,7 @@ Deno.test({
 
       // The flag-off plan carries the same marker the flag-on final round produced — the
       // single-call run consumed the same recorded response, so the plan shape is identical.
-      assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the flag-off plan must carry the same fixture marker");
+      assertStringIncludes(planText, "EXAIX_PHASE199_MARKER_", "the flag-off plan must carry the same fixture marker");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
@@ -1438,8 +1448,9 @@ Deno.test({
       assertEquals(rows.find((row) => row.action_type === "dynamic_tool_call")?.trace_id, traceId);
       assertEquals(calls[0].tool, "read_file");
       assertEquals(calls[0].args, { path: "src/target.ts" });
-      assert(
-        calls[0].resultSummary.includes(marker),
+      assertStringIncludes(
+        calls[0].resultSummary,
+        marker,
         `the read result must carry the marker: ${calls[0].resultSummary}`,
       );
 
@@ -1447,7 +1458,7 @@ Deno.test({
       // A completed loop with no abort therefore proves delivery to the provider.
       assertEquals(payloadsOf(rows, "planning.tools.completed").length, 1, actionTypes(rows));
       assertEquals(payloadsOf(rows, "planning.tools.aborted").length, 0, actionTypes(rows));
-      assert(planText.includes(marker), "the written plan must carry the marker");
+      assertStringIncludes(planText, marker, "the written plan must carry the marker");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
@@ -1481,7 +1492,7 @@ Deno.test({
       assertEquals(glob.length, 1);
       assertEquals(read.length, 1);
       for (const call of [...glob, ...read]) {
-        assert(call.resultSummary.includes(CONFINEMENT_DENIAL), `denied result expected: ${call.resultSummary}`);
+        assertStringIncludes(call.resultSummary, CONFINEMENT_DENIAL, `denied result expected: ${call.resultSummary}`);
         assertFalse(call.resultSummary.includes(ESCAPE_CONTENT_SENTINEL));
         assertFalse(call.resultSummary.includes(ESCAPE_NAME_SENTINEL));
       }
@@ -1520,14 +1531,14 @@ Deno.test({
       assertEquals(lenientUnknown[0].unknownParams, ["p201_extra"]);
       assertEquals(lenientUnknown[0].strict, false);
       const lenientCall = payloadsOf<IToolCallRow>(lenient.rows, "dynamic_tool_call");
-      assert(lenientCall[0].resultSummary.includes(lenient.marker), "the default run must execute the read");
+      assertStringIncludes(lenientCall[0].resultSummary, lenient.marker, "the default run must execute the read");
 
       const strict = await bootAliasCutoverRun(strictDir, "alias-extra-param", { strictParams: true });
       const strictUnknown = payloadsOf<IToolParamUnknownPayload>(strict.rows, "tool.param.unknown");
       assertEquals(strictUnknown.length, 1, actionTypes(strict.rows));
       assertEquals(strictUnknown[0].strict, true);
       const strictCall = payloadsOf<IToolCallRow>(strict.rows, "dynamic_tool_call");
-      assert(strictCall[0].resultSummary.includes("Unknown parameter"), strictCall[0].resultSummary);
+      assertStringIncludes(strictCall[0].resultSummary, "Unknown parameter", strictCall[0].resultSummary);
       assertFalse(strictCall[0].resultSummary.includes(strict.marker), "strict mode must not execute the read");
     } finally {
       await Deno.remove(defaultDir, { recursive: true }).catch(() => {});
@@ -1680,10 +1691,10 @@ Deno.test({
         await configDb.close();
       }
       const calls = runs.map((rows) => payloadsOf<IToolCallRow>(rows, "dynamic_tool_call")[0]);
-      assert(calls[0].resultSummary.includes(marker), "default mode must execute the read");
-      assert(calls[1].resultSummary.includes("Unknown parameter"), calls[1].resultSummary);
+      assertStringIncludes(calls[0].resultSummary, marker, "default mode must execute the read");
+      assertStringIncludes(calls[1].resultSummary, "Unknown parameter", calls[1].resultSummary);
       assertFalse(calls[1].resultSummary.includes(marker), "strict mode must reject before execution");
-      assert(calls[2].resultSummary.includes(marker), "setting false must restore execution");
+      assertStringIncludes(calls[2].resultSummary, marker, "setting false must restore execution");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
@@ -1707,7 +1718,7 @@ Deno.test({
       assert(find, `find_dependents must run. got: ${actionTypes(rows)}`);
       assertEquals(/error|not in the planning catalog|requires/i.test(find!.resultSummary), false, find!.resultSummary);
       assert(who, "the retired name is journaled as a refused call");
-      assert(who!.resultSummary.includes("not in the planning catalog"), who!.resultSummary);
+      assertStringIncludes(who!.resultSummary, "not in the planning catalog", who!.resultSummary);
       assertEquals(payloadsOf(rows, "tool.alias.rewritten").length, 0, "native names never rewrite");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
@@ -2074,9 +2085,9 @@ function assertRound202Outcome(run: IRound202Run, mode: Round202Mode): void {
   ROUND_202_FILES.forEach((_, index) => {
     const summary = payloads[index].resultSummary;
     if (executed.includes(index)) {
-      assert(summary.includes(run.markers[index]), `call ${index} must carry its marker, got ${summary}`);
+      assertStringIncludes(summary, run.markers[index], `call ${index} must carry its marker, got ${summary}`);
     } else {
-      assert(summary.includes(ROUND_202_REFUSAL), `call ${index} must be refused, got ${summary}`);
+      assertStringIncludes(summary, ROUND_202_REFUSAL, `call ${index} must be refused, got ${summary}`);
     }
   });
 
@@ -2089,7 +2100,7 @@ function assertRound202Outcome(run: IRound202Run, mode: Round202Mode): void {
 
   assertEquals(run.rows.some((r) => r.action_type === "planning.tools.skipped"), false);
   for (const index of executed) {
-    assert(run.planText.includes(run.markers[index]), `the plan must carry marker ${index}`);
+    assertStringIncludes(run.planText, run.markers[index], `the plan must carry marker ${index}`);
   }
   for (const index of ROUND_202_FILES.map((_, i) => i).filter((i) => !executed.includes(i))) {
     assert(!run.planText.includes(run.markers[index]), `the plan must not carry refused marker ${index}`);

@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [packages/ai/src/provider_common_utils.ts, packages/ai/src/providers/common.ts]
  */
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { GoogleProvider } from "@exaix/ai-google";
 import { OpenAIProvider } from "@exaix/ai-openai";
@@ -68,7 +68,7 @@ Deno.test("a 402 body maps to BillingError for Anthropic, Google, OpenAI, OpenRo
         assertEquals(isRetryable(error), false);
         assertEquals(fetchCalls, 1, "billing failures must not spend the retry budget");
         if (testCase.statusOnly) assertEquals(error.message, "HTTP 402");
-        else assert(error.message.includes(BILLING_SENTINEL));
+        else assertStringIncludes(error.message, BILLING_SENTINEL);
       } finally {
         globalThis.fetch = originalFetch;
       }

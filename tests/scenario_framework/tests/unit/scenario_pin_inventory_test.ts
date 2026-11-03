@@ -13,7 +13,7 @@
  * ]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
@@ -93,7 +93,7 @@ Deno.test("[phase203.pins] every pin states a reason and a note, and its binding
     pinned.push(relative);
 
     for (const pin of pins) {
-      assert(PinReasonSchema.options.includes(pin.reason), `${relative} has reason '${pin.reason}'`);
+      assertArrayIncludes(PinReasonSchema.options, [pin.reason], `${relative} has reason '${pin.reason}'`);
       assertEquals(pin.note.trim().length > 0, true, `${relative} needs a non-empty note`);
       assert(pin.fields.length > 0, `${relative} must pin at least one field`);
 

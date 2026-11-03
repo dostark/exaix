@@ -11,7 +11,7 @@
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ANALYZER_VERSION, CritiqueQuality, FulfillmentStatus } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import { createReflexiveAgent } from "@exaix/execution";
@@ -276,7 +276,7 @@ Deno.test("[E2E] Gap 4: structured frontmatter criteria propagate through pipeli
   // Verify core request fields are intact
   assertEquals(parsed.traceId, TRACE_ID);
   assertEquals(parsed.requestId, REQUEST_ID);
-  assert(parsed.userPrompt.includes("user authentication"));
+  assertStringIncludes(parsed.userPrompt, "user authentication");
 });
 
 Deno.test("[E2E] Gap 4: buildParsedRequest works without optional frontmatter fields", () => {

@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/drive_interactive_round.ts]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { extractFirstQuestionId, main, stripDiagnosticPrefix } from "../../runner/drive_interactive_round.ts";
 import { withTempDir } from "@exaix/testing";
@@ -95,8 +95,8 @@ Deno.test("[DriveInteractiveRound] main() also forces a terminal resolution via 
     assertEquals(code, 0);
 
     const calls = await Deno.readTextFile(callsLogPath);
-    assertEquals(calls.includes("--proceed"), true);
-    assertEquals(calls.includes("--answer"), true);
+    assertStringIncludes(calls, "--proceed");
+    assertStringIncludes(calls, "--answer");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

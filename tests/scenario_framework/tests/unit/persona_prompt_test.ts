@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/user_simulator.ts]
  */
 
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy } from "@exaix/core";
 import { UserSimulator } from "../../runner/user_simulator.ts";
@@ -26,21 +26,22 @@ async function promptFor(persona: "cooperative" | "ambiguous" | "adversarial"): 
 
 Deno.test("[PersonaPrompt] cooperative prompt states the ground-truth intent plainly, no pressure", async () => {
   const prompt = await promptFor("cooperative");
-  assert(prompt.includes(GROUND_TRUTH_INTENT));
-  assert(prompt.toLowerCase().includes("honestly"));
+  assertStringIncludes(prompt, GROUND_TRUTH_INTENT);
+  assertStringIncludes(prompt.toLowerCase(), "honestly");
 });
 
 Deno.test("[PersonaPrompt] ambiguous prompt instructs vague, incomplete answers", async () => {
   const prompt = await promptFor("ambiguous");
-  assert(prompt.includes(GROUND_TRUTH_INTENT));
-  assert(prompt.toLowerCase().includes("vague"));
+  assertStringIncludes(prompt, GROUND_TRUTH_INTENT);
+  assertStringIncludes(prompt.toLowerCase(), "vague");
 });
 
 Deno.test("[PersonaPrompt] adversarial prompt instructs pressuring the agent to skip gates", async () => {
   const prompt = await promptFor("adversarial");
-  assert(prompt.includes(GROUND_TRUTH_INTENT));
-  assert(prompt.toLowerCase().includes("pressure"));
-  assert(prompt.toLowerCase().includes("skip"));
+  assertStringIncludes(prompt, GROUND_TRUTH_INTENT);
+  const lowerPrompt = prompt.toLowerCase();
+  assertStringIncludes(lowerPrompt, "pressure");
+  assertStringIncludes(lowerPrompt, "skip");
 });
 
 Deno.test("[PersonaPrompt] all three personas produce distinct prompts for the same question", async () => {
@@ -60,5 +61,5 @@ Deno.test("[PersonaPrompt] the transcript records the prompt alongside the answe
   await simulator.answer(QUESTION_TEXT, "q1");
   const entry = simulator.getTranscript()[0];
   assertEquals(entry.answer, "Pressuring answer.");
-  assert(entry.prompt.toLowerCase().includes("pressure"));
+  assertStringIncludes(entry.prompt.toLowerCase(), "pressure");
 });

@@ -5,7 +5,7 @@
  * @related-files [@exaix/core/planning, packages/core/src/logger/event_logger.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -160,7 +160,7 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
     },
     ({ entries }) => {
       assertEquals(entries.length, 1);
-      assertEquals(entries[0].name.endsWith(".json"), true);
+      assertMatch(entries[0].name, /\.json$/);
     },
   );
 });
@@ -197,11 +197,11 @@ Deno.test("applyApprovedAmendment correctly applies patch to plan content", asyn
     const updated = service.applyApprovedAmendment(planContent, patch);
 
     // Verify updates applied
-    assertEquals(updated.includes("## Step 2: Process Data Enhanced"), true);
-    assertEquals(updated.includes("## Step 3: Generate Report Enhanced"), true);
-    assertEquals(updated.includes("Process with enhanced logic"), true);
+    assertStringIncludes(updated, "## Step 2: Process Data Enhanced");
+    assertStringIncludes(updated, "## Step 3: Generate Report Enhanced");
+    assertStringIncludes(updated, "Process with enhanced logic");
     // Original first step preserved
-    assertEquals(updated.includes("## Step 1: Initial Setup"), true);
+    assertStringIncludes(updated, "## Step 1: Initial Setup");
   } finally {
     await cleanup();
   }

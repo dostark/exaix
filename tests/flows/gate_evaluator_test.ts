@@ -5,7 +5,7 @@
  * retry decisions based on agent performance against defined thresholds.
  */
 
-import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import type { IGateConfig } from "@exaix/core/types";
@@ -238,7 +238,7 @@ Deno.test("GateEvaluator: handles judge errors and returns halted by default", a
   assertEquals(result.passed, false);
   assertEquals(result.action, FlowGateAction.HALTED);
   assertEquals(result.error, "judge failed");
-  assertEquals(result.evaluation.feedback.includes("Evaluation failed"), true);
+  assertStringIncludes(result.evaluation.feedback, "Evaluation failed");
 });
 
 Deno.test("GateEvaluator.formatFeedbackForRetry: includes failed criteria details and suggestions", () => {
@@ -266,8 +266,8 @@ Deno.test("GateEvaluator.formatFeedbackForRetry: includes failed criteria detail
     },
   });
 
-  assertEquals(output.includes("## Quality Gate Feedback"), true);
-  assertEquals(output.includes("### Areas Needing Improvement"), true);
-  assertEquals(output.includes("#### clarity"), true);
-  assertEquals(output.includes("Suggestions"), true);
+  assertStringIncludes(output, "## Quality Gate Feedback");
+  assertStringIncludes(output, "### Areas Needing Improvement");
+  assertStringIncludes(output, "#### clarity");
+  assertStringIncludes(output, "Suggestions");
 });

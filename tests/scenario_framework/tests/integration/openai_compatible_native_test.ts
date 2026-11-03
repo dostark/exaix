@@ -7,7 +7,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -282,7 +282,7 @@ Deno.test({
       const toolPhases = rows.filter((row) => row.action_type === "dynamic_tool_call").map((row) =>
         (JSON.parse(row.payload) as { phase?: string; tool: string }).phase ?? "execution"
       );
-      assert(toolPhases.includes("planning"), toolPhases.join(","));
+      assertArrayIncludes(toolPhases, ["planning"], toolPhases.join(","));
       assert(toolPhases.length >= 2, toolPhases.join(","));
       assert(rows.some((row) => row.action_type === "execution.completed"));
       assertEquals(rows.some((row) => row.action_type.endsWith(".failed")), false);
@@ -570,7 +570,7 @@ Deno.test({
       workspaceRoot = result.workspaceRoot;
       assert(result.passed, `${result.failedSteps} ${JSON.stringify(result.rows.map((row) => row.action_type))}`);
       const terminal = terminalFailure(result.rows);
-      assert(terminal.payload.includes("Structured output failed schema validation"), terminal.payload);
+      assertStringIncludes(terminal.payload, "Structured output failed schema validation", terminal.payload);
       assert(result.rows.some((row) => row.action_type === "llm.call.failed" && row.trace_id === terminal.trace_id));
       assert(result.rows.some((row) => row.action_type === "planning.tools.aborted"));
       assertEquals(result.rows.some((row) => row.action_type.startsWith("execution.")), false);

@@ -8,7 +8,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals, assertFalse, assertThrows } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createMockConfig, withTempDir } from "@exaix/testing";
 import { assertPersonaRunnerExitCode } from "../../../../scripts/run_persona_isolation.ts";
@@ -50,7 +50,7 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
     const output = JSON.parse(await Deno.readTextFile(outputPath));
     assertEquals(output.armComparisons.length, 2);
     assertEquals(output.executionPlan.length, 3);
-    assertEquals(output.executionPlan[0].argv.includes("--scenario"), true);
+    assertArrayIncludes(output.executionPlan[0].argv, ["--scenario"]);
     const cellIndex = output.executionPlan[0].argv.indexOf("--cell");
     assertEquals(output.executionPlan[0].argv[cellIndex + 1], "opencode");
     assertEquals(output.executionPlan[0].env.EXA_LLM_PROVIDER, "mock");

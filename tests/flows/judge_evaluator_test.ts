@@ -5,7 +5,7 @@
  * parsing structured JSON scores and enforcing subjective quality gates within workflows.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 
 import { CRITERIA, type EvaluationResult as _EvaluationResult } from "@exaix/core/evaluation";
 import { EvaluationCategory } from "@exaix/core";
@@ -380,16 +380,12 @@ Deno.test("JudgeEvaluator: several criteria ask the judge for the criteriaScores
   );
   const multiPrompt = multiRunner.lastRequest?.prompt ?? "";
   assertStringIncludes(multiPrompt, '"criteriaScores"');
-  assertEquals(
-    multiPrompt.includes('"name": "task_fulfillment"'),
-    false,
-    "no single-criterion example for two criteria",
-  );
+  assertFalse(multiPrompt.includes('"name": "task_fulfillment"'), "no single-criterion example for two criteria");
 
   const singleRunner = new MockAgentRunner();
   singleRunner.setResponse("judge-agent", JSON.stringify({ name: "code_correctness", score: 1 }));
   await new JudgeEvaluator(singleRunner).evaluate("judge-agent", "Test code", [CRITERIA.CODE_CORRECTNESS]);
-  assertEquals((singleRunner.lastRequest?.prompt ?? "").includes('"criteriaScores"'), false);
+  assertFalse((singleRunner.lastRequest?.prompt ?? "").includes('"criteriaScores"'));
 });
 
 // Error Handling Tests

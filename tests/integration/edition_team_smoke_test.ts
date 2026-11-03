@@ -5,7 +5,7 @@
  * TeamComposer integration, and EXAIX_EDITION environment variable routing.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { ProviderRegistry } from "@exaix/ai";
 import { EDITION_SOLO, EDITION_TEAM, ProviderType } from "@exaix/core";
@@ -36,8 +36,9 @@ describe("[team] Team edition provider bootstrap", () => {
     freshSoloBootstrap();
 
     for (const provider of SOLO_PROVIDERS) {
-      assert(
-        ProviderRegistry.getSupportedProviders().includes(provider),
+      assertArrayIncludes(
+        ProviderRegistry.getSupportedProviders(),
+        [provider],
         `Expected Solo provider ${provider} to be registered`,
       );
     }
@@ -58,15 +59,17 @@ describe("[team] Team edition provider bootstrap", () => {
       bootstrapTeamProviders();
 
       for (const provider of SOLO_PROVIDERS) {
-        assert(
-          ProviderRegistry.getSupportedProviders().includes(provider),
+        assertArrayIncludes(
+          ProviderRegistry.getSupportedProviders(),
+          [provider],
           `Expected Solo provider ${provider} to be registered after Team bootstrap`,
         );
       }
 
       for (const provider of TEAM_PROVIDERS) {
-        assert(
-          ProviderRegistry.getSupportedProviders().includes(provider),
+        assertArrayIncludes(
+          ProviderRegistry.getSupportedProviders(),
+          [provider],
           `Expected Team provider ${provider} to be registered after Team bootstrap`,
         );
       }

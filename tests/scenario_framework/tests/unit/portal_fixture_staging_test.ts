@@ -11,7 +11,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { resetAndStageFixturePortal } from "../../runner/synthetic_runner.ts";
@@ -82,7 +82,7 @@ Deno.test({
       }).output();
       assertEquals(gitLog.success, true, "git repo initialized");
       const log = new TextDecoder().decode(gitLog.stdout);
-      assert(log.includes("init todo-app fixture"), `expected init commit, got: ${log.trim()}`);
+      assertStringIncludes(log, "init todo-app fixture", `expected init commit, got: ${log.trim()}`);
     } finally {
       await Deno.remove(root, { recursive: true });
     }

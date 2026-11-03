@@ -90,10 +90,13 @@ Deno.test("[BareCellScoring] bare template renders outcome-only steps: setup + d
 
   const stepIds = parsed.steps.map((s) => s.id);
   for (const setupId of REQUIRED_SETUP_STEP_IDS) {
-    assert(stepIds.includes(setupId), `setup step ${setupId} must be present in bare scenario`);
+    const includesResult: boolean = stepIds.includes(setupId);
+    assert(includesResult, `setup step ${setupId} must be present in bare scenario`);
   }
-  assert(stepIds.includes(BARE_DELEGATE_STEP_ID), `delegate step ${BARE_DELEGATE_STEP_ID} must be present`);
-  assert(stepIds.includes(VERIFY_TESTS_STEP_ID), `outcome step ${VERIFY_TESTS_STEP_ID} must be present`);
+  const includesResult2: boolean = stepIds.includes(BARE_DELEGATE_STEP_ID);
+  assert(includesResult2, `delegate step ${BARE_DELEGATE_STEP_ID} must be present`);
+  const includesResult3: boolean = stepIds.includes(VERIFY_TESTS_STEP_ID);
+  assert(includesResult3, `outcome step ${VERIFY_TESTS_STEP_ID} must be present`);
 
   for (const forbiddenId of FORBIDDEN_PROCESS_STEP_IDS) {
     assert(!stepIds.includes(forbiddenId), `process step ${forbiddenId} must be absent from bare scenario`);

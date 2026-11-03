@@ -26,7 +26,7 @@ import {
   DEFAULT_FLOWS_PATH,
   DEFAULT_SKILLS_MEMORY_PATH,
 } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   capturePortalBaselines,
@@ -187,7 +187,7 @@ Deno.test("[portal_drift] a commit landing on the portal's default branch is cau
 
     const drift = await detectPortalDrift(ws, baselines);
     assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
-    assert(drift[0].includes("default branch moved"), drift[0]);
+    assertStringIncludes(drift[0], "default branch moved", drift[0]);
   }, { prefix: "drift-branch-" });
 });
 
@@ -201,7 +201,7 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
 
     const drift = await detectPortalDrift(ws, baselines);
     assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
-    assert(drift[0].includes("working tree dirty"), drift[0]);
+    assertStringIncludes(drift[0], "working tree dirty", drift[0]);
   }, { prefix: "drift-dirty-" });
 });
 

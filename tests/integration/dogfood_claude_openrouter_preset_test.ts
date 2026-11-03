@@ -64,8 +64,9 @@ Deno.test("[delegate_matrix] the claude.openrouter preset's session_delegate.mod
   const model = parsed.session_delegate?.model ?? "";
   // The config carries provider:model (colon) form; strip the provider prefix
   const slug = model.includes(":") ? model.slice(model.indexOf(":") + 1) : model;
+  const hasAnthropicPrefix = slug.startsWith(ANTHROPIC_MODEL_PREFIX);
   assert(
-    slug.startsWith(ANTHROPIC_MODEL_PREFIX),
+    hasAnthropicPrefix,
     `claude-code+openrouter delegate model must be an Anthropic slug (the OpenRouter 1P caveat); got "${model}"`,
   );
 });

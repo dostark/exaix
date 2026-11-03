@@ -161,9 +161,7 @@
     "packages/tool-runtime": 4,
     "scripts": 1
   },
-  "exaix/no-boolean-assert": {
-    "tests": 315
-  },
+  "exaix/no-boolean-assert": {},
   "exaix/max-params": {
     "packages/core": 1,
     "packages/flow": 1,

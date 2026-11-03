@@ -8,7 +8,7 @@
  * @dependencies [@exaix/testing]
  * @related-files [apps/daemon/main.ts, packages/ai/src/provider_factory.ts, packages/schemas/src/config.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { daemonConfigSections, migrateDaemonWorkspace } from "./helpers/daemon_config.ts";
 
@@ -40,8 +40,9 @@ Deno.test("[phase206.paid-boot-guard] an [ai]-only Google config fails closed in
     await migrateDaemonWorkspace(root);
     const { code, stderr } = await bootPaidDaemon(root, {});
     assertEquals(code, 1, `daemon must exit non-zero; stderr:\n${stderr}`);
-    assert(
-      stderr.includes("blocked in test/CI mode"),
+    assertStringIncludes(
+      stderr,
+      "blocked in test/CI mode",
       `stderr must name the paid-provider guard; got:\n${stderr}`,
     );
   } finally {

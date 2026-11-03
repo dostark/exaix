@@ -10,7 +10,7 @@
  * @related-files [packages/session/src/session_delegate_service.ts, packages/session/src/session_adapter_registry.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join } from "@std/path";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
@@ -35,7 +35,7 @@ Deno.test("[delegate_matrix] dogfood.openrouter.toml delegate model is a provide
   const parsed = await loadPreset();
 
   const model = parsed.session_delegate?.model ?? "";
-  assert(model.includes(":"), `delegate model must be provider:model, got "${model}"`);
+  assertStringIncludes(model, ":", `delegate model must be provider:model, got "${model}"`);
   // opencode --model takes provider/model, and OpenRouter slugs are vendor/model.
   assert(
     model.startsWith("openrouter:") && model.split("/").length === 2,

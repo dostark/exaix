@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/cell_catalog.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
 import type { IMatrixCell } from "../../runner/matrix_expander.ts";
@@ -286,14 +286,18 @@ Deno.test("[phase203.cell_catalog] a preset's opt-in travels onto the resolved c
 
 Deno.test("[phase203.cell_catalog] the fixture base config grants the fixture host and carries no compatible block", async () => {
   const raw = await Deno.readTextFile(resolve(REPO_ROOT, "configs/compat-fixture-base.toml"));
-  assert(raw.includes('allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]'), "the host grant must hold the sentinel");
+  assertStringIncludes(
+    raw,
+    'allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]',
+    "the host grant must hold the sentinel",
+  );
 
   const materialized = resolveCellConfig(raw, {
     workspaceRoot: "/tmp/workspace",
     worktreePath: "/tmp/worktree",
     compatFixturePort: 8123,
   });
-  assert(materialized.includes("127.0.0.1:8123"), "the materialized config must carry the port");
+  assertStringIncludes(materialized, "127.0.0.1:8123", "the materialized config must carry the port");
   assertFalse(materialized.includes("__COMPAT_FIXTURE_PORT__"));
 
   // The binding supplies the service, so the base config declares no compatible profile.

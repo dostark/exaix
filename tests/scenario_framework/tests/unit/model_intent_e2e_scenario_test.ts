@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/model_intent_e2e.yaml, tests/scenario_framework/fixtures/requests/provider_live/model_intent_e2e.md]
  */
 
-import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertMatch } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
@@ -31,8 +31,8 @@ Deno.test("model_intent_e2e scenario loads against the scenario schema (dry-run,
   const scenario = ScenarioSchema.parse(parsed);
 
   assertEquals(scenario.id, "model-intent-e2e");
-  assert(scenario.tags.includes("provider-live"), "scenario must be tagged provider-live");
-  assert(scenario.request_fixture.endsWith("model_intent_e2e.md"));
+  assertArrayIncludes(scenario.tags, ["provider-live"], "scenario must be tagged provider-live");
+  assertMatch(scenario.request_fixture, /model_intent_e2e\.md$/);
 
   const stepIds = scenario.steps.map((step) => step.id);
   assertArrayIncludes(stepIds, ["submit-request"]);

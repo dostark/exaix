@@ -16,7 +16,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertExists } from "@std/assert";
+import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { renderCriticalSkillsSection } from "@exaix/core/func";
 import { loadRepoSkillCatalog, skillMatchFixture } from "@exaix/testing";
@@ -35,7 +35,7 @@ function parseFrontmatter(md: string): { fm: string; body: string } {
 Deno.test("[step4][GAP-5] a pre-migration golden fixture exists for test-engineer", async () => {
   const golden = await Deno.readTextFile(join(FIXTURES, "test-engineer.golden.md"));
   // The baseline must capture the original methodology so a regression is detectable.
-  assert(golden.includes("Test Pyramid"), "golden must preserve the pre-migration Test Pyramid methodology");
+  assertStringIncludes(golden, "Test Pyramid", "golden must preserve the pre-migration Test Pyramid methodology");
 });
 
 Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills, not the body", async () => {
@@ -43,8 +43,8 @@ Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills
   const { fm, body } = parseFrontmatter(md);
 
   // default_skills carries the contract + methodology.
-  assert(fm.includes("response-contract"), "default_skills must include the critical response-contract skill");
-  assert(fm.includes("tdd-methodology"), "default_skills must still include tdd-methodology");
+  assertStringIncludes(fm, "response-contract", "default_skills must include the critical response-contract skill");
+  assertStringIncludes(fm, "tdd-methodology", "default_skills must still include tdd-methodology");
 
   // Methodology has LEFT the persona body.
   assert(!body.includes("Test Pyramid"), "Test Pyramid methodology must move to tdd-methodology skill");
@@ -60,8 +60,8 @@ Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills
 
 Deno.test("[step4] tdd-methodology skill absorbed the test-engineer methodology", async () => {
   const md = await Deno.readTextFile(join(SKILLS, "tdd-methodology", "SKILL.md"));
-  assert(md.includes("Test Pyramid"), "tdd-methodology must now carry the Test Pyramid");
-  assert(md.includes("FIRST"), "tdd-methodology must now carry the FIRST principles");
+  assertStringIncludes(md, "Test Pyramid", "tdd-methodology must now carry the Test Pyramid");
+  assertStringIncludes(md, "FIRST", "tdd-methodology must now carry the FIRST principles");
   assert(md.includes("Arrange-Act-Assert") || md.includes("Arrange"), "tdd-methodology must carry the AAA pattern");
 });
 
@@ -69,8 +69,8 @@ Deno.test("[step4] response-contract is a valid `critical` skill defining the ou
   const loaded = (await loadRepoSkillCatalog()).get("response-contract");
   assertExists(loaded, "response-contract must load as a valid skill folder");
   assert(loaded.skill.critical === true, "response-contract must be marked critical: true");
-  assert(loaded.skill.instructions.includes("<thought>"), "contract must define <thought>");
-  assert(loaded.skill.instructions.includes("<content>"), "contract must define <content>");
+  assertStringIncludes(loaded.skill.instructions, "<thought>", "contract must define <thought>");
+  assertStringIncludes(loaded.skill.instructions, "<content>", "contract must define <content>");
 });
 
 Deno.test("[step4] a critical response-contract match renders into the PROTECTED section", () => {
@@ -95,7 +95,7 @@ Deno.test("[step4] a critical response-contract match renders into the PROTECTED
     retrievalLatencyMs: 0,
   };
   const critical = renderCriticalSkillsSection(ctx);
-  assert(critical.includes("CONTRACT"), "contract must render in the protected critical section");
+  assertStringIncludes(critical, "CONTRACT", "contract must render in the protected critical section");
   assert(!critical.includes("METHODOLOGY"), "methodology stays out of the protected section");
   assertExists(critical);
 });

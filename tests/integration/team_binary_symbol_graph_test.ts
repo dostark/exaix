@@ -17,7 +17,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { readConfigFixture } from "./helpers/config_fixture.ts";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EDITION_ENTERPRISE, EDITION_SOLO, EDITION_TEAM } from "@exaix/core";
 
@@ -236,13 +236,15 @@ Deno.test({
       const pairs = symbolEdges.map((e) => `${e.from}->${e.to}`).sort();
 
       // Same-package, different-file call. This is the dominant real Go layout.
-      assert(
-        pairs.includes("service.go#Render->format.go#Format"),
+      assertArrayIncludes(
+        pairs,
+        ["service.go#Render->format.go#Format"],
         `expected the same-package cross-file edge, got ${JSON.stringify(pairs)}`,
       );
       // Cross-package call through a module path.
-      assert(
-        pairs.includes("src/report.go#Report->format.go#Format"),
+      assertArrayIncludes(
+        pairs,
+        ["src/report.go#Report->format.go#Format"],
         `expected the cross-package edge, got ${JSON.stringify(pairs)}`,
       );
     } finally {

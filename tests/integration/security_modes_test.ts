@@ -7,7 +7,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PortalOperation, SecurityMode } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
@@ -346,7 +346,7 @@ Deno.test("Integration Test 16.6: Hybrid Mode - Read Access Allowed", async () =
     const readFile = join(portalPath, "README.md");
     const content = await Deno.readTextFile(readFile);
 
-    assert(content.includes("Test Portal"), "Should be able to read portal files");
+    assertStringIncludes(content, "Test Portal", "Should be able to read portal files");
 
     // Log successful read access
     eventLogger.info("security.read_access_allowed", readFile, {

@@ -6,7 +6,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
-import { assert, assertEquals, assertExists, type assertNotEquals as _assertNotEquals } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 
 import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -301,7 +301,7 @@ Deno.test("Integration: Concurrent Requests - Shared resource access", async () 
     // File should exist (check using absolute path)
     try {
       const content = await Deno.readTextFile(sharedFilePath);
-      assert(content.includes("{"), "Config should be valid JSON");
+      assertStringIncludes(content, "{", "Config should be valid JSON");
 
       // Parse should not throw
       const parsed = JSON.parse(content);

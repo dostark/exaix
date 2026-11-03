@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/runner/scenario_templates.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { buildJailLaunch } from "../../runner/matrix_expander.ts";
 import { renderExternalBenchTaskTemplate } from "../../runner/scenario_templates.ts";
 import { buildRunJailedLaunch, parseRunJailedArgs } from "../../scripts/run_jailed.ts";
@@ -19,16 +19,16 @@ import { buildRunJailedLaunch, parseRunJailedArgs } from "../../scripts/run_jail
 function assertJailed(command: string, args: string[]): void {
   assertEquals(command, "docker", "delegate must run via docker, not host-direct");
   assertEquals(args[0], "run");
-  assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");
-  assert(args.includes("--security-opt=no-new-privileges"), "must forbid privilege escalation");
+  assertArrayIncludes(args, ["--cap-drop=ALL"], "must drop all capabilities");
+  assertArrayIncludes(args, ["--security-opt=no-new-privileges"], "must forbid privilege escalation");
   assert(args.some((a) => a.startsWith("type=bind")), "must bind-mount the task environment");
-  assert(args.includes("--rm"), "must guarantee teardown on every exit path (docker run --rm)");
+  assertArrayIncludes(args, ["--rm"], "must guarantee teardown on every exit path (docker run --rm)");
 }
 
 Deno.test("[DelegateIsolation] buildJailLaunch wraps an inner command in the hardened container launch", () => {
   const jailed = buildJailLaunch({ bin: "claude", args: ["-p"] }, { mountSource: "/some/portal", mountDest: "/app" });
   assertJailed(jailed.bin, jailed.args);
-  assert(jailed.args.includes("claude"), "the inner delegate binary must be present as the container command");
+  assertArrayIncludes(jailed.args, ["claude"], "the inner delegate binary must be present as the container command");
 });
 
 Deno.test("[DelegateIsolation] buildJailLaunch uses an explicit credentialMountArgs override instead of live-resolving credentials", () => {
@@ -38,8 +38,9 @@ Deno.test("[DelegateIsolation] buildJailLaunch uses an explicit credentialMountA
     credentialMountArgs: ["--mount", "type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/claude,dst=/tmp/.claude"],
   });
   assertJailed(jailed.bin, jailed.args);
-  assert(
-    jailed.args.includes("type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/claude,dst=/tmp/.claude"),
+  assertArrayIncludes(
+    jailed.args,
+    ["type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/claude,dst=/tmp/.claude"],
     "must use the override mount verbatim (a template-safe, run-time-expanded path) instead of a " +
       "generation-time-resolved disposable temp dir, which would go stale before the persisted scenario re-runs",
   );
@@ -56,13 +57,15 @@ Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate 
     tool: "claude-code",
     benchmarkVersion: "d28711d0da2675d0bb1d56de45ae5df6082438a3",
   });
-  assert(
-    yaml.includes('command: "deno"'),
+  assertStringIncludes(
+    yaml,
+    'command: "deno"',
     "rendered delegate step must invoke the run_jailed.ts wrapper via deno, not a raw docker/CLI command",
   );
-  assert(yaml.includes("run_jailed.ts"), "rendered delegate step must name the run_jailed.ts framework wrapper");
-  assert(
-    yaml.includes('"--bin", "claude"'),
+  assertStringIncludes(yaml, "run_jailed.ts", "rendered delegate step must name the run_jailed.ts framework wrapper");
+  assertStringIncludes(
+    yaml,
+    '"--bin", "claude"',
     "the delegate tool must be passed as run_jailed.ts's --bin flag, never spawned directly",
   );
   assert(!yaml.includes('command: "claude"'), "the delegate command must never be the bare, unjailed claude binary");
@@ -87,7 +90,7 @@ Deno.test("[DelegateIsolation] run_jailed.ts's own launch builder wraps the dele
   ]);
   const jailed = await buildRunJailedLaunch(options);
   assertJailed(jailed.bin, jailed.args);
-  assert(jailed.args.includes("claude"), "the inner delegate binary must be present as the container command");
+  assertArrayIncludes(jailed.args, ["claude"], "the inner delegate binary must be present as the container command");
 });
 
 Deno.test("[DelegateIsolation] a delegate step constructed WITHOUT the jail wrapper fails this assertion (regression guard)", () => {

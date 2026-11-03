@@ -43,7 +43,7 @@ Deno.test("registry_bootstrap: codex-cli is registered as a supported provider",
   bootstrapProviderRegistry();
 
   const supported = ProviderRegistry.getSupportedProviders();
-  assertEquals(supported.includes("codex-cli"), true);
+  assertArrayIncludes(supported, ["codex-cli"]);
 });
 
 Deno.test("registry_bootstrap: codex-cli factory resolves to a CliDelegateModelProvider", async () => {

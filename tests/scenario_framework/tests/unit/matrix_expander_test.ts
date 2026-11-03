@@ -16,7 +16,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
@@ -426,8 +426,9 @@ Deno.test("[scenario_matrix] GAP-7: EXA_CONFIG_PATH is the daemon's real config 
   // Here we assert the wiring path exists: the expander overlays EXA_CONFIG_PATH, and the
   // daemon's bootstrap reads exactly that env var to choose the config it loads.
   const mainSrc = await Deno.readTextFile(join(REPO_ROOT, "apps", "daemon", "main.ts"));
-  assert(
-    mainSrc.includes('Deno.env.get("EXA_CONFIG_PATH")'),
+  assertStringIncludes(
+    mainSrc,
+    'Deno.env.get("EXA_CONFIG_PATH")',
     "apps/daemon/main.ts must read EXA_CONFIG_PATH so the matrix overlay swaps the loaded config",
   );
 });
@@ -491,7 +492,8 @@ Deno.test("[bindings] overlayRequestBindings gives every exactl request step its
     // The original args survive, and every overlay path is absolute and outside the sandbox.
     assertEquals(first.args?.slice(0, 2), ["--file", "$REQUEST_FIXTURE"]);
     for (const path of overlayArgs(first)) {
-      assert(path.startsWith(root), `overlay ${path} must live under the run output dir`);
+      const isInRunOutput = path.startsWith(root);
+      assert(isInRunOutput, `overlay ${path} must live under the run output dir`);
       assert(!path.includes("/sandbox/"), `overlay ${path} must not live inside the sandbox`);
     }
   } finally {

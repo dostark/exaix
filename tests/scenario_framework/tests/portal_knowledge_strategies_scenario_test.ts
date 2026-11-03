@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-strategies.yaml]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
@@ -32,12 +32,14 @@ Deno.test(
       !yaml.includes("expected duplicate top-level + package-local services edge"),
       "the deep-structure assertion must not expect a fixed duplicate edge count",
     );
-    assert(
-      yaml.includes("no services layer_contains_file edge to"),
+    assertStringIncludes(
+      yaml,
+      "no services layer_contains_file edge to",
       "the assertion must require at least one services edge to the target file",
     );
-    assert(
-      yaml.includes('find((pkg) => pkg.name === "triggers")'),
+    assertStringIncludes(
+      yaml,
+      'find((pkg) => pkg.name === "triggers")',
       "the assertion must pin the deterministic package-local triggers layer",
     );
   },

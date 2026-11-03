@@ -12,7 +12,15 @@
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts, packages/session/src/opencode_permission_generator.ts]
  */
 
-import { assert, assertEquals, assertExists, assertFalse, assertMatch, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertMatch,
+  assertStringIncludes,
+} from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
@@ -62,8 +70,9 @@ Deno.test("[security] bare delegate launch stages a worktree-scoped opencode per
   assertExists(configStep, "a setup step must stage the opencode config");
   assertEquals(configStep.command, "sh");
   const writeArg = (configStep.args ?? []).join(" ");
-  assert(
-    writeArg.includes("$WORKSPACE_ROOT/todo-app/opencode.jsonc"),
+  assertStringIncludes(
+    writeArg,
+    "$WORKSPACE_ROOT/todo-app/opencode.jsonc",
     "config must be written into the sandbox worktree, not the repo",
   );
 
@@ -140,9 +149,9 @@ function expandBareClaudeCell(): { args: string[] } {
 
 Deno.test("[security] bare claude-code launch carries the worktree-scoped tool flags (Exaix parity)", () => {
   const { args } = expandBareClaudeCell();
-  assert(args.includes("--permission-mode"), "must carry --permission-mode");
+  assertArrayIncludes(args, ["--permission-mode"], "must carry --permission-mode");
   assertEquals(args[args.indexOf("--permission-mode") + 1], "acceptEdits");
-  assert(args.includes("--allowedTools"), "must carry --allowedTools");
+  assertArrayIncludes(args, ["--allowedTools"], "must carry --allowedTools");
   assertEquals(args[args.indexOf("--allowedTools") + 1], "Read,Edit,Bash(git *)");
   assert(!args.includes("--dangerously-skip-permissions"), "must never bypass permissions");
 });
@@ -251,8 +260,8 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
 
       assertJailMountSurface(args, { expectCredentialsMount: false });
 
-      assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");
-      assert(args.includes("--security-opt=no-new-privileges"), "must forbid privilege escalation");
+      assertArrayIncludes(args, ["--cap-drop=ALL"], "must drop all capabilities");
+      assertArrayIncludes(args, ["--security-opt=no-new-privileges"], "must forbid privilege escalation");
       const uid = Deno.uid();
       const gid = Deno.gid();
       if (uid !== null && gid !== null) {
@@ -267,9 +276,9 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
       // The inner delegate command targets the container worktree path.
       const opencodeIdx = args.indexOf("opencode");
       assert(opencodeIdx > 0, "opencode must be the inner command");
-      assert(args.slice(opencodeIdx).includes("--dir"), "opencode --dir must be set");
-      assert(args.includes("/worktree"), "delegate cwd is the jail worktree");
-      assert(args.includes("OPENCODE_CONFIG=/worktree/opencode.jsonc"), "permission config passed into the jail");
+      assertArrayIncludes(args.slice(opencodeIdx), ["--dir"], "opencode --dir must be set");
+      assertArrayIncludes(args, ["/worktree"], "delegate cwd is the jail worktree");
+      assertArrayIncludes(args, ["OPENCODE_CONFIG=/worktree/opencode.jsonc"], "permission config passed into the jail");
       // Claude Code subscription, never API billing: the jail must not pass ANTHROPIC_API_KEY into
       // the container (the daemon path strips it too — cli_delegate_strategy_test.ts). The
       // subscription login is what authenticates, not a metered key.
@@ -333,7 +342,7 @@ Deno.test("[security] bare opencode-go launch pins the deepseek-v4-flash model v
       const opencodeIdx = args.indexOf("opencode");
       assert(opencodeIdx > 0, "opencode must be the inner command");
       const inner = args.slice(opencodeIdx);
-      assert(inner.includes("--model"), "opencode-go must pin its model via --model");
+      assertArrayIncludes(inner, ["--model"], "opencode-go must pin its model via --model");
       assertEquals(
         inner[inner.indexOf("--model") + 1],
         "opencode-go/deepseek-v4-flash",

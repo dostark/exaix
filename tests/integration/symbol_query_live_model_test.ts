@@ -19,7 +19,7 @@
  * @architectural-layer Test
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { ToolName } from "@exaix/core";
 import { PlanningToolLoop } from "@exaix/execution";
@@ -51,6 +51,44 @@ interface ILiveCase {
   directCallers: string[];
   files: { [path: string]: string };
 }
+
+interface IRecordedToolCall {
+  name: string;
+  params: Record<string, JSONValue>;
+}
+
+function graphCallParams(calls: readonly IRecordedToolCall[]): Array<Record<string, JSONValue>> {
+  return calls.filter((call) => GRAPH_TOOLS.includes(call.name)).map((call) => call.params);
+}
+
+function graphEndpoints(calls: readonly Record<string, JSONValue>[]): string[] {
+  return calls.flatMap((params) => {
+    const raw = params.path ?? params.from ?? params.symbol;
+    return typeof raw === "string" ? [raw.replace(/^@[^/]+\//, "")] : [];
+  });
+}
+
+Deno.test("graph call selection excludes earlier non-graph paths", () => {
+  const calls: IRecordedToolCall[] = [
+    { name: ToolName.READ_FILE, params: { path: "src/Ship.java" } },
+    { name: ToolName.WHO_DEPENDS_ON, params: { path: "src/Ship.java#Ship" } },
+  ];
+  assertEquals(graphCallParams(calls), [{ path: "src/Ship.java#Ship" }]);
+});
+
+Deno.test("graph endpoint selection accepts a later exact symbol and rejects another symbol", () => {
+  const calls: IRecordedToolCall[] = [
+    { name: ToolName.READ_FILE, params: { path: "@live-java/src/Ship.java#Ignored" } },
+    { name: ToolName.WHO_DEPENDS_ON, params: { path: "@live-java/src/Ship.java" } },
+    { name: ToolName.WHO_DEPENDS_ON, params: { path: "@live-java/src/Ship.java#Ship" } },
+  ];
+  const endpoints = graphEndpoints(graphCallParams(calls));
+  assertArrayIncludes(endpoints, ["src/Ship.java#Ship"]);
+  assertFalse(endpoints.includes("src/Ship.java#Ignored"));
+  assertFalse(endpoints.includes("src/Ship.java#Wrong"));
+  const incorrect = graphEndpoints(graphCallParams(calls.slice(0, 2)));
+  assertThrows(() => assertArrayIncludes(incorrect, ["src/Ship.java#Ship"]));
+});
 
 const CASES: ILiveCase[] = [
   {
@@ -296,7 +334,7 @@ async function runLiveCase(symbolCase: ILiveCase): Promise<{
 
     return {
       toolNames: calls.map((c) => c.name),
-      callParams: calls.map((c) => c.params),
+      callParams: graphCallParams(calls),
       roundedCount: result.toolCalls,
       graphRows,
     };
@@ -337,24 +375,12 @@ for (const symbolCase of CASES) {
     ignore: !liveEnabled,
     fn: async () => {
       const outcome = await runLiveCase(symbolCase);
-      const graphCall = outcome.callParams.find((params) =>
-        typeof params.path === "string" || typeof params.from === "string" || typeof params.symbol === "string"
-      );
-      assert(graphCall !== undefined, `${symbolCase.language}: no graph tool call was recorded`);
-      const raw = String(graphCall.path ?? graphCall.from ?? graphCall.symbol ?? "");
-      // A portal-qualified '@alias/<path>' form is idiomatic here and the tool
-      // normalizes it, so accept either spelling.
-      const target = raw.replace(/^@[^/]+\//, "");
-      // The guidance fix is what makes this possible.
-      // The model must pass a symbol endpoint, not only a bare file path.
-      assert(
-        target.includes("#"),
-        `${symbolCase.language}: expected a '<file>#<symbol>' endpoint, got ${JSON.stringify(raw)}`,
-      );
-      assertEquals(
-        target,
-        symbolCase.targetRef,
-        `${symbolCase.language}: the model must name the symbol the request asked about`,
+      const endpoints = graphEndpoints(outcome.callParams);
+      assertArrayIncludes(
+        endpoints,
+        [symbolCase.targetRef],
+        `${symbolCase.language}: no graph query named the requested symbol; ` +
+          `called ${JSON.stringify(outcome.toolNames)} with graph parameters ${JSON.stringify(outcome.callParams)}`,
       );
     },
   });

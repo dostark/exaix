@@ -646,7 +646,7 @@ Deno.test({
         await callLlmEndpoint("test prompt");
         fail("Expected resolution error for invalid provider+size combo");
       } catch (err) {
-        assert((err as Error).message.includes("Model resolution failed"));
+        assertStringIncludes((err as Error).message, "Model resolution failed");
       }
     });
   },
@@ -718,7 +718,7 @@ Deno.test({
         await callLlmEndpoint("test prompt");
         fail("Expected ModelResolver to throw for unknown provider");
       } catch (err) {
-        assert((err as Error).message.includes("Model resolution failed"));
+        assertStringIncludes((err as Error).message, "Model resolution failed");
       }
     });
   },

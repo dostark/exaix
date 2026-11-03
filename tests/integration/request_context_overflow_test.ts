@@ -6,7 +6,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ExecutionLoop } from "@exaix/execution";
 
 import { join } from "@std/path";
@@ -95,7 +95,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assertExists(planPath, "Plan should be created");
 
       const planContent = await Deno.readTextFile(planPath);
-      assert(planContent.includes("refactor-large"), "Plan should have content");
+      assertStringIncludes(planContent, "refactor-large", "Plan should have content");
     });
 
     // Test 4: Warning logged about truncation

@@ -11,7 +11,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { CriterionKind, type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -48,7 +48,7 @@ Deno.test("[file_contains] succeeds when the file exists with the required conte
     await Deno.writeTextFile(join(ws, "src", "main.ts"), "export const GREETING = true;\n");
     const result = await executeScenarioStep({ step: step(), cwd: ws });
     assertEquals(result.exitCode, 0);
-    assert(result.stdout.includes("main.ts"), `expected file named in stdout: ${result.stdout}`);
+    assertStringIncludes(result.stdout, "main.ts", `expected file named in stdout: ${result.stdout}`);
   });
 });
 
@@ -73,7 +73,7 @@ Deno.test("[file_contains] times out when the required content never appears", a
     await Deno.writeTextFile(join(ws, "src", "main.ts"), "// never has the greeting");
     const result = await executeScenarioStep({ step: step({ timeout_sec: 1 }), cwd: ws });
     assertEquals(result.exitCode, 1);
-    assert(result.stderr.includes("Timeout"), `expected timeout message, got ${result.stderr}`);
+    assertStringIncludes(result.stderr, "Timeout", `expected timeout message, got ${result.stderr}`);
   });
 });
 
@@ -124,7 +124,7 @@ Deno.test("[file_contains] cwd $WORKTREE resolves a relative glob against the ne
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, `expected worktree-relative match, got ${result.stderr}`);
-    assert(result.stdout.includes("main.ts"), `expected file named in stdout: ${result.stdout}`);
+    assertStringIncludes(result.stdout, "main.ts", `expected file named in stdout: ${result.stdout}`);
   });
 });
 

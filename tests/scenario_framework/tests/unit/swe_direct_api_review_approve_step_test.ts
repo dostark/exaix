@@ -15,7 +15,7 @@
  * @related-files [tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml]
  */
 
-import { assert } from "@std/assert";
+import { assert, assertArrayIncludes, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
@@ -66,9 +66,10 @@ Deno.test("[swe_direct_api_review_approve] approve-review resolves the request v
   assert(step.command === "review", "must invoke 'review approve'");
 
   const argsText = (step.args ?? []).join(" ");
-  assert(argsText.includes("approve"), "must invoke 'review approve'");
-  assert(
-    argsText.includes("$REQUEST_ID"),
+  assertStringIncludes(argsText, "approve", "must invoke 'review approve'");
+  assertStringIncludes(
+    argsText,
+    "$REQUEST_ID",
     "must use the framework-resolved $REQUEST_ID (derived from the current request's journal trace), not a hardcoded branch",
   );
 });
@@ -91,11 +92,8 @@ Deno.test("[swe_direct_api_review_approve] the single matrix cell still resolves
   const presetNames = scenario.matrix?.from_catalog ?? [];
   const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
   const cellTools = resolveCatalogCells(catalog, presetNames).map((cell) => cell.tool);
-  assert(cellTools.includes("exactl"), "the direct-API matrix cell must still resolve");
+  assertArrayIncludes(cellTools, ["exactl"], "the direct-API matrix cell must still resolve");
 
   const stepIds = scenario.steps.map((s) => s.id);
-  assert(
-    stepIds.includes("approve-review"),
-    "the scenario's step list must include the new approve-review step",
-  );
+  assertArrayIncludes(stepIds, ["approve-review"], "the scenario's step list must include the new approve-review step");
 });

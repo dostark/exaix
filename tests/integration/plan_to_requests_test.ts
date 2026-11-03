@@ -12,7 +12,14 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertArrayIncludes, assertEquals, assertExists, assertFalse, assertMatch } from "@std/assert";
+import {
+  assertArrayIncludes,
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertMatch,
+  assertStringIncludes,
+} from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
@@ -283,17 +290,17 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
 
     // The first generated step shares the scripts/plan_to_requests.ts token with a constraint bullet.
     const step1 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-1.md"));
-    assertEquals(step1.includes("## Why This Step Exists"), true);
+    assertStringIncludes(step1, "## Why This Step Exists");
     assertEquals(
       step1.indexOf("## Why This Step Exists") < step1.indexOf("## Actions"),
       true,
       "the why block leads the body, before Actions",
     );
-    assertEquals(step1.includes("**The Problem.**"), true, "Executive Summary carried inline");
+    assertStringIncludes(step1, "**The Problem.**", "Executive Summary carried inline");
     assertFalse(step1.includes("outside the bounded summary"), "Goal-paragraph bounding holds");
-    assertEquals(
-      step1.includes("Keep requests concise per `scripts/plan_to_requests.ts` design."),
-      true,
+    assertStringIncludes(
+      step1,
+      "Keep requests concise per `scripts/plan_to_requests.ts` design.",
       "shared-token constraint bullet included",
     );
     assertFalse(step1.includes("Never expose private submodule trees"), "non-matching bullet filtered");
@@ -301,8 +308,8 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
 
     // The second generated step overlaps nothing: still gets the summary (always-present why), no bullet lists.
     const step2 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-2.md"));
-    assertEquals(step2.includes("## Why This Step Exists"), true);
-    assertEquals(step2.includes("**The Goal.**"), true);
+    assertStringIncludes(step2, "## Why This Step Exists");
+    assertStringIncludes(step2, "**The Goal.**");
     assertFalse(step2.includes("### Relevant Constraints"));
     assertFalse(step2.includes("### Relevant Design Decisions"));
   }, { prefix: "plan-to-req-context-" });
@@ -619,7 +626,7 @@ Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref
     const fm = productionFrontmatterOf(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
     assertEquals(fm.plan_context_ref, `.exa/PlanContext/${CONTEXT_SLUG}.md`);
     assertEquals(RequestSchema.safeParse(fm).success, true, "stamped frontmatter must still pass RequestSchema");
-    assertEquals(request.includes("plan_context_ref"), true);
+    assertStringIncludes(request, "plan_context_ref");
   } finally {
     await Deno.remove(wt, { recursive: true });
   }

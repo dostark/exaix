@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { briefFor, dropReturn, makeRig, park } from "./helpers/session_return_watch_helpers.ts";
 
 Deno.test("[integration/session_return][security] GAP-10 — a partial return.json is not processed", async () => {
@@ -68,7 +68,7 @@ Deno.test("[integration/session_return][security] an out-of-scope return keeps t
     const outcome = await rig.processor.processReturn(brief.trace_id);
     assertEquals(outcome.accepted, false);
     assertEquals(outcome.rejection, "scope_violation");
-    assertEquals(outcome.scopeViolations.includes(".env"), true);
+    assertArrayIncludes(outcome.scopeViolations, [".env"]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "pending");
   } finally {
     await rig.cleanup();

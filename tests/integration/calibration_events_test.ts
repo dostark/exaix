@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/calibration_runner.ts, packages/core/src/events/domain_event_types.ts]
  */
 
-import { assertEquals, assertExists, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -223,7 +223,7 @@ Deno.test("[CalibrationEvents] a mid-run judge failure logs eval.calibration.fai
     const activities = db.getActivitiesByTrace(logger.runId);
     const actions = activities.map((a) => a.action_type);
 
-    assertEquals(actions.includes("eval.calibration.started"), true);
+    assertArrayIncludes(actions, ["eval.calibration.started"]);
     assertFalse(actions.includes("eval.calibration.scored"));
     assertEquals(actions.filter((a) => a === "eval.calibration.failed").length, 1);
 

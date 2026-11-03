@@ -203,9 +203,12 @@ Invalid blueprint without.agent_role field
       assert(blueprints.length >= 3, "Should have at least 3 blueprints");
 
       const agentRoles = blueprints.map((b: IBlueprintMetadata) => b.agent_role);
-      assert(agentRoles.includes(testAgentId), "Should include test agent");
-      assert(agentRoles.includes(coderAgentId), "Should include coder agent");
-      assert(agentRoles.includes(customAgentId), "Should include custom agent");
+      const includesResult: boolean = agentRoles.includes(testAgentId);
+      assert(includesResult, "Should include test agent");
+      const includesResult2: boolean = agentRoles.includes(coderAgentId);
+      assert(includesResult2, "Should include coder agent");
+      const includesResult3: boolean = agentRoles.includes(customAgentId);
+      assert(includesResult3, "Should include custom agent");
     });
 
     // Test 10: Show Blueprint Details

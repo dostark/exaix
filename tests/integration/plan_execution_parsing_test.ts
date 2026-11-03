@@ -6,7 +6,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { join } from "@std/path";
 import { MemoryStatus } from "@exaix/core/status";
@@ -140,19 +140,19 @@ Protect routes with authentication checks.
       // Validate step structure
       assertEquals(stepMatches[0][1], "1");
       assertEquals(stepMatches[0][2], "Create User Model");
-      assertEquals(stepMatches[0][3].includes("src/models/user.ts"), true);
+      assertStringIncludes(stepMatches[0][3], "src/models/user.ts");
 
       assertEquals(stepMatches[1][1], "2");
       assertEquals(stepMatches[1][2], "Implement Authentication Service");
-      assertEquals(stepMatches[1][3].includes("src/services/auth.ts"), true);
+      assertStringIncludes(stepMatches[1][3], "src/services/auth.ts");
 
       assertEquals(stepMatches[2][1], "3");
       assertEquals(stepMatches[2][2], "Add API Endpoints");
-      assertEquals(stepMatches[2][3].includes("POST /api/auth/signup"), true);
+      assertStringIncludes(stepMatches[2][3], "POST /api/auth/signup");
 
       assertEquals(stepMatches[3][1], "4");
       assertEquals(stepMatches[3][2], "Create Authentication Middleware");
-      assertEquals(stepMatches[3][3].includes("Verify token signature"), true);
+      assertStringIncludes(stepMatches[3][3], "Verify token signature");
 
       console.log("✅ Integration test passed: Complete plan parsed successfully");
     } finally {

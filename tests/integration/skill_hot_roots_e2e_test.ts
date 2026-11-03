@@ -187,14 +187,17 @@ Add a hello world function.
 
       const names = async (traceId: string): Promise<string[]> =>
         (await readUsage(readerConfig, traceId)).map((row) => row.skill_name);
-      assert((await names(traces.first)).includes(FIRST_SKILL));
-      assert((await names(traces.second)).includes(SECOND_SKILL));
+      const includesResult: boolean = (await names(traces.first)).includes(FIRST_SKILL);
+      assert(includesResult);
+      const includesResult2: boolean = (await names(traces.second)).includes(SECOND_SKILL);
+      assert(includesResult2);
       assertFalse((await names(traces.second)).includes(FIRST_SKILL));
       assertFalse(
         (await names(traces.droppedFirst)).includes(FIRST_SKILL),
         "the default catalog is no longer a root after the edit",
       );
-      assert((await names(traces.afterInvalid)).includes(SECOND_SKILL), "the last good generation stays in force");
+      const includesResult3: boolean = (await names(traces.afterInvalid)).includes(SECOND_SKILL);
+      assert(includesResult3, "the last good generation stays in force");
 
       const [first] = await readUsage(readerConfig, traces.first);
       const [second] = await readUsage(readerConfig, traces.second);

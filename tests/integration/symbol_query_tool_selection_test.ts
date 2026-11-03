@@ -27,7 +27,7 @@
  * @architectural-layer Test
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolName } from "@exaix/core";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
@@ -284,8 +284,9 @@ for (const symbolCase of CASES) {
       const callers = records.map((r) => r.from).sort();
 
       for (const caller of symbolCase.directCallers) {
+        const includesResult: boolean = callers.includes(caller);
         assert(
-          callers.includes(caller),
+          includesResult,
           `${symbolCase.language}: ${caller} must be reported for ${symbolCase.targetRef}, got ${
             JSON.stringify(callers)
           }`,
@@ -304,8 +305,8 @@ for (const symbolCase of CASES) {
     const request = requestFor(symbolCase);
     // The request must be answerable by the call-graph tool.
     // It names a symbol inside a file, which a grep cannot scope.
-    assert(request.includes(symbolCase.targetSymbol), "the request must name the symbol");
-    assert(request.includes(symbolCase.targetFile), "the request must scope the file");
+    assertStringIncludes(request, symbolCase.targetSymbol, "the request must name the symbol");
+    assertStringIncludes(request, symbolCase.targetFile, "the request must scope the file");
     assert(
       !request.includes("grep") && !request.includes("search_text"),
       "a fixture request that names the search tool would not test routing",

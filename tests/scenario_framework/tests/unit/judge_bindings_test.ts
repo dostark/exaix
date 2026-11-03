@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/judge_bindings.ts, tests/scenario_framework/runner/assertions.ts]
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { BindingIncompatibleError, ProviderRegistry } from "@exaix/ai";
 import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
@@ -805,8 +805,8 @@ for (const explicitEvidence of [false, true]) {
         promptUsed,
         explicitEvidence ? "EXPLICIT_ARTIFACT_BODY" : "CURRENT_ARTIFACT_BODY with actual task evidence",
       );
-      assertEquals(promptUsed.includes("STALE_ARTIFACT_BODY"), false);
-      assertEquals(promptUsed.includes("File(s) ready:"), false);
+      assertFalse(promptUsed.includes("STALE_ARTIFACT_BODY"));
+      assertFalse(promptUsed.includes("File(s) ready:"));
       assertEquals(outcome.criterionResults[0].evidence_refs, [
         explicitEvidence ? "explicit.md" : join(dir, "current_plan.md"),
       ]);

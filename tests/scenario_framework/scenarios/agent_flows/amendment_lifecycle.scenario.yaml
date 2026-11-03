@@ -102,7 +102,7 @@ steps:
       - id: "amendment-applied"
         score_weight: 0.7
         kind: "command-output-contains"
-        contains: ["Amendment approved"]
+        contains: ["plan.amendment.approved", "plan.amendment.applied"]
 
   - id: "wait-for-completion"
     type: "wait-for-file"

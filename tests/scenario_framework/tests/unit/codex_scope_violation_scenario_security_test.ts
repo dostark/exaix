@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_codex_scope_violation_live.yaml, tests/scenario_framework/tests/unit/codex_scope_violation_scenario_test.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 import { parseScenario } from "./helpers/codex_scope_violation_fixture.ts";
@@ -75,7 +75,7 @@ Deno.test("[codex_scope_violation_live][security] a wait-for-reconcile journal b
   const resolveStep = steps[resolveIdx];
   assertEquals(resolveStep.type, ScenarioStepType.EXACTL, "the barrier must be an exactl journal wait");
   const args = resolveStep.args ?? [];
-  assert(args.includes("wait"), "the barrier must invoke journal wait");
+  assertArrayIncludes(args, ["wait"], "the barrier must invoke journal wait");
   assert(
     args.some((a) => String(a).includes("session.delegate.reconciled")),
     "the barrier must wait on session.delegate.reconciled",
