@@ -175,8 +175,14 @@ Test migration from root `tests/` to package directories is **in progress** (~26
 ### Avoid hard-coded multiline fixture content
 
 - Do not embed large YAML/Markdown/text blocks directly in test files.
-- Use files under `tests/fixtures/` for request bodies, blueprint definitions, policy documents, and other multiline assets.
+- Use fixtures in the owning test boundary for request bodies, blueprint definitions, policy documents, and other multiline assets.
 - Load fixture content in tests with `Deno.readTextFile()` and copy it into temporary workspaces with `Deno.writeTextFile()`.
+
+### Choose assertions by behavior
+
+Prefer failure messages that show the actual and expected values. Preserve identity, equality, negative checks, and
+call counts when selecting an assertion. For examples and the current lint scope, see
+[Test Assertions](../packages/lint-policy/docs/style_guide.md#test-assertions).
 
 ## Enforcement
 

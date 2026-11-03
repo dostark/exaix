@@ -1101,7 +1101,8 @@
       "Reference Exaix conventions (docs/CODE_STYLE.md, ARCHITECTURE.md)",
       "Do not implement changes — report findings only",
       "Work through all 10 phases in order",
-      "Apply Phase 3b security for any input/FS/auth/secrets/network change"
+      "Apply Phase 3b security for any input/FS/auth/secrets/network change",
+      "Review assertion rewrites for preserved identity, equality, truth direction, messages, and call count"
     ],
     "output_requirements": [
       "Review verdict: Approved / Approved with minor issues / Changes requested",
@@ -1582,6 +1583,8 @@
       "Use EXA_TEST_* env vars",
       "No raw SQL table creation in tests",
       "Canary every new or edited test — break what it names, confirm red, restore",
+      "Prefer useful assertion diagnostics without changing equality, identity, truth direction, messages, or evaluation count",
+      "Keep structured multiline fixtures in the owning test boundary and test constants through consumers or independent value contracts",
       "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set",
       "No tautologies: never restate a constant, derive the expectation from the input, assert the test's own scaffolding, or test the runtime instead of our code",
       "No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command",

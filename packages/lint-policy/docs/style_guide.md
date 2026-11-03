@@ -60,8 +60,7 @@ an entry no longer matches a duplicate.
 ### Union types
 
 Define an inline union of string literals as an enum in `packages/core/src/types/enums.ts`, or as a shared
-named union type. The `exaix/magic-union-type` rule finds them. It is parked, so it is off by default. See
-[Enforcement Status](#enforcement-status).
+named union type. The active `exaix/magic-union-type` rule checks production files and excludes test scope.
 
 ## Canonical Subpackage Boundary {#canonical-subpackage-boundary}
 
@@ -147,6 +146,38 @@ Extends [Comment Discipline](../../../unslop-ts/docs/style_guide.md#comment-disc
   exemption that applies to documentation files does not apply to comments in source. The
   `deno task check:ste100-comments:staged` gate checks staged files.
 
+## Test Assertions {#test-assertions}
+
+This section overrides the generic guide's Test Assertions section for Exaix. Prefer an assertion that shows the
+actual and expected values when it preserves the original behavior. For a known string substring check,
+`assertStringIncludes(text, part)` can show more useful failure output than a boolean assertion.
+
+Do not replace `Array.includes` blindly. It uses SameValueZero and compares objects by identity, while
+`assertArrayIncludes` uses structural equality for objects. Preserve the original predicate when identity or
+SameValueZero matters. A boolean assertion remains appropriate when a helper would change the meaning. A named
+boolean alone does not improve its failure output. Add a descriptive message where practical, without coercing the
+subject merely to use an assertion helper.
+
+```ts
+assertStringIncludes(output, "ready");
+
+const hasExpectedObject = items.includes(expectedObject);
+assert(hasExpectedObject, "Expected the same object in the items");
+```
+
+When rewriting an assertion, preserve its true or false expectation, message, argument order, and evaluation count.
+The repeated-call rule reports adjacent assertions with the same call as their first argument. Reuse one result only
+when the call is pure and the test intends one evaluation. Keep separate calls and results for stateful behavior.
+
+The constant-substring rule identifies a named imported uppercase constant used as the subject of the configured
+substring assertion forms. Assert a consumer's behavior, or an independent expected value when that value is the
+contract. An imported constant used as the expected substring is not the reported subject. Namespace imports and
+other assertion forms are outside this detector's current matching scope; that does not make a tautological test useful.
+
+`exaix/no-constant-substring-assert`, `exaix/no-repeated-assert-call`, and the syntactic
+`exaix/no-boolean-assert` rule are active. A match is not proof of a weak test, and clearing a match does not
+prove better diagnostics.
+
 ## Enforcement Status {#enforcement-status}
 
 The version 2 input is `unslop.config.json`; the separate `layout.json` holds path tokens. Management
@@ -161,7 +192,7 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/exported-interface-placement`, `exaix/ignore-needs-reason`,
   `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/import-placement`, `exaix/inline-type-import`,
   `exaix/long-comment`, `exaix/magic-union-type`, `exaix/max-cognitive-complexity`, `exaix/max-cyclomatic-complexity`,
-  `exaix/max-function-lines`, `exaix/no-chained-type-assertions`, `exaix/no-constant-substring-assert`,
+  `exaix/max-function-lines`, `exaix/no-boolean-assert`, `exaix/no-chained-type-assertions`, `exaix/no-constant-substring-assert`,
   `exaix/no-explicit-unknown`, `exaix/no-forbidden-lint-ignore`, `exaix/no-interface-rename-on-import`,
   `exaix/no-object-parameters`, `exaix/no-pass-through-type-alias`, `exaix/no-repeated-assert-call`,
   `exaix/no-typeof-escape`, `exaix/no-unsafe-dictionary`,
@@ -172,7 +203,7 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/ts-suppression-pragmas`, and `exaix/unslop-isolation`.
 - **Parked plugin rules (`severity: off`, opt-in):**
   `exaix/max-class-size`,
-  `exaix/max-params`, `exaix/no-boolean-assert`,
+  `exaix/max-params`,
   `exaix/no-conditional-empty-object-spread`,
   `exaix/no-runtime-typeof`,
   `exaix/prefer-named-imports`,

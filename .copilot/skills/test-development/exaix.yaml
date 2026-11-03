@@ -16,24 +16,26 @@ triggers:
   tags:
     - testing
 constraints:
-  - 'Use shared helpers (initTestDbService, createCliTestContext)'
+  - "Use shared helpers (initTestDbService, createCliTestContext)"
   - Place tests per package/app/root boundary
-  - 'Label security tests [security]'
+  - "Label security tests [security]"
   - Use EXA_TEST_* env vars
   - No raw SQL table creation in tests
-  - 'Canary every new or edited test — break what it names, confirm red, restore'
-  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
+  - "Canary every new or edited test — break what it names, confirm red, restore"
+  - "Prefer useful assertion diagnostics without changing equality, identity, truth direction, messages, or evaluation count"
+  - "Keep structured multiline fixtures in the owning test boundary and test constants through consumers or independent value contracts"
+  - "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set"
   - 'No tautologies: never restate a constant, derive the expectation from the input, assert the test''s own scaffolding, or test the runtime instead of our code'
   - No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command
   - Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)
-  - 'Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution'
-  - 'Route daemon-boot, env-mutating, and wall-clock-ordered tests to SEQUENTIAL_FILES in scripts/test_parallel.ts'
+  - "Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution"
+  - "Route daemon-boot, env-mutating, and wall-clock-ordered tests to SEQUENTIAL_FILES in scripts/test_parallel.ts"
 output_requirements:
   - Target test files created or modified
   - Helpers and patterns used
   - Test command and coverage check results
   - Canary evidence for each new assertion — what was broken and that it went red
-  - 'For a slow test fixed: before/after per-test duration and pass counts'
+  - "For a slow test fixed: before/after per-test duration and pass counts"
 quality_criteria:
   - name: placement_compliance
     description: Test placement follows boundaries

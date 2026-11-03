@@ -501,10 +501,8 @@
     },
     "exaix/no-boolean-assert": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "severity": "error",
       "scope": "test",
-      "optIn": true,
       "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
       "tags": [
         "test-quality",

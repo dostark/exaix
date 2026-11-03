@@ -17,6 +17,7 @@ import {
 } from "@std/assert";
 import { globToRegExp, join, toFileUrl } from "@std/path";
 import { assertRuleEvidence } from "../../../unslop-ts/src/cli/rule_report.ts";
+import { parseTraceStderr } from "../../../unslop-ts/src/engine/trace.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
 const ACTIVE_PLUGIN_IDS = [
@@ -56,6 +57,7 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/no-typeof-escape",
   "exaix/no-explicit-unknown",
   "exaix/no-repeated-assert-call",
+  "exaix/no-boolean-assert",
 ];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -85,6 +87,7 @@ const BOUNDARY_RULES = ["exaix/no-object-parameters", "exaix/no-unsafe-dictionar
 const TYPEOF_RULES = ["exaix/no-typeof-escape"];
 const UNKNOWN_RULES = ["exaix/no-explicit-unknown"];
 const REPEATED_RULES = ["exaix/no-repeated-assert-call"];
+const BOOLEAN_RULES = ["exaix/no-boolean-assert"];
 const CONTRACT_RULES = [
   "exaix/no-constant-substring-assert",
   "exaix/promise-response-return",
@@ -96,6 +99,7 @@ const EXPECTED_SCOPE: Readonly<Record<string, string>> = {
   "exaix/no-constant-substring-assert": "test",
   "exaix/magic-union-type": "prod",
   "exaix/no-repeated-assert-call": "test",
+  "exaix/no-boolean-assert": "test",
 };
 const CANARY_PATHS = [
   "packages/core/src/canary.ts",
@@ -290,6 +294,7 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     ...TYPEOF_RULES,
     ...UNKNOWN_RULES,
     ...REPEATED_RULES,
+    ...BOOLEAN_RULES,
   ];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
@@ -301,7 +306,7 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "exaix/no-boolean-assert",
+    "exaix/max-params",
   ];
   for (const id of parked) {
     assertEquals(POLICY_CATALOG.rules[id].severity, "off", id);
@@ -590,6 +595,80 @@ function repeatedSource(path: string, _rule: string, violation: boolean): string
 
 Deno.test("default-repeated-gate: adjacent calls of one stateful function report and named results pass in both passes", async () => {
   await assertCanaryMatrix(REPEATED_RULES, repeatedSource);
+});
+
+/** A boolean substring assertion or a clean boolean condition in the same authored file. */
+function booleanSource(path: string, _rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  const expression = violation ? 'text.includes("part")' : "text.length > 0";
+  return header + 'import { assert } from "./support.ts";\n' +
+    `export function check(text: string): void {\n  assert(${expression});\n}\n`;
+}
+
+Deno.test("default-boolean-gate: substring assertions report only in test scope through both authored passes", async () => {
+  await assertCanaryMatrix(BOOLEAN_RULES, booleanSource);
+});
+
+Deno.test("default-boolean-gate: fixture files remain excluded", async () => {
+  await withActivationProject(async (dir) => {
+    const rule = BOOLEAN_RULES[0];
+    const fixture = "packages/core/tests/fixtures/canary_test.ts";
+    const clean = "packages/core/tests/canary_test.ts";
+    await Deno.writeTextFile(join(dir, fixture), booleanSource(fixture, rule, true));
+    await Deno.writeTextFile(join(dir, clean), booleanSource(clean, rule, false));
+    const result = await runPass(dir, "main");
+    assertEquals(result.code, 0, result.stderr);
+    assertRuleEvidence({ rule, runId: result.runId, stderr: result.stderr, checkedFiles: [clean], cwd: dir });
+    const { records } = parseTraceStderr(result.stderr, result.runId);
+    assert(
+      records.some((record) =>
+        record.kind === "skipped" && record.rule === rule && record.file === fixture && record.reason === "fixture"
+      ),
+    );
+  });
+});
+
+Deno.test("default-boolean-gate: inactive policy and missing plugin cannot certify the canary", async () => {
+  await withActivationProject(async (dir) => {
+    const rule = BOOLEAN_RULES[0];
+    const path = "packages/core/tests/canary_test.ts";
+    await Deno.writeTextFile(join(dir, path), booleanSource(path, rule, true));
+    const configPath = join(dir, "unslop.config.json");
+    const policy = JSON.parse(await Deno.readTextFile(configPath));
+    policy.rules[rule].level = "off";
+    policy.rules[rule].optIn = true;
+    policy.rules[rule].reason = "Negative activation control.";
+    await Deno.writeTextFile(configPath, JSON.stringify(policy));
+    const inactive = await runPass(dir, "main");
+    assertEquals(inactive.code, 0, inactive.stderr);
+    assertThrows(
+      () =>
+        assertRuleEvidence({ rule, runId: inactive.runId, stderr: inactive.stderr, checkedFiles: [path], cwd: dir }),
+      Error,
+      "did not evaluate",
+    );
+    const config = JSON.parse(await Deno.readTextFile(join(dir, "deno.json")));
+    config.lint.plugins = [];
+    await Deno.writeTextFile(join(dir, "deno.json"), JSON.stringify(config));
+    const missing = await runPass(dir, "main");
+    assertThrows(
+      () => assertRuleEvidence({ rule, runId: missing.runId, stderr: missing.stderr, checkedFiles: [path], cwd: dir }),
+      Error,
+      "no observation",
+    );
+  });
+});
+
+Deno.test("sixteen-policy-cutover: boolean activation keeps its authored scope and options", () => {
+  const entry = POLICY_CATALOG.rules[BOOLEAN_RULES[0]];
+  assertEquals(entry.severity, "error");
+  assertEquals(entry.scope, "test");
+  assertEquals(entry.optIn, undefined);
+  assertEquals(entry.reason, undefined);
+  assertEquals(entry.options, {
+    methods: ["includes", "startsWith", "endsWith"],
+    assertFunctions: ["assert", "assertEquals", "assertStrictEquals"],
+  });
 });
 
 Deno.test("repeated-stateful-calls: one named result per call keeps the call count and order of a stateful function", () => {

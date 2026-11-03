@@ -14,18 +14,19 @@ triggers:
     - code-review
     - pull-request
   file_patterns:
-    - '*'
+    - "*"
   tags:
     - review
     - quality
 constraints:
   - Be constructive and specific in feedback
-  - 'Suggest improvements, not just identify problems'
+  - "Suggest improvements, not just identify problems"
   - Consider the context and constraints
-  - 'Focus on important issues, not style nitpicks'
+  - "Focus on important issues, not style nitpicks"
+  - "Check assertion rewrites preserve equality, identity, truth direction, messages, and call order and count"
 output_requirements:
   - Clear summary of findings
-  - 'Categorized issues (critical, major, minor)'
+  - "Categorized issues (critical, major, minor)"
   - Specific suggestions for improvement
 quality_criteria:
   - name: Thoroughness
@@ -39,4 +40,4 @@ quality_criteria:
     weight: 30
 applies_to:
   agents:
-    - '*'
+    - "*"

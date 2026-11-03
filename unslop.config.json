@@ -296,7 +296,7 @@
       ]
     },
     "exaix/no-boolean-assert": {
-      "level": "off",
+      "level": "error",
       "options": {
         "methods": [
           "includes",
@@ -310,8 +310,6 @@
         ]
       },
       "scope": "test",
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "test-quality",
         "deslop"

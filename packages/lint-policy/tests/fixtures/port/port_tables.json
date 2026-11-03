@@ -28,7 +28,8 @@
       "exaix/no-unsafe-dictionary",
       "exaix/no-typeof-escape",
       "exaix/no-explicit-unknown",
-      "exaix/no-repeated-assert-call"
+      "exaix/no-repeated-assert-call",
+      "exaix/no-boolean-assert"
     ]
   },
   "rules": [

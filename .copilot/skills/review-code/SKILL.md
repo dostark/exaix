@@ -9,10 +9,11 @@ scope: dev
 title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.3.1"
+version: "1.3.2"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
 qwen_skill: review-code
 ---
+
 ```text
 Key points
 
@@ -227,6 +228,12 @@ For every new code path:
 - Descriptive names ("returns X when Y", not "test 1")?
 - A literal count of repo-defined state (registry size, corpus size, ceiling)? That is 🟠 Testing: derive it from its source.
 - Timer-based TUI tests: `sanitizeOps: false, sanitizeResources: false`?
+
+For changed tests, including test-only rewrites:
+
+- Do assertions preserve equality, identity, negative checks, messages, and call count?
+- Do failures show useful values where possible without changing those semantics?
+- Are stateful calls preserved, and constants tested through consumers or independent value contracts?
 
 ### Phase 9 — Documentation Compliance (§3D)
 

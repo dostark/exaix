@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.4.1"
+version: "1.4.2"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -86,10 +86,22 @@ Assertion sensitivity — a test that cannot fail is worse than no test
   make the implementation wrong, confirm the ASSERTION fails. Same for adding tests to
   already-working code — no natural RED, so the canary is the only evidence.
 
-  PREFERRED ASSERTION FORMS — prefer the subject-bearing `@std/assert` helper over a
-  boolean-wrapped call: `assertStringIncludes(s, x)` over `assertEquals(s.includes(x), true)`,
-  and `assertArrayIncludes(a, [x])` over `assertEquals(a.includes(x), true)`. A boolean wrap
-  hides the failing value, while the dedicated helper prints the subject.
+  ASSERTION CHOICE — prefer useful failure output without changing the test's meaning.
+  Use `assertStringIncludes(s, x)` for a known string substring check when equivalent.
+
+  `Array.includes` uses SameValueZero and object identity. `assertArrayIncludes` uses
+  structural equality for objects, so it is not a general replacement. Keep the original
+  predicate when identity or SameValueZero matters. Add a useful message when practical.
+
+  A named boolean alone does not improve diagnostics. Preserve true/false expectations,
+  messages, argument order, and evaluation count. Do not coerce a value just to type-check.
+  When lint reports repeated calls, cache only calls proven pure and intended to run once.
+  Keep separate calls and results when the test checks state changes or call count.
+
+  Test a constant through a consumer's behavior. Compare its value only when that value
+  is the contract, and derive the expectation independently.
+  Keep structured multiline fixtures in the owning test boundary's fixture files.
+  See the Exaix [test assertion guidance](../../../packages/lint-policy/docs/style_guide.md#test-assertions).
 
   ANTI-PATTERN CATALOGUE — all shipped in this repo:
     1. **Restating a constant against itself** — `assertEquals(ToolErrorCode.NOT_FOUND,

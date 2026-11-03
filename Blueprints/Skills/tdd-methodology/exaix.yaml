@@ -15,11 +15,11 @@ triggers:
     - refactor
     - implementation
   file_patterns:
-    - '*.ts'
-    - '*.js'
-    - '*.py'
-    - '*.go'
-    - '*.rs'
+    - "*.ts"
+    - "*.js"
+    - "*.py"
+    - "*.go"
+    - "*.rs"
   tags:
     - development
     - testing
@@ -27,9 +27,12 @@ triggers:
 constraints:
   - Never write implementation code before tests
   - Run tests after each change
-  - 'Keep tests focused on behavior, not implementation'
+  - "Keep tests focused on behavior, not implementation"
   - One logical assertion per test
-  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
+  - "Preserve equality, identity, truth direction, messages, and call order and count when changing assertions"
+  - "Keep stateful calls separate and test constants through consumers or independent value contracts"
+  - Follow the target project's fixture and test-boundary policy
+  - "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set"
 output_requirements:
   - Test file must exist before implementation
   - All tests must pass before completion
@@ -46,4 +49,4 @@ quality_criteria:
     weight: 30
 applies_to:
   agents:
-    - '*'
+    - "*"

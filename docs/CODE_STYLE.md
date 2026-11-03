@@ -270,7 +270,16 @@ import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing"; // ✅
 | ------------------------------------- | -------------------------------------------------------------------------------- |
 | `package-boundary`                    | A package test that imports root `tests/` fixtures (other than `tests/helpers/`) |
 | `package-testing-import`              | A test outside a package that deep-imports its tests instead of `/testing`       |
-| `exaix/test-inline-multiline-fixture` | A multi-line structured fixture inline in a test (opt-in)                        |
+| `exaix/test-inline-multiline-fixture` | A configured multi-line structured fixture inline in a test                      |
+
+## Test Assertion Semantics {#test-assertion-semantics}
+
+Choose assertions that expose useful failure values without changing the behavior under test. Preserve object
+identity, equality semantics, negative expectations, messages, and the number and order of calls. Test a constant
+through an observable consumer, or an independent expected value when that value is the contract.
+For the Exaix-specific guidance and lint scope, see
+[Test Assertions](../packages/lint-policy/docs/style_guide.md#test-assertions). That section overrides the generic
+guide's blanket recommendation to replace boolean-wrapped string and array checks.
 
 <a id="tui-boundaries"></a>
 

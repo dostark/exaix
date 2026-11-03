@@ -2,6 +2,7 @@
 name: code-review
 description: "Comprehensive checklist for thorough code reviews"
 ---
+
 # Code Review Checklist
 
 Review code with this systematic approach.
@@ -62,6 +63,10 @@ Before reviewing code:
 
 - [ ] **Test coverage** - Are new features tested?
 - [ ] **Test quality** - Do tests verify behavior, not implementation?
+- [ ] **Assertion meaning** - Check equality, identity, negative checks, messages, and call order and count.
+- [ ] **Failure output** - Check that useful values appear without changing semantics.
+- [ ] **State and constants** - Preserve stateful calls and test constants through consumers or independent contracts.
+- [ ] **Fixtures** - Check the project's fixture and ownership policy for structured data.
 - [ ] **Edge cases** - Are edge cases tested?
 - [ ] **Test independence** - Do tests run independently?
 - [ ] **No count pins** - Do tests avoid literal sizes of registries, corpora, and ceilings?
