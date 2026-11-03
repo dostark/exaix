@@ -486,7 +486,7 @@
       "scope": "test",
       "title": "Test Development Skill (#test-development)",
       "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
-      "version": "1.4.2",
+      "version": "1.4.3",
       "topics": [
         "testing",
         "tdd",
@@ -638,7 +638,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.6.3",
+      "version": "1.6.4",
       "topics": [
         "tdd",
         "red-green-refactor",

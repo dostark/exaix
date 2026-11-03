@@ -90,3 +90,18 @@ for (
     assert(!/re-runs the suite for coverage|check \+ test \+ coverage|static gates, coverage, and a build/.test(md));
   });
 }
+
+Deno.test("Agent docs: next-steps skill runs the full suite in CI mode and unsets CI only for grepped files", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
+
+  assertStringIncludes(md, "CI=true deno task test_all", "the repository-wide suite must run in CI mode");
+  assertStringIncludes(md, "live-provider tests", "the guidance must say why CI mode matters");
+  assertStringIncludes(md, "Unset `CI` only for the grepped files");
+});
+
+Deno.test("Agent docs: test-development skill limits assertFalse to a defined boolean", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assertStringIncludes(md, "`assertFalse(x)` only when `x` is a defined boolean");
+  assertStringIncludes(md, "`assertFalse` passes on it");
+});

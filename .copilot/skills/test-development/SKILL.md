@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.4.2"
+version: "1.4.3"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -101,6 +101,8 @@ Assertion sensitivity — a test that cannot fail is worse than no test
   Test a constant through a consumer's behavior. Compare its value only when that value
   is the contract, and derive the expectation independently.
   Keep structured multiline fixtures in the owning test boundary's fixture files.
+  Replace `assertEquals(x, false)` with `assertFalse(x)` only when `x` is a defined boolean.
+  An optional chain such as `a?.includes(b)` can be `undefined`, and `assertFalse` passes on it.
   See the Exaix [test assertion guidance](../../../packages/lint-policy/docs/style_guide.md#test-assertions).
 
   ANTI-PATTERN CATALOGUE — all shipped in this repo:

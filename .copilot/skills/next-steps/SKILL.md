@@ -13,7 +13,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.6.3"
+version: "1.6.4"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
@@ -204,6 +204,7 @@ Planning doc update
       `- ⚠️ deferred <text> → `<LedgerSymbol>`` + a ledger row. No `- [ ]` remains.
   24. Rewrite each planned-test bullet to `- ✅ <name> → `<test-path>`` only after the test
       runs and passes. Inspect the done-mark in the SAME change that implements it.
+      A planned-test label is not a test name. When they differ, add the exact `Deno.test` name to the done-mark.
   24. Add the reachability status line after the tests:
       - **✅ WIRED** — `<src path>`, N/N tests passing, reached by `<call-site file:Symbol>`
         (only when a production consumer invokes it).
@@ -267,6 +268,8 @@ PHASE-COMPLETION GATE (ONCE, after the last step, before declaring the phase com
 G5. Every test implemented was EXECUTED and passed, including scenario/E2E. Agent shells commonly have `CI=true` set, silently skipping `ignore: CI` real-boot tests (folded
        into an ignored count). Grep for `ignore:.*CI`, re-run each with `env -u CI deno
        test --allow-all <file>` and confirm the previously-ignored tests show `ok`.
+       Run the repository-wide suite in CI mode (`CI=true deno task test_all`). With `CI` unset it also
+       runs live-provider tests, which fail on a spent quota or a missing credential. Unset `CI` only for the grepped files.
   G6. Event coverage: `deno task check:event-coverage` (full repo). Verify by hand any
       finding on a phase-touched file; a confirmed gap is BLOCKING (add the event or
       document why none applies). Findings on untouched files are pre-existing debt, out of
