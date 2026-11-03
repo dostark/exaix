@@ -10,7 +10,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts, tests/scenario_framework/schema/task_schema.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PathTraversalError } from "@exaix/tool-runtime";
 import { ingestTerminalBenchTask } from "../../scripts/ingest_terminal_bench.ts";
@@ -48,8 +48,9 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
     assert(FULL_SHA_PATTERN.test(result.baseRef), `base_ref must be a full SHA, got ${result.baseRef}`);
 
     const taskMd = await Deno.readTextFile(join(result.contractDir, "TASK.md"));
-    assert(
-      taskMd.includes("Write the sum of all integers to /app/total.txt."),
+    assertStringIncludes(
+      taskMd,
+      "Write the sum of all integers to /app/total.txt.",
       "TASK.md must carry the verbatim instruction",
     );
 
@@ -66,8 +67,8 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
     });
 
     const referencePatch = await Deno.readTextFile(join(result.contractDir, "reference.patch"));
-    assert(referencePatch.includes("total.txt"), "reference.patch must show total.txt created");
-    assert(referencePatch.includes("+15"), "reference.patch must show the correct computed sum (3+5+7=15)");
+    assertStringIncludes(referencePatch, "total.txt", "reference.patch must show total.txt created");
+    assertStringIncludes(referencePatch, "+15", "reference.patch must show the correct computed sum (3+5+7=15)");
 
     const envFile = await Deno.readTextFile(join(result.portalDir, "data", "numbers.txt"));
     assertEquals(envFile, "3\n5\n7\n");
@@ -84,8 +85,9 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
     );
 
     const oracleTest = await Deno.readTextFile(join(result.contractDir, "oracle_tests", "test_outputs.py"));
-    assert(
-      oracleTest.includes('total_path.read_text().strip() == "15"'),
+    assertStringIncludes(
+      oracleTest,
+      'total_path.read_text().strip() == "15"',
       "the hidden oracle test must be vendored verbatim into the contract dir",
     );
   });

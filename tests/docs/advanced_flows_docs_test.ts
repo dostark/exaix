@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import {
@@ -143,7 +143,7 @@ Deno.test("[docs] overlay examples match the shipped companion overlay files", a
   const shown = blocks(guide, "toml overlay").map((block) => JSON.stringify(parseToml(block)));
   for (const id of BLUEPRINT_IDS) {
     const shipped = JSON.stringify(parseToml(await Deno.readTextFile(`configs/bindings/flows/${id}.example.toml`)));
-    assert(shown.includes(shipped), `Guide overlay for ${id} drifted from the shipped file`);
+    assertArrayIncludes(shown, [shipped], `Guide overlay for ${id} drifted from the shipped file`);
   }
 });
 
@@ -234,7 +234,7 @@ Deno.test("[docs] every step type in the guide table is a FlowStepType member", 
   assert(types.length >= 4);
   const valid = new Set<string>(Object.values(FlowStepType));
   for (const type of types) assert(valid.has(type), `The guide lists '${type}', which is not a FlowStepType`);
-  for (const type of ["agent", "gate", "branch", "voting_group"]) assert(types.includes(type));
+  for (const type of ["agent", "gate", "branch", "voting_group"]) assertArrayIncludes(types, [type]);
 });
 
 Deno.test("[docs] built-in evaluation criteria in the guide are library criteria", async () => {

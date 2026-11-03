@@ -351,7 +351,8 @@ Deno.test("the lint task clears EXAIX_LINT_RULES so an exported value cannot nar
 
 Deno.test("[regression] with the selection variable cleared, one file reports every violated plugin rule", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json")));
-  assertEquals(config.tasks.lint.startsWith("EXAIX_LINT_RULES= deno lint"), true);
+  const startsWithClearedSelection = config.tasks.lint.startsWith("EXAIX_LINT_RULES= deno lint");
+  assertEquals(startsWithClearedSelection, true);
   await withSeed(async (file) => {
     const result = await runDeno(["lint", file], { EXAIX_LINT_RULES: "" });
     assertStringIncludes(result.output, "exaix/no-chained-type-assertions");

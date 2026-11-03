@@ -170,8 +170,9 @@ Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementatio
     "Directories and Constants",
   ];
   for (const marker of implementationLevelGroupMarkers) {
-    assert(
-      devGlossary.includes(marker),
+    assertStringIncludes(
+      devGlossary,
+      marker,
       `docs/GLOSSARY.md is missing its "${marker}" implementation-level grouping from Step 1's term inventory`,
     );
   }

@@ -5,7 +5,15 @@
  *   `dev-test` Dockerfile stage / `.dockerignore` build-context contract.
  */
 
-import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertFalse,
+  assertMatch,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import {
@@ -263,8 +271,8 @@ Deno.test("ensureDevTestImage is a no-op when the docker binary is absent", asyn
 
 Deno.test("dev-test stage inherits the shared toolchain without installing delegate CLIs", () => {
   const stage = devTestStage(DOCKERFILE);
-  assert(stage.startsWith("FROM toolchain AS dev-test"), stage);
-  assert(dockerStage(DOCKERFILE, "toolchain").includes("git"), "the shared toolchain installs git");
+  assertMatch(stage, /^FROM toolchain AS dev-test/, stage);
+  assertStringIncludes(dockerStage(DOCKERFILE, "toolchain"), "git", "the shared toolchain installs git");
   assert(!stage.includes("npm install -g"), "the dev-test stage must not reinstall the delegate CLIs");
 });
 
@@ -279,23 +287,26 @@ Deno.test("each delegate CLI installs in its own stage at a pinned version", () 
   };
   for (const [stageName, spec] of Object.entries(npmPins)) {
     const stage = dockerStage(DOCKERFILE, stageName);
-    assert(stage.startsWith(`FROM builder AS ${stageName}`), stage);
+    const startsWithExpectedStage = stage.startsWith(`FROM builder AS ${stageName}`);
+    assert(startsWithExpectedStage, stage);
     assert(stage.includes(`--prefix /opt/cli/${stageName.replace("cli-", "")} `) && stage.includes(` ${spec}`), stage);
   }
   const claude = dockerStage(DOCKERFILE, "cli-claude");
-  assert(claude.startsWith("FROM builder AS cli-claude"), claude);
-  assert(
-    claude.includes("https://claude.ai/install.sh | HOME=/opt/cli/claude bash -s 2.1.302"),
+  assertMatch(claude, /^FROM builder AS cli-claude/, claude);
+  assertStringIncludes(
+    claude,
+    "https://claude.ai/install.sh | HOME=/opt/cli/claude bash -s 2.1.302",
     "cli-claude pins the curl-installed version",
   );
-  assert(claude.includes("HOME=/opt/cli/claude"), "cli-claude installs into its own prefix");
+  assertStringIncludes(claude, "HOME=/opt/cli/claude", "cli-claude installs into its own prefix");
   assert(!claude.includes("npm install"), "cli-claude no longer installs through npm");
 });
 
 Deno.test("the npm-installed delegate CLI stages cache npm downloads in a BuildKit cache mount", () => {
   for (const stageName of ["cli-opencode", "cli-codex"]) {
-    assert(
-      dockerStage(DOCKERFILE, stageName).includes("--mount=type=cache,target=/root/.npm"),
+    assertStringIncludes(
+      dockerStage(DOCKERFILE, stageName),
+      "--mount=type=cache,target=/root/.npm",
       `${stageName} caches npm downloads`,
     );
   }
@@ -304,24 +315,24 @@ Deno.test("the npm-installed delegate CLI stages cache npm downloads in a BuildK
 Deno.test("each delegate CLI install gives up on a stalled npm fetch and retries", () => {
   for (const stageName of ["cli-opencode", "cli-codex"]) {
     const stage = dockerStage(DOCKERFILE, stageName);
-    assert(stage.includes("--fetch-timeout="), `${stageName} sets an npm fetch timeout`);
-    assert(stage.includes("--fetch-retries="), `${stageName} sets npm fetch retries`);
+    assertStringIncludes(stage, "--fetch-timeout=", `${stageName} sets an npm fetch timeout`);
+    assertStringIncludes(stage, "--fetch-retries=", `${stageName} sets npm fetch retries`);
   }
 });
 
 Deno.test("the devcontainer copies the CLI prefixes from their own stages and puts them on PATH", () => {
   const stage = dockerStage(DOCKERFILE, "devcontainer");
-  assert(stage.startsWith("FROM builder AS devcontainer"), stage);
-  assert(stage.includes("COPY --from=cli-claude /opt/cli/claude /opt/cli/claude"), stage);
-  assert(stage.includes("COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode"), stage);
-  assert(stage.includes("COPY --from=cli-codex /opt/cli/codex /opt/cli/codex"), stage);
-  assert(stage.includes("/opt/cli/claude/.local/bin"), "the devcontainer puts the CLIs on PATH");
+  assertMatch(stage, /^FROM builder AS devcontainer/, stage);
+  assertStringIncludes(stage, "COPY --from=cli-claude /opt/cli/claude /opt/cli/claude", stage);
+  assertStringIncludes(stage, "COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode", stage);
+  assertStringIncludes(stage, "COPY --from=cli-codex /opt/cli/codex /opt/cli/codex", stage);
+  assertStringIncludes(stage, "/opt/cli/claude/.local/bin", "the devcontainer puts the CLIs on PATH");
 });
 
 Deno.test("the eval-jail stage copies the pinned delegate CLIs instead of installing them", () => {
   const stage = dockerStage(DOCKERFILE, "eval-jail");
-  assert(stage.includes("COPY --from=cli-claude /opt/cli/claude /opt/cli/claude"), stage);
-  assert(stage.includes("COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode"), stage);
+  assertStringIncludes(stage, "COPY --from=cli-claude /opt/cli/claude /opt/cli/claude", stage);
+  assertStringIncludes(stage, "COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode", stage);
   assertFalse(stage.includes("npm install -g @anthropic-ai/claude-code"), "eval-jail installs claude unpinned");
 });
 
@@ -337,29 +348,33 @@ Deno.test("the devcontainer config targets the devcontainer stage", async () => 
 
 Deno.test("the builder stage persists its deno module cache in a BuildKit cache mount", () => {
   const stage = dockerStage(DOCKERFILE, "builder");
-  assert(stage.includes("--mount=type=cache"), "builder mounts a persistent cache for deno");
+  assertStringIncludes(stage, "--mount=type=cache", "builder mounts a persistent cache for deno");
 });
 
 Deno.test("fix(dev-test): source edits keep system packages and daemon warming out of the worker build path", () => {
   const toolchain = dockerStage(DOCKERFILE, "toolchain");
   const builder = dockerStage(DOCKERFILE, "builder");
   const worker = devTestStage(DOCKERFILE);
-  assert(builder.startsWith("FROM toolchain AS builder"), "daemon builder inherits the shared toolchain");
-  assert(worker.startsWith("FROM toolchain AS dev-test"), "worker does not inherit source-dependent daemon layers");
+  assertMatch(builder, /^FROM toolchain AS builder/, "daemon builder inherits the shared toolchain");
+  assertMatch(worker, /^FROM toolchain AS dev-test/, "worker does not inherit source-dependent daemon layers");
   assert(toolchain.includes("git") && toolchain.includes("procps"), "system packages precede source copies");
   assertFalse(worker.includes("apt-get"), "source-dependent worker stage does not reinstall apt packages");
-  assert(worker.includes("COPY packages/ packages/"), "worker copies source to warm the offline test graph");
-  assert(worker.includes("--mount=type=cache,target=/cache/deno,sharing=locked"), "test graph uses a persistent cache");
-  assert(worker.includes("DENO_DIR=/cache/deno deno cache"), "test graph resolves through that cache");
-  assert(worker.includes("cp -a /cache/deno/. /deno-dir/"), "worker keeps the warmed graph for offline runs");
+  assertStringIncludes(worker, "COPY packages/ packages/", "worker copies source to warm the offline test graph");
+  assertStringIncludes(
+    worker,
+    "--mount=type=cache,target=/cache/deno,sharing=locked",
+    "test graph uses a persistent cache",
+  );
+  assertStringIncludes(worker, "DENO_DIR=/cache/deno deno cache", "test graph resolves through that cache");
+  assertStringIncludes(worker, "cp -a /cache/deno/. /deno-dir/", "worker keeps the warmed graph for offline runs");
 });
 
 Deno.test("fix(dev-test): source edits do not rerun SQLite and esbuild downloads", () => {
   const toolchain = dockerStage(DOCKERFILE, "toolchain");
   const builder = dockerStage(DOCKERFILE, "builder");
   const worker = devTestStage(DOCKERFILE);
-  assert(toolchain.includes("/tmp/warm_sqlite.ts"), "SQLite is warmed before source copies");
-  assert(toolchain.includes("/tmp/bundle_probe.ts"), "esbuild is warmed before source copies");
+  assertStringIncludes(toolchain, "/tmp/warm_sqlite.ts", "SQLite is warmed before source copies");
+  assertStringIncludes(toolchain, "/tmp/bundle_probe.ts", "esbuild is warmed before source copies");
   assertFalse(toolchain.includes("COPY packages/"), "the toolchain stays independent of source files");
   assertFalse(builder.includes("/tmp/warm_sqlite.ts"), "the daemon builder reuses the SQLite warmup");
   assertFalse(worker.includes("/tmp/warm_sqlite.ts"), "the worker reuses the SQLite warmup");
@@ -372,24 +387,25 @@ Deno.test("fix(dev-test): offline workers inherit the pinned health duplication 
   };
   const pinnedPackage = config.tasks.health.match(/npm:jscpd@[\d.]+/)?.[0];
   assert(pinnedPackage, "the health task pins its duplication package");
-  assert(dockerStage(DOCKERFILE, "toolchain").includes(pinnedPackage), "warm the same package before source copies");
+  assertStringIncludes(
+    dockerStage(DOCKERFILE, "toolchain"),
+    pinnedPackage,
+    "warm the same package before source copies",
+  );
 });
 
 Deno.test("the dev-test stage installs procps so pkill is available to the driver", () => {
-  assert(dockerStage(DOCKERFILE, "toolchain").includes("procps"), "the shared toolchain installs procps");
+  assertStringIncludes(dockerStage(DOCKERFILE, "toolchain"), "procps", "the shared toolchain installs procps");
 });
 
 Deno.test("the dev-test stage makes /deno-dir writable for an arbitrary uid", () => {
-  assert(
-    devTestStage(DOCKERFILE).includes("chmod -R a+rwX /deno-dir"),
-    "dev-test makes /deno-dir uid-writable",
-  );
+  assertStringIncludes(devTestStage(DOCKERFILE), "chmod -R a+rwX /deno-dir", "dev-test makes /deno-dir uid-writable");
 });
 
 Deno.test("the dev-test stage copies scripts/ and caches the driver entrypoint, not the whole scripts/ tree", () => {
   const stage = devTestStage(DOCKERFILE);
-  assert(stage.includes("COPY scripts/ scripts/"), "dev-test copies scripts/");
-  assert(stage.includes("scripts/test_container_driver.ts"), "dev-test caches the driver entrypoint");
+  assertStringIncludes(stage, "COPY scripts/ scripts/", "dev-test copies scripts/");
+  assertStringIncludes(stage, "scripts/test_container_driver.ts", "dev-test caches the driver entrypoint");
 });
 
 Deno.test({
@@ -458,10 +474,7 @@ Deno.test({
 });
 
 Deno.test("the build context un-excludes tests/ for the dev-test image", () => {
-  assert(
-    DOCKERIGNORE.split("\n").includes("!tests/"),
-    ".dockerignore un-excludes tests/ for the dev-test image",
-  );
+  assertArrayIncludes(DOCKERIGNORE.split("\n"), ["!tests/"], ".dockerignore un-excludes tests/ for the dev-test image");
 });
 
 // --- worker-container launcher and host scheduler ---
@@ -526,16 +539,16 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
   });
   const joined = launch.args.join(" ");
   assertFalse(launch.args.includes("--init"), "the image entrypoint already runs tini as PID 1");
-  assert(launch.args.includes("-i"), "-i present");
-  assert(joined.includes("--name exaix-test-worker-0"), "--name present");
-  assert(joined.includes("HOME=/tmp/home"), "HOME isolated");
-  assert(joined.includes("EXA_HOME=/tmp/exa"), "EXA_HOME isolated");
-  assert(joined.includes("DENO_DIR=/deno-dir"), "DENO_DIR isolated");
-  assert(joined.includes("--network none"), "network none by default");
-  assert(joined.includes("--pids-limit 512"), "pids-limit wired");
-  assert(joined.includes("--sysctl net.ipv6.conf.all.disable_ipv6=1"), "IPv6 disabled for deterministic loopback");
+  assertArrayIncludes(launch.args, ["-i"], "-i present");
+  assertStringIncludes(joined, "--name exaix-test-worker-0", "--name present");
+  assertStringIncludes(joined, "HOME=/tmp/home", "HOME isolated");
+  assertStringIncludes(joined, "EXA_HOME=/tmp/exa", "EXA_HOME isolated");
+  assertStringIncludes(joined, "DENO_DIR=/deno-dir", "DENO_DIR isolated");
+  assertStringIncludes(joined, "--network none", "network none by default");
+  assertStringIncludes(joined, "--pids-limit 512", "pids-limit wired");
+  assertStringIncludes(joined, "--sysctl net.ipv6.conf.all.disable_ipv6=1", "IPv6 disabled for deterministic loopback");
   assert(!joined.includes("DENO_JOBS"), "DENO_JOBS must never be forwarded");
-  assert(joined.includes("scripts/test_container_driver.ts"), "runs the driver");
+  assertStringIncludes(joined, "scripts/test_container_driver.ts", "runs the driver");
 });
 
 Deno.test("denoCacheVolumeName keys the volume by the image id so a rebuilt image starts a fresh cache", () => {
@@ -558,8 +571,12 @@ Deno.test("buildWorkerContainerLaunch mounts the persistent cache volume over DE
     denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}abc`,
   });
   const joined = launch.args.join(" ");
-  assert(joined.includes(`--mount type=volume,src=${DENO_CACHE_VOLUME_PREFIX}abc,dst=/deno-dir`), "volume at DENO_DIR");
-  assert(joined.includes("DENO_DIR=/deno-dir"), "DENO_DIR still points at the mount");
+  assertStringIncludes(
+    joined,
+    `--mount type=volume,src=${DENO_CACHE_VOLUME_PREFIX}abc,dst=/deno-dir`,
+    "volume at DENO_DIR",
+  );
+  assertStringIncludes(joined, "DENO_DIR=/deno-dir", "DENO_DIR still points at the mount");
 });
 
 /** Records every docker side effect `ensureDenoCacheVolume` performs. */
@@ -677,8 +694,9 @@ Deno.test("buildWorkerContainerLaunch adds the git mount for a linked worktree a
       denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
     };
     const linked = buildWorkerContainerLaunch({ ...base, repoRoot: checkout }).args.join(" ");
-    assert(
-      linked.includes(`--mount type=bind,src=${commonDir},dst=${commonDir},readonly`),
+    assertStringIncludes(
+      linked,
+      `--mount type=bind,src=${commonDir},dst=${commonDir},readonly`,
       "git dir mounted read-only",
     );
     const plain = buildWorkerContainerLaunch({ ...base, repoRoot: "/repo" }).args.join(" ");
@@ -852,7 +870,7 @@ Deno.test("the host rejects a dispatched path that escapes the repo root", async
   assertEquals(escape.exitCode, 1);
   assertEquals(escape.failureDetail, "invalid test file path");
   assert(!sent.includes("../escape_test.ts"), "the escaping path was never sent to a worker");
-  assert(sent.includes("ok_test.ts"), "the valid path was dispatched");
+  assertArrayIncludes(sent, ["ok_test.ts"], "the valid path was dispatched");
 });
 
 Deno.test("at most one shared-path writer runs concurrently in the worker pool", async () => {
@@ -915,7 +933,7 @@ Deno.test("fix(test-isolation): health LCOV runs exclusively because it replaces
   const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/scripts/health_lcov_task_test.ts");
   assert(entry);
   assertEquals(entry.exclusive, true);
-  assert(entry.reasons.includes("shared-path"));
+  assertArrayIncludes(entry.reasons, ["shared-path"]);
 });
 
 Deno.test("a worker running several files under the per-file timeout is not killed by the inactivity watchdog", async () => {
@@ -977,7 +995,7 @@ Deno.test("a registered worker pid is signaled by killActiveChildGroups on shutd
   trackChild(4242);
   const signaled: number[] = [];
   killActiveChildGroups(undefined, (pid) => signaled.push(pid));
-  assert(signaled.includes(-4242), "registered pid is signaled as a process group");
+  assertArrayIncludes(signaled, [-4242], "registered pid is signaled as a process group");
   untrackChild(4242);
   const afterUntrack: number[] = [];
   killActiveChildGroups(undefined, (pid) => afterUntrack.push(pid));
@@ -997,7 +1015,7 @@ Deno.test("selectBatch2Strategy lets the CLI jobs override win over EXA_TEST_CON
   );
   assertEquals(strategy.mode, "container");
   assertEquals(strategy.jobs, Math.min(6, navigator.hardwareConcurrency));
-  assert(strategy.reason.includes("flag"));
+  assertStringIncludes(strategy.reason, "flag");
 });
 
 Deno.test("selectBatch2Strategy clamps jobs to [MIN_TEST_CONTAINER_JOBS, navigator.hardwareConcurrency]", async () => {
@@ -1336,9 +1354,9 @@ Deno.test("buildWorkerContainerLaunch applies pids/memory/cpus bounds from the n
     denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
   });
   const joined = launch.args.join(" ");
-  assert(joined.includes("--pids-limit 1024"), "--pids-limit override applied");
-  assert(joined.includes("--memory 4g"), "--memory override applied");
-  assert(joined.includes("--cpus 3.0"), "--cpus override applied");
+  assertStringIncludes(joined, "--pids-limit 1024", "--pids-limit override applied");
+  assertStringIncludes(joined, "--memory 4g", "--memory override applied");
+  assertStringIncludes(joined, "--cpus 3.0", "--cpus override applied");
 });
 
 Deno.test("resolveContainerResourceBounds falls back on invalid memory and cpus overrides", () => {

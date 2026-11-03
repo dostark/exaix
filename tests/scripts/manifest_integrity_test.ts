@@ -10,7 +10,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts, tests/scripts/classifier_test.ts]
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { batchIngestTerminalBench, MIN_SUPPORTED_COVERAGE_PCT } from "../../scripts/ingest_terminal_bench.ts";
 
@@ -132,8 +132,8 @@ Deno.test("[ManifestIntegrity] the generated scenario yaml renders the external_
     });
 
     const yaml = await Deno.readTextFile(join(dirs.outScenariosDir, "alpha-task.yaml"));
-    assert(yaml.includes('pack: "external_terminal_bench"'));
-    assert(yaml.includes('"docker"'));
+    assertStringIncludes(yaml, 'pack: "external_terminal_bench"');
+    assertStringIncludes(yaml, '"docker"');
   });
 });
 

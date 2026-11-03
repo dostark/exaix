@@ -7,37 +7,40 @@
  * @related-files [.copilot/skills/clean-codebase/SKILL.md]
  */
 
-import { assert } from "@std/assert";
+import { assertStringIncludes } from "@std/assert";
 
 Deno.test("Agent docs: clean-codebase separates active gates from baseline diagnostics", async () => {
   const md = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
   const normalized = md.replace(/\s+/g, " ");
 
-  assert(md.includes("check:skill-duplication"), "clean-codebase should include the skill-duplication gate");
-  assert(
-    md.includes("check:phase-references"),
+  assertStringIncludes(md, "check:skill-duplication", "clean-codebase should include the skill-duplication gate");
+  assertStringIncludes(
+    md,
+    "check:phase-references",
     "clean-codebase should record phase references as a baseline diagnostic",
   );
-  assert(md.includes("check:agent-prose"), "clean-codebase should record agent prose as a baseline diagnostic");
-  assert(
-    normalized.includes("not yet CI gates"),
+  assertStringIncludes(md, "check:agent-prose", "clean-codebase should record agent prose as a baseline diagnostic");
+  assertStringIncludes(
+    normalized,
+    "not yet CI gates",
     "clean-codebase should distinguish failing baseline diagnostics from active CI gates",
   );
-  assert(md.includes("EXA_DAEMON_SCRIPT"), "clean-codebase should name the daemon script override");
-  assert(
-    normalized.includes("stat it with `isFile`"),
+  assertStringIncludes(md, "EXA_DAEMON_SCRIPT", "clean-codebase should name the daemon script override");
+  assertStringIncludes(
+    normalized,
+    "stat it with `isFile`",
     "clean-codebase should state that EXA_BIN_PATH is a file for the direct synthetic runner",
   );
-  assert(md.includes("DENO_DIR"), "clean-codebase should name the writable compile cache variable");
+  assertStringIncludes(md, "DENO_DIR", "clean-codebase should name the writable compile cache variable");
 });
 
 Deno.test("Agent docs: full-suite preflight compiles the CLI and checks the offline worker", async () => {
   const skill = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
   const readme = await Deno.readTextFile("tests/README.md");
 
-  assert(skill.includes("deno task build:solo --compile"));
-  assert(skill.includes("tests/README.md#local-full-suite-preflight"));
+  assertStringIncludes(skill, "deno task build:solo --compile");
+  assertStringIncludes(skill, "tests/README.md#local-full-suite-preflight");
   for (const phrase of ["--network=none", "--frozen-lockfile", "--no-lock", "host: true"]) {
-    assert(readme.includes(phrase), `preflight must document ${phrase}`);
+    assertStringIncludes(readme, phrase, `preflight must document ${phrase}`);
   }
 });

@@ -5,7 +5,7 @@
  * ensuring the most relevant metadata is extracted for prompt grounding.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
@@ -96,7 +96,11 @@ Deno.test("script exits with code 2 and prints usage when no query provided", as
 
   // deno run exits with code 2 when usage is missing
   assert(code === 2, `Expected exit code 2, got ${code}. stderr: ${errStr}`);
-  assert(errStr.includes("Usage: --query <text> --agent <agent>"), `Expected usage message in stderr, got: ${errStr}`);
+  assertStringIncludes(
+    errStr,
+    "Usage: --query <text> --agent <agent>",
+    `Expected usage message in stderr, got: ${errStr}`,
+  );
 });
 
 Deno.test("main prints found=false JSON when no doc matches", async () => {
@@ -120,7 +124,7 @@ Deno.test("main prints found=false JSON when no doc matches", async () => {
   const outStr = new TextDecoder().decode(stdout);
 
   assertEquals(code, 0);
-  assert(outStr.includes('"found":false'));
+  assertStringIncludes(outStr, '"found":false');
 });
 
 Deno.test("inject handles docs missing title/short_summary", async () => {

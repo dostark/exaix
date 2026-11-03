@@ -11,21 +11,24 @@
  * trusting a green summary.
  */
 
-import { assert } from "@std/assert";
+import { assertStringIncludes } from "@std/assert";
 
 Deno.test("Agent docs: next-steps requires git-log re-grounding over chat memory when resuming", async () => {
   const md = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
 
-  assert(
-    md.includes("Chat/session memory is not reliable evidence on its own"),
+  assertStringIncludes(
+    md,
+    "Chat/session memory is not reliable evidence on its own",
     "next-steps should warn that chat memory alone is not reliable phase-progress evidence",
   );
-  assert(
-    md.includes("git log --oneline"),
+  assertStringIncludes(
+    md,
+    "git log --oneline",
     "next-steps should direct re-grounding via git log before resuming a phase",
   );
-  assert(
-    md.includes("another agent/tool"),
+  assertStringIncludes(
+    md,
+    "another agent/tool",
     "next-steps should call out the case where a different agent/tool worked on the phase in the interim",
   );
 });
@@ -33,16 +36,15 @@ Deno.test("Agent docs: next-steps requires git-log re-grounding over chat memory
 Deno.test("Agent docs: next-steps G5 warns that CI=true silently skips real-subprocess/[live] tests", async () => {
   const md = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
 
-  assert(
-    md.includes("Agent shells commonly have `CI=true` set"),
+  assertStringIncludes(
+    md,
+    "Agent shells commonly have `CI=true` set",
     "next-steps G5 should warn about the default CI=true shell environment",
   );
-  assert(
-    md.includes("env -u CI"),
-    "next-steps G5 should give the exact command to re-run tests with CI unset",
-  );
-  assert(
-    md.includes("ignore:.*CI"),
+  assertStringIncludes(md, "env -u CI", "next-steps G5 should give the exact command to re-run tests with CI unset");
+  assertStringIncludes(
+    md,
+    "ignore:.*CI",
     "next-steps G5 should give the grep pattern to find CI-gated tests before the gate closes",
   );
 });

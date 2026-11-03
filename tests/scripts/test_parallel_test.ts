@@ -45,7 +45,7 @@ import * as testOutputParse from "../../scripts/test_output_parse.ts";
 Deno.test("fix(test-runner): offline policy checks rebuild even when a cached manifest exists", () => {
   assertEquals(needsPortalLintAssets([OFFLINE_LINT_POLICY_TEST_FILE]), true);
   assertEquals(needsPortalLintAssets(["apps/daemon/tests/deploy_workspace_test.ts"]), false);
-  assertEquals(SEQUENTIAL_FILES.includes(OFFLINE_LINT_POLICY_TEST_FILE), true);
+  assertArrayIncludes(SEQUENTIAL_FILES, [OFFLINE_LINT_POLICY_TEST_FILE]);
 });
 
 Deno.test("resolveReporter defaults to pretty output", () => {
@@ -57,7 +57,7 @@ Deno.test("fix(test-runner): live memory maturation uses the serial network lane
   assertArrayIncludes(SEQUENTIAL_FILES, [file], "live provider work must be excluded from the CPU-pressure batch");
   const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
   assert(entry, "the live test needs an isolation entry");
-  assert(entry.reasons.includes(IsolationReason.pressure));
+  assertArrayIncludes(entry.reasons, [IsolationReason.pressure]);
   assertEquals(entry.network, true, "the live provider must retain real network access");
 });
 
@@ -68,7 +68,7 @@ Deno.test("fix(test-runner): whole-repository LCOV health uses the serial host l
   const expected = { ...parsed, host: true };
   assertEquals(parsed, expected);
   assertEquals(parsed.network, false, "memory pressure does not require network access");
-  assert(entry.reasons.includes(IsolationReason.pressure));
+  assertArrayIncludes(entry.reasons, [IsolationReason.pressure]);
 });
 
 Deno.test("fix(test-runner): offline Docker worker smoke runs in the isolated host lane", () => {
@@ -358,8 +358,8 @@ Deno.test("dogfood MCP child launches and their PATH writer run in isolated proc
 Deno.test("native tool round cutover boots run in isolated processes", () => {
   const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/integration/parallel_tool_round_cutover_test.ts");
   assert(entry, "real daemon cutover boots need an isolated batch entry");
-  assert(entry.reasons.includes(IsolationReason.moduleCache), "real daemon boots need module cache isolation");
-  assert(entry.reasons.includes(IsolationReason.pressure), "real daemon boots need pressure isolation");
+  assertArrayIncludes(entry.reasons, [IsolationReason.moduleCache], "real daemon boots need module cache isolation");
+  assertArrayIncludes(entry.reasons, [IsolationReason.pressure], "real daemon boots need pressure isolation");
 });
 
 Deno.test("only the dist/bin writers are marked serializedOutput and the egress-dependent files are marked network", () => {

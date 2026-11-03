@@ -5,31 +5,36 @@
  * safeguards in the review-phase-code skill.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 
 const SKILL_PATH = ".copilot/skills/review-phase-code/SKILL.md";
 
 Deno.test("Agent docs: review-phase-code requires problem-statement falsification beyond completed step criteria", async () => {
   const md = await Deno.readTextFile(SKILL_PATH);
 
-  assert(
-    md.includes("Required Outcome & Falsification Matrix"),
+  assertStringIncludes(
+    md,
+    "Required Outcome & Falsification Matrix",
     "review-phase-code should require an explicit falsification matrix",
   );
-  assert(
-    md.includes("independently of the plan's completed step criteria"),
+  assertStringIncludes(
+    md,
+    "independently of the plan's completed step criteria",
     "review-phase-code should derive required outcomes beyond completed step criteria",
   );
-  assert(
-    md.includes("cancellation, abandonment, and early exit"),
+  assertStringIncludes(
+    md,
+    "cancellation, abandonment, and early exit",
     "review-phase-code should require applicable non-success lifecycle probes",
   );
-  assert(
-    md.includes("canonical persisted or indexed field"),
+  assertStringIncludes(
+    md,
+    "canonical persisted or indexed field",
     "review-phase-code should distinguish canonical stored values from payload copies",
   );
-  assert(
-    md.includes("prevents a required outcome"),
+  assertStringIncludes(
+    md,
+    "prevents a required outcome",
     "review-phase-code should not accept a documented limitation that defeats a stated goal",
   );
 });
@@ -54,8 +59,9 @@ Deno.test("Agent docs: event coverage claims require exhaustive attributable run
     /request-trace\s+scoping/.test(postGap),
     "scenario journal evidence must be scoped to the request under test",
   );
-  assert(
-    remediation.includes("#self-improvement-retro"),
+  assertStringIncludes(
+    remediation,
+    "#self-improvement-retro",
     "gap remediation must hand off to the terminal retrospective before completion",
   );
 });
@@ -65,17 +71,20 @@ Deno.test("Agent docs: remediation-step template requires a step-manifest and th
   const plan = await Deno.readTextFile(".copilot/skills/plan/SKILL.md");
   const commit = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
 
-  assert(
-    postGap.includes("A phase\nplan step is missing or has an invalid step-manifest"),
+  assertStringIncludes(
+    postGap,
+    "A phase\nplan step is missing or has an invalid step-manifest",
     "review-phase-code should warn that a remediation step without a step-manifest blocks the commit",
   );
-  assert(postGap.includes("# step-manifest"), "the remediation-step template should carry a step-manifest block");
-  assert(
-    plan.includes("Probe the multiplicity and edge shapes"),
+  assertStringIncludes(postGap, "# step-manifest", "the remediation-step template should carry a step-manifest block");
+  assertStringIncludes(
+    plan,
+    "Probe the multiplicity and edge shapes",
     "plan §2F should require probing multi-item response shapes against the real API",
   );
-  assert(
-    commit.includes("Adding one new bullet to an already-completed step is not a plan-step commit"),
+  assertStringIncludes(
+    commit,
+    "Adding one new bullet to an already-completed step is not a plan-step commit",
     "commit skill should explain that appending to a completed step needs an ordinary docs commit",
   );
 });

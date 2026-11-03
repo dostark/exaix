@@ -6,7 +6,7 @@
  * `deno task docs-sync-schemas` to fix.
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { ToolKind } from "@exaix/core";
@@ -40,20 +40,21 @@ function getExpectedToolNames(): string[] {
 
 Deno.test("tool_catalog_sync: TOOLS.md contains AGENT_TOOLS markers", async () => {
   const content = await Deno.readTextFile(TOOLS_MD_PATH);
-  assert(content.includes(AGENT_TOOLS_START), "Missing AGENT_TOOLS_START marker");
-  assert(content.includes(AGENT_TOOLS_END), "Missing AGENT_TOOLS_END marker");
+  assertStringIncludes(content, AGENT_TOOLS_START, "Missing AGENT_TOOLS_START marker");
+  assertStringIncludes(content, AGENT_TOOLS_END, "Missing AGENT_TOOLS_END marker");
 });
 
 Deno.test("tool_catalog_sync: TOOLS.md AGENT_TOOLS section is not empty", async () => {
   const section = await readAgentToolsSection();
   assert(section.trim().length > 0, "AGENT_TOOLS section must not be empty");
-  assert(section.includes("|"), "AGENT_TOOLS section must contain a table (| delimited)");
+  assertStringIncludes(section, "|", "AGENT_TOOLS section must contain a table (| delimited)");
 });
 
 Deno.test("tool_catalog_sync: TOOLS.md describes Source column as a current ownership hint", async () => {
   const content = await Deno.readTextFile(TOOLS_MD_PATH);
-  assert(
-    content.includes("Source column is generated from explicit manifest"),
+  assertStringIncludes(
+    content,
+    "Source column is generated from explicit manifest",
     "TOOLS.md must describe the Source column as coming from explicit manifest ownership metadata",
   );
   assert(
@@ -95,8 +96,9 @@ Deno.test("tool_catalog_sync: domain tools appear in TOOLS.md AGENT_TOOLS sectio
   assert(domainTools.length > 0, "manifest must contain docs-visible domain tools");
 
   for (const toolName of domainTools) {
-    assert(
-      section.includes(`\`${toolName}\``),
+    assertStringIncludes(
+      section,
+      `\`${toolName}\``,
       `Domain tool '${toolName}' is missing from TOOLS.md AGENT_TOOLS section`,
     );
   }
@@ -141,13 +143,15 @@ Deno.test("tool_catalog_sync: each docs-visible tool has a schema block with inp
     (e) => e.docs_visible && (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
   );
   for (const tool of entries) {
-    assert(
-      section.includes(`\`\`\`yaml tool-schema: ${tool.name}`),
+    assertStringIncludes(
+      section,
+      `\`\`\`yaml tool-schema: ${tool.name}`,
       `TOOLS.md must contain a schema block for '${tool.name}'`,
     );
   }
-  assert(
-    section.includes("side_effect_scope:"),
+  assertStringIncludes(
+    section,
+    "side_effect_scope:",
     "schema blocks must record the tool side-effect scope (permissions)",
   );
 });
@@ -161,6 +165,6 @@ Deno.test("tool_catalog_sync: schema block input properties match the manifest i
   assert(start !== -1, "read_file schema block must exist");
   const block = section.slice(start, section.indexOf("```", start + 4));
   for (const prop of Object.keys(tool!.input_schema!.properties!)) {
-    assert(block.includes(`${prop}:`), `read_file schema block must list property '${prop}'`);
+    assertStringIncludes(block, `${prop}:`, `read_file schema block must list property '${prop}'`);
   }
 });

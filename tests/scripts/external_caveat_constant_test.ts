@@ -11,7 +11,7 @@
  * @related-files [packages/eval-history/src/external_benchmark.ts, packages/eval-history/mod.ts, apps/exactl/src/commands/eval_commands.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 const CAVEAT_CONSTANT = "EXTERNAL_BENCHMARK_CAVEAT";
 const PACKAGE_DIR = "packages/eval-history";
@@ -46,9 +46,9 @@ Deno.test("[external-caveat] the caveat constant is defined exactly once under p
 
 Deno.test("[external-caveat] the caveat constant is exported from the package mod", () => {
   const mod = Deno.readTextFileSync(`${Deno.cwd()}/${PACKAGE_DIR}/mod.ts`);
-  assertEquals(
-    mod.includes(`export { ${CAVEAT_CONSTANT} }`),
-    true,
+  assertStringIncludes(
+    mod,
+    `export { ${CAVEAT_CONSTANT} }`,
     "mod.ts must re-export the caveat constant for the CLI to import",
   );
 });
@@ -57,9 +57,9 @@ Deno.test("[external-caveat] the external view references the constant and rende
   const cli = Deno.readTextFileSync(`${Deno.cwd()}/${CLI_VIEW_FILE}`);
   const importLine =
     cli.split("\n").find((line) => line.startsWith("import {") && line.includes("@exaix/eval-history")) ?? "";
-  assertEquals(
-    importLine.includes(CAVEAT_CONSTANT),
-    true,
+  assertStringIncludes(
+    importLine,
+    CAVEAT_CONSTANT,
     "eval_commands.ts must import the constant from @exaix/eval-history",
   );
   const usages = countOccurrences(cli, CAVEAT_CONSTANT);

@@ -7,7 +7,7 @@
  * @related-files [scripts/bump_deno_version.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { denoPinProblems, pinnedDenoVersion, withDenoVersion } from "../../scripts/bump_deno_version.ts";
 
@@ -36,7 +36,7 @@ Deno.test("deno-pin-problems: a literal tag, a missing argument and a repeated n
   assertEquals(denoPinProblems("FROM denoland/deno:${DENO_VERSION}\n", {}).length, 1);
   const repeated = denoPinProblems(SAMPLE, { "ARCHITECTURE.md": "The builder (`denoland/deno:2.8.2`) vendors" });
   assertEquals(repeated.length, 1);
-  assert(repeated[0].includes("ARCHITECTURE.md"));
+  assertStringIncludes(repeated[0], "ARCHITECTURE.md");
 });
 
 Deno.test("deno-pin-repository: the Dockerfile and the documents keep one pin", async () => {

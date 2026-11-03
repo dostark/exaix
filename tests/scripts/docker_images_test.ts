@@ -89,6 +89,8 @@ Deno.test("the build presets name the images that the repo builds and the deno t
   assertEquals(IMAGE_PRESETS["eval-jail"].image, "exaix-eval-jail");
   assertEquals(IMAGE_PRESETS["sandbox"].image, "exaix-sandbox:dev");
   const tasks = JSON.parse(await Deno.readTextFile(new URL("../../deno.json", import.meta.url))).tasks;
-  assertEquals(tasks["eval:jail:build"].includes("scripts/build_docker_image.ts eval-jail"), true);
-  assertEquals(tasks["sandbox:build"].includes("scripts/build_docker_image.ts sandbox"), true);
+  const evalTaskUsesWrapper = tasks["eval:jail:build"].includes("scripts/build_docker_image.ts eval-jail");
+  assertEquals(evalTaskUsesWrapper, true);
+  const sandboxTaskUsesWrapper = tasks["sandbox:build"].includes("scripts/build_docker_image.ts sandbox");
+  assertEquals(sandboxTaskUsesWrapper, true);
 });

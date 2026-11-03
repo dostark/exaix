@@ -5,7 +5,7 @@
  * process templates and quality metrics follow the declared technical standards.
  */
 
-import { assert, assertExists } from "@std/assert";
+import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { assertFilesExist, assertFrontmatterSchemaAndShortSummary } from "../helpers/copilot_assertions.ts";
 
 const REQUIRED_FILES = [
@@ -20,9 +20,9 @@ Deno.test("Self-improvement loop: verify required files exist", async () => {
 
 Deno.test("Self-improvement loop: verify process doc has required sections", async () => {
   const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
-  assert(processMd.includes("Key points"), "process doc should have Key points");
-  assert(processMd.includes("Canonical prompt (short)"), "process doc should have Canonical prompt (short)");
-  assert(processMd.includes("Examples"), "process doc should have Examples");
+  assertStringIncludes(processMd, "Key points", "process doc should have Key points");
+  assertStringIncludes(processMd, "Canonical prompt (short)", "process doc should have Canonical prompt (short)");
+  assertStringIncludes(processMd, "Examples", "process doc should have Examples");
   assert(
     processMd.includes("Do / Don") || processMd.includes("Do/Don"),
     "process doc should have Do / Don't section",
@@ -44,8 +44,9 @@ Deno.test("Self-improvement loop: verify manifest includes self-improvement doc"
   assert(Array.isArray(manifest.docs), "Manifest should have docs array");
 
   const paths = manifest.docs.map((d: { path: string }) => d.path);
+  const includesSkill = paths.includes(".copilot/skills/self-improvement/SKILL.md");
   assert(
-    paths.includes(".copilot/skills/self-improvement/SKILL.md"),
+    includesSkill,
     "Manifest should include self-improvement skill",
   );
 
@@ -58,9 +59,9 @@ Deno.test("Self-improvement loop: verify manifest includes self-improvement doc"
 Deno.test("Self-improvement loop: terminal retro reconciles the phase registry", async () => {
   const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
 
-  assert(processMd.includes("Reconcile `exaix-dev-docs/planning/PHASE_REGISTRY.md`"));
-  assert(processMd.includes("remove a completed phase from open/recommended-pickup rows"));
-  assert(processMd.includes("search the registry for stale occurrences"));
+  assertStringIncludes(processMd, "Reconcile `exaix-dev-docs/planning/PHASE_REGISTRY.md`");
+  assertStringIncludes(processMd, "remove a completed phase from open/recommended-pickup rows");
+  assertStringIncludes(processMd, "search the registry for stale occurrences");
 });
 
 Deno.test("Self-improvement loop: routes domain-specific findings to domain docs, not general skills", async () => {
@@ -68,16 +69,15 @@ Deno.test("Self-improvement loop: routes domain-specific findings to domain docs
   // detail goes to the owning domain doc, not into a general skill every phase re-reads.
   const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
 
-  assert(
-    processMd.includes("Classify the finding FIRST"),
-    "routing step must teach classify-the-finding-first",
-  );
-  assert(
-    processMd.includes("does NOT belong in a general skill"),
+  assertStringIncludes(processMd, "Classify the finding FIRST", "routing step must teach classify-the-finding-first");
+  assertStringIncludes(
+    processMd,
+    "does NOT belong in a general skill",
     "routing step must forbid phase/domain-specific detail in general skills",
   );
-  assert(
-    processMd.includes("tests/scenario_framework/README.md"),
+  assertStringIncludes(
+    processMd,
+    "tests/scenario_framework/README.md",
     "routing step must name the owning domain doc as the correct home",
   );
 });
@@ -106,21 +106,21 @@ Deno.test("process-guards: the review-remediation-retro guardrails stay pinned",
     Deno.readTextFile(".copilot/skills/next-steps/SKILL.md"),
     Deno.readTextFile(".copilot/skills/commit/SKILL.md"),
   ]);
-  assert(review.includes("ci.ts check` does not execute tests"), "the review must run planned tests");
-  assert(remediate.includes("git branch --show-current"), "remediation must check the branch");
-  assert(remediate.includes("deno fmt` reflowed"), "remediation must re-read formatted blocks");
-  assert(retro.includes("retro written before the review"), "the retro must follow the review");
-  assert(nextSteps.includes("git branch --show-current"), "plan-step commits must check the branch");
-  assert(commit.includes("Pre-commit the plan submodule"), "the commit skill must keep the submodule staged");
+  assertStringIncludes(review, "ci.ts check` does not execute tests", "the review must run planned tests");
+  assertStringIncludes(remediate, "git branch --show-current", "remediation must check the branch");
+  assertStringIncludes(remediate, "deno fmt` reflowed", "remediation must re-read formatted blocks");
+  assertStringIncludes(retro, "retro written before the review", "the retro must follow the review");
+  assertStringIncludes(nextSteps, "git branch --show-current", "plan-step commits must check the branch");
+  assertStringIncludes(commit, "Pre-commit the plan submodule", "the commit skill must keep the submodule staged");
 });
 
 Deno.test("process-guards: the container-suite guidance is pinned", async () => {
   const cleanCodebase = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
   const testDevelopment = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
   for (const token of ["dist/bin/exactl-solo", "allowScripts", "tree-sitter", "generated `lint/`"]) {
-    assert(cleanCodebase.includes(token), `clean-codebase must name ${token}`);
+    assertStringIncludes(cleanCodebase, token, `clean-codebase must name ${token}`);
   }
   for (const token of ["SEQUENTIAL_TESTS", "sharedPath", "exclusive"]) {
-    assert(testDevelopment.includes(token), `test-development must name ${token}`);
+    assertStringIncludes(testDevelopment, token, `test-development must name ${token}`);
   }
 });

@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [scripts/setup_hooks.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 
@@ -16,7 +16,7 @@ Deno.test("[security] rejects hook installation outside a Git repository", async
       cwd: tmpDir,
     }).output();
     assertEquals(result.success, false);
-    assert(new TextDecoder().decode(result.stderr).includes("Cannot resolve Git hooks"));
+    assertStringIncludes(new TextDecoder().decode(result.stderr), "Cannot resolve Git hooks");
     assertEquals([...Deno.readDirSync(tmpDir)], []);
   });
 });

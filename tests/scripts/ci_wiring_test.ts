@@ -7,7 +7,7 @@
  * @related-files [scripts/ci.ts, scripts/setup_hooks.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse } from "@std/yaml";
 import type { JSONValue } from "@exaix/core/types";
 
@@ -29,23 +29,26 @@ async function runCiDry(command: string, extraArgs: readonly string[] = []): Pro
 }
 
 Deno.test("[ci_wiring] scripts/ci.ts check action includes check:skill-index and no envelope gate", () => {
-  assert(
-    CI_SOURCE.includes('"check:skill-index"'),
+  assertStringIncludes(
+    CI_SOURCE,
+    '"check:skill-index"',
     "ci.ts must invoke check:skill-index so an invalid skill folder fails CI",
   );
   assert(!CI_SOURCE.includes("check:skill-envelopes"), "the envelope gate is removed");
 });
 
 Deno.test("[ci_wiring] scripts/ci.ts check action includes check:manifests", () => {
-  assert(
-    CI_SOURCE.includes('"check:manifests"'),
+  assertStringIncludes(
+    CI_SOURCE,
+    '"check:manifests"',
     "ci.ts must invoke check:manifests so a manifest-less step fails CI (GAP-14)",
   );
 });
 
 Deno.test("[ci_wiring] skill duplication is a unified CI static check", () => {
-  assert(
-    CI_SOURCE.includes('{ cmd: ["deno", "task", "check:skill-duplication"]'),
+  assertStringIncludes(
+    CI_SOURCE,
+    '{ cmd: ["deno", "task", "check:skill-duplication"]',
     "check:skill-duplication must be declared in STATIC_CHECK_TASKS",
   );
 });
@@ -54,12 +57,14 @@ Deno.test("[ci_wiring] both gates are wired via the shared static-check task lis
   // checkCommand and allCommand both reference ONE shared STATIC_CHECK_TASKS array instead of
   // each duplicating its own inline list, so "wired in both" is a structural guarantee (same
   // array reference), not a coincidence of textual duplication.
-  assert(
-    CI_SOURCE.includes('{ cmd: ["deno", "task", "check:skill-index"]'),
+  assertStringIncludes(
+    CI_SOURCE,
+    '{ cmd: ["deno", "task", "check:skill-index"]',
     "check:skill-index must be declared in STATIC_CHECK_TASKS",
   );
-  assert(
-    CI_SOURCE.includes('{ cmd: ["deno", "task", "check:manifests"]'),
+  assertStringIncludes(
+    CI_SOURCE,
+    '{ cmd: ["deno", "task", "check:manifests"]',
     "check:manifests must be declared in STATIC_CHECK_TASKS",
   );
   const checkUsesShared = /const checkCommand[\s\S]*?runParallel\(STATIC_CHECK_TASKS\)/.test(CI_SOURCE);
@@ -69,12 +74,10 @@ Deno.test("[ci_wiring] both gates are wired via the shared static-check task lis
 });
 
 Deno.test("[ci_wiring] pre-commit hook content invokes both gates", () => {
-  assert(
-    HOOKS_SOURCE.includes("deno task check:skill-index"),
-    "pre-commit hook must invoke check:skill-index",
-  );
-  assert(
-    HOOKS_SOURCE.includes("deno task check:manifests"),
+  assertStringIncludes(HOOKS_SOURCE, "deno task check:skill-index", "pre-commit hook must invoke check:skill-index");
+  assertStringIncludes(
+    HOOKS_SOURCE,
+    "deno task check:manifests",
     "pre-commit hook must invoke check:manifests (GAP-14)",
   );
 });
@@ -203,17 +206,18 @@ Deno.test("fix(ci): standard all pipeline never runs coverage or LCOV", async ()
   const full = await runCiDry("all");
   assert(!full.includes("Coverage Verification"), "coverage must require its explicit command");
   const skipped = await runCiDry("all", ["--skip-tests"]);
-  assert(skipped.includes("Phase 1: Static Checks"), "Phase 1 must still run with --skip-tests");
+  assertStringIncludes(skipped, "Phase 1: Static Checks", "Phase 1 must still run with --skip-tests");
   assert(!skipped.includes("Phase 2: Testing"), "Phase 2 (Testing) must be suppressed by --skip-tests");
   assert(!skipped.includes("Phase 3: Coverage"), "Phase 3 (Coverage) must be suppressed by --skip-tests");
-  assert(skipped.includes("Phase 3: Build"), "Build must still run with --skip-tests");
+  assertStringIncludes(skipped, "Phase 3: Build", "Build must still run with --skip-tests");
 
-  assert(full.includes("Phase 1: Static Checks"), "default run (no flag) must include Phase 1");
-  assert(
-    full.includes("Phase 2: Testing"),
+  assertStringIncludes(full, "Phase 1: Static Checks", "default run (no flag) must include Phase 1");
+  assertStringIncludes(
+    full,
+    "Phase 2: Testing",
     "default run (no flag) must still run Phase 2 — 'all' stays unconditional unless the flag is passed",
   );
-  assert(full.includes("Phase 3: Build"), "default run must build");
+  assertStringIncludes(full, "Phase 3: Build", "default run must build");
   for (const output of [skipped, full]) {
     assert(!output.includes("Coverage Verification"), "coverage must require its explicit command");
     assert(!output.includes("--coverage="), "automatic pipelines must not instrument tests");
@@ -223,7 +227,7 @@ Deno.test("fix(ci): standard all pipeline never runs coverage or LCOV", async ()
 
 Deno.test("[ci_wiring] explicit coverage command remains available", async () => {
   const output = await runCiDry("coverage");
-  assert(output.includes("Would run tests with coverage enabled"));
+  assertStringIncludes(output, "Would run tests with coverage enabled");
 });
 
 interface ICoverageWorkflow {
@@ -328,10 +332,10 @@ Deno.test("[ci_wiring] ci.ts test phases drive test_all for every edition", () =
   const mappings = [...CI_SOURCE.matchAll(/const testTask = ([^;]+);/g)].map((m) => m[1]);
   assert(mappings.length >= 2, "expected the testTask mapping in both testCommand and allCommand");
   for (const mapping of mappings) {
-    assert(mapping.includes('"test_all:solo"'), "solo must use test_all:solo");
-    assert(mapping.includes('"test_all:team"'), "team must use test_all:team");
-    assert(mapping.includes('"test_all:enterprise"'), "enterprise must use test_all:enterprise");
-    assert(mapping.includes('"test_all"'), "the fallback must be test_all");
+    assertStringIncludes(mapping, '"test_all:solo"', "solo must use test_all:solo");
+    assertStringIncludes(mapping, '"test_all:team"', "team must use test_all:team");
+    assertStringIncludes(mapping, '"test_all:enterprise"', "enterprise must use test_all:enterprise");
+    assertStringIncludes(mapping, '"test_all"', "the fallback must be test_all");
     assert(!mapping.includes('"test:solo"'), "must never use the plain test:solo task");
     assert(!mapping.includes('"test:team"'), "must never use the plain test:team task");
   }

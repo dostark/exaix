@@ -162,7 +162,7 @@
     "scripts": 1
   },
   "exaix/no-boolean-assert": {
-    "tests": 662
+    "tests": 315
   },
   "exaix/max-params": {
     "packages/core": 1,

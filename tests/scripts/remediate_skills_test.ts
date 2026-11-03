@@ -8,7 +8,7 @@
  * @related-files [scripts/skill_catalog_loader.ts]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { SkillRootKind, SkillStatus } from "@exaix/core";
 import { loadCatalogRoot } from "../../scripts/skill_catalog_loader.ts";
@@ -28,6 +28,6 @@ for (const [name, tag] of EXPECTED_TAGS) {
     assertEquals(skill.status, SkillStatus.ACTIVE);
     assertEquals(skill.triggers_source, "authored");
     const tags = skill.triggers.tags ?? [];
-    assert(tags.includes(tag), `tags must include ${tag}, got ${JSON.stringify(tags)}`);
+    assertArrayIncludes(tags, [tag], `tags must include ${tag}, got ${JSON.stringify(tags)}`);
   });
 }

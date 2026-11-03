@@ -10,25 +10,17 @@
  * to add a deno.json import-map alias to match the doc.
  */
 
-import { assert } from "@std/assert";
+import { assertStringIncludes } from "@std/assert";
 
 Deno.test("Agent docs: plan skill requires lint-clean snippets (import-map aliases, no inline npm:)", async () => {
   const md = await Deno.readTextFile(".copilot/skills/plan/SKILL.md");
 
-  assert(
-    md.includes("no-import-prefix"),
-    "plan skill should reference the no-import-prefix lint rule",
-  );
-  assert(
-    md.includes("no-unversioned-import"),
-    "plan skill should reference the no-unversioned-import lint rule",
-  );
-  assert(
-    md.includes("import-map alias"),
+  assertStringIncludes(md, "no-import-prefix", "plan skill should reference the no-import-prefix lint rule");
+  assertStringIncludes(md, "no-unversioned-import", "plan skill should reference the no-unversioned-import lint rule");
+  assertStringIncludes(
+    md,
+    "import-map alias",
     "plan skill should direct snippet authors to deno.json import-map aliases",
   );
-  assert(
-    md.includes("@babel/parser/package.json"),
-    "plan skill should carry a concrete import-map alias example",
-  );
+  assertStringIncludes(md, "@babel/parser/package.json", "plan skill should carry a concrete import-map alias example");
 });

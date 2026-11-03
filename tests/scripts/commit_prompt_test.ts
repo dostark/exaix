@@ -4,26 +4,26 @@
  * @description Verifies that the agent commit prompt matches the new structured guidelines.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 
 describe(".copilot/skills/commit/SKILL.md", () => {
   it("contains all mandatory headers for structured commits", async () => {
     const content = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
-    assert(content.includes("what:"), "Prompt missing 'what:'");
-    assert(content.includes("rationale:"), "Prompt missing 'rationale:'");
-    assert(content.includes("tests:"), "Prompt missing 'tests:'");
-    assert(content.includes("who:"), "Prompt missing 'who:'");
-    assert(content.includes("impact:"), "Prompt missing 'impact:'");
-    assert(content.includes("ARCHITECTURE.md"), "Prompt missing 'ARCHITECTURE.md' reference");
-    assert(content.includes("hallucinate"), "Prompt missing hallucination warning");
+    assertStringIncludes(content, "what:", "Prompt missing 'what:'");
+    assertStringIncludes(content, "rationale:", "Prompt missing 'rationale:'");
+    assertStringIncludes(content, "tests:", "Prompt missing 'tests:'");
+    assertStringIncludes(content, "who:", "Prompt missing 'who:'");
+    assertStringIncludes(content, "impact:", "Prompt missing 'impact:'");
+    assertStringIncludes(content, "ARCHITECTURE.md", "Prompt missing 'ARCHITECTURE.md' reference");
+    assertStringIncludes(content, "hallucinate", "Prompt missing hallucination warning");
   });
 });
 
 describe(".copilot/skills/commit/SKILL.md — Structural Bloom trap (phase-144 retro)", () => {
   it("documents the bullet-point requirement for what: on multi-file commits", async () => {
     const content = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
-    assert(content.includes("Structural Bloom"), "SKILL.md missing 'Structural Bloom' rule");
+    assertStringIncludes(content, "Structural Bloom", "SKILL.md missing 'Structural Bloom' rule");
     assert(
       content.includes("2 bullet points") || content.includes("two bullet points"),
       "SKILL.md missing the 2-bullet-point requirement text",

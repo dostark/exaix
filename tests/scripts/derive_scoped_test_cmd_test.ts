@@ -26,17 +26,25 @@ Deno.test("[DeriveScopedTestCmd] never references $HOME or $PATH — the scenari
 
 Deno.test("[DeriveScopedTestCmd] hardcodes the known eval-jail container HOME (/tmp) for the uv bin path", () => {
   const cmd = deriveScopedTestCmd("uv pip install pytest==8.4.1\n");
-  assert(cmd.includes("/tmp/.local/bin"), `must hardcode /tmp/.local/bin, the real HOME=/tmp container path: ${cmd}`);
+  assertStringIncludes(
+    cmd,
+    "/tmp/.local/bin",
+    `must hardcode /tmp/.local/bin, the real HOME=/tmp container path: ${cmd}`,
+  );
 });
 
 Deno.test("[DeriveScopedTestCmd] extracts the task-specific uv pip install package list", () => {
   const cmd = deriveScopedTestCmd("some setup\nuv pip install pytest==8.4.1 pandas==2.2.0\nmore setup\n");
-  assert(cmd.includes("uv pip install -q pytest==8.4.1 pandas==2.2.0"), `must carry the exact package spec: ${cmd}`);
+  assertStringIncludes(
+    cmd,
+    "uv pip install -q pytest==8.4.1 pandas==2.2.0",
+    `must carry the exact package spec: ${cmd}`,
+  );
 });
 
 Deno.test("[DeriveScopedTestCmd] falls back to the default package spec when run-tests.sh names none", () => {
   const cmd = deriveScopedTestCmd("echo no install line here\n");
-  assert(cmd.includes("uv pip install -q pytest==8.4.1"), `must fall back to the default package spec: ${cmd}`);
+  assertStringIncludes(cmd, "uv pip install -q pytest==8.4.1", `must fall back to the default package spec: ${cmd}`);
 });
 
 Deno.test("[DeriveScopedTestCmd] runs pytest against the hidden oracle-tests mount", () => {
@@ -48,8 +56,9 @@ Deno.test("[DeriveScopedTestCmd] a backslash-continued multi-line uv pip install
   const cmd = deriveScopedTestCmd(
     "uv pip install pytest==8.4.1 \\\n  pandas==2.2.0 \\\n  numpy==1.26.0\nmore setup\n",
   );
-  assert(
-    cmd.includes("uv pip install -q pytest==8.4.1 pandas==2.2.0 numpy==1.26.0"),
+  assertStringIncludes(
+    cmd,
+    "uv pip install -q pytest==8.4.1 pandas==2.2.0 numpy==1.26.0",
     `must capture the full continued package list, not truncate at the first physical line: ${cmd}`,
   );
 });

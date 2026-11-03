@@ -11,7 +11,7 @@
  * @related-files [scripts/sweep_terminal_bench_controls.ts, scripts/ingest_terminal_bench.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { runCommand, sweepTask } from "../../scripts/sweep_terminal_bench_controls.ts";
 
@@ -25,8 +25,9 @@ Deno.test("[SweepTerminalBenchControls] runCommand kills a hung process at the t
     `must kill the hung process near its 200ms timeout, not wait the full 30s: took ${elapsedMs}ms`,
   );
   assertEquals(result.code === 0, false, "a killed process must never report success");
-  assert(
-    result.stderr.includes("verify timed out after 200ms"),
+  assertStringIncludes(
+    result.stderr,
+    "verify timed out after 200ms",
     `must record a diagnosable timeout reason: ${result.stderr}`,
   );
 });
@@ -52,8 +53,9 @@ Deno.test("[SweepTerminalBenchControls] sweepTask contains a malformed task.json
 
     assertEquals(outcome.taskId, "bad-task");
     assertEquals(outcome.status, "fail");
-    assert(
-      outcome.detail.startsWith("sweep-error:"),
+    assertMatch(
+      outcome.detail,
+      /^sweep-error:/,
       `a malformed task.json must be contained as a sweep-error result, not thrown: ${outcome.detail}`,
     );
   } finally {

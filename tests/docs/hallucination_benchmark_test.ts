@@ -4,7 +4,7 @@
  * @description Benchmarks for documentation-based reasoning and hallucination prevention.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -13,11 +13,11 @@ Deno.test("[hallucination-bench] Verify Frontmatter Consistency", async () => {
   const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
 
   // Verify it contains copilot_knowledge_base: true
-  assertEquals(content.includes("copilot_knowledge_base: true"), true, "ARCHITECTURE.md must be a knowledge base.");
+  assertStringIncludes(content, "copilot_knowledge_base: true", "ARCHITECTURE.md must be a knowledge base.");
 
   // Verify it lists critical capabilities
-  assertEquals(content.includes("architecture_overview"), true, "Missing capability: architecture_overview");
-  assertEquals(content.includes("execution_flow"), true, "Missing capability: execution_flow");
+  assertStringIncludes(content, "architecture_overview", "Missing capability: architecture_overview");
+  assertStringIncludes(content, "execution_flow", "Missing capability: execution_flow");
 });
 
 Deno.test("[hallucination-bench] Verify AGENT_LOGIC steps exist as symbols", async () => {
@@ -39,10 +39,6 @@ Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", asy
   const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
 
   // Verify key components have stable links
-  assertEquals(
-    content.includes("packages/request/src/processor.ts"),
-    true,
-    "RequestProcessor link missing.",
-  );
-  assertEquals(content.includes("packages/execution/src/agent_runner.ts"), true, "IAgentRunner reference missing.");
+  assertStringIncludes(content, "packages/request/src/processor.ts", "RequestProcessor link missing.");
+  assertStringIncludes(content, "packages/execution/src/agent_runner.ts", "IAgentRunner reference missing.");
 });

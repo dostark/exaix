@@ -5,64 +5,68 @@
  * common CI pitfalls and best practices are correctly documented for agents.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 
 Deno.test("Agent docs: test-development skill documents CI pitfalls", async () => {
   const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
 
-  assert(md.includes("CI pitfalls"), "test-development skill should have a CI section");
-  assert(md.includes("CI=true"), "CI section should mention CI=true behavior");
-  assert(md.includes("@exaix/core/config/env_schema.ts"), "CI section should reference shared env helpers");
-  assert(md.includes("EXA_TEST_ENABLE_PAID_LLM"), "CI section should mention paid LLM opt-in");
-  assert(md.includes("Deno.execPath()"), "CI section should describe running exactl via Deno.execPath()");
+  assertStringIncludes(md, "CI pitfalls", "test-development skill should have a CI section");
+  assertStringIncludes(md, "CI=true", "CI section should mention CI=true behavior");
+  assertStringIncludes(md, "@exaix/core/config/env_schema.ts", "CI section should reference shared env helpers");
+  assertStringIncludes(md, "EXA_TEST_ENABLE_PAID_LLM", "CI section should mention paid LLM opt-in");
+  assertStringIncludes(md, "Deno.execPath()", "CI section should describe running exactl via Deno.execPath()");
 });
 
 Deno.test("Agent docs: test-development skill documents module-init env access for standalone runs", async () => {
   const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
 
-  assert(md.includes("Permissions"), "test-development skill should have a Permissions section");
-  assert(md.includes("TSC_WATCHFILE"), "Permissions section should name the typescript module-init env read");
-  assert(md.includes("deno test --allow-all"), "Permissions section should recommend --allow-all for standalone runs");
+  assertStringIncludes(md, "Permissions", "test-development skill should have a Permissions section");
+  assertStringIncludes(md, "TSC_WATCHFILE", "Permissions section should name the typescript module-init env read");
+  assertStringIncludes(
+    md,
+    "deno test --allow-all",
+    "Permissions section should recommend --allow-all for standalone runs",
+  );
 });
 
 Deno.test("Agent docs: focused Deno canaries must prove non-zero test selection", async () => {
   const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
 
-  assert(md.includes("multiple-name filters use a regex literal"));
-  assert(md.includes("Treat zero selected tests as a failed verification"));
-  assert(md.includes("--filter '/first case|second case/'"));
+  assertStringIncludes(md, "multiple-name filters use a regex literal");
+  assertStringIncludes(md, "Treat zero selected tests as a failed verification");
+  assertStringIncludes(md, "--filter '/first case|second case/'");
 });
 
 Deno.test("Agent docs: completion evidence must survive session restarts", async () => {
   const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
 
   assert(/must not be the sole\s+user-facing proof artifact/.test(md));
-  assert(md.includes("durable, phase-named workspace/sandbox output directory"));
+  assertStringIncludes(md, "durable, phase-named workspace/sandbox output directory");
 });
 
 Deno.test("Agent docs: test-development skill documents the execution-time budget", async () => {
   const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
 
-  assert(md.includes("Execution-time budget"), "skill should have an execution-time budget section");
-  assert(md.includes("daemon.ready"), "skill should point at the daemon.ready readiness signal");
-  assert(md.includes("daemon_commands.ts"), "skill should note the daemon lifecycle commands block until ready");
-  assert(md.includes("prepareDeclaredPortals"), "skill should warn against re-doing the runner's portal mount");
-  assert(md.includes("Promise.allSettled"), "skill should recommend concurrent independent I/O");
-  assert(md.includes("SEQUENTIAL_FILES"), "skill should route process-sensitive tests to the sequential batch");
+  assertStringIncludes(md, "Execution-time budget", "skill should have an execution-time budget section");
+  assertStringIncludes(md, "daemon.ready", "skill should point at the daemon.ready readiness signal");
+  assertStringIncludes(md, "daemon_commands.ts", "skill should note the daemon lifecycle commands block until ready");
+  assertStringIncludes(md, "prepareDeclaredPortals", "skill should warn against re-doing the runner's portal mount");
+  assertStringIncludes(md, "Promise.allSettled", "skill should recommend concurrent independent I/O");
+  assertStringIncludes(md, "SEQUENTIAL_FILES", "skill should route process-sensitive tests to the sequential batch");
 });
 
 Deno.test("Agent docs: local completion validation is focused by default", async () => {
   const agentInstructions = await Deno.readTextFile("AGENTS.md");
   const nextSteps = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
 
-  assert(agentInstructions.includes("focused, file-scoped validation"));
-  assert(agentInstructions.includes("Do not run `deno run -A scripts/ci.ts all` as a default local check"));
+  assertStringIncludes(agentInstructions, "focused, file-scoped validation");
+  assertStringIncludes(agentInstructions, "Do not run `deno run -A scripts/ci.ts all` as a default local check");
   assert(
     !agentInstructions.includes(
       "Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`",
     ),
   );
-  assert(nextSteps.includes("Use focused, file-scoped test commands during implementation"));
+  assertStringIncludes(nextSteps, "Use focused, file-scoped test commands during implementation");
 });
 
 for (
@@ -80,8 +84,8 @@ for (
 ) {
   Deno.test(`Agent docs: ${name} keeps coverage manual-only`, async () => {
     const md = (await Deno.readTextFile(`.copilot/skills/${name}/SKILL.md`)).replace(/\s+/g, " ");
-    assert(md.includes("manual-only"), `${name} must state the manual-only measurement policy`);
-    assert(md.includes("AGENTS.md"), `${name} must reference the governing instructions`);
+    assertStringIncludes(md, "manual-only", `${name} must state the manual-only measurement policy`);
+    assertStringIncludes(md, "AGENTS.md", `${name} must reference the governing instructions`);
     assert(/(?:explicit.{0,35}request|request.{0,35}explicit)/i.test(md), `${name} must require a user request`);
     assert(!/re-runs the suite for coverage|check \+ test \+ coverage|static gates, coverage, and a build/.test(md));
   });

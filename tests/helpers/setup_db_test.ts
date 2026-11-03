@@ -5,7 +5,7 @@
  * and activity tables are correctly created during project bootstrap.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertArrayIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getRuntimeDir } from "@exaix/testing";
 
@@ -118,23 +118,23 @@ Deno.test("setup_db.ts initializes journal.db with expected tables", async () =>
       assert(res.code === 0, `sqlite3 exited with code ${res.code}: ${err}`);
       const rows = out.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
       // Expect core tables to be present
-      assert(rows.includes("activity"));
-      assert(rows.includes("leases"));
-      assert(rows.includes("schema_migrations"));
+      assertArrayIncludes(rows, ["activity"]);
+      assertArrayIncludes(rows, ["leases"]);
+      assertArrayIncludes(rows, ["schema_migrations"]);
 
       const activityCols = await tableColumns(dbPath, "activity");
-      assert(activityCols.includes("id"));
-      assert(activityCols.includes("trace_id"));
-      assert(activityCols.includes("actor"));
-      assert(activityCols.includes("payload"));
+      assertArrayIncludes(activityCols, ["id"]);
+      assertArrayIncludes(activityCols, ["trace_id"]);
+      assertArrayIncludes(activityCols, ["actor"]);
+      assertArrayIncludes(activityCols, ["payload"]);
 
       const leasesCols = await tableColumns(dbPath, "leases");
-      assert(leasesCols.includes("file_path"));
-      assert(leasesCols.includes("agent_role"));
-      assert(leasesCols.includes("expires_at"));
+      assertArrayIncludes(leasesCols, ["file_path"]);
+      assertArrayIncludes(leasesCols, ["agent_role"]);
+      assertArrayIncludes(leasesCols, ["expires_at"]);
 
       const schemaCols = await tableColumns(dbPath, "schema_migrations");
-      assert(schemaCols.includes("version"));
+      assertArrayIncludes(schemaCols, ["version"]);
 
       // Verify indexes exist
       const idxQ = "SELECT name FROM sqlite_master WHERE type='index';";
@@ -146,10 +146,10 @@ Deno.test("setup_db.ts initializes journal.db with expected tables", async () =>
       const idxRes = await idxCmd.output();
       const idxOut = new TextDecoder().decode(idxRes.stdout || new Uint8Array());
       const idxRows = idxOut.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-      assert(idxRows.includes("idx_activity_trace"));
-      assert(idxRows.includes("idx_activity_time"));
-      assert(idxRows.includes("idx_activity_actor"));
-      assert(idxRows.includes("idx_leases_expires"));
+      assertArrayIncludes(idxRows, ["idx_activity_trace"]);
+      assertArrayIncludes(idxRows, ["idx_activity_time"]);
+      assertArrayIncludes(idxRows, ["idx_activity_actor"]);
+      assertArrayIncludes(idxRows, ["idx_leases_expires"]);
     } else {
       // If sqlite3 CLI not available, at least ensure file has non-zero size
       assert(

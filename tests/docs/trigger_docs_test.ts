@@ -6,7 +6,7 @@
  * and that the canonical envelope example in the docs passes schema validation.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ExecutionTriggerEnvelopeSchema } from "@exaix/core/triggers";
 
@@ -15,21 +15,21 @@ import { ExecutionTriggerEnvelopeSchema } from "@exaix/core/triggers";
 Deno.test("[TriggerDocs] ARCHITECTURE.md trigger section links are valid", async () => {
   const content = await Deno.readTextFile(join(Deno.cwd(), "ARCHITECTURE.md"));
 
-  assertEquals(
-    content.includes("Trigger Adapter Layer"),
-    true,
+  assertStringIncludes(
+    content,
+    "Trigger Adapter Layer",
     "ARCHITECTURE.md must contain a 'Trigger Adapter Layer' section",
   );
 
-  assertEquals(
-    content.includes("packages/triggers/README.md"),
-    true,
+  assertStringIncludes(
+    content,
+    "packages/triggers/README.md",
     "ARCHITECTURE.md trigger section must link to packages/triggers/README.md",
   );
 
-  assertEquals(
-    content.includes("ExecutionTriggerEnvelope"),
-    true,
+  assertStringIncludes(
+    content,
+    "ExecutionTriggerEnvelope",
     "ARCHITECTURE.md trigger section must reference ExecutionTriggerEnvelope",
   );
 });

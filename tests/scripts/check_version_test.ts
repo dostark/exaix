@@ -6,7 +6,7 @@
  * readVersionFile, writeVersionFile) and integration scenarios using temp files.
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import {
@@ -200,6 +200,6 @@ export const WORKSPACE_SCHEMA_VERSION = "1.0.0";
   it("preserves surrounding file content after write", () => {
     writeVersionFile("1.0.1", "1.1.0", tmpFile);
     const text = Deno.readTextFileSync(tmpFile);
-    assert(text.includes("@module ExaixVersion"), "Module comment should be preserved");
+    assertStringIncludes(text, "@module ExaixVersion", "Module comment should be preserved");
   });
 });

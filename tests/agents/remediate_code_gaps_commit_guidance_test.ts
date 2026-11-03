@@ -10,7 +10,7 @@
  * step's deliverable must not leave `- [ ]` behind.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 
 Deno.test("Agent docs: remediate-code-gaps does not suggest a nonexistent remediation: field", async () => {
   const md = await Deno.readTextFile(".copilot/skills/remediate-code-gaps/SKILL.md");
@@ -19,8 +19,9 @@ Deno.test("Agent docs: remediate-code-gaps does not suggest a nonexistent remedi
     !md.includes("numbers e.g. `remediation: GAP-1, GAP-3`"),
     "remediate-code-gaps must not present `remediation:` as a commit field — it is not in KNOWN_COMMIT_FIELDS",
   );
-  assert(
-    md.includes("swallowed into `impact:`"),
+  assertStringIncludes(
+    md,
+    "swallowed into `impact:`",
     "remediate-code-gaps must warn that a `remediation:` line is swallowed into `impact:`",
   );
 });
@@ -28,12 +29,14 @@ Deno.test("Agent docs: remediate-code-gaps does not suggest a nonexistent remedi
 Deno.test("Agent docs: remediate-code-gaps recovers from any parent gate, not just check_commit_msg", async () => {
   const md = await Deno.readTextFile(".copilot/skills/remediate-code-gaps/SKILL.md");
 
-  assert(
-    md.includes("staged-file gate"),
+  assertStringIncludes(
+    md,
+    "staged-file gate",
     "remediate-code-gaps must generalize the parent-gate recovery beyond the message check",
   );
-  assert(
-    md.includes("check:ste100-comments:staged"),
+  assertStringIncludes(
+    md,
+    "check:ste100-comments:staged",
     "remediate-code-gaps must name a concrete non-message parent gate as an example",
   );
 });
@@ -41,8 +44,9 @@ Deno.test("Agent docs: remediate-code-gaps recovers from any parent gate, not ju
 Deno.test("Agent docs: plan forbids leaving an open checkbox when relocating a deliverable", async () => {
   const md = await Deno.readTextFile(".copilot/skills/plan/SKILL.md");
 
-  assert(
-    md.includes("Relocating a step's deliverable"),
+  assertStringIncludes(
+    md,
+    "Relocating a step's deliverable",
     "plan must document how to handle a relocated/folded step's criteria",
   );
 });

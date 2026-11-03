@@ -10,7 +10,7 @@
  */
 
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { stripAnsiCode } from "@std/fmt/colors";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -78,18 +78,19 @@ Deno.test("[skill docs] the User Guide documents every registered skills command
   const group = await help("skills");
   for (const command of SKILL_COMMANDS) {
     assert(new RegExp(`^\\s+${command}\\b`, "m").test(group), `exactl skills registers ${command}`);
-    assert(guide.includes(`exactl skills ${command}`), `the Guide documents exactl skills ${command}`);
+    assertStringIncludes(guide, `exactl skills ${command}`, `the Guide documents exactl skills ${command}`);
   }
-  assert(guide.includes("exactl memory skill"), "the Guide documents the memory skill alias");
+  assertStringIncludes(guide, "exactl memory skill", "the Guide documents the memory skill alias");
   for (const option of ["--revision", "--trace", "--portal", "--all"]) {
-    assert(
-      (await help("skills", option === "--trace" ? "usage" : option === "--all" ? "list" : "show")).includes(option),
+    assertStringIncludes(
+      await help("skills", option === "--trace" ? "usage" : option === "--all" ? "list" : "show"),
+      option,
       `CLI help must document ${option}`,
     );
-    assert(guide.includes(option), `the Guide documents ${option}`);
+    assertStringIncludes(guide, option, `the Guide documents ${option}`);
   }
   for (const phrase of ["exit code 2", "exit code 1", "draft", "global"]) {
-    assert(guide.toLowerCase().includes(phrase), `the Guide explains "${phrase}"`);
+    assertStringIncludes(guide.toLowerCase(), phrase, `the Guide explains "${phrase}"`);
   }
 });
 
@@ -112,14 +113,16 @@ Deno.test("[skill docs] the sample config skills tables parse through the real c
 
 Deno.test("[skill docs] the reference data names the journal tables, columns and every skill event", async () => {
   const reference = await read(REFERENCE);
-  for (const table of ["skill_revisions", "skill_usage"]) assert(reference.includes(table), `${table} is documented`);
+  for (const table of ["skill_revisions", "skill_usage"]) {
+    assertStringIncludes(reference, table, `${table} is documented`);
+  }
   for (const column of ["revision_id", "content_sha256", "call_id", "match_source", "render_mode", "submission_kind"]) {
-    assert(reference.includes(column), `the column ${column} is documented`);
+    assertStringIncludes(reference, column, `the column ${column} is documented`);
   }
   const skillEvents = Object.values(DomainEventType).filter((value) => /^skills?\./.test(value));
   assert(skillEvents.length > 0, "the registry holds the skill events");
-  for (const event of skillEvents) assert(reference.includes(`\`${event}\``), `${event} is documented`);
-  assert(reference.includes("resolved_skills"), "the plan pin field is documented");
+  for (const event of skillEvents) assertStringIncludes(reference, `\`${event}\``, `${event} is documented`);
+  assertStringIncludes(reference, "resolved_skills", "the plan pin field is documented");
 });
 
 Deno.test("[skill docs] active guidance never instructs the removed compiler, runtime JSON store or flat files", async () => {
@@ -137,10 +140,10 @@ Deno.test("[skill docs] active guidance never instructs the removed compiler, ru
 
 Deno.test("[skill docs] the reference data documents the scope table and the append-only retention rule", async () => {
   const reference = await read(REFERENCE);
-  assert(reference.includes("skill_revision_scopes"), "the scope table is documented");
+  assertStringIncludes(reference, "skill_revision_scopes", "the scope table is documented");
   assert(/append-only/i.test(reference), "the retention rule is documented");
   const guide = await read(GUIDE);
-  assert(guide.includes("own portal"), "the Guide explains the portal rule for history reads");
+  assertStringIncludes(guide, "own portal", "the Guide explains the portal rule for history reads");
   assert(/control (byte|character)s?/i.test(guide), "the Guide explains that control bytes are removed from output");
 });
 

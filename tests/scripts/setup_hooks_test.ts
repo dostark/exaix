@@ -4,7 +4,7 @@
  * @description Integration test to verify git hook installation logic.
  */
 
-import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { fromFileUrl, join } from "@std/path";
 import { defaultSandboxRoot } from "../../scripts/prune_scenario_sandboxes.ts";
@@ -53,7 +53,7 @@ describe("scripts/setup_hooks.ts", () => {
     assert(result.success, new TextDecoder().decode(result.stderr));
     for (const hook of ["pre-commit", "pre-push", "commit-msg", "pre-merge-commit", "pre-rebase"]) {
       const hookPath = join(repoDir, ".git", "hooks", hook);
-      assert((await Deno.readTextFile(hookPath)).startsWith("#!/bin/sh\n"));
+      assertMatch(await Deno.readTextFile(hookPath), /^#!\/bin\/sh\n/);
       if (Deno.build.os !== "windows") {
         assertEquals((await Deno.stat(hookPath)).mode! & 0o111, 0o111);
       }
@@ -82,7 +82,7 @@ describe("scripts/setup_hooks.ts", () => {
       clearEnv: true,
     }).output();
     assert(installed.success, new TextDecoder().decode(installed.stderr));
-    assert((await Deno.readTextFile(join(tmpDir, ".git", "hooks", "pre-commit"))).startsWith("#!/bin/sh\n"));
+    assertMatch(await Deno.readTextFile(join(tmpDir, ".git", "hooks", "pre-commit")), /^#!\/bin\/sh\n/);
   });
 
   it("installs pre-commit, pre-push, and commit-msg hooks", async () => {
@@ -100,48 +100,55 @@ describe("scripts/setup_hooks.ts", () => {
     assert(denoConfig.tasks["check:test-placement"], "deno.json should have check:test-placement task");
 
     const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
-    assert(
-      hookInstaller.includes("deno task check:test-placement"),
+    assertStringIncludes(
+      hookInstaller,
+      "deno task check:test-placement",
       "pre-commit hook should run test placement validation",
     );
-    assert(
-      hookInstaller.includes('deno test --allow-all --no-check "tests/**/*_security_test.ts"'),
+    assertStringIncludes(
+      hookInstaller,
+      'deno test --allow-all --no-check "tests/**/*_security_test.ts"',
       "pre-push hook should select only the *_security_test.ts files (not load all of tests/)",
     );
     assert(
       !hookInstaller.includes("deno test --allow-all $TEST_FILES"),
       "pre-push hook should not run focused tests for changed files",
     );
-    assert(
-      hookInstaller.includes("Only .copilot/manifest.json generated_at changed; skipping amend."),
+    assertStringIncludes(
+      hookInstaller,
+      "Only .copilot/manifest.json generated_at changed; skipping amend.",
       "pre-push hook should ignore timestamp-only manifest drift",
     );
     assert(
       denoConfig.tasks["check:runtime-artifacts"],
       "deno.json should have check:runtime-artifacts task",
     );
-    assert(
-      hookInstaller.includes("deno task check:runtime-artifacts"),
+    assertStringIncludes(
+      hookInstaller,
+      "deno task check:runtime-artifacts",
       "pre-commit hook should run the runtime-artifacts check (venv/, __pycache__/, node_modules/)",
     );
     assert(
       denoConfig.tasks["check:scenario-declarative"],
       "deno.json should have check:scenario-declarative task",
     );
-    assert(
-      hookInstaller.includes("deno task check:scenario-declarative -- --fail"),
+    assertStringIncludes(
+      hookInstaller,
+      "deno task check:scenario-declarative -- --fail",
       "pre-commit hook should run the scenario declarative-purity check (rejects procedural shell steps in scenario YAML)",
     );
     assert(
       denoConfig.tasks["check:skill-duplication"],
       "deno.json should have check:skill-duplication task",
     );
-    assert(
-      hookInstaller.includes("deno task check:skill-duplication"),
+    assertStringIncludes(
+      hookInstaller,
+      "deno task check:skill-duplication",
       "pre-commit hook should run the fast skill-instruction duplication check",
     );
-    assert(
-      hookInstaller.includes("deno task check:security-test-naming"),
+    assertStringIncludes(
+      hookInstaller,
+      "deno task check:security-test-naming",
       "pre-commit hook should run the security-test naming gate",
     );
   });
@@ -157,8 +164,9 @@ describe("scripts/setup_hooks.ts", () => {
     const lineStart = hookInstaller.lastIndexOf("\n", idx) + 1;
     const fullLine = hookInstaller.slice(lineStart, hookInstaller.indexOf("\n", idx));
     for (const gitVar of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]) {
-      assert(
-        fullLine.includes(`-u ${gitVar}`),
+      assertStringIncludes(
+        fullLine,
+        `-u ${gitVar}`,
         `pre-push hook's security test invocation must clear ${gitVar} to avoid leaking into the test's own git subprocesses (got: ${fullLine})`,
       );
     }

@@ -5,7 +5,7 @@
  * execution, timeout enforcement, and correct stream capturing.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   TEST_SUBPROCESS_ABORT_DELAY_MS,
   TEST_SUBPROCESS_LONG_RUNNING_MS,
@@ -27,7 +27,7 @@ function getLongRunningEvalArgs(): string[] {
 Deno.test("SafeSubprocess: runs command successfully", async () => {
   const result = await SafeSubprocess.run(getDenoCmd(), ["eval", "console.log('hello')"]);
   assertEquals(result.code, 0);
-  assert(result.stdout.includes("hello"));
+  assertStringIncludes(result.stdout, "hello");
 });
 
 Deno.test("SafeSubprocess: respects timeout", async () => {
@@ -71,7 +71,7 @@ Deno.test("SafeSubprocess: respects cwd option", async () => {
     assertEquals(result.code, 0);
     // On linux /tmp/... is often realpath'd
     const realTemp = await Deno.realPath(tempDir);
-    assert(result.stdout.trim().includes(realTemp.trim()));
+    assertStringIncludes(result.stdout.trim(), realTemp.trim());
   } finally {
     await Deno.remove(tempDir);
   }
@@ -85,7 +85,7 @@ Deno.test("SafeSubprocess: respects env option", async () => {
     env: { "TEST_VAR": "test_value" },
   });
   assertEquals(result.code, 0);
-  assert(result.stdout.includes("test_value"));
+  assertStringIncludes(result.stdout, "test_value");
 });
 
 Deno.test("SafeSubprocess: handles non-zero exit code", async () => {

@@ -7,7 +7,7 @@
  * committed `.copilot/manifest.json` or `.copilot/DOCS.md`.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 
 import { buildIndex, extractFrontmatter } from "../../scripts/build_agents_index.ts";
@@ -21,7 +21,7 @@ Deno.test("build_agents_index writes the manifest and DOCS index into the target
     assert(Array.isArray(manifest.docs) && manifest.docs.length > 0, "manifest should contain docs");
 
     const docs = await Deno.readTextFile(join(outDir, "DOCS.md"));
-    assert(docs.includes("## Task → Doc"), "DOCS index should contain the task table");
+    assertStringIncludes(docs, "## Task → Doc", "DOCS index should contain the task table");
   });
 });
 
@@ -29,8 +29,8 @@ Deno.test("extractFrontmatter returns the frontmatter block as string", () => {
   const md = `---\ntitle: Test\nversion: 1.0\n---\n\n# Content\n`;
   const fm = extractFrontmatter(md);
   assert(fm !== null);
-  assert(fm!.includes("title: Test"));
-  assert(fm!.includes("version: 1.0"));
+  assertStringIncludes(fm!, "title: Test");
+  assertStringIncludes(fm!, "version: 1.0");
 });
 
 Deno.test("no test calls buildIndex without an output directory, so test runs never rewrite committed docs", async () => {

@@ -13,7 +13,7 @@
  * - Non-git directory returns empty array (graceful degradation)
  */
 
-import { assertEquals, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
@@ -100,11 +100,7 @@ Deno.test({
 
       try {
         const unauthorized = await executor.auditGitChanges(repoDir, []);
-        assertEquals(
-          unauthorized.includes("newfile.txt"),
-          true,
-          "newfile.txt must be in unauthorized list",
-        );
+        assertArrayIncludes(unauthorized, ["newfile.txt"], "newfile.txt must be in unauthorized list");
       } finally {
         await ds2.cleanup();
       }
@@ -132,11 +128,7 @@ Deno.test({
 
       try {
         const unauthorized = await executor.auditGitChanges(repoDir, []);
-        assertEquals(
-          unauthorized.includes("tracked.md"),
-          true,
-          "tracked.md must be flagged after modification",
-        );
+        assertArrayIncludes(unauthorized, ["tracked.md"], "tracked.md must be flagged after modification");
       } finally {
         await ds2.cleanup();
       }
@@ -221,11 +213,7 @@ Deno.test({
 
       try {
         const unauthorized = await executor.auditGitChanges(repoDir, ["permitted.txt"]);
-        assertEquals(
-          unauthorized.includes("forbidden.txt"),
-          true,
-          "forbidden.txt must be unauthorized",
-        );
+        assertArrayIncludes(unauthorized, ["forbidden.txt"], "forbidden.txt must be unauthorized");
         assertFalse(unauthorized.includes("permitted.txt"), "permitted.txt must NOT be in unauthorized list");
       } finally {
         await ds2.cleanup();

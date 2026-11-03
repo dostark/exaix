@@ -10,7 +10,7 @@
  * @related-files [scripts/check_step_manifests.ts, packages/schemas/src/step_manifest.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { checkStepManifests, type ICheckResult } from "../../scripts/check_step_manifests.ts";
 import { withTempDir } from "@exaix/testing";
@@ -85,7 +85,7 @@ Deno.test("[check_step_manifests] a plan with a manifest-less step fails", async
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must report manifest-less step");
-    assert(result.errors[0].includes("Step 1"), "error must name the step");
+    assertStringIncludes(result.errors[0], "Step 1", "error must name the step");
   }, { prefix: "csm-fail-" });
 });
 
@@ -135,7 +135,7 @@ Deno.test("[check_step_manifests] a file exceeding MAX_PLAN_FILE_BYTES is reject
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must reject oversized file");
-    assert(result.errors[0].includes("exceeds"), "error must mention exceeds");
+    assertStringIncludes(result.errors[0], "exceeds", "error must mention exceeds");
   }, { prefix: "csm-oversize-" });
 });
 

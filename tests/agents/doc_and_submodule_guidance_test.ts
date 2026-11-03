@@ -7,7 +7,7 @@
  * @related-files [.copilot/skills/submodule-workflow/SKILL.md, .copilot/skills/doc/SKILL.md]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 async function skill(name: string): Promise<string> {
   return await Deno.readTextFile(`.copilot/skills/${name}/SKILL.md`);
@@ -15,37 +15,37 @@ async function skill(name: string): Promise<string> {
 
 Deno.test("Agent docs: submodule-workflow pushes only on a direct request and merges with --ff-only", async () => {
   const md = await skill("submodule-workflow");
-  assert(md.includes("Push only when the user directly asks"), "the push rule is missing");
-  assert(md.includes("`--ff-only`"), "the fast-forward merge rule is missing");
+  assertStringIncludes(md, "Push only when the user directly asks", "the push rule is missing");
+  assertStringIncludes(md, "`--ff-only`", "the fast-forward merge rule is missing");
 });
 
 Deno.test("Agent docs: remediate-code-gaps stages files before the CI check", async () => {
   const md = await skill("remediate-code-gaps");
-  assert(md.includes("Stage the step's files BEFORE `ci.ts check`"), "the staging rule is missing");
-  assert(md.includes("pass vacuously on an empty index"), "the reason for staging first is missing");
+  assertStringIncludes(md, "Stage the step's files BEFORE `ci.ts check`", "the staging rule is missing");
+  assertStringIncludes(md, "pass vacuously on an empty index", "the reason for staging first is missing");
 });
 
 Deno.test("Agent docs: exaix-development limits related-files entries to repository files", async () => {
   const md = await skill("exaix-development");
-  assert(md.includes("a path inside a submodule fails check:arch"), "the related-files limit is missing");
+  assertStringIncludes(md, "a path inside a submodule fails check:arch", "the related-files limit is missing");
 });
 
 Deno.test("Agent docs: doc checks code claims and names the claims test", async () => {
   const md = await skill("doc");
-  assert(md.includes("Check every code-facing claim"), "the claim-check rule is missing");
-  assert(md.includes("style_guide_claims_test.ts"), "the example claims test is missing");
+  assertStringIncludes(md, "Check every code-facing claim", "the claim-check rule is missing");
+  assertStringIncludes(md, "style_guide_claims_test.ts", "the example claims test is missing");
 });
 
 Deno.test("Agent docs: doc refreshes the title and checks command names", async () => {
   const md = await skill("doc");
-  assert(md.includes("title and introduction state the current scope"), "the title rule is missing");
-  assert(md.includes("Command names match the shipped executable or task"), "the command-name rule is missing");
+  assertStringIncludes(md, "title and introduction state the current scope", "the title rule is missing");
+  assertStringIncludes(md, "Command names match the shipped executable or task", "the command-name rule is missing");
 });
 
 Deno.test("Agent docs: plan formats only a new plan document", async () => {
   const md = await skill("plan");
-  assert(md.includes("A NEW plan that no commit holds yet may"), "the new-plan formatting rule is missing");
-  assert(md.includes("Never\n   format a committed plan"), "the committed-plan prohibition is missing");
+  assertStringIncludes(md, "A NEW plan that no commit holds yet may", "the new-plan formatting rule is missing");
+  assertStringIncludes(md, "Never\n   format a committed plan", "the committed-plan prohibition is missing");
 });
 
 Deno.test("Agent docs: active guidance cites no environment validation function that the code lacks", async () => {
@@ -65,6 +65,6 @@ Deno.test("Agent docs: active guidance cites no environment validation function 
 
 Deno.test("Agent docs: self-improvement runs the skill-reading tests after a patch", async () => {
   const md = await skill("self-improvement");
-  assert(md.includes("tests/scripts/dogfood_skill_folders_test.ts"), "the baseline test command is missing");
-  assert(md.includes("EDITED_SINCE_BASELINE"), "the baseline list rule is missing");
+  assertStringIncludes(md, "tests/scripts/dogfood_skill_folders_test.ts", "the baseline test command is missing");
+  assertStringIncludes(md, "EDITED_SINCE_BASELINE", "the baseline list rule is missing");
 });

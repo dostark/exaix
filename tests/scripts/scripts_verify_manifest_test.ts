@@ -5,7 +5,7 @@
  * runtime manifest correctly matches the declared state in the repository.
  */
 
-import { assert, assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { generateDocsIndex, generateManifestObject } from "../../scripts/build_agents_index.ts";
 import { REPO_ROOT, withRepoRoot } from "@exaix/testing";
@@ -66,7 +66,7 @@ Deno.test("the index discovers knowledge-base documents directly under docs and 
     assertEquals(paths.filter((path) => path === "docs/style.md").length, 1);
     const indexPath = join(root, "index.md");
     await generateDocsIndex(manifest.docs, indexPath);
-    assert((await Deno.readTextFile(indexPath)).includes("[../docs/style.md](../docs/style.md)"));
+    assertStringIncludes(await Deno.readTextFile(indexPath), "[../docs/style.md](../docs/style.md)");
   } finally {
     Deno.chdir(previous);
     await Deno.remove(root, { recursive: true });

@@ -13,7 +13,7 @@
  * @related-files [scripts/check_md_paths.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { applyBacktickFix, applyFix, checkMdPaths, extractHeadings, slugify } from "../../scripts/check_md_paths.ts";
@@ -150,7 +150,7 @@ Deno.test("[md-paths] --fix rewrites a stale path when its basename has exactly 
     const fixed = await applyFix(root, r.violations);
     assertEquals(fixed, 1, "one path rewritten");
     const after = await Deno.readTextFile(doc);
-    assert(after.includes("packages/core/src/types/constants.ts"), `rewritten: ${after}`);
+    assertStringIncludes(after, "packages/core/src/types/constants.ts", `rewritten: ${after}`);
     assert(!after.includes("(packages/core/src/constants.ts)"), "old path gone");
   } finally {
     cleanup();
@@ -176,7 +176,7 @@ Deno.test("[md-paths] a relative markdown link's suggestion stays relative-corre
 
     await applyFix(root, r.violations);
     const after = await Deno.readTextFile(doc);
-    assert(after.includes("(../../../docs/CODE_STYLE.md)"), `relative-correct: ${after}`);
+    assertStringIncludes(after, "(../../../docs/CODE_STYLE.md)", `relative-correct: ${after}`);
     // And the fix genuinely resolves now.
     const r2 = await checkMdPaths(root);
     assertEquals(r2.violations.length, 0, JSON.stringify(r2.violations));
@@ -280,8 +280,8 @@ Deno.test("[md-paths] --fix rewrites link-style refs but NOT bare-prose example 
     const fixed = await applyFix(root, r.violations);
     assertEquals(fixed, 1, "only the link-style ref is auto-rewritten");
     const after = await Deno.readTextFile(doc);
-    assert(after.includes("./sub/memory.ts"), `link fixed: ${after}`);
-    assert(after.includes("mcp/handlers/memory.ts"), "prose example path left untouched");
+    assertStringIncludes(after, "./sub/memory.ts", `link fixed: ${after}`);
+    assertStringIncludes(after, "mcp/handlers/memory.ts", "prose example path left untouched");
   } finally {
     cleanup();
   }
@@ -370,8 +370,8 @@ Deno.test("[md-backtick] applyBacktickFix wraps only resolvable bare prose paths
     const wrapped = await applyBacktickFix(root, r.styleViolations);
     assertEquals(wrapped, 1, "only the resolvable bare path is wrapped");
     const after = await Deno.readTextFile(doc);
-    assert(after.includes("`packages/core/src/config.ts`"), `wrapped: ${after}`);
-    assert(after.includes("foo/bar/missing.ts"), "unresolvable example left as-is");
+    assertStringIncludes(after, "`packages/core/src/config.ts`", `wrapped: ${after}`);
+    assertStringIncludes(after, "foo/bar/missing.ts", "unresolvable example left as-is");
     assert(!after.includes("`foo/bar/missing.ts`"), "unresolvable example not wrapped");
 
     // Re-check: no more style violations for the wrapped path.

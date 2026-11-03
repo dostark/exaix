@@ -8,7 +8,7 @@
  *   advisory note consistent.
  */
 
-import { assert } from "@std/assert";
+import { assertStringIncludes } from "@std/assert";
 
 async function skill(name: string): Promise<string> {
   const text = await Deno.readTextFile(`.copilot/skills/${name}/SKILL.md`);
@@ -17,7 +17,7 @@ async function skill(name: string): Promise<string> {
 
 function requireAll(md: string, skillName: string, phrases: string[]): void {
   for (const phrase of phrases) {
-    assert(md.includes(phrase), `${skillName} should contain: ${phrase}`);
+    assertStringIncludes(md, phrase, `${skillName} should contain: ${phrase}`);
   }
 }
 
@@ -77,7 +77,11 @@ Deno.test("Agent docs: clean-codebase treats unclassified agent-prose output as 
 
 Deno.test("Docs: the integration README points new flow-binding tests at the shared harness", async () => {
   const md = (await Deno.readTextFile("tests/integration/README.md")).replace(/\s+/g, " ");
-  assert(md.includes("helpers/flow_binding_harness.ts"), "integration README should name the shared binding harness");
+  assertStringIncludes(
+    md,
+    "helpers/flow_binding_harness.ts",
+    "integration README should name the shared binding harness",
+  );
 });
 
 Deno.test("Agent docs: submodule-workflow covers a plan step whose source is a source submodule", async () => {
@@ -114,17 +118,18 @@ Deno.test("Agent docs: test-development names the second pinned serial list", as
 
 Deno.test("Agent docs: test-development covers scoped-permission runs", async () => {
   const md = await skill("test-development");
-  assert(md.includes("Scoped-permission runs"), "test-development should name scoped-permission runs");
-  assert(md.includes("`Deno.symlink`"), "test-development should name the symlink restriction");
-  assert(md.includes("skip the case when the run is scoped"), "test-development should prescribe a skip");
+  assertStringIncludes(md, "Scoped-permission runs", "test-development should name scoped-permission runs");
+  assertStringIncludes(md, "`Deno.symlink`", "test-development should name the symlink restriction");
+  assertStringIncludes(md, "skip the case when the run is scoped", "test-development should prescribe a skip");
 });
 
 Deno.test("Agent docs: self-improvement keeps an externally blocked phase open", async () => {
   const md = await skill("self-improvement");
-  assert(md.includes("external closure rows"), "self-improvement should allow external closure rows");
-  assert(
-    md.includes("`#review-phase-code` pass can reopen a phase"),
+  assertStringIncludes(md, "external closure rows", "self-improvement should allow external closure rows");
+  assertStringIncludes(
+    md,
+    "`#review-phase-code` pass can reopen a phase",
     "self-improvement should warn that a review can reopen the phase",
   );
-  assert(md.includes("do not flatten the"), "self-improvement should forbid a flat complete status");
+  assertStringIncludes(md, "do not flatten the", "self-improvement should forbid a flat complete status");
 });
