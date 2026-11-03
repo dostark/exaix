@@ -344,16 +344,6 @@
         "deslop"
       ]
     },
-    "exaix/no-conditional-empty-object-spread": {
-      "level": "off",
-      "scope": "prod",
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ]
-    },
     "exaix/no-explicit-unknown": {
       "level": "error",
       "options": {

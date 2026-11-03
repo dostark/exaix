@@ -154,3 +154,19 @@ Deno.test("consumer-doc-idempotence: two generator runs agree and match the comm
     assertEquals(withoutAlignment(first), withoutAlignment(await read(GENERATED_REFERENCE)));
   });
 });
+
+const RATCHET_ONLY_RULES = ["exaix/require-safety-comment", "exaix/no-runtime-typeof"];
+const UNSELECTED_RULE = "exaix/no-conditional-empty-object-spread";
+
+Deno.test("ratchet-only-rules: the guide explains the two kept ratchets and the unselected spread rule", async () => {
+  const section = sectionOf(await read(POLICY_GUIDE), ENFORCEMENT_HEADING);
+  assertStringIncludes(section, "ratchet-only on purpose");
+  for (const id of [...RATCHET_ONLY_RULES, UNSELECTED_RULE]) assertStringIncludes(section, `\`${id}\``);
+  const ceilings = JSON.parse(await read("packages/lint-policy/rule_ceilings.json"));
+  for (const id of RATCHET_ONLY_RULES) {
+    assertEquals(POLICY_CATALOG.rules[id].severity, "off", id);
+    assert(ceilings[id] !== undefined, `${id} keeps its ceiling`);
+  }
+  assertEquals(POLICY_CATALOG.rules[UNSELECTED_RULE].severity, "off");
+  assertEquals(ceilings[UNSELECTED_RULE], undefined);
+});

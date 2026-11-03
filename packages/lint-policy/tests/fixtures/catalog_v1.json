@@ -559,13 +559,12 @@
     "exaix/no-conditional-empty-object-spread": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "prod",
+      "reason": "Not enabled by the configuration.",
+      "scope": "all",
       "optIn": true,
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
-        "type-safety",
-        "deslop"
+        "type-safety"
       ],
       "limits": "Only a conditional with an empty object branch is checked."
     },

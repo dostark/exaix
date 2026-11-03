@@ -24,7 +24,6 @@ const RATCHETED_RULES = [
   "exaix/max-function-lines",
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
-  "exaix/no-conditional-empty-object-spread",
   "exaix/max-params",
 ];
 const ROOT_BUCKETS = ["tests", "exaix-team", "exaix-enterprise", "scripts"];

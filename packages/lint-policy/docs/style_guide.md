@@ -243,3 +243,13 @@ count per package, in `packages/lint-policy/rule_ceilings.json`. The count can f
 becomes a gate when its count reaches zero. Two parked rules have no ceiling for other reasons:
 `exaix/max-class-size` runs through a separate manual task, and `exaix/require-optional-wrapper` is enforced on
 staged files by `deno task check:optional-params:staged`.
+
+Lower a ceiling to the new count in the same change that reduces the count.
+
+Two parked rules are ratchet-only on purpose: `exaix/require-safety-comment` and `exaix/no-runtime-typeof`. Fixing
+their findings needs a design change, not a lint burn-down. A mass of `SAFETY:` comments would add noise, and a
+`typeof` check at a boundary needs schema validation. Reduce them when a change touches the code.
+
+The engine still defines `exaix/no-conditional-empty-object-spread`, but Exaix does not select it and keeps no ceiling
+for it. A spread of a conditional with an empty branch is the correct way to omit a field that has no value, because a
+missing field is not the same as `undefined`.
