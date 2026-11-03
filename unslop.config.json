@@ -262,6 +262,7 @@
     "exaix/max-class-size": {
       "level": "off",
       "options": {
+        "strategy": "legacy-score",
         "minClassLines": 200,
         "threshold": 60
       },

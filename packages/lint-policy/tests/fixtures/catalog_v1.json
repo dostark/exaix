@@ -466,6 +466,7 @@
         "module-structure"
       ],
       "options": {
+        "strategy": "legacy-score",
         "minClassLines": 200,
         "threshold": 60
       },
