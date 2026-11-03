@@ -250,6 +250,22 @@ Deno.test("[AdapterRegistry] parseRaw returns envelope for registered adapter", 
   assertEquals(envelope.source, "webhook");
 });
 
+Deno.test("registry-rejects-malformed-adapter-input: a bad webhook signature fails the adapter's own check", async () => {
+  const registry = new AdapterRegistry();
+  registry.register(new WebhookAdapter({ secret: "registry-dispatch-secret" }));
+  await assertRejects(
+    () => registry.parseRaw("webhook", { body: "{}", headers: { "x-hub-signature-256": "sha256=00" } }),
+    Error,
+    "Webhook signature verification failed",
+  );
+});
+
+Deno.test("registry-rejects-malformed-adapter-input: an invalid cron expression fails the schedule adapter", async () => {
+  const registry = new AdapterRegistry();
+  registry.register(new ScheduleAdapter());
+  await assertRejects(() => registry.parseRaw("schedule", { cronExpression: "not a cron expression" }), Error);
+});
+
 Deno.test("[AdapterRegistry] parseRaw throws UnsupportedTriggerSourceError for unregistered source", async () => {
   const registry = new AdapterRegistry();
   await assertRejects(

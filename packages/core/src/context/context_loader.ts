@@ -20,7 +20,7 @@ import { DomainEventType } from "@exaix/core/events";
 // Types and Interfaces
 
 /** How context that exceeds the limits is cut down. */
-export type TTruncationStrategy = "smallest-first" | "drop-largest" | "drop-oldest" | "truncate-each";
+type TTruncationStrategy = "smallest-first" | "drop-largest" | "drop-oldest" | "truncate-each";
 
 /**
  * Configuration for context loading behavior

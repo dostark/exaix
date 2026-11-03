@@ -77,10 +77,10 @@ interface IGitQueryFailure {
 
 type GitQueryResult<T> = { readonly ok: true; readonly value: T } | IGitQueryFailure;
 
-/** One changed source the strict discovery selected. */
 /** The change kinds that a changed source file can carry. */
 type TGitChangedSourceStatus = "added" | "modified" | "type_changed";
 
+/** One changed source the strict discovery selected. */
 interface IGitChangedSource {
   readonly path: string;
   readonly status: TGitChangedSourceStatus;

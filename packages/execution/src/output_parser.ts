@@ -12,7 +12,7 @@ import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_c
 import { ChangesetResultSchema } from "@exaix/schemas/agent_composer.ts";
 
 /** The IExecutionContext fields that OutputParser reads. */
-export type TOutputParserContextField = "trace_id" | "request_id" | "plan";
+type TOutputParserContextField = "trace_id" | "request_id" | "plan";
 
 /** Fields from IExecutionContext used by OutputParser. */
 export type IOutputParserContext = Pick<IExecutionContext, TOutputParserContextField>;

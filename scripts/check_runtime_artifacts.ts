@@ -20,11 +20,10 @@
 
 import { join } from "@std/path";
 
-/** One reported violation: a runtime-artifact path found either as a staged file itself, or
- *  embedded in a staged patch/diff file's content. */
 /** Whether the artifact IS the staged file, or was found embedded inside its diff content. */
 type TRuntimeArtifactKind = "staged-file" | "embedded-in-diff";
 
+/** One violation: a runtime-artifact path that is a staged file or sits inside a staged diff. */
 interface IRuntimeArtifactViolation {
   /** The staged file that carries the violation. */
   stagedPath: string;

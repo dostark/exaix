@@ -40,7 +40,7 @@ interface IIterationResult {
 }
 
 /** Why the feedback loop stopped. */
-export type TFeedbackStopReason = "target-reached" | "max-iterations" | "no-improvement" | "score-degraded" | "error";
+type TFeedbackStopReason = "target-reached" | "max-iterations" | "no-improvement" | "score-degraded" | "error";
 
 export interface IFeedbackLoopResult {
   /** Whether target score was achieved */

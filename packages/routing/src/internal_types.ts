@@ -6,7 +6,7 @@
  * @description Internal types for routing subpackage consumers (IBlueprintLoader, ILoadedBlueprint, IBucketRule).
  */
 /** The blueprint frontmatter fields that routing reads. */
-export interface IRoutingFrontmatter {
+interface IRoutingFrontmatter {
   deprecated?: boolean;
   routing_prefer_local?: boolean;
   language?: string;

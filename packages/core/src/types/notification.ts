@@ -7,7 +7,7 @@
  */
 
 /** The kinds of system notification. */
-export type TMemoryNotificationType =
+type TMemoryNotificationType =
   | "memory_update_pending"
   | "memory_update_pending_digest"
   | "memory_approved"

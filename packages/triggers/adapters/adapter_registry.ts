@@ -53,7 +53,7 @@ export class AdapterRegistry {
     if (!adapter) {
       return Promise.reject(new UnsupportedTriggerSourceError(source));
     }
-    // The registry cannot know each adapter's input shape. The adapter validates it inside parse().
+    // ITriggerAdapter takes a never input here, so the call needs the cast. The adapter validates inside parse().
     return adapter.parse(rawInput as never);
   }
 }
