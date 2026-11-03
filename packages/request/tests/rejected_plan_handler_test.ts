@@ -63,6 +63,33 @@ Deno.test("generic error handler satisfies the shared contract and keeps custom 
   }
 });
 
+type THandleError = IRejectedPlanHandler["handleError"];
+
+/** The error parameter of the handler: the widest value that any code can throw. */
+type TWidestError = Parameters<THandleError>[0];
+
+type TLeadingParameterRemoved = Parameters<THandleError> extends [infer TFirst, ...infer TRest] ? TRest : never;
+
+/** The handler contract before the generic parameter: one fixed, widest error type. */
+interface IFixedErrorRejectedPlanHandler {
+  handleError(error: TWidestError, ...rest: TLeadingParameterRemoved): ReturnType<THandleError>;
+}
+
+Deno.test("old and new handler contracts assign both ways without a cast", async () => {
+  const { testDir, filePath, handler } = await makeHandlerTestSetup();
+  try {
+    const fixed: IFixedErrorRejectedPlanHandler = handler;
+    const generic: IRejectedPlanHandler = fixed;
+    const logger = createMockLogger();
+    await generic.handleError("failure", filePath, "req-1", logger, makeFrontmatter());
+    const failures = logger.error.calls.filter((call) => call.args[0] === DomainEventType.RequestFailed);
+    assertEquals(failures.length, 1);
+    assertStrictEquals(generic, fixed);
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
+
 Deno.test("error handler keeps primitive and object conversion behavior", async () => {
   const { testDir, filePath, handler } = await makeHandlerTestSetup();
   try {

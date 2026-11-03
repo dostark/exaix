@@ -3,12 +3,13 @@
  * @path packages/lint-policy/tests/consumer_docs_test.ts
  * @description Proves that the Exaix enforcement guide and the generated reference describe the sixteen activated rules, their scopes and the error-input contract.
  * @architectural-layer Test
- * @dependencies [@std/assert, @std/path]
+ * @dependencies [@std/assert, @std/path, @exaix/testing]
  * @related-files [packages/lint-policy/docs/style_guide.md, packages/lint-policy/docs/style_rules.md, packages/lint-policy/tests/style_guide_claims_test.ts]
  */
 
 import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
-import { fromFileUrl, join } from "@std/path";
+import { dirname, fromFileUrl, join } from "@std/path";
+import { withTempDir } from "@exaix/testing";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
@@ -21,6 +22,8 @@ const SCOPED_LABELS: Readonly<Record<string, string>> = {
   test: "Test-scoped plugin gates",
   prod: "Production-scoped plugin gates",
 };
+const GENERATOR = "scripts/generate_style_rules_doc.ts";
+const ROOT_CONFIG = "deno.json";
 const BACKTICKED_ID = /`(exaix\/[a-z][a-z0-9-]*)`/g;
 
 const SIXTEEN_RULES = [
@@ -112,4 +115,42 @@ Deno.test("consumer-doc-state: the error input section matches the exported hand
   assertStringIncludes(await read("packages/request/src/mod.ts"), "type IRejectedPlanHandler");
   assertStringIncludes(await read("packages/flow/src/flow_runner.ts"), "export interface IStepResult");
   assertStringIncludes(await read("packages/flow/mod.ts"), "export type { IStepResult }");
+});
+
+/** The reference text without table padding, dash runs or blank lines, so the formatter's layout does not matter. */
+function withoutAlignment(text: string): string {
+  return text.replace(/[ \t]+/g, " ").replace(/-{3,}/g, "---").split("\n").filter((line) => line.trim() !== "").join(
+    "\n",
+  );
+}
+
+/** Runs the generator with the given directory as its working directory and returns the reference it wrote. */
+async function generateIn(dir: string): Promise<string> {
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      `--config=${join(REPO_ROOT, ROOT_CONFIG)}`,
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      join(REPO_ROOT, GENERATOR),
+    ],
+    cwd: dir,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+  return await Deno.readTextFile(join(dir, GENERATED_REFERENCE));
+}
+
+Deno.test("consumer-doc-idempotence: two generator runs agree and match the committed reference", async () => {
+  await withTempDir(async (dir) => {
+    const target = join(dir, GENERATED_REFERENCE);
+    await Deno.mkdir(dirname(target), { recursive: true });
+    await Deno.copyFile(join(REPO_ROOT, GENERATED_REFERENCE), target);
+    const first = await generateIn(dir);
+    const second = await generateIn(dir);
+    assertEquals(second, first);
+    assertEquals(withoutAlignment(first), withoutAlignment(await read(GENERATED_REFERENCE)));
+  });
 });

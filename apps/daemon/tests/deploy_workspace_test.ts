@@ -6,7 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -493,12 +493,29 @@ parallelSafeTest("deploy-artifact-errors", async () => {
   }
 });
 
+/** Fails when the deployed config lost its workspace list, or when the list still names the member. */
+function assertWorkspaceLacks(config: { workspace?: string[] }, member: string): void {
+  const workspace = config.workspace;
+  assert(Array.isArray(workspace), "the deployed config keeps its workspace list");
+  assertFalse(workspace.includes(member), `the deployed workspace still names ${member}`);
+}
+
 parallelSafeTest("deployed-config-closure", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json")));
   const stripped = stripDevOnlyConfig(config);
   assertEquals("unslop-ts:policy" in (stripped.tasks ?? {}), false);
   assertFalse(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"));
-  assertFalse(stripped.workspace?.includes("./unslop-ts"));
+  assertWorkspaceLacks(stripped, "./unslop-ts");
+});
+
+Deno.test("deployed-config-closure-rejects-a-missing-or-listed-member", () => {
+  assertThrows(() => assertWorkspaceLacks({}, "./unslop-ts"), Error, "workspace list");
+  assertThrows(
+    () => assertWorkspaceLacks({ workspace: ["./packages/core", "./unslop-ts"] }, "./unslop-ts"),
+    Error,
+    "./unslop-ts",
+  );
+  assertWorkspaceLacks({ workspace: ["./packages/core"] }, "./unslop-ts");
 });
 
 parallelSafeTest("deployed-scripts-import-only-deployed-siblings", async () => {

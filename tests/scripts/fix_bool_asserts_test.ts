@@ -428,3 +428,28 @@ Deno.test("the root mode never rewrites production or fixture files and lists re
     assertMatch(run.output, /custom_test\.ts:\d+: .*includes|custom_test\.ts:\d+:/);
   });
 });
+
+Deno.test("a false check on a possibly missing subject is left unchanged and listed", () => {
+  const cases = [
+    'declare const maybe: string[] | undefined;\nassertEquals(maybe?.includes("a"), false);\n',
+    'declare const text: string | undefined;\nassertEquals(text?.includes("a"), false);\n',
+    'declare const text: string | undefined;\nassertEquals(text?.startsWith("a"), false, "why");\n',
+  ];
+  for (const body of cases) {
+    const source = withImport(body);
+    const result = fixSourceText(FILE, source);
+    assertEquals(result.changed, 0, body);
+    assertEquals(result.text, source, body);
+    assertEquals(result.skipped.length, 1, body);
+    assertStringIncludes(result.skipped[0].reason, "undefined", body);
+  }
+});
+
+Deno.test("a false check on a subject that cannot be undefined still becomes assertFalse", () => {
+  const result = fixSourceText(
+    FILE,
+    withImport('declare const text: string;\nassertEquals(text?.includes("a"), false);\n'),
+  );
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, 'assertFalse(text?.includes("a"))');
+});

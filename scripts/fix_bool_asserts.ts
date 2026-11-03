@@ -136,6 +136,15 @@ function isStringLike(checker: ts.TypeChecker, node: ts.Expression): boolean {
   return (checker.getTypeAtLocation(node).flags & ts.TypeFlags.StringLike) !== 0;
 }
 
+/** True when the checker cannot prove the value is a defined boolean, so assertFalse could pass where assertEquals fails. */
+function mayBeNonBoolean(checker: ts.TypeChecker, node: ts.Expression): boolean {
+  const type = checker.getTypeAtLocation(node);
+  const parts = type.isUnion() ? type.types : [type];
+  const nonBoolean = ts.TypeFlags.Undefined | ts.TypeFlags.Null | ts.TypeFlags.Void | ts.TypeFlags.Any |
+    ts.TypeFlags.Unknown;
+  return parts.some((part) => (part.flags & nonBoolean) !== 0);
+}
+
 function typeTextOf(checker: ts.TypeChecker, node: ts.Expression): string {
   return checker.typeToString(checker.getTypeAtLocation(node));
 }
@@ -288,7 +297,10 @@ function planEdit(
   const start = assertion.call.getStart();
   const end = assertion.call.getEnd();
   if (assertion.negated) {
-    // A negated assertion keeps its predicate whole, so no type knowledge is needed.
+    if (mayBeNonBoolean(checker, assertion.subject)) {
+      return { skip: "the subject can be undefined, so assertFalse would pass where assertEquals fails" };
+    }
+    // A defined boolean keeps its predicate whole, so no further type knowledge is needed.
     const callee = emitCallee(context, ASSERT_FALSE, assertion.callee.namespace);
     const message = messageSuffixOf(assertion.message);
     return { start, end, text: `${callee}(${assertion.subject.getText()}${message})` };
