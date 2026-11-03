@@ -68,12 +68,12 @@ Deno.test("[PromptBudgetConstants] uses 4:1 chars-to-token heuristic", () => {
 
 Deno.test("[PromptBudgetConstants] exports local provider prefixes", () => {
   assertEquals(Array.isArray(LOCAL_PROVIDER_PREFIXES), true);
-  const assertionResult: boolean = LOCAL_PROVIDER_PREFIXES.includes("ollama:");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = LOCAL_PROVIDER_PREFIXES.includes("lmstudio:");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = LOCAL_PROVIDER_PREFIXES.includes("local:");
-  assertEquals(assertionResult3, true);
+  const lOCAL_PROVIDER_PREFIXESIncludesOllama: boolean = LOCAL_PROVIDER_PREFIXES.includes("ollama:");
+  assertEquals(lOCAL_PROVIDER_PREFIXESIncludesOllama, true, "LOCAL_PROVIDER_PREFIXES should include 'ollama:'");
+  const lOCAL_PROVIDER_PREFIXESIncludesLmstudio: boolean = LOCAL_PROVIDER_PREFIXES.includes("lmstudio:");
+  assertEquals(lOCAL_PROVIDER_PREFIXESIncludesLmstudio, true, "LOCAL_PROVIDER_PREFIXES should include 'lmstudio:'");
+  const lOCAL_PROVIDER_PREFIXESIncludesLocal: boolean = LOCAL_PROVIDER_PREFIXES.includes("local:");
+  assertEquals(lOCAL_PROVIDER_PREFIXESIncludesLocal, true, "LOCAL_PROVIDER_PREFIXES should include 'local:'");
 });
 
 Deno.test("[PromptBudgetConstants] exports local fallback context window", () => {

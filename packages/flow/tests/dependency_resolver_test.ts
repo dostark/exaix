@@ -77,18 +77,18 @@ Deno.test("DependencyResolver: handles parallel steps", () => {
 
   assertEquals(topoOrder[0], "start");
   assertEquals(topoOrder[topoOrder.length - 1], "end");
-  const assertionResult: boolean = topoOrder.includes("parallel1");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = topoOrder.includes("parallel2");
-  assertEquals(assertionResult2, true);
+  const topoOrderIncludesParallel1: boolean = topoOrder.includes("parallel1");
+  assertEquals(topoOrderIncludesParallel1, true, "topoOrder should include 'parallel1'");
+  const topoOrderIncludesParallel2: boolean = topoOrder.includes("parallel2");
+  assertEquals(topoOrderIncludesParallel2, true, "topoOrder should include 'parallel2'");
 
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 3);
   assertEquals(waves[0], ["start"]);
-  const assertionResult3: boolean = waves[1].includes("parallel1");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = waves[1].includes("parallel2");
-  assertEquals(assertionResult4, true);
+  const wavesItemIncludesParallel1: boolean = waves[1].includes("parallel1");
+  assertEquals(wavesItemIncludesParallel1, true, "wavesItem should include 'parallel1'");
+  const wavesItemIncludesParallel2: boolean = waves[1].includes("parallel2");
+  assertEquals(wavesItemIncludesParallel2, true, "wavesItem should include 'parallel2'");
   assertEquals(waves[2], ["end"]);
 });
 
@@ -151,10 +151,10 @@ Deno.test("DependencyResolver: handles diamond pattern", () => {
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 3);
   assertEquals(waves[0], ["start"]);
-  const assertionResult5: boolean = waves[1].includes("branch1");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = waves[1].includes("branch2");
-  assertEquals(assertionResult6, true);
+  const wavesItemIncludesBranch1: boolean = waves[1].includes("branch1");
+  assertEquals(wavesItemIncludesBranch1, true, "wavesItem should include 'branch1'");
+  const wavesItemIncludesBranch2: boolean = waves[1].includes("branch2");
+  assertEquals(wavesItemIncludesBranch2, true, "wavesItem should include 'branch2'");
   assertEquals(waves[2], ["merge"]);
 });
 
@@ -178,10 +178,10 @@ Deno.test("DependencyResolver: handles all parallel steps", () => {
   const resolver = new DependencyResolver(steps as IFlowStep[]);
   const waves = resolver.groupIntoWaves();
   assertEquals(waves.length, 1);
-  const assertionResult7: boolean = waves[0].includes("step1");
-  assertEquals(assertionResult7, true);
-  const assertionResult8: boolean = waves[0].includes("step2");
-  assertEquals(assertionResult8, true);
-  const assertionResult9: boolean = waves[0].includes("step3");
-  assertEquals(assertionResult9, true);
+  const wavesItemIncludesStep1: boolean = waves[0].includes("step1");
+  assertEquals(wavesItemIncludesStep1, true, "wavesItem should include 'step1'");
+  const wavesItemIncludesStep2: boolean = waves[0].includes("step2");
+  assertEquals(wavesItemIncludesStep2, true, "wavesItem should include 'step2'");
+  const wavesItemIncludesStep3: boolean = waves[0].includes("step3");
+  assertEquals(wavesItemIncludesStep3, true, "wavesItem should include 'step3'");
 });

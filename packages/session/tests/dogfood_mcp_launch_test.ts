@@ -105,14 +105,14 @@ Deno.test("[dogfood_mcp_config] buildOpencodeMcpFragment produces a remote serve
 Deno.test("[dogfood_mcp_config] buildCodexMcpArgs never includes the credential value, only the env var NAME", () => {
   const args = buildCodexMcpArgs(CONNECTION);
   const joined = args.join(" ");
-  const assertionResult: boolean = joined.includes(`bearer_token_env_var="EXAIX_CONTEXT_BEARER"`);
-  assert(assertionResult);
-  const assertionResult2: boolean = joined.includes(`url="${CONNECTION.endpoint}"`);
-  assert(assertionResult2);
-  const assertionResult3: boolean = joined.includes(
+  const joinedIncludesBearerTokenEnv: boolean = joined.includes(`bearer_token_env_var="EXAIX_CONTEXT_BEARER"`);
+  assert(joinedIncludesBearerTokenEnv, "joined should include 'bearer_token_env_var=\"EXAIX_CONTEXT_BEAR'");
+  const joinedIncludesSubject: boolean = joined.includes(`url="${CONNECTION.endpoint}"`);
+  assert(joinedIncludesSubject, 'joined should include `url="${CONNECTION.endpoint}"`');
+  const joinedIncludesEnabledToolsQuery: boolean = joined.includes(
     `enabled_tools=["query_relationships","who_depends_on","search_memory"]`,
   );
-  assert(assertionResult3);
+  assert(joinedIncludesEnabledToolsQuery, 'joined should include \'enabled_tools=["query_relationships","wh\'');
 });
 
 Deno.test("[dogfood_mcp_config] writeClaudeMcpConfig writes owner-only-permissioned JSON under @Runtime/<trace>/context-client/", async () => {
@@ -168,8 +168,8 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-co
       CONNECTION,
     );
 
-    const assertionResult4: boolean = launch.args.includes("--strict-mcp-config");
-    assertEquals(assertionResult4, true);
+    const argsIncludesStrictMcpConfig: boolean = launch.args.includes("--strict-mcp-config");
+    assertEquals(argsIncludesStrictMcpConfig, true, "args should include '--strict-mcp-config'");
     const mcpConfigIndex = launch.args.indexOf("--mcp-config");
     assert(mcpConfigIndex !== -1);
     const configPath = launch.args[mcpConfigIndex + 1];
@@ -179,12 +179,17 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-co
     const allowedToolsIndex = launch.args.indexOf("--allowedTools");
     const allowedToolsValue = launch.args[allowedToolsIndex + 1];
     // Existing scoped grant is preserved (not replaced) alongside the new MCP tools.
-    const assertionResult5: boolean = allowedToolsValue.includes("Read");
-    assert(assertionResult5);
-    const assertionResult6: boolean = allowedToolsValue.includes("Edit");
-    assert(assertionResult6);
-    const assertionResult7: boolean = allowedToolsValue.includes("mcp__exaix_context__query_relationships");
-    assert(assertionResult7);
+    const allowedToolsValueIncludesRead: boolean = allowedToolsValue.includes("Read");
+    assert(allowedToolsValueIncludesRead, "allowedToolsValue should include 'Read'");
+    const allowedToolsValueIncludesEdit: boolean = allowedToolsValue.includes("Edit");
+    assert(allowedToolsValueIncludesEdit, "allowedToolsValue should include 'Edit'");
+    const allowedToolsValueIncludesMcpExaixContext: boolean = allowedToolsValue.includes(
+      "mcp__exaix_context__query_relationships",
+    );
+    assert(
+      allowedToolsValueIncludesMcpExaixContext,
+      "allowedToolsValue should include 'mcp__exaix_context__query_relationships'",
+    );
 
     // The credential VALUE never appears anywhere in argv.
     assert(
@@ -239,14 +244,14 @@ Deno.test("[resolveHardenedLaunch+mcp] Codex: -c overrides are appended and the 
     assertEquals(sandboxOccurrences, 1, "hardening must not duplicate --sandbox");
 
     const joined = launch.args.join(" ");
-    const assertionResult8: boolean = joined.includes(
+    const joinedIncludesSubject2: boolean = joined.includes(
       `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.url="${CONNECTION.endpoint}"`,
     );
-    assert(assertionResult8);
-    const assertionResult9: boolean = joined.includes(
+    assert(joinedIncludesSubject2, "joined should include `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.u");
+    const joinedIncludesSubject3: boolean = joined.includes(
       `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.bearer_token_env_var="EXAIX_CONTEXT_BEARER"`,
     );
-    assert(assertionResult9);
+    assert(joinedIncludesSubject3, "joined should include `mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.b");
     assert(!joined.includes("actual-secret-value"));
   }, { prefix: "dogfood-mcp-launch-" });
 });

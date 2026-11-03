@@ -170,8 +170,8 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     assertEquals(result, null);
     assertEquals(flowRunnerCalled, false);
     const written = await Deno.readTextFile(requestPath);
-    const assertionResult: boolean = written.includes(RequestStatus.FAILED);
-    assert(assertionResult, "request frontmatter must be marked FAILED");
+    const writtenIncludesFAILED: boolean = written.includes(RequestStatus.FAILED);
+    assert(writtenIncludesFAILED, "request frontmatter must be marked FAILED");
   });
 
   it("[security] a missing plan_context_ref fails the request before FlowRunner is invoked", async () => {
@@ -234,7 +234,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     const result = await createProcessor(flowRunner).process(requestPath);
     assertEquals(result, null);
     const written = await Deno.readTextFile(requestPath);
-    const assertionResult2: boolean = written.includes(RequestStatus.FAILED);
-    assert(assertionResult2);
+    const writtenIncludesFAILED2: boolean = written.includes(RequestStatus.FAILED);
+    assert(writtenIncludesFAILED2, "written should include RequestStatus.FAILED");
   });
 });

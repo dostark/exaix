@@ -55,8 +55,8 @@ Deno.test("[session_adapter] claude-code + opencode produce supervised argv with
   const registry = createDefaultSessionAdapterRegistry();
   for (const tool of ["claude-code", "opencode"] as const) {
     const launch = registry.resolve(tool).buildLaunch(makeBrief({ tool }), "supervised", BRIEF_PATH);
-    const assertionResult: boolean = launch.args.includes("--max-total-tokens");
-    assertEquals(assertionResult, true, `${tool} argv must carry the budget flag`);
+    const argsIncludesMaxTotalTokens: boolean = launch.args.includes("--max-total-tokens");
+    assertEquals(argsIncludesMaxTotalTokens, true, `${tool} argv must carry the budget flag`);
   }
 });
 
@@ -119,12 +119,12 @@ Deno.test("[session_adapter] claude-code headless argv contains -p, objective an
   const brief = makeBrief({ tool: "claude-code", objective: "Refactor the auth module" });
   const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
   assertEquals(launch.args[0], "-p", "headless claude-code must start with -p");
-  const assertionResult2: boolean = launch.args.includes("Refactor the auth module");
-  assertEquals(assertionResult2, true, "objective must be a discrete argv item");
+  const argsIncludesRefactorTheAuth: boolean = launch.args.includes("Refactor the auth module");
+  assertEquals(argsIncludesRefactorTheAuth, true, "objective must be a discrete argv item");
   assertFalse(launch.args.includes("--brief"), "claude-code does not support --brief flag");
   assertFalse(launch.args.includes("--max-total-tokens"), "claude-code does not support --max-total-tokens");
-  const assertionResult3: boolean = launch.args.includes("--output-format");
-  assertEquals(assertionResult3, true, "must specify output format");
+  const argsIncludesOutputFormat: boolean = launch.args.includes("--output-format");
+  assertEquals(argsIncludesOutputFormat, true, "must specify output format");
   const requestsJson: boolean = launch.args.includes("json");
   assertEquals(requestsJson, true, "must request JSON output for stdout capture");
   assertEquals(requestsJson, true, "output format must be json");
@@ -143,8 +143,8 @@ Deno.test("[session_adapter] opencode headless argv contains run, --format json,
     [],
     "opencode 2.x rejects --dir; the worktree is the launch cwd",
   );
-  const assertionResult4: boolean = launch.args.includes("Implement feature X");
-  assertEquals(assertionResult4, true, "objective must be a discrete argv item");
+  const argsIncludesImplementFeatureX: boolean = launch.args.includes("Implement feature X");
+  assertEquals(argsIncludesImplementFeatureX, true, "objective must be a discrete argv item");
   assertFalse(launch.args.includes("--brief"), "opencode does not support --brief flag");
   assertFalse(launch.args.includes("--max-total-tokens"), "opencode does not support --max-total-tokens");
   assertEquals(launch.cwd, brief.worktree_path, "cwd must match the worktree path");
@@ -211,11 +211,11 @@ Deno.test("[session_adapter][security] headless mode objective is a discrete arg
   const brief = makeBrief({ tool: "claude-code", objective: MALICIOUS_OBJECTIVE });
   const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
   const surface = launch.args.join("\x00");
-  const assertionResult5: boolean = surface.includes(MALICIOUS_OBJECTIVE);
-  assertEquals(assertionResult5, true, "objective IS in argv for headless (by design)");
-  const assertionResult6: boolean = launch.args.includes(MALICIOUS_OBJECTIVE);
+  const surfaceIncludesMALICIOUS_OBJECTIVE: boolean = surface.includes(MALICIOUS_OBJECTIVE);
+  assertEquals(surfaceIncludesMALICIOUS_OBJECTIVE, true, "objective IS in argv for headless (by design)");
+  const argsIncludesMALICIOUS_OBJECTIVE: boolean = launch.args.includes(MALICIOUS_OBJECTIVE);
   assertEquals(
-    assertionResult6,
+    argsIncludesMALICIOUS_OBJECTIVE,
     true,
     "objective is a single discrete item, never split by shell",
   );

@@ -295,8 +295,12 @@ Content`,
       await internals().bestEffortLinkRequestRejection("req-1", "rejected/path.md");
 
       const updated = await Deno.readTextFile(requestFile);
-      const assertionResult: boolean = updated.includes("rejected_path: rejected/path.md");
-      assertEquals(assertionResult, true);
+      const updatedIncludesRejectedPathRejected: boolean = updated.includes("rejected_path: rejected/path.md");
+      assertEquals(
+        updatedIncludesRejectedPathRejected,
+        true,
+        "updated should include 'rejected_path: rejected/path.md'",
+      );
     });
   });
 });

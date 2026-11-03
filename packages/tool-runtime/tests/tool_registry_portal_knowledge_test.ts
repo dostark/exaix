@@ -125,10 +125,10 @@ Deno.test("[ToolRegistry] query_symbols and get_module_dependencies are register
   await withTempDir((dir) => {
     const { registry } = makeRegistry(dir, makeKnowledge());
     const names = registry.getTools().map((t) => t.name);
-    const assertionResult: boolean = names.includes(ToolName.QUERY_SYMBOLS);
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = names.includes(ToolName.GET_MODULE_DEPENDENCIES);
-    assertEquals(assertionResult2, true);
+    const namesIncludesQUERY_SYMBOLS: boolean = names.includes(ToolName.QUERY_SYMBOLS);
+    assertEquals(namesIncludesQUERY_SYMBOLS, true, "names should include ToolName.QUERY_SYMBOLS");
+    const namesIncludesGET_MODULE_DEPENDENCIES: boolean = names.includes(ToolName.GET_MODULE_DEPENDENCIES);
+    assertEquals(namesIncludesGET_MODULE_DEPENDENCIES, true, "names should include ToolName.GET_MODULE_DEPENDENCIES");
   }, { prefix: "tool-graph-registered-" });
 });
 

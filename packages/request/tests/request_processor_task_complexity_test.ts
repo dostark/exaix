@@ -47,8 +47,13 @@ Deno.test("[RequestProcessor] the IParsedRequest passed to AgentRunner.run carri
 
     const captured = getCaptured();
     assert(captured, "AgentRunner.run must have been called");
-    const includesResult: boolean = Object.values(TaskComplexity).includes(captured.taskComplexity as TaskComplexity);
-    assert(includesResult, `taskComplexity must be a valid TaskComplexity, got ${captured.taskComplexity}`);
+    const valuesIncludesTaskComplexity: boolean = Object.values(TaskComplexity).includes(
+      captured.taskComplexity as TaskComplexity,
+    );
+    assert(
+      valuesIncludesTaskComplexity,
+      `taskComplexity must be a valid TaskComplexity, got ${captured.taskComplexity}`,
+    );
     assertArrayIncludes(["analysis", "content_heuristic", "agent_role", "default"], [
       captured.taskComplexitySource ?? "",
     ], `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`);

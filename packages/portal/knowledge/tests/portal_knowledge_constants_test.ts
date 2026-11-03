@@ -68,21 +68,25 @@ Deno.test("[PortalKnowledgeConstants] DENO_DOC_TIMEOUT_MS is 15000", () => {
 Deno.test("[PortalKnowledgeConstants] DEFAULT_IGNORE_PATTERNS contains node_modules", () => {
   assertExists(DEFAULT_IGNORE_PATTERNS);
   assertEquals(Array.isArray(DEFAULT_IGNORE_PATTERNS), true);
-  const assertionResult: boolean = DEFAULT_IGNORE_PATTERNS.includes("node_modules");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = DEFAULT_IGNORE_PATTERNS.includes(".git");
-  assertEquals(assertionResult2, true);
+  const dEFAULT_IGNORE_PATTERNSIncludesNodeModules: boolean = DEFAULT_IGNORE_PATTERNS.includes("node_modules");
+  assertEquals(
+    dEFAULT_IGNORE_PATTERNSIncludesNodeModules,
+    true,
+    "DEFAULT_IGNORE_PATTERNS should include 'node_modules'",
+  );
+  const dEFAULT_IGNORE_PATTERNSIncludesGit: boolean = DEFAULT_IGNORE_PATTERNS.includes(".git");
+  assertEquals(dEFAULT_IGNORE_PATTERNSIncludesGit, true, "DEFAULT_IGNORE_PATTERNS should include '.git'");
 });
 
 Deno.test("[PortalKnowledgeConstants] PORTAL_ENTRYPOINT_NAMES contains main.ts", () => {
   assertExists(PORTAL_ENTRYPOINT_NAMES);
   assertEquals(Array.isArray(PORTAL_ENTRYPOINT_NAMES), true);
-  const assertionResult3: boolean = PORTAL_ENTRYPOINT_NAMES.includes("main.ts");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = PORTAL_ENTRYPOINT_NAMES.includes("mod.ts");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = PORTAL_ENTRYPOINT_NAMES.includes("index.ts");
-  assertEquals(assertionResult5, true);
+  const pORTAL_ENTRYPOINT_NAMESIncludesMainTs: boolean = PORTAL_ENTRYPOINT_NAMES.includes("main.ts");
+  assertEquals(pORTAL_ENTRYPOINT_NAMESIncludesMainTs, true, "PORTAL_ENTRYPOINT_NAMES should include 'main.ts'");
+  const pORTAL_ENTRYPOINT_NAMESIncludesModTs: boolean = PORTAL_ENTRYPOINT_NAMES.includes("mod.ts");
+  assertEquals(pORTAL_ENTRYPOINT_NAMESIncludesModTs, true, "PORTAL_ENTRYPOINT_NAMES should include 'mod.ts'");
+  const pORTAL_ENTRYPOINT_NAMESIncludesIndexTs: boolean = PORTAL_ENTRYPOINT_NAMES.includes("index.ts");
+  assertEquals(pORTAL_ENTRYPOINT_NAMESIncludesIndexTs, true, "PORTAL_ENTRYPOINT_NAMES should include 'index.ts'");
 });
 
 Deno.test("[PortalKnowledgeConstants] PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS is non-empty array", () => {

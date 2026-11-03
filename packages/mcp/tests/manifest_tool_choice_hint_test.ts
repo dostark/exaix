@@ -37,10 +37,10 @@ Deno.test("[manifest] a tool with no hint set leaves preferred_tool_choice_hint 
 Deno.test("[appendToolChoiceHint] appends the manifest hint to a base description with a clear delimiter", () => {
   const result = appendToolChoiceHint(McpToolName.PATCH_FILE, "Base description.");
   const hint = TOOL_MANIFEST.find((e) => e.name === McpToolName.PATCH_FILE)?.preferred_tool_choice_hint;
-  const assertionResult: boolean = result.startsWith("Base description.");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.includes(hint ?? "__missing_hint__");
-  assertEquals(assertionResult2, true);
+  const resultStartsWithBaseDescription: boolean = result.startsWith("Base description.");
+  assertEquals(resultStartsWithBaseDescription, true, "result should start with 'Base description.'");
+  const resultIncludesSubject: boolean = result.includes(hint ?? "__missing_hint__");
+  assertEquals(resultIncludesSubject, true, 'result should include hint ?? "__missing_hint__"');
 });
 
 Deno.test("[appendToolChoiceHint] leaves the description unchanged for a tool with no hint set", () => {

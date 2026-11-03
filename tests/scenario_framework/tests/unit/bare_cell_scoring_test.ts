@@ -15,7 +15,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import {
   type ISweTaskTemplateOptions,
@@ -90,13 +90,10 @@ Deno.test("[BareCellScoring] bare template renders outcome-only steps: setup + d
 
   const stepIds = parsed.steps.map((s) => s.id);
   for (const setupId of REQUIRED_SETUP_STEP_IDS) {
-    const includesResult: boolean = stepIds.includes(setupId);
-    assert(includesResult, `setup step ${setupId} must be present in bare scenario`);
+    assertArrayIncludes(stepIds, [setupId], `setup step ${setupId} must be present in bare scenario`);
   }
-  const includesResult2: boolean = stepIds.includes(BARE_DELEGATE_STEP_ID);
-  assert(includesResult2, `delegate step ${BARE_DELEGATE_STEP_ID} must be present`);
-  const includesResult3: boolean = stepIds.includes(VERIFY_TESTS_STEP_ID);
-  assert(includesResult3, `outcome step ${VERIFY_TESTS_STEP_ID} must be present`);
+  assertArrayIncludes(stepIds, [BARE_DELEGATE_STEP_ID], `delegate step ${BARE_DELEGATE_STEP_ID} must be present`);
+  assertArrayIncludes(stepIds, [VERIFY_TESTS_STEP_ID], `outcome step ${VERIFY_TESTS_STEP_ID} must be present`);
 
   for (const forbiddenId of FORBIDDEN_PROCESS_STEP_IDS) {
     assert(!stepIds.includes(forbiddenId), `process step ${forbiddenId} must be absent from bare scenario`);

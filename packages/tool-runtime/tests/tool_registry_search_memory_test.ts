@@ -67,8 +67,8 @@ Deno.test("[ToolRegistry] search_memory is registered", async () => {
   await withTempDir((dir) => {
     const registry = new ToolRegistry({ config: makePortalConfig(dir), baseDir: dir });
     const names = registry.getTools().map((t) => t.name);
-    const assertionResult: boolean = names.includes(ToolName.SEARCH_MEMORY);
-    assertEquals(assertionResult, true);
+    const namesIncludesSEARCH_MEMORY: boolean = names.includes(ToolName.SEARCH_MEMORY);
+    assertEquals(namesIncludesSEARCH_MEMORY, true, "names should include ToolName.SEARCH_MEMORY");
   }, { prefix: "tool-searchmem-registered-" });
 });
 

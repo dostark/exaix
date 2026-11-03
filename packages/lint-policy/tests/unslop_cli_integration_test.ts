@@ -8,7 +8,14 @@
  */
 
 import type { JSONObject } from "@exaix/core";
-import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertFalse,
+  assertNotEquals,
+  assertStringIncludes,
+} from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { POLICY_COMPILED } from "../src/policy_config.ts";
 import { checkRepository as checkConstantRestatement } from "../../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
@@ -62,8 +69,7 @@ function assertListsCompiledRules(stdout: string): void {
   const ids = listed.map((rule) => rule.id);
   assertEquals(ids.length, Object.keys(POLICY_COMPILED.rules).length);
   for (const id of Object.keys(POLICY_COMPILED.rules)) {
-    const includesResult: boolean = ids.includes(id);
-    assertEquals(includesResult, true, id);
+    assertArrayIncludes(ids, [id], id);
   }
 }
 
@@ -84,8 +90,7 @@ Deno.test("exaix_unslop_cli_lists_the_compiled_rules_and_reports_a_seeded_violat
       rules: { rule: { id: string }; observedChecked: number; coverage: string }[];
     };
     assertEquals(report.completion, "complete");
-    const includesResult2: boolean = report.filesObserved.includes("scripts/.report_fixture.ts");
-    assert(includesResult2);
+    assertArrayIncludes(report.filesObserved, ["scripts/.report_fixture.ts"]);
     assert(report.findings.some((finding) => finding.file === "scripts/.report_fixture.ts"));
     const observed = report.rules.filter((rule) => rule.observedChecked > 0);
     assert(observed.length > 0);

@@ -869,8 +869,8 @@ Deno.test("File Stability - Exponential backoff timing", async () => {
       assert(false, "Should have thrown timeout error");
     } catch (error) {
       assert(error instanceof Error);
-      const assertionResult: boolean = error.message.includes("never stabilized");
-      assert(assertionResult, `Expected stabilization error, got: ${error.message}`);
+      const messageIncludesNeverStabilized: boolean = error.message.includes("never stabilized");
+      assert(messageIncludesNeverStabilized, `Expected stabilization error, got: ${error.message}`);
 
       // Verify timing - should be close to sum of backoff delays (1850ms)
       const endTime = usePerf ? performance.now() : Date.now();

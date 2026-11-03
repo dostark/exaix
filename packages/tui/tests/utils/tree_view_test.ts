@@ -330,10 +330,10 @@ Deno.test("renderTreeLine: renders node with expand indicator", () => {
   });
 
   // Should contain expand indicator and label
-  const assertionResult: boolean = line.includes("Root 1");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = line.includes("▼");
-  assertEquals(assertionResult2, true); // expanded
+  const lineIncludesRoot1: boolean = line.includes("Root 1");
+  assertEquals(lineIncludesRoot1, true, "line should include 'Root 1'");
+  const lineIncludesText: boolean = line.includes("▼");
+  assertEquals(lineIncludesText, true, "line should include '▼'"); // expanded
 });
 
 Deno.test("renderTree: renders full tree", () => {
@@ -341,6 +341,6 @@ Deno.test("renderTree: renders full tree", () => {
   const lines = renderTree(tree, { useColors: false });
 
   assertEquals(lines.length, 5);
-  const assertionResult3: boolean = lines[0].includes("Root 1");
-  assertEquals(assertionResult3, true);
+  const linesItemIncludesRoot1: boolean = lines[0].includes("Root 1");
+  assertEquals(linesItemIncludesRoot1, true, "linesItem should include 'Root 1'");
 });

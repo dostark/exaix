@@ -61,12 +61,12 @@ Deno.test("[EvalHistorySqliteV4Migration] eval_run_steps and eval_runs gain the 
     const runColumns = db.prepare("PRAGMA table_info(eval_runs)").all<{ name: string }>().map((c) => c.name);
 
     for (const col of NEW_RUN_STEP_COLUMNS) {
-      const assertionResult: boolean = stepColumns.includes(col);
-      assertEquals(assertionResult, true, `eval_run_steps missing column ${col}`);
+      const stepColumnsIncludesCol: boolean = stepColumns.includes(col);
+      assertEquals(stepColumnsIncludesCol, true, `eval_run_steps missing column ${col}`);
     }
     for (const col of NEW_RUN_COLUMNS) {
-      const assertionResult2: boolean = runColumns.includes(col);
-      assertEquals(assertionResult2, true, `eval_runs missing column ${col}`);
+      const runColumnsIncludesCol: boolean = runColumns.includes(col);
+      assertEquals(runColumnsIncludesCol, true, `eval_runs missing column ${col}`);
     }
   } finally {
     store.close();

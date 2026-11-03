@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -197,8 +197,11 @@ Add a hello world function.
           )
         }`,
       );
-      const includesResult: boolean = (JSON.parse(assembled.payload).skillIdsUsed as string[]).includes(SKILL_NAME);
-      assert(includesResult, "the pinned folder skill is injected into the assembled prompt");
+      assertArrayIncludes(
+        JSON.parse(assembled.payload).skillIdsUsed as string[],
+        [SKILL_NAME],
+        "the pinned folder skill is injected into the assembled prompt",
+      );
 
       assertEquals(
         await snapshotTree(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH)),

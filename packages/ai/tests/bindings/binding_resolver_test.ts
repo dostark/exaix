@@ -261,8 +261,8 @@ Deno.test("no_service_for_constraints lists why each candidate was dropped", () 
   assertEquals(result.kind, "invalid");
   if (result.kind === "invalid") {
     assertEquals(result.issues[0].code, "no_service_for_constraints");
-    const assertionResult: boolean = result.issues[0].detail.includes("locked");
-    assertEquals(assertionResult, true);
+    const detailIncludesLocked: boolean = result.issues[0].detail.includes("locked");
+    assertEquals(detailIncludesLocked, true, "detail should include 'locked'");
   }
 });
 

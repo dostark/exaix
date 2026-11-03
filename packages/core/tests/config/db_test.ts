@@ -85,18 +85,18 @@ Deno.test("[configuring] migrateConfigDb creates config_overrides table", () => 
       pk: number;
     }>();
     const columnNames = columns.map((c) => c.name);
-    const assertionResult: boolean = columnNames.includes("id");
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = columnNames.includes("key");
-    assertEquals(assertionResult2, true);
-    const assertionResult3: boolean = columnNames.includes("value");
-    assertEquals(assertionResult3, true);
-    const assertionResult4: boolean = columnNames.includes("source");
-    assertEquals(assertionResult4, true);
-    const assertionResult5: boolean = columnNames.includes("swap_class");
-    assertEquals(assertionResult5, true);
-    const assertionResult6: boolean = columnNames.includes("created_at");
-    assertEquals(assertionResult6, true);
+    const columnNamesIncludesId: boolean = columnNames.includes("id");
+    assertEquals(columnNamesIncludesId, true, "columnNames should include 'id'");
+    const columnNamesIncludesKey: boolean = columnNames.includes("key");
+    assertEquals(columnNamesIncludesKey, true, "columnNames should include 'key'");
+    const columnNamesIncludesValue: boolean = columnNames.includes("value");
+    assertEquals(columnNamesIncludesValue, true, "columnNames should include 'value'");
+    const columnNamesIncludesSource: boolean = columnNames.includes("source");
+    assertEquals(columnNamesIncludesSource, true, "columnNames should include 'source'");
+    const columnNamesIncludesSwapClass: boolean = columnNames.includes("swap_class");
+    assertEquals(columnNamesIncludesSwapClass, true, "columnNames should include 'swap_class'");
+    const columnNamesIncludesCreatedAt: boolean = columnNames.includes("created_at");
+    assertEquals(columnNamesIncludesCreatedAt, true, "columnNames should include 'created_at'");
   } finally {
     cleanUp(dir, db);
   }

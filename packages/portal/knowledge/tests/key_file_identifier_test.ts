@@ -18,15 +18,15 @@ Deno.test("[KeyFileIdentifier] identifies entrypoint files", () => {
   const result = identifyKeyFiles(files, 50);
 
   const roles = result.map((f) => f.role);
-  const assertionResult: boolean = roles.includes("entrypoint");
-  assertEquals(assertionResult, true);
+  const rolesIncludesEntrypoint: boolean = roles.includes("entrypoint");
+  assertEquals(rolesIncludesEntrypoint, true, "roles should include 'entrypoint'");
 
   const entrypoints = result.filter((f) => f.role === "entrypoint");
   const paths = entrypoints.map((f) => f.path);
-  const assertionResult2: boolean = paths.includes("main.ts");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = paths.includes("mod.ts");
-  assertEquals(assertionResult3, true);
+  const pathsIncludesMainTs: boolean = paths.includes("main.ts");
+  assertEquals(pathsIncludesMainTs, true, "paths should include 'main.ts'");
+  const pathsIncludesModTs: boolean = paths.includes("mod.ts");
+  assertEquals(pathsIncludesModTs, true, "paths should include 'mod.ts'");
 });
 
 // [KeyFileIdentifier] identifies config files
@@ -43,10 +43,10 @@ Deno.test("[KeyFileIdentifier] identifies config files", () => {
 
   const configs = result.filter((f) => f.role === "config");
   const paths = configs.map((f) => f.path);
-  const assertionResult4: boolean = paths.includes("package.json");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = paths.includes("tsconfig.json");
-  assertEquals(assertionResult5, true);
+  const pathsIncludesPackageJson: boolean = paths.includes("package.json");
+  assertEquals(pathsIncludesPackageJson, true, "paths should include 'package.json'");
+  const pathsIncludesTsconfigJson: boolean = paths.includes("tsconfig.json");
+  assertEquals(pathsIncludesTsconfigJson, true, "paths should include 'tsconfig.json'");
 });
 
 // [KeyFileIdentifier] identifies schema/types files

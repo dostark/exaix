@@ -25,10 +25,10 @@ Deno.test("FrontmatterParser: valid markdown with YAML frontmatter", async () =>
   assertEquals(result.request.status, RequestStatus.PENDING);
   assertEquals(result.request.priority, 8);
   assertEquals(result.request.tags, ["feature", "ui"]);
-  const assertionResult: boolean = result.body.includes("Implement Login Page");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.body.includes("Email/password");
-  assertEquals(assertionResult2, true);
+  const bodyIncludesImplementLoginPage: boolean = result.body.includes("Implement Login Page");
+  assertEquals(bodyIncludesImplementLoginPage, true, "body should include 'Implement Login Page'");
+  const bodyIncludesEmailPassword: boolean = result.body.includes("Email/password");
+  assertEquals(bodyIncludesEmailPassword, true, "body should include 'Email/password'");
 });
 
 Deno.test("FrontmatterParser: throws on missing frontmatter delimiters", () => {

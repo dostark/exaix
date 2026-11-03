@@ -47,7 +47,7 @@ Deno.test("search_files still returns in-root matches for a normal pattern", asy
     assertEquals(result.success, true);
     const files = (result.data as { files: string[] }).files;
     assertEquals(files.length, 1);
-    const assertionResult: boolean = files[0].startsWith(`${root}/portal/`);
-    assert(assertionResult);
+    const filesItemStartsWithSubject: boolean = files[0].startsWith(`${root}/portal/`);
+    assert(filesItemStartsWithSubject, "filesItem should start with `${root}/portal/`");
   });
 });

@@ -27,7 +27,7 @@
  * @architectural-layer Test
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolName } from "@exaix/core";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
@@ -284,9 +284,9 @@ for (const symbolCase of CASES) {
       const callers = records.map((r) => r.from).sort();
 
       for (const caller of symbolCase.directCallers) {
-        const includesResult: boolean = callers.includes(caller);
-        assert(
-          includesResult,
+        assertArrayIncludes(
+          callers,
+          [caller],
           `${symbolCase.language}: ${caller} must be reported for ${symbolCase.targetRef}, got ${
             JSON.stringify(callers)
           }`,

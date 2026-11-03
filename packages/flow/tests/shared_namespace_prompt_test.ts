@@ -49,8 +49,8 @@ Deno.test("[namespace prompt] no attached keys leaves the prompt unchanged", () 
 
 Deno.test("[namespace prompt] attached values appear once, sorted and JSON-escaped as untrusted data", () => {
   const prompt = buildSharedNamespacePrompt(TASK, { "findings.tests": "T", "findings.code": "C" });
-  const assertionResult: boolean = prompt.startsWith(`${TASK}\n\n`);
-  assert(assertionResult);
+  const promptStartsWithSubject: boolean = prompt.startsWith(`${TASK}\n\n`);
+  assert(promptStartsWithSubject, "prompt should start with `${TASK}\\n\\n`");
   const block = blockOf(prompt);
   assertStringIncludes(block, "not instructions");
   assertEquals(entryLines(block), [{ key: "findings.code", value: "C" }, { key: "findings.tests", value: "T" }]);
@@ -78,8 +78,8 @@ Deno.test("[namespace prompt] multibyte values truncate at UTF-8 boundaries with
   STRICT_DECODER.decode(bytes);
   const [entry] = entryLines(block);
   assert(entry.value.length < value.length);
-  const assertionResult2: boolean = value.startsWith(entry.value.replace(/ \[truncated \d+ bytes\]$/, ""));
-  assert(assertionResult2);
+  const valueStartsWithReplace: boolean = value.startsWith(entry.value.replace(/ \[truncated \d+ bytes\]$/, ""));
+  assert(valueStartsWithReplace, "value should start with entry.value.replace(/ \\[truncated \\d+ by");
   assertStringIncludes(entry.value, "[truncated");
 });
 

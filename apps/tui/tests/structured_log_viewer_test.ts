@@ -159,8 +159,8 @@ Deno.test("StructuredLogViewer: Search and Filter", async () => {
   // Verify dialog title by rendering
   // dialog.render needs options
   const rendered = dialog.render({ useColors: false, width: 80, height: 20 }).join(" ");
-  const assertionResult: boolean = rendered.includes("Search Logs");
-  assert(assertionResult);
+  const renderedIncludesSearchLogs: boolean = rendered.includes("Search Logs");
+  assert(renderedIncludesSearchLogs, "rendered should include 'Search Logs'");
 
   // Check input interaction works using viewer.handleKey to ensure lifecycle events fire
   if (dialog instanceof InputDialog) {
@@ -213,10 +213,11 @@ Deno.test("StructuredLogViewer: the level filter dialog limits the logs to the n
   await viewer.handleKey(KEYS.F);
   const dialog = viewer.getActiveDialog();
   assertExists(dialog);
-  const assertionResult2: boolean = dialog.render({ useColors: false, width: 80, height: 20 }).join(" ").includes(
-    "Filter by Log Level",
-  );
-  assert(assertionResult2);
+  const joinIncludesFilterByLog: boolean = dialog.render({ useColors: false, width: 80, height: 20 }).join(" ")
+    .includes(
+      "Filter by Log Level",
+    );
+  assert(joinIncludesFilterByLog, "join should include 'Filter by Log Level'");
 
   await submitLevelFilter(viewer, "Error, fatal");
 

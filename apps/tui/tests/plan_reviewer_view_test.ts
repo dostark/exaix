@@ -9,7 +9,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { ExaPathDefaults } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
@@ -656,10 +656,8 @@ Deno.test("Phase 13.4: Approve all pending", async () => {
 
   // Should have approved 2 plans
   assertEquals(approved.length, 2, "Should approve 2 pending plans");
-  const includesResult: boolean = approved.includes("p1");
-  assert(includesResult, "Should include p1");
-  const includesResult2: boolean = approved.includes("p2");
-  assert(includesResult2, "Should include p2");
+  assertArrayIncludes(approved, ["p1"], "Should include p1");
+  assertArrayIncludes(approved, ["p2"], "Should include p2");
 });
 
 Deno.test("Phase 13.4: Refresh view with R key", async () => {
@@ -697,8 +695,8 @@ Deno.test("Phase 13.4: Loading state management", async () => {
 
   // Should be loading now
   assertEquals(session.isLoading(), true, "Should be loading during operation");
-  const assertionResult: boolean = session.getLoadingMessage().includes("Loading diff");
-  assert(assertionResult, "Loading message should mention diff");
+  const getLoadingMessageIncludesLoadingDiff: boolean = session.getLoadingMessage().includes("Loading diff");
+  assert(getLoadingMessageIncludesLoadingDiff, "Loading message should mention diff");
 
   // Complete the operation
   resolvePromise!();
@@ -731,18 +729,18 @@ Deno.test("Phase 13.4: Key bindings are defined", () => {
   assert(bindings.length > 0, "Should have bindings");
 
   const keys = bindings.map((b) => b.key);
-  const includesResult3: boolean = keys.includes("up");
-  assert(includesResult3, "Should have up key");
-  const includesResult4: boolean = keys.includes("down");
-  assert(includesResult4, "Should have down key");
-  const includesResult5: boolean = keys.includes("a");
-  assert(includesResult5, "Should have a key (approve)");
-  const includesResult6: boolean = keys.includes("r");
-  assert(includesResult6, "Should have r key (reject)");
-  const includesResult7: boolean = keys.includes("A");
-  assert(includesResult7, "Should have A key (approve all)");
-  const includesResult8: boolean = keys.includes("?");
-  assert(includesResult8, "Should have ? key");
+  const keysIncludesUp: boolean = keys.includes("up");
+  assert(keysIncludesUp, "Should have up key");
+  const keysIncludesDown: boolean = keys.includes("down");
+  assert(keysIncludesDown, "Should have down key");
+  const keysIncludesA: boolean = keys.includes("a");
+  assert(keysIncludesA, "Should have a key (approve)");
+  const keysIncludesR: boolean = keys.includes("r");
+  assert(keysIncludesR, "Should have r key (reject)");
+  const keysIncludesA2: boolean = keys.includes("A");
+  assert(keysIncludesA2, "Should have A key (approve all)");
+  const keysIncludesText: boolean = keys.includes("?");
+  assert(keysIncludesText, "Should have ? key");
 });
 
 Deno.test("Phase 13.4: Empty plan list creates empty tree", () => {
@@ -781,10 +779,8 @@ Deno.test("Phase 13.4: Focusable elements", () => {
 
   const focusables = session.getFocusableElements();
   assert(Array.isArray(focusables), "Should be array");
-  const includesResult9: boolean = focusables.includes("plan-list");
-  assert(includesResult9, "Should include plan-list");
-  const includesResult10: boolean = focusables.includes("action-buttons");
-  assert(includesResult10, "Should include action-buttons");
+  assertArrayIncludes(focusables, ["plan-list"], "Should include plan-list");
+  assertArrayIncludes(focusables, ["action-buttons"], "Should include action-buttons");
 });
 
 Deno.test("Phase 13.4: Left arrow collapses expanded group", async () => {

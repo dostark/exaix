@@ -307,16 +307,16 @@ Deno.test("applyApprovedAmendment preserves non-step content in plan", () => {
   const updated = service.applyApprovedAmendment(planContent, patch);
 
   // Verify non-step sections are preserved
-  const assertionResult: boolean = updated.includes("# Implementation Plan");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = updated.includes("## Overview");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = updated.includes("This is the overview section");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = updated.includes("## Notes");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = updated.includes("Additional notes section");
-  assertEquals(assertionResult5, true);
+  const updatedIncludesImplementatiPlan: boolean = updated.includes("# Implementation Plan");
+  assertEquals(updatedIncludesImplementatiPlan, true, "updated should include '# Implementation Plan'");
+  const updatedIncludesOverview: boolean = updated.includes("## Overview");
+  assertEquals(updatedIncludesOverview, true, "updated should include '## Overview'");
+  const updatedIncludesThisIsThe: boolean = updated.includes("This is the overview section");
+  assertEquals(updatedIncludesThisIsThe, true, "updated should include 'This is the overview section'");
+  const updatedIncludesNotes: boolean = updated.includes("## Notes");
+  assertEquals(updatedIncludesNotes, true, "updated should include '## Notes'");
+  const updatedIncludesAdditionalNotesSection: boolean = updated.includes("Additional notes section");
+  assertEquals(updatedIncludesAdditionalNotesSection, true, "updated should include 'Additional notes section'");
 });
 
 Deno.test("applyApprovedAmendment throws on invalid plan content", () => {

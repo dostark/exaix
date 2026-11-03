@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/runner/harness_lift.ts, tests/scenario_framework/runner/arm_comparison.ts, packages/eval-history/src/history_sqlite.ts]
  */
 
-import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
+import { assert, assertAlmostEquals, assertArrayIncludes, assertEquals } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeHarnessLift } from "../../runner/harness_lift.ts";
@@ -149,8 +149,7 @@ Deno.test("[PairedLift] computes meanDelta/stdevDelta over matched tasks, exclud
     );
     assertEquals(family.basis.controlCell, BARE_CELL);
     assertEquals(family.basis.treatmentCell, EXAIX_CELL);
-    const includesResult: boolean = family.basis.unmatchedTaskIds.includes(T3);
-    assert(includesResult, "basis must name the unmatched task");
+    assertArrayIncludes(family.basis.unmatchedTaskIds, [T3], "basis must name the unmatched task");
   } finally {
     cleanup();
   }

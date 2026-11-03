@@ -344,12 +344,12 @@ Do something
       assert(activities.length >= 2, "Should have at least 2 activity entries");
 
       const actionTypes = activities.map((a) => a.action_type);
-      const assertionResult: boolean = actionTypes.includes("request.processing");
-      assert(assertionResult, "Should log processing start");
-      const assertionResult2: boolean = actionTypes.includes("request.planned");
-      assert(assertionResult2, "Should log completion");
-      const assertionResult3: boolean = actionTypes.includes("plan.created");
-      assert(assertionResult3, "Should log plan creation");
+      const actionTypesIncludesRequestProcessing: boolean = actionTypes.includes("request.processing");
+      assert(actionTypesIncludesRequestProcessing, "Should log processing start");
+      const actionTypesIncludesRequestPlanned: boolean = actionTypes.includes("request.planned");
+      assert(actionTypesIncludesRequestPlanned, "Should log completion");
+      const actionTypesIncludesPlanCreated: boolean = actionTypes.includes("plan.created");
+      assert(actionTypesIncludesPlanCreated, "Should log plan creation");
     });
   });
 

@@ -274,8 +274,8 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-no-interceptor" });
 
   assert(!mcpClient.getCapturedTools().includes(McpToolName.CREATE_REQUEST));
-  const includesResult: boolean = mcpClient.getCapturedTools().includes(McpToolName.LIST_PLANS);
-  assert(includesResult);
+  const getCapturedToolsIncludesLIST_PLANS: boolean = mcpClient.getCapturedTools().includes(McpToolName.LIST_PLANS);
+  assert(getCapturedToolsIncludesLIST_PLANS, "getCapturedTools should include McpToolName.LIST_PLANS");
 });
 
 Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-required tool is reached without interceptor", async () => {

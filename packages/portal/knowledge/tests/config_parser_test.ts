@@ -67,8 +67,8 @@ Deno.test("[ConfigParser] parses package.json dependencies", async () => {
       assertEquals(result.dependencies![0].configFile, "package.json");
       assertExists(result.dependencies![0].keyDependencies);
       const names = result.dependencies![0].keyDependencies.map((d) => d.name);
-      const assertionResult: boolean = names.includes("express");
-      assertEquals(assertionResult, true);
+      const namesIncludesExpress: boolean = names.includes("express");
+      assertEquals(namesIncludesExpress, true, "names should include 'express'");
     },
   );
 });
@@ -94,8 +94,8 @@ Deno.test("[ConfigParser] parses deno.json imports and tasks", async () => {
       assertEquals(result.dependencies![0].packageManager, "deno");
       assertEquals(result.dependencies![0].configFile, "deno.json");
       const names = result.dependencies![0].keyDependencies.map((d) => d.name);
-      const assertionResult2: boolean = names.includes("zod");
-      assertEquals(assertionResult2, true);
+      const namesIncludesZod: boolean = names.includes("zod");
+      assertEquals(namesIncludesZod, true, "names should include 'zod'");
     },
   );
 });
@@ -185,12 +185,12 @@ Deno.test("[ConfigParser] reads .gitignore and adds patterns to ignorePatterns",
     async (root) => {
       const result = await parseConfigFiles(root, [".gitignore"]);
       assertExists(result.ignorePatterns);
-      const assertionResult3: boolean = result.ignorePatterns!.includes("dist");
-      assertEquals(assertionResult3, true);
-      const assertionResult4: boolean = result.ignorePatterns!.includes("*.log");
-      assertEquals(assertionResult4, true);
-      const assertionResult5: boolean = result.ignorePatterns!.includes("node_modules");
-      assertEquals(assertionResult5, true);
+      const ignorePatternsIncludesDist: boolean = result.ignorePatterns!.includes("dist");
+      assertEquals(ignorePatternsIncludesDist, true, "ignorePatterns should include 'dist'");
+      const ignorePatternsIncludesLog: boolean = result.ignorePatterns!.includes("*.log");
+      assertEquals(ignorePatternsIncludesLog, true, "ignorePatterns should include '*.log'");
+      const ignorePatternsIncludesNodeModules: boolean = result.ignorePatterns!.includes("node_modules");
+      assertEquals(ignorePatternsIncludesNodeModules, true, "ignorePatterns should include 'node_modules'");
       // Comments and empty lines should be excluded
       assertEquals(result.ignorePatterns!.some((p) => p.startsWith("#")), false);
     },

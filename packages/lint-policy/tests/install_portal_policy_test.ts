@@ -8,7 +8,7 @@
  */
 
 import type { JSONObject } from "@exaix/core";
-import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertMatch, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { installPortalPolicy, PORTAL_POLICY_CONFIG, PORTAL_POLICY_NAME } from "../src/tools/install_portal_policy.ts";
 import { withTempDir } from "@exaix/testing";
@@ -115,8 +115,7 @@ Deno.test("installed portal policy", async (test) => {
 
     await test.step("installed-policy-lints-offline", async () => {
       const codes = await lintSeed(policyDir, CAST_SEED);
-      const includesResult: boolean = codes.includes(CAST_CODE);
-      assert(includesResult, codes.join(","));
+      assertArrayIncludes(codes, [CAST_CODE], codes.join(","));
     });
 
     await test.step("installed-policy-rejects-named-ignores", async () => {
@@ -124,8 +123,7 @@ Deno.test("installed portal policy", async (test) => {
       const namedLine = `// deno-lint-ignore ${CAST_CODE} -- typed upstream\n${CAST_SEED}`;
       for (const [name, source] of [["file", namedFile], ["line", namedLine]] as const) {
         const codes = await lintSeed(policyDir, source);
-        const includesResult2: boolean = codes.includes(IGNORE_CODE);
-        assert(includesResult2, `${name}: ${codes.join(",")}`);
+        assertArrayIncludes(codes, [IGNORE_CODE], `${name}: ${codes.join(",")}`);
       }
     });
 
@@ -136,8 +134,7 @@ Deno.test("installed portal policy", async (test) => {
         CAST_SEED,
       ].join("");
       const codes = await lintSeed(policyDir, source);
-      const includesResult3: boolean = codes.includes(IGNORE_CODE);
-      assert(includesResult3, codes.join(","));
+      assertArrayIncludes(codes, [IGNORE_CODE], codes.join(","));
     });
   }, { prefix: "portal-policy-out-" });
 });

@@ -89,16 +89,16 @@ Deno.test("[regression] searchByKeyword finds patterns, decisions and overview",
   const results = await searchByKeyword("X", { portal: "projA", limit: 10 }, deps);
   // Expect at least pattern, decision, project overview, and learning entries
   const types = results.map((r) => r.type);
-  const assertionResult: boolean = types.includes(MemoryType.PATTERN);
-  assert(assertionResult);
-  const assertionResult2: boolean = types.includes(MemoryType.DECISION);
-  assert(assertionResult2);
+  const typesIncludesPATTERN: boolean = types.includes(MemoryType.PATTERN);
+  assert(typesIncludesPATTERN, "types should include MemoryType.PATTERN");
+  const typesIncludesDECISION: boolean = types.includes(MemoryType.DECISION);
+  assert(typesIncludesDECISION, "types should include MemoryType.DECISION");
   // `searchByKeyword` checks project overviews (PROJECT) and does not
   // currently include execution search results, so expect PROJECT here.
-  const assertionResult3: boolean = types.includes(MemoryType.PROJECT);
-  assert(assertionResult3);
-  const assertionResult4: boolean = types.includes(MemoryType.LEARNING);
-  assert(assertionResult4);
+  const typesIncludesPROJECT: boolean = types.includes(MemoryType.PROJECT);
+  assert(typesIncludesPROJECT, "types should include MemoryType.PROJECT");
+  const typesIncludesLEARNING: boolean = types.includes(MemoryType.LEARNING);
+  assert(typesIncludesLEARNING, "types should include MemoryType.LEARNING");
 
   // cleanup
   await Deno.remove(projectsDir, { recursive: true });
@@ -133,12 +133,12 @@ Deno.test("[regression] searchByTags returns matching items and learnings", asyn
 
   const results = await searchByTags(["t1"], { portal: "projA", limit: 10 }, deps);
   const types = results.map((r) => r.type);
-  const assertionResult5: boolean = types.includes(MemoryType.PATTERN);
-  assert(assertionResult5);
-  const assertionResult6: boolean = types.includes(MemoryType.DECISION);
-  assert(assertionResult6);
-  const assertionResult7: boolean = types.includes(MemoryType.LEARNING);
-  assert(assertionResult7);
+  const typesIncludesPATTERN2: boolean = types.includes(MemoryType.PATTERN);
+  assert(typesIncludesPATTERN2, "types should include MemoryType.PATTERN");
+  const typesIncludesDECISION2: boolean = types.includes(MemoryType.DECISION);
+  assert(typesIncludesDECISION2, "types should include MemoryType.DECISION");
+  const typesIncludesLEARNING2: boolean = types.includes(MemoryType.LEARNING);
+  assert(typesIncludesLEARNING2, "types should include MemoryType.LEARNING");
 
   await Deno.remove(projectsDir, { recursive: true });
 });

@@ -8,7 +8,7 @@
  * @dependencies [@exaix/schemas, @exaix/core, @exaix/core/events, @std/toml, @std/assert]
  * @related-files [packages/schemas/src/tools_round_policy.ts, packages/schemas/src/config.ts, packages/core/src/events/domain_event_types.ts]
  */
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "@exaix/schemas";
 import { resolveToolsRoundPolicy } from "@exaix/schemas/tools_round_policy.ts";
@@ -134,10 +134,8 @@ Deno.test("[model_tool_round_docs] documented bounds match ConfigSchema at the d
     const max = Number(maxCell);
     assertEquals(issueCodesFor(key, min).filter((code) => code === "too_small"), [], `min of ${key} is accepted`);
     assertEquals(issueCodesFor(key, max).filter((code) => code === "too_big"), [], `max of ${key} is accepted`);
-    const includesResult: boolean = issueCodesFor(key, min - 1).includes("too_small");
-    assert(includesResult, `min - 1 of ${key} is rejected`);
-    const includesResult2: boolean = issueCodesFor(key, max + 1).includes("too_big");
-    assert(includesResult2, `max + 1 of ${key} is rejected`);
+    assertArrayIncludes(issueCodesFor(key, min - 1), ["too_small"], `min - 1 of ${key} is rejected`);
+    assertArrayIncludes(issueCodesFor(key, max + 1), ["too_big"], `max + 1 of ${key} is rejected`);
   }
 });
 

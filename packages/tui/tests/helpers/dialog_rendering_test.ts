@@ -28,14 +28,14 @@ Deno.test("calculateDialogWidth: respects min/max bounds", () => {
 Deno.test("createDialogBorder: adds title and bottom border", () => {
   const bordered = createDialogBorder(["a", "b"], "Title", noColorTheme);
   assertEquals(bordered.length, 4);
-  const assertionResult: boolean = bordered[0].includes("Title");
-  assertEquals(assertionResult, true);
+  const borderedItemIncludesTitle: boolean = bordered[0].includes("Title");
+  assertEquals(borderedItemIncludesTitle, true, "borderedItem should include 'Title'");
 });
 
 Deno.test("renderInputField: truncates long values with ellipsis", () => {
   const out = renderInputField("Label", "0123456789", 9, 6, noColorTheme);
-  const assertionResult2: boolean = out.includes("...");
-  assertEquals(assertionResult2, true);
+  const outIncludesText: boolean = out.includes("...");
+  assertEquals(outIncludesText, true, "out should include '...'");
 });
 
 Deno.test("renderDialogButtons: right-aligns buttons within width", () => {
@@ -48,8 +48,8 @@ Deno.test("renderDialogButtons: right-aligns buttons within width", () => {
     noColorTheme,
   );
 
-  const assertionResult3: boolean = line.includes("[OK]");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = line.includes("[Cancel]");
-  assertEquals(assertionResult4, true);
+  const lineIncludesOK: boolean = line.includes("[OK]");
+  assertEquals(lineIncludesOK, true, "line should include '[OK]'");
+  const lineIncludesCancel: boolean = line.includes("[Cancel]");
+  assertEquals(lineIncludesCancel, true, "line should include '[Cancel]'");
 });

@@ -14,20 +14,20 @@ Deno.test("bootstrapProviderRegistry registers Solo-tier providers (incl. OpenRo
   bootstrapProviderRegistry();
 
   const supported = ProviderRegistry.getSupportedProviders();
-  const assertionResult: boolean = supported.includes("mock");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = supported.includes("anthropic");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = supported.includes("openai");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = supported.includes("google");
-  assertEquals(assertionResult4, true);
+  const supportedIncludesMock: boolean = supported.includes("mock");
+  assertEquals(supportedIncludesMock, true, "supported should include 'mock'");
+  const supportedIncludesAnthropic: boolean = supported.includes("anthropic");
+  assertEquals(supportedIncludesAnthropic, true, "supported should include 'anthropic'");
+  const supportedIncludesOpenai: boolean = supported.includes("openai");
+  assertEquals(supportedIncludesOpenai, true, "supported should include 'openai'");
+  const supportedIncludesGoogle: boolean = supported.includes("google");
+  assertEquals(supportedIncludesGoogle, true, "supported should include 'google'");
   assertFalse(supported.includes("vertex-ai"));
   // OpenRouter ships in Solo (all editions) — D5b/D-providers.
-  const assertionResult5: boolean = supported.includes("openrouter");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = supported.includes("ollama");
-  assertEquals(assertionResult6, true);
+  const supportedIncludesOpenrouter: boolean = supported.includes("openrouter");
+  assertEquals(supportedIncludesOpenrouter, true, "supported should include 'openrouter'");
+  const supportedIncludesOllama: boolean = supported.includes("ollama");
+  assertEquals(supportedIncludesOllama, true, "supported should include 'ollama'");
   assertExists(ProviderRegistry.getFactory("mock"));
   assertExists(ProviderRegistry.getFactory("anthropic"));
   assertExists(ProviderRegistry.getFactory("openai"));

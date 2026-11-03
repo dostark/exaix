@@ -77,6 +77,6 @@ Deno.test("PlanAdapter: renders a fallback heading (not '# undefined') when the 
   }));
   const markdown = adapter.toMarkdown(plan);
   assertFalse(markdown.includes("# undefined"));
-  const assertionResult: boolean = markdown.includes("# Untitled Plan");
-  assertEquals(assertionResult, true);
+  const markdownIncludesUntitledPlan: boolean = markdown.includes("# Untitled Plan");
+  assertEquals(markdownIncludesUntitledPlan, true, "markdown should include '# Untitled Plan'");
 });

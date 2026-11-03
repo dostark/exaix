@@ -126,8 +126,8 @@ Deno.test("[ContextBudgetManager] drops lowest-priority segments first when over
 
   // tool_result (lowest priority) dropped; system (highest) kept
   const keptKinds = out.map((s) => s.kind);
-  const assertionResult: boolean = keptKinds.includes("system");
-  assertEquals(assertionResult, true);
+  const keptKindsIncludesSystem: boolean = keptKinds.includes("system");
+  assertEquals(keptKindsIncludesSystem, true, "keptKinds should include 'system'");
   assertFalse(keptKinds.includes("tool_result"));
 });
 
@@ -152,8 +152,8 @@ Deno.test("[ContextBudgetManager] never drops segments with priority >= CONTEXT_
   });
 
   const keptKinds = out.map((s) => s.kind);
-  const assertionResult2: boolean = keptKinds.includes("acceptance_criteria");
-  assertEquals(assertionResult2, true);
+  const keptKindsIncludesAcceptanceCriteria: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(keptKindsIncludesAcceptanceCriteria, true, "keptKinds should include 'acceptance_criteria'");
 });
 
 Deno.test("[ContextBudgetManager] snapshot.decisions count equals number of segments processed", async () => {
@@ -279,8 +279,8 @@ Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_k
     .filter((d) => d.action === "drop")
     .map((d) => d.kind);
 
-  const assertionResult3: boolean = droppedKinds.includes("tool_result");
-  assertEquals(assertionResult3, true);
+  const droppedKindsIncludesToolResult: boolean = droppedKinds.includes("tool_result");
+  assertEquals(droppedKindsIncludesToolResult, true, "droppedKinds should include 'tool_result'");
   // portal_knowledge maps to portalKnowledge section which has budget, so it's kept
   assertFalse(droppedKinds.includes("portal_knowledge"));
 });
@@ -310,10 +310,10 @@ Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segm
   });
 
   const keptKinds = out.map((s) => s.kind);
-  const assertionResult4: boolean = keptKinds.includes("system");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = keptKinds.includes("acceptance_criteria");
-  assertEquals(assertionResult5, true);
+  const keptKindsIncludesSystem2: boolean = keptKinds.includes("system");
+  assertEquals(keptKindsIncludesSystem2, true, "keptKinds should include 'system'");
+  const keptKindsIncludesAcceptanceCriteria2: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(keptKindsIncludesAcceptanceCriteria2, true, "keptKinds should include 'acceptance_criteria'");
   assertFalse(keptKinds.includes("tool_result"));
 });
 
@@ -462,8 +462,8 @@ Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan resp
 
   // acceptance_criteria is protected: always kept
   const keptKinds = out.map((s) => s.kind);
-  const assertionResult6: boolean = keptKinds.includes("acceptance_criteria");
-  assertEquals(assertionResult6, true);
+  const keptKindsIncludesAcceptanceCriteria3: boolean = keptKinds.includes("acceptance_criteria");
+  assertEquals(keptKindsIncludesAcceptanceCriteria3, true, "keptKinds should include 'acceptance_criteria'");
 
   // plan_step (70) cannot fit the remaining 40 tokens — must be trimmed or dropped
   const planStepDecision = snapshot.decisions.find((d) => d.kind === "plan_step");
@@ -717,14 +717,32 @@ Deno.test(
       await db.waitForFlush();
 
       const actions = db.getActivitiesByTrace(traceId).map((activity) => activity.action_type);
-      const assertionResult7: boolean = actions.includes(DomainEventType.ContextBudgetAllocated);
-      assertEquals(assertionResult7, true);
-      const assertionResult8: boolean = actions.includes(DomainEventType.ContextSectionTruncated);
-      assertEquals(assertionResult8, true);
-      const assertionResult9: boolean = actions.includes(DomainEventType.ContextBudgetConsumed);
-      assertEquals(assertionResult9, true);
-      const assertionResult10: boolean = actions.includes(DomainEventType.ExecutionContextCompacted);
-      assertEquals(assertionResult10, true);
+      const actionsIncludesContextBudgetAllocated: boolean = actions.includes(DomainEventType.ContextBudgetAllocated);
+      assertEquals(
+        actionsIncludesContextBudgetAllocated,
+        true,
+        "actions should include DomainEventType.ContextBudgetAllocated",
+      );
+      const actionsIncludesContextSectionTruncated: boolean = actions.includes(DomainEventType.ContextSectionTruncated);
+      assertEquals(
+        actionsIncludesContextSectionTruncated,
+        true,
+        "actions should include DomainEventType.ContextSectionTruncated",
+      );
+      const actionsIncludesContextBudgetConsumed: boolean = actions.includes(DomainEventType.ContextBudgetConsumed);
+      assertEquals(
+        actionsIncludesContextBudgetConsumed,
+        true,
+        "actions should include DomainEventType.ContextBudgetConsumed",
+      );
+      const actionsIncludesExecutionContextCompacted: boolean = actions.includes(
+        DomainEventType.ExecutionContextCompacted,
+      );
+      assertEquals(
+        actionsIncludesExecutionContextCompacted,
+        true,
+        "actions should include DomainEventType.ExecutionContextCompacte",
+      );
     } finally {
       await cleanup();
     }

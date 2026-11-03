@@ -92,8 +92,8 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
     assertEquals(patch2.success, true);
 
     const content = await Deno.readTextFile(join(tempDir, "main.ts"));
-    const assertionResult: boolean = content.includes("Hello World");
-    assertEquals(assertionResult, true);
+    const contentIncludesHelloWorld: boolean = content.includes("Hello World");
+    assertEquals(contentIncludesHelloWorld, true, "content should include 'Hello World'");
   });
 
   await t.step("Agent verifies implementation", async () => {

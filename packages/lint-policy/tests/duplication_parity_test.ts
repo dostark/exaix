@@ -91,11 +91,11 @@ Deno.test("duplication parity: the host scripts import the library and keep no l
   for (const script of HOST_SCRIPTS) {
     const text = await Deno.readTextFile(fromFileUrl(new URL(`../${script.path}`, import.meta.url)));
     assertFalse(text.includes(script.defines), `${script.path} still defines ${script.imports}`);
-    const assertionResult: boolean = text.includes(`${script.imports},`);
-    assertEquals(assertionResult, true, `${script.path} does not import ${script.imports}`);
-    const assertionResult2: boolean = text.includes("@dostark/unslop-ts/whole-tree");
+    const textIncludesSubject: boolean = text.includes(`${script.imports},`);
+    assertEquals(textIncludesSubject, true, `${script.path} does not import ${script.imports}`);
+    const textIncludesDostarkUnslopTs: boolean = text.includes("@dostark/unslop-ts/whole-tree");
     assertEquals(
-      assertionResult2,
+      textIncludesDostarkUnslopTs,
       true,
       `${script.path} does not use the whole-tree entry`,
     );

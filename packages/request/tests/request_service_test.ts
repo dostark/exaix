@@ -47,13 +47,13 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
 
     // Verify the file was actually written
     const content = await Deno.readTextFile(metadata.path!);
-    const assertionResult: boolean = content.includes("agent_role: default");
-    assertEquals(assertionResult, true);
+    const contentIncludesAgentRoleDefault: boolean = content.includes("agent_role: default");
+    assertEquals(contentIncludesAgentRoleDefault, true, "content should include 'agent_role: default'");
     assertFalse(content.includes("\nidentity_id: default"));
-    const assertionResult2: boolean = content.includes("trace_id:");
-    assertEquals(assertionResult2, true);
-    const assertionResult3: boolean = content.includes("Build the login page");
-    assertEquals(assertionResult3, true);
+    const contentIncludesTraceId: boolean = content.includes("trace_id:");
+    assertEquals(contentIncludesTraceId, true, "content should include 'trace_id:'");
+    const contentIncludesBuildTheLogin: boolean = content.includes("Build the login page");
+    assertEquals(contentIncludesBuildTheLogin, true, "content should include 'Build the login page'");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -116,8 +116,8 @@ Deno.test("RequestService.create: derives the subject from the description when 
     const content = await Deno.readTextFile(metadata.path!);
     // No explicit subject → the first line of the description becomes the subject. The legacy
     // `subject_is_fallback` flag is gone (the request subject is authoritative; never upgraded).
-    const assertionResult4: boolean = content.includes("subject: Test description");
-    assertEquals(assertionResult4, true);
+    const contentIncludesSubjectTestDescription: boolean = content.includes("subject: Test description");
+    assertEquals(contentIncludesSubjectTestDescription, true, "content should include 'subject: Test description'");
     assertFalse(content.includes("subject_is_fallback"));
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
@@ -181,8 +181,8 @@ Deno.test("RequestService.show: retrieves request by trace_id", async () => {
 
     const shown = await service.show(meta.trace_id);
     assertEquals(shown.metadata.trace_id, meta.trace_id);
-    const assertionResult5: boolean = shown.content.includes("Show me request");
-    assertEquals(assertionResult5, true);
+    const contentIncludesShowMeRequest: boolean = shown.content.includes("Show me request");
+    assertEquals(contentIncludesShowMeRequest, true, "content should include 'Show me request'");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -223,8 +223,8 @@ Deno.test("RequestService.getRequestContent: returns content body", async () => 
     const meta = await service.create("Get this content body");
 
     const content = await service.getRequestContent(meta.trace_id);
-    const assertionResult6: boolean = content.includes("Get this content body");
-    assertEquals(assertionResult6, true);
+    const contentIncludesGetThisContent: boolean = content.includes("Get this content body");
+    assertEquals(contentIncludesGetThisContent, true, "content should include 'Get this content body'");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -348,8 +348,8 @@ Deno.test("RequestService.show: returns default metadata for file without frontm
     assertEquals(shown.metadata.priority, RequestPriority.NORMAL);
     assertEquals(shown.metadata.agent_role, "default");
     assertEquals(shown.metadata.created_by, "unknown");
-    const assertionResult7: boolean = shown.content.includes("Just markdown");
-    assertEquals(assertionResult7, true);
+    const contentIncludesJustMarkdown: boolean = shown.content.includes("Just markdown");
+    assertEquals(contentIncludesJustMarkdown, true, "content should include 'Just markdown'");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -364,8 +364,8 @@ Deno.test("RequestService.show: retrieves request by .md filename directly", asy
     // Show by the .md filename
     const shown = await service.show(meta.filename);
     assertEquals(shown.metadata.trace_id, meta.trace_id);
-    const assertionResult8: boolean = shown.content.includes("By filename lookup");
-    assertEquals(assertionResult8, true);
+    const contentIncludesByFilenameLookup: boolean = shown.content.includes("By filename lookup");
+    assertEquals(contentIncludesByFilenameLookup, true, "content should include 'By filename lookup'");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

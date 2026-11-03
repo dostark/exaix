@@ -63,8 +63,8 @@ Deno.test("renderStatusBar: renders with left items", () => {
     useColors: false,
   };
   const result = renderStatusBar(state, config);
-  const assertionResult: boolean = result.includes("Test");
-  assertEquals(assertionResult, true);
+  const resultIncludesTest: boolean = result.includes("Test");
+  assertEquals(resultIncludesTest, true, "result should include 'Test'");
 });
 
 Deno.test("renderStatusBar: renders with right items", () => {
@@ -77,8 +77,8 @@ Deno.test("renderStatusBar: renders with right items", () => {
     useColors: false,
   };
   const result = renderStatusBar(state, config);
-  const assertionResult2: boolean = result.includes("Right");
-  assertEquals(assertionResult2, true);
+  const resultIncludesRight: boolean = result.includes("Right");
+  assertEquals(resultIncludesRight, true, "result should include 'Right'");
 });
 
 Deno.test("renderStatusBar: renders with message", () => {
@@ -93,8 +93,8 @@ Deno.test("renderStatusBar: renders with message", () => {
     useColors: false,
   };
   const result = renderStatusBar(state, config);
-  const assertionResult3: boolean = result.includes("Status message");
-  assertEquals(assertionResult3, true);
+  const resultIncludesStatusMessage: boolean = result.includes("Status message");
+  assertEquals(resultIncludesStatusMessage, true, "result should include 'Status message'");
 });
 
 Deno.test("renderStatusBar: renders message types", () => {
@@ -133,8 +133,8 @@ Deno.test("renderStatusBar: renders with spinner", () => {
   };
   const result = renderStatusBar(state, config);
   assertExists(result);
-  const assertionResult4: boolean = result.includes("Loading");
-  assertEquals(assertionResult4, true);
+  const resultIncludesLoading: boolean = result.includes("Loading");
+  assertEquals(resultIncludesLoading, true, "result should include 'Loading'");
 });
 
 Deno.test("renderStatusBar: renders with colors", () => {
@@ -147,10 +147,10 @@ Deno.test("renderStatusBar: renders with colors", () => {
     useColors: true,
   };
   const result = renderStatusBar(state, config);
-  const assertionResult5: boolean = result.includes("\x1b[7m");
-  assertEquals(assertionResult5, true); // Inverted
-  const assertionResult6: boolean = result.includes("\x1b[0m");
-  assertEquals(assertionResult6, true); // Reset
+  const resultIncludes7m: boolean = result.includes("\x1b[7m");
+  assertEquals(resultIncludes7m, true, "result should include '\u001b[7m'"); // Inverted
+  const resultIncludes0m: boolean = result.includes("\x1b[0m");
+  assertEquals(resultIncludes0m, true, "result should include '\u001b[0m'"); // Reset
 });
 
 Deno.test("renderStatusBar: renders with icon in item", () => {
@@ -163,10 +163,10 @@ Deno.test("renderStatusBar: renders with icon in item", () => {
     useColors: false,
   };
   const result = renderStatusBar(state, config);
-  const assertionResult7: boolean = result.includes("●");
-  assertEquals(assertionResult7, true);
-  const assertionResult8: boolean = result.includes("Status");
-  assertEquals(assertionResult8, true);
+  const resultIncludesText: boolean = result.includes("●");
+  assertEquals(resultIncludesText, true, "result should include '●'");
+  const resultIncludesStatus: boolean = result.includes("Status");
+  assertEquals(resultIncludesStatus, true, "result should include 'Status'");
 });
 
 Deno.test("renderStatusBar: truncates long content", () => {
@@ -376,8 +376,8 @@ Deno.test("renderMultiLineStatusBar: renders with colors", () => {
   const result = renderMultiLineStatusBar(state, config);
   assertEquals(result.length, 2);
   // Check for ANSI codes
-  const assertionResult9: boolean = result[0].includes("\x1b[");
-  assertEquals(assertionResult9, true);
+  const resultItemIncludesText: boolean = result[0].includes("\x1b[");
+  assertEquals(resultItemIncludesText, true, "resultItem should include '\u001b['");
 });
 
 Deno.test("renderMultiLineStatusBar: does not render lines when collapsed", () => {

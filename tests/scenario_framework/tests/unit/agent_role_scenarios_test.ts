@@ -134,8 +134,7 @@ Deno.test("[agent_role_merge] each merged role keeps the smoke id, pack, tags an
     assertEquals(scenario.pack, "agent_role_eval", `${role} must keep the smoke pack`);
     assertFalse(scenario.tags.includes("provider-live"), `${role} must not carry the provider-live tag`);
     for (const tag of ["smoke", "subsystem:agent_roles", `entity:${role}`]) {
-      const includesResult: boolean = scenario.tags.includes(tag);
-      assert(includesResult, `${role} must keep the '${tag}' tag`);
+      assertArrayIncludes(scenario.tags, [tag], `${role} must keep the '${tag}' tag`);
     }
     // The union of ["auto"] and ["auto", "step"], so `step` mode still runs the live cell.
     assertEquals(scenario.mode_support, MERGED_MODE_SUPPORT, `${role} mode_support must be the union`);
@@ -173,15 +172,13 @@ Deno.test("[agent_role_merge] the mock cell keeps the smoke criteria and the liv
 
     const mockKinds = criterionKinds(mockSteps);
     for (const kind of ["frontmatter-field-equals", "frontmatter-field-exists", "text-matches"]) {
-      const includesResult2: boolean = mockKinds.includes(kind);
-      assert(includesResult2, `${role} mock cell must keep the '${kind}' criterion`);
+      assertArrayIncludes(mockKinds, [kind], `${role} mock cell must keep the '${kind}' criterion`);
     }
     assertEquals(judgePreset(mockSteps), undefined, `${role} mock cell must not run a judge`);
 
     const liveKinds = criterionKinds(liveSteps);
     for (const kind of ["frontmatter-field-equals", "llm-judge"]) {
-      const includesResult3: boolean = liveKinds.includes(kind);
-      assert(includesResult3, `${role} live cell must keep the '${kind}' criterion`);
+      assertArrayIncludes(liveKinds, [kind], `${role} live cell must keep the '${kind}' criterion`);
     }
     assertEquals(judgePreset(liveSteps), preset, `${role} live cell judge preset`);
     for (const judgeStep of liveSteps.filter(isJudgeBearingStep)) {

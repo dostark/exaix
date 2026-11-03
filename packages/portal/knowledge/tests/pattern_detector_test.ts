@@ -255,12 +255,12 @@ Deno.test("[PatternDetector] stratified sampling covers all top-level directorie
   // All files should be selected since sample >= total
   assertEquals(sample.length, 6);
   // Every directory should be represented
-  const assertionResult: boolean = sample.includes("src/a.ts");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = sample.includes("tests/x_test.ts");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = sample.includes("docs/readme.md");
-  assertEquals(assertionResult3, true);
+  const sampleIncludesSrcATs: boolean = sample.includes("src/a.ts");
+  assertEquals(sampleIncludesSrcATs, true, "sample should include 'src/a.ts'");
+  const sampleIncludesTestsXTest: boolean = sample.includes("tests/x_test.ts");
+  assertEquals(sampleIncludesTestsXTest, true, "sample should include 'tests/x_test.ts'");
+  const sampleIncludesDocsReadmeMd: boolean = sample.includes("docs/readme.md");
+  assertEquals(sampleIncludesDocsReadmeMd, true, "sample should include 'docs/readme.md'");
 });
 
 Deno.test("[PatternDetector] stratified sampling prefers TS/JS files within each bucket", () => {
@@ -298,8 +298,8 @@ Deno.test("[PatternDetector] handles edge case: fewer files than min sample size
   const files = ["src/a.ts", "src/b.ts"];
   const sample = selectSampleFiles(files, 10);
   assertEquals(sample.length, 2);
-  const assertionResult4: boolean = sample.includes("src/a.ts");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = sample.includes("src/b.ts");
-  assertEquals(assertionResult5, true);
+  const sampleIncludesSrcATs2: boolean = sample.includes("src/a.ts");
+  assertEquals(sampleIncludesSrcATs2, true, "sample should include 'src/a.ts'");
+  const sampleIncludesSrcBTs: boolean = sample.includes("src/b.ts");
+  assertEquals(sampleIncludesSrcBTs, true, "sample should include 'src/b.ts'");
 });

@@ -254,8 +254,8 @@ Deno.test("refactor-inventory-reconciled: every frozen row names a real symbol, 
     const baseSymbol = symbol.split("::")[0];
     const identifier = baseSymbol.split(".").pop() ?? baseSymbol;
     const sourceText = await Deno.readTextFile(join(REPO_ROOT, sourcePath));
-    const assertionResult: boolean = sourceText.includes(identifier);
-    assert(assertionResult, `row ${step}: '${identifier}' is not in ${sourcePath}`);
+    const sourceTextIncludesIdentifier: boolean = sourceText.includes(identifier);
+    assert(sourceTextIncludesIdentifier, `row ${step}: '${identifier}' is not in ${sourcePath}`);
 
     const frozen = /^(\d+) \/ (\d+)$/.exec(values);
     assert(frozen !== null, `row ${step} does not carry frozen core values: ${values}`);
@@ -286,8 +286,8 @@ Deno.test("refactor-inventory-reconciled: every frozen row names a real symbol, 
       if (dotted !== null) {
         const callerText = await Deno.readTextFile(join(REPO_ROOT, path));
         const routeName = dotted[1].split(".").pop() ?? dotted[1];
-        const assertionResult2: boolean = callerText.includes(routeName);
-        assert(assertionResult2, `row ${step}: caller '${routeName}' is not in ${path}`);
+        const callerTextIncludesRouteName: boolean = callerText.includes(routeName);
+        assert(callerTextIncludesRouteName, `row ${step}: caller '${routeName}' is not in ${path}`);
       }
     }
 

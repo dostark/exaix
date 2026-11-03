@@ -204,6 +204,6 @@ Deno.test("MemoryFormatter.formatExecutionMemory: includes changes only when pre
 
 Deno.test("MemoryFormatter.formatDetailWithQuit: appends quit hint", () => {
   const out = MemoryFormatter.formatDetailWithQuit("Hello");
-  const assertionResult: boolean = out.endsWith(TUI_MSG_PRESS_QUIT);
-  assertEquals(assertionResult, true);
+  const outEndsWithTUI_MSG_PRESS_QUIT: boolean = out.endsWith(TUI_MSG_PRESS_QUIT);
+  assertEquals(outEndsWithTUI_MSG_PRESS_QUIT, true, "out should end with TUI_MSG_PRESS_QUIT");
 });

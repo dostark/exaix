@@ -26,8 +26,8 @@ Deno.test("[scope_checker] path outside permitted glob is a violation", () => {
 
 Deno.test("[scope_checker][security] path traversal via .. is a violation", () => {
   const result = checkScope(["../secrets/.env", "src/ok.ts"], ["src/**", "../**"], ROOT);
-  const assertionResult: boolean = result.violations.includes("../secrets/.env");
-  assertEquals(assertionResult, true, "traversal must be rejected");
+  const violationsIncludesSecretsEnv: boolean = result.violations.includes("../secrets/.env");
+  assertEquals(violationsIncludesSecretsEnv, true, "traversal must be rejected");
 });
 
 Deno.test("[scope_checker][security] absolute path is always a violation", () => {

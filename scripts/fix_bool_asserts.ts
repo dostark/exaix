@@ -12,9 +12,12 @@
  * Usage:
  *   deno run -A scripts/fix_bool_asserts.ts [roots...] [--check]
  *   deno run -A scripts/fix_bool_asserts.ts --files-manifest=<json-path> [--check]
+ *   deno run -A scripts/fix_bool_asserts.ts --name-results [roots...] [--check]
  *
  * A manifest is a JSON array of repository-relative test file paths. Manifest mode writes only those files.
  * Root mode walks the roots and rewrites only the files that the lint policy classes as test files.
+ * The --name-results mode reads the numbered named results that an earlier run left. It merges a true check of a
+ * primitive array into one assertArrayIncludes call. It renames every other result and adds a message when none exists.
  * The codemod is idempotent. A second run changes nothing.
  */
 
@@ -81,6 +84,16 @@ const CONSUMER_ROOTS = new Set([...DEFAULT_ROOTS, "exaix-enterprise"]);
 const SKIP_DIRECTORIES = [".git", "node_modules", "dist", "coverage"];
 const MANIFEST_FLAG = "--files-manifest=";
 const NAMED_RESULT_BASE = "includesResult";
+const NUMBERED_RESULT = /^(assertionResult|includesResult)\d*$/;
+const NAME_RESULTS_FLAG = "--name-results";
+const ARRAY_INCLUDES = "assertArrayIncludes";
+const PRIMITIVE_FLAGS = ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike |
+  ts.TypeFlags.BigIntLike;
+const MAX_VALUE_WORDS = 3;
+const MAX_WORD_LENGTH = 12;
+const MAX_QUOTED_LENGTH = 40;
+const VERBS = new Map([["includes", "include"], ["startsWith", "start with"], ["endsWith", "end with"]]);
+const METHOD_NAMES = new Map([["includes", "Includes"], ["startsWith", "StartsWith"], ["endsWith", "EndsWith"]]);
 const USAGE_EXIT_CODE = 2;
 const TEST_CLASS = "test";
 const ManifestEntry = z.string().min(1);
@@ -429,6 +442,236 @@ function fixSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text:
   return { text: withImports, changed: applied.applied, skipped };
 }
 
+/** The assertion that reads a named boolean result as its first argument. */
+interface IResultAssertion {
+  readonly statement: ts.ExpressionStatement;
+  readonly call: ts.CallExpression;
+  readonly callee: IBoundCallee;
+  readonly use: ts.Identifier;
+  readonly negated: boolean;
+  readonly message: ts.Expression | null;
+}
+
+/** One named boolean result followed directly by the only assertion that reads it. */
+interface INamedResultPair extends IResultAssertion {
+  readonly declaration: ts.VariableStatement;
+  readonly name: ts.Identifier;
+  readonly subject: ts.CallExpression;
+  readonly method: string;
+}
+
+/** The statements of a node that holds a statement list, or null. */
+function statementsOf(node: ts.Node): readonly ts.Statement[] | null {
+  if (ts.isBlock(node) || ts.isModuleBlock(node) || ts.isSourceFile(node)) return node.statements;
+  if (ts.isCaseClause(node) || ts.isDefaultClause(node)) return node.statements;
+  return null;
+}
+
+/** The named result a statement declares, or null when it is not a numbered boolean over a substring call. */
+function resultDeclarationOf(
+  statement: ts.Statement,
+): { name: ts.Identifier; subject: ts.CallExpression; method: string } | null {
+  if (!ts.isVariableStatement(statement)) return null;
+  const list = statement.declarationList;
+  if ((list.flags & ts.NodeFlags.Const) === 0 || list.declarations.length !== 1) return null;
+  const declaration = list.declarations[0];
+  if (!ts.isIdentifier(declaration.name) || !NUMBERED_RESULT.test(declaration.name.text)) return null;
+  if (declaration.type?.kind !== ts.SyntaxKind.BooleanKeyword || declaration.initializer === undefined) return null;
+  const subject = substringSubjectOf(declaration.initializer);
+  return subject === null ? null : { name: declaration.name, subject: subject.call, method: subject.method };
+}
+
+/** The assertion that reads the named result as its first argument, or null. */
+function resultAssertionOf(
+  bindings: IAssertBindings,
+  statement: ts.Statement,
+  name: string,
+): IResultAssertion | null {
+  if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression)) return null;
+  const call = statement.expression;
+  const callee = bindCallee(bindings, call.expression);
+  const [use, second, third] = call.arguments;
+  if (callee === null || use === undefined || !ts.isIdentifier(use) || use.text !== name) return null;
+  const isWrapper = EQUALITY_FUNCTIONS.has(callee.canonical);
+  const isFalseCall = callee.canonical === ASSERT_FALSE;
+  if (!isWrapper && !isFalseCall && callee.canonical !== BARE_ASSERT) return null;
+  const direction = second?.kind === ts.SyntaxKind.TrueKeyword || second?.kind === ts.SyntaxKind.FalseKeyword;
+  if (isWrapper && !direction) return null;
+  const message = isWrapper ? third : second;
+  const negated = isFalseCall || second?.kind === ts.SyntaxKind.FalseKeyword;
+  return { statement, call, callee, use, negated, message: message ?? null };
+}
+
+/** True when the symbol of the declared name is referenced exactly twice: its declaration and the assertion. */
+function isReadOnlyByAssertion(checker: ts.TypeChecker, sourceFile: ts.SourceFile, name: ts.Identifier): boolean {
+  const symbol = checker.getSymbolAtLocation(name);
+  if (symbol === undefined) return false;
+  let references = 0;
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && node.text === name.text && checker.getSymbolAtLocation(node) === symbol) references++;
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return references === 2;
+}
+
+/** The pair that starts at a statement, or null. Only an adjacent, comment-free, single-use pair qualifies. */
+function pairAt(
+  context: { sourceFile: ts.SourceFile; checker: ts.TypeChecker; bindings: IAssertBindings },
+  first: ts.Statement,
+  second: ts.Statement,
+): INamedResultPair | null {
+  const declared = resultDeclarationOf(first);
+  if (declared === null || !ts.isVariableStatement(first)) return null;
+  const assertion = resultAssertionOf(context.bindings, second, declared.name.text);
+  if (assertion === null) return null;
+  const gap = context.sourceFile.text.slice(first.getEnd(), second.getStart(context.sourceFile));
+  if (gap.trim() !== "" || !isReadOnlyByAssertion(context.checker, context.sourceFile, declared.name)) return null;
+  return { declaration: first, ...declared, ...assertion };
+}
+
+/** Every qualifying pair in the file. */
+function namedResultPairs(
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+  bindings: IAssertBindings,
+): INamedResultPair[] {
+  const pairs: INamedResultPair[] = [];
+  const context = { sourceFile, checker, bindings };
+  const visit = (node: ts.Node): void => {
+    const list = statementsOf(node);
+    for (let index = 0; list !== null && index + 1 < list.length; index++) {
+      const pair = pairAt(context, list[index], list[index + 1]);
+      if (pair !== null) pairs.push(pair);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return pairs;
+}
+
+/** True when the type is an array whose elements are all strings, numbers, booleans or bigints. */
+function isPrimitiveArray(checker: ts.TypeChecker, receiver: ts.Expression): boolean {
+  const type = checker.getTypeAtLocation(receiver);
+  if (!checker.isArrayType(type)) return false;
+  const element = checker.getTypeArguments(type as ts.TypeReference)[0];
+  if (element === undefined) return false;
+  const parts = element.isUnion() ? element.types : [element];
+  return parts.every((part) => (part.flags & PRIMITIVE_FLAGS) !== 0);
+}
+
+/** A short lower-case label for the expression that a check reads. */
+function labelOf(node: ts.Expression): string {
+  if (ts.isIdentifier(node)) return node.text;
+  if (ts.isPropertyAccessExpression(node)) return node.name.text;
+  if (ts.isCallExpression(node)) return labelOf(node.expression);
+  if (ts.isNonNullExpression(node) || ts.isParenthesizedExpression(node) || ts.isAsExpression(node)) {
+    return labelOf(node.expression);
+  }
+  if (ts.isElementAccessExpression(node)) return `${labelOf(node.expression)}Item`;
+  if (ts.isArrayLiteralExpression(node)) return "values";
+  return "subject";
+}
+
+/** The Pascal-case words of a string literal, or the label of any other argument. */
+function valuePartOf(argumentsOfCall: readonly ts.Expression[]): string {
+  const argument = argumentsOfCall[0];
+  if (argument === undefined) return "Value";
+  const text = textArgumentOf(argument);
+  if (text === null) return upperFirst(labelOf(argument));
+  const words = text.split(/[^A-Za-z0-9]+/).filter((word) => word !== "").slice(0, MAX_VALUE_WORDS);
+  return words.length === 0 ? "Text" : words.map((word) => upperFirst(word.slice(0, MAX_WORD_LENGTH))).join("");
+}
+
+function upperFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+/** A descriptive name for the result that is free in the file. */
+function descriptiveName(pair: INamedResultPair, used: Set<string>): string {
+  const access = pair.subject.expression;
+  const receiver = ts.isPropertyAccessExpression(access) ? labelOf(access.expression) : "subject";
+  const base = `${lowerFirst(receiver)}${METHOD_NAMES.get(pair.method) ?? "Includes"}` +
+    valuePartOf(pair.subject.arguments);
+  let name = base;
+  for (let suffix = 2; used.has(name); suffix++) name = `${base}${suffix}`;
+  used.add(name);
+  return name;
+}
+
+/** The message literal that states the expectation of the check. */
+function expectationMessage(pair: INamedResultPair): string {
+  const access = pair.subject.expression;
+  const receiver = ts.isPropertyAccessExpression(access) ? labelOf(access.expression) : "subject";
+  const argument = pair.subject.arguments[0];
+  const literal = argument === undefined ? null : textArgumentOf(argument);
+  const quoted = literal !== null
+    ? `'${literal.replace(/\s+/g, " ").slice(0, MAX_QUOTED_LENGTH)}'`
+    : (argument?.getText() ?? "value").slice(0, MAX_QUOTED_LENGTH);
+  const verb = VERBS.get(pair.method) ?? "include";
+  return JSON.stringify(`${receiver} should ${pair.negated ? "not " : ""}${verb} ${quoted}`);
+}
+
+/** The replacement that turns a true primitive-array check into one dedicated assertion, or null. */
+function dedicatedReplacement(
+  checker: ts.TypeChecker,
+  context: IEmitContext,
+  pair: INamedResultPair,
+): IReplacement | null {
+  const access = pair.subject.expression;
+  if (pair.negated || pair.method !== "includes" || pair.subject.arguments.length !== 1) return null;
+  if (!ts.isPropertyAccessExpression(access) || !isPrimitiveArray(checker, access.expression)) return null;
+  const argument = pair.subject.arguments[0];
+  if ((checker.getTypeAtLocation(argument).flags & PRIMITIVE_FLAGS) === 0) return null;
+  const callee = emitCallee(context, ARRAY_INCLUDES, pair.callee.namespace);
+  const text = `${callee}(${access.expression.getText()}, [${argument.getText()}]${messageSuffixOf(pair.message)});`;
+  return { start: pair.declaration.getStart(), end: pair.statement.getEnd(), text };
+}
+
+/** The replacements that rename the result and add a message when the assertion has none. */
+function renameReplacements(context: IEmitContext, pair: INamedResultPair): IReplacement[] {
+  const name = descriptiveName(pair, context.usedIdentifiers);
+  const replacements: IReplacement[] = [
+    { start: pair.name.getStart(), end: pair.name.getEnd(), text: name },
+  ];
+  const message = pair.message === null ? `, ${expectationMessage(pair)}` : "";
+  const isEquality = EQUALITY_FUNCTIONS.has(pair.callee.canonical);
+  const lastArgument = pair.call.arguments[pair.call.arguments.length - 1];
+  if (isEquality) {
+    replacements.push({ start: pair.use.getStart(), end: pair.use.getEnd(), text: name });
+    if (message !== "") replacements.push({ start: lastArgument.getEnd(), end: lastArgument.getEnd(), text: message });
+  } else {
+    replacements.push({ start: pair.use.getStart(), end: pair.use.getEnd(), text: `${name}${message}` });
+  }
+  return replacements;
+}
+
+/** Names every numbered result of one parsed file and merges a primitive-array check into one assertion. */
+function nameResultsInFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text: string): IFixResult {
+  const bindings = readBindings(sourceFile);
+  const context: IEmitContext = { bindings, required: new Set(), usedIdentifiers: identifiersOf(sourceFile) };
+  const before = referenceCounts(sourceFile, bindings.named.keys());
+  const usedBefore = new Set([...before].filter(([, count]) => count > 0).map(([name]) => name));
+  const replacements: IReplacement[] = [];
+  let changed = 0;
+  for (const pair of namedResultPairs(sourceFile, checker, bindings)) {
+    const dedicated = dedicatedReplacement(checker, context, pair);
+    replacements.push(...(dedicated === null ? renameReplacements(context, pair) : [dedicated]));
+    changed++;
+  }
+  if (changed === 0) return { text, changed: 0, skipped: [] };
+  const applied = applyReplacements(text, replacements);
+  const withImports = rewriteImports(applied.text, sourceFile.fileName, bindings, {
+    required: context.required,
+    usedBefore,
+  });
+  return { text: withImports, changed, skipped: [] };
+}
+
 function compilerOptions(): ts.CompilerOptions {
   return {
     strict: true,
@@ -462,6 +705,14 @@ export function fixSourceText(fileName: string, text: string): IFixResult {
   const sourceFile = program.getSourceFile(fileName);
   if (!sourceFile) return { text, changed: 0, skipped: [] };
   return fixSourceFile(sourceFile, program.getTypeChecker(), text);
+}
+
+/** Names the numbered results of one source text through a single-file in-memory program. */
+export function nameResultsInText(fileName: string, text: string): IFixResult {
+  const program = createInMemoryProgram(new Map([[fileName, text]]));
+  const sourceFile = program.getSourceFile(fileName);
+  if (!sourceFile) return { text, changed: 0, skipped: [] };
+  return nameResultsInFile(sourceFile, program.getTypeChecker(), text);
 }
 
 /** True when the lint policy classes the repository-relative path as a test file. */
@@ -561,6 +812,7 @@ async function targetFiles(args: readonly string[]): Promise<string[]> {
 /** Runs the codemod over the target files and resolves with the exit code. */
 async function main(args: readonly string[]): Promise<number> {
   const checkOnly = args.includes("--check");
+  const nameResults = args.includes(NAME_RESULTS_FLAG);
   let paths: string[];
   try {
     paths = await targetFiles(args);
@@ -579,7 +831,9 @@ async function main(args: readonly string[]): Promise<number> {
     const sourceFile = program.getSourceFile(path);
     const text = contents.get(path);
     if (!sourceFile || text === undefined) continue;
-    const result = fixSourceFile(sourceFile, checker, text);
+    const result = nameResults
+      ? nameResultsInFile(sourceFile, checker, text)
+      : fixSourceFile(sourceFile, checker, text);
     skippedTotal += result.skipped.length;
     for (const site of result.skipped) console.error(`residual ${path}:${site.line}: ${site.reason}`);
     if (result.changed === 0) continue;

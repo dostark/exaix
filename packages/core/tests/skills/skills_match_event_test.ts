@@ -137,8 +137,8 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
     });
 
     const ids = matches.map((m) => m.skillId);
-    const assertionResult: boolean = ids.includes("small-second");
-    assertEquals(assertionResult, true, `fitting match dropped: ${ids.join(",")}`);
+    const idsIncludesSmallSecond: boolean = ids.includes("small-second");
+    assertEquals(idsIncludesSmallSecond, true, `fitting match dropped: ${ids.join(",")}`);
     assertFalse(ids.includes("oversized-first"), "an over-budget match must not be injected");
   } finally {
     await Deno.remove(memoryDir, { recursive: true }).catch(() => {});

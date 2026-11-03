@@ -68,18 +68,18 @@ Deno.test("[SymbolExtractor] assigns correct kind for function/class/interface/c
     primaryLanguage: "typescript",
   });
   const kinds = result.map((r) => r.kind);
-  const assertionResult: boolean = kinds.includes("function");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = kinds.includes("class");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = kinds.includes("interface");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = kinds.includes("const");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = kinds.includes("type");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = kinds.includes("enum");
-  assertEquals(assertionResult6, true);
+  const kindsIncludesFunction: boolean = kinds.includes("function");
+  assertEquals(kindsIncludesFunction, true, "kinds should include 'function'");
+  const kindsIncludesClass: boolean = kinds.includes("class");
+  assertEquals(kindsIncludesClass, true, "kinds should include 'class'");
+  const kindsIncludesInterface: boolean = kinds.includes("interface");
+  assertEquals(kindsIncludesInterface, true, "kinds should include 'interface'");
+  const kindsIncludesConst: boolean = kinds.includes("const");
+  assertEquals(kindsIncludesConst, true, "kinds should include 'const'");
+  const kindsIncludesType: boolean = kinds.includes("type");
+  assertEquals(kindsIncludesType, true, "kinds should include 'type'");
+  const kindsIncludesEnum: boolean = kinds.includes("enum");
+  assertEquals(kindsIncludesEnum, true, "kinds should include 'enum'");
 });
 
 Deno.test("[SymbolExtractor] populates signature from functionDef", async () => {
@@ -92,10 +92,10 @@ Deno.test("[SymbolExtractor] populates signature from functionDef", async () => 
   const result = await extractor.extractSymbols("/portal", ["src/main.ts"], {
     primaryLanguage: "typescript",
   });
-  const assertionResult7: boolean = result[0].signature.includes("doWork");
-  assertEquals(assertionResult7, true);
-  const assertionResult8: boolean = result[0].signature.includes("input");
-  assertEquals(assertionResult8, true);
+  const signatureIncludesDoWork: boolean = result[0].signature.includes("doWork");
+  assertEquals(signatureIncludesDoWork, true, "signature should include 'doWork'");
+  const signatureIncludesInput: boolean = result[0].signature.includes("input");
+  assertEquals(signatureIncludesInput, true, "signature should include 'input'");
 });
 
 Deno.test("[SymbolExtractor] extracts JSDoc summary as doc field", async () => {

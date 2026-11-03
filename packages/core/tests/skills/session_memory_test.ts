@@ -558,16 +558,16 @@ Deno.test("SessionMemoryService - extracts key terms from query", async () => {
   assertFalse(terms.includes("how"));
 
   // Should include meaningful terms
-  const assertionResult: boolean = terms.includes("implement");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = terms.includes("repository");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = terms.includes(LearningCategory.PATTERN);
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = terms.includes("database");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = terms.includes("operations");
-  assertEquals(assertionResult5, true);
+  const termsIncludesImplement: boolean = terms.includes("implement");
+  assertEquals(termsIncludesImplement, true, "terms should include 'implement'");
+  const termsIncludesRepository: boolean = terms.includes("repository");
+  assertEquals(termsIncludesRepository, true, "terms should include 'repository'");
+  const termsIncludesPATTERN: boolean = terms.includes(LearningCategory.PATTERN);
+  assertEquals(termsIncludesPATTERN, true, "terms should include LearningCategory.PATTERN");
+  const termsIncludesDatabase: boolean = terms.includes("database");
+  assertEquals(termsIncludesDatabase, true, "terms should include 'database'");
+  const termsIncludesOperations: boolean = terms.includes("operations");
+  assertEquals(termsIncludesOperations, true, "terms should include 'operations'");
 });
 
 // Memory Item Formatting Tests

@@ -7,7 +7,7 @@
  * of the request list, content preview, and interactive status management.
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import { RequestGroupingMode } from "@exaix/tui";
 import { RequestStatus } from "@exaix/core/status";
@@ -548,8 +548,7 @@ Deno.test("Phase 13.6: Focusable elements", () => {
 
   const focusable = tui.getFocusableElements();
   assert(Array.isArray(focusable));
-  const includesResult: boolean = focusable.includes("request-list");
-  assert(includesResult);
+  assertArrayIncludes(focusable, ["request-list"]);
 });
 
 Deno.test("Phase 13.6: setRequests updates tree", () => {

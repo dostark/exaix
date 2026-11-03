@@ -65,8 +65,8 @@ Deno.test("ToolConfirmationRequestSchema: missing required fields fail with desc
   assertFalse(result.success);
   if (!result.success) {
     const fieldPaths = result.error.issues.map((e) => e.path.join("."));
-    const assertionResult: boolean = fieldPaths.includes("toolName");
-    assertEquals(assertionResult, true, "Error must name the missing toolName field");
+    const fieldPathsIncludesToolName: boolean = fieldPaths.includes("toolName");
+    assertEquals(fieldPathsIncludesToolName, true, "Error must name the missing toolName field");
   }
 });
 

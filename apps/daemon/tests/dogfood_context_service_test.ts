@@ -216,12 +216,12 @@ Deno.test("[DogfoodContextService] prepare returns a handle and captures a recor
   });
   const handle = await service.prepare(makeInput());
 
-  const assertionResult: boolean = handle.prompt.includes("Implement the scoped retrieval fix.");
-  assert(assertionResult, "original prompt must be preserved");
-  const assertionResult2: boolean = handle.prompt.includes("hybrid retrieval");
-  assert(assertionResult2, "portal supplement must be included");
-  const assertionResult3: boolean = handle.prompt.includes("Repository pattern");
-  assert(assertionResult3, "memory supplement must be included");
+  const promptIncludesImplementTheScoped: boolean = handle.prompt.includes("Implement the scoped retrieval fix.");
+  assert(promptIncludesImplementTheScoped, "original prompt must be preserved");
+  const promptIncludesHybridRetrieval: boolean = handle.prompt.includes("hybrid retrieval");
+  assert(promptIncludesHybridRetrieval, "portal supplement must be included");
+  const promptIncludesRepositoryPattern: boolean = handle.prompt.includes("Repository pattern");
+  assert(promptIncludesRepositoryPattern, "memory supplement must be included");
   assertEquals(recordStore.saved.length, 1);
   assertEquals(recordStore.saved[0].recordId, handle.recordId);
   assertEquals(recordStore.saved[0].promptText, handle.prompt);
@@ -240,8 +240,8 @@ Deno.test("[DogfoodContextService] one source failing does not discard the other
   const { service } = makeService({ portal: makePortal(OK_PORTAL_RESULT), memory: failingMemory });
 
   const handle = await service.prepare(makeInput());
-  const assertionResult4: boolean = handle.prompt.includes("hybrid retrieval");
-  assert(assertionResult4, "portal result must still be included despite the memory failure");
+  const promptIncludesHybridRetrieval2: boolean = handle.prompt.includes("hybrid retrieval");
+  assert(promptIncludesHybridRetrieval2, "portal result must still be included despite the memory failure");
 });
 
 Deno.test("[DogfoodContextService] rejects before capture when the original prompt alone exceeds the input budget", async () => {
@@ -286,8 +286,8 @@ Deno.test("[DogfoodContextService] redacts a known secret that appears only in t
   const { service } = makeService({ portal: secretPortal, knownSecrets: ["sk-secret-123"] });
   const handle = await service.prepare(makeInput());
   assert(!handle.prompt.includes("sk-secret-123"), "the secret must never appear in the sent prompt");
-  const assertionResult5: boolean = handle.prompt.includes("[REDACTED]");
-  assert(assertionResult5);
+  const promptIncludesREDACTED: boolean = handle.prompt.includes("[REDACTED]");
+  assert(promptIncludesREDACTED, "prompt should include '[REDACTED]'");
 });
 
 Deno.test("[DogfoodContextService] emits ContextCaptured with a non-negative duration on success", async () => {

@@ -42,10 +42,10 @@ Deno.test("[security] parser normalizes CRLF to LF", () => {
 
 Deno.test("[security] multibyte content survives canonicalization and hashes stably", async () => {
   const text = "---\nname: code-review\ndescription: コードレビュー ✓\n---\n本文 🔒\n";
-  const assertionResult: boolean = canonicalizeSkillText(text).includes("🔒");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = canonicalizeSkillText(text).includes("コードレビュー");
-  assertEquals(assertionResult2, true);
+  const canonicalizeSkillTextIncludesText: boolean = canonicalizeSkillText(text).includes("🔒");
+  assertEquals(canonicalizeSkillTextIncludesText, true, "canonicalizeSkillText should include '🔒'");
+  const canonicalizeSkillTextIncludesText2: boolean = canonicalizeSkillText(text).includes("コードレビュー");
+  assertEquals(canonicalizeSkillTextIncludesText2, true, "canonicalizeSkillText should include 'コードレビュー'");
   const lf = await computeSkillContentSha256(snapshot(text));
   const crlf = await computeSkillContentSha256(snapshot(text.replace(/\n/g, "\r\n")));
   assertEquals(lf, crlf);

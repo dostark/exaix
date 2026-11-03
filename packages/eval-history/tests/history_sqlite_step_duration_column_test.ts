@@ -35,8 +35,8 @@ Deno.test("[EvalHistorySqliteStepDuration] eval_run_steps gains a duration_ms co
 
     const columns = store["db"].prepare("PRAGMA table_info(eval_run_steps)").all<{ name: string }>();
     const columnNames = columns.map((c) => c.name);
-    const assertionResult: boolean = columnNames.includes("duration_ms");
-    assertEquals(assertionResult, true);
+    const columnNamesIncludesDurationMs: boolean = columnNames.includes("duration_ms");
+    assertEquals(columnNamesIncludesDurationMs, true, "columnNames should include 'duration_ms'");
   });
 });
 

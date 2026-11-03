@@ -133,20 +133,20 @@ const MINIMAL_SPEC: IRequestSpecification = {
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt produces all sections for full spec", () => {
   const result = renderSpecificationAsPrompt(FULL_SPEC);
-  const assertionResult: boolean = result.includes("## Summary");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.includes("Implement JWT authentication");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = result.includes("## Goals");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = result.includes("## Success Criteria");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = result.includes("## Scope");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = result.includes("## Constraints");
-  assertEquals(assertionResult6, true);
-  const assertionResult7: boolean = result.includes("## Context");
-  assertEquals(assertionResult7, true);
+  const resultIncludesSummary: boolean = result.includes("## Summary");
+  assertEquals(resultIncludesSummary, true, "result should include '## Summary'");
+  const resultIncludesImplementJWTAuthenticati: boolean = result.includes("Implement JWT authentication");
+  assertEquals(resultIncludesImplementJWTAuthenticati, true, "result should include 'Implement JWT authentication'");
+  const resultIncludesGoals: boolean = result.includes("## Goals");
+  assertEquals(resultIncludesGoals, true, "result should include '## Goals'");
+  const resultIncludesSuccessCriteria: boolean = result.includes("## Success Criteria");
+  assertEquals(resultIncludesSuccessCriteria, true, "result should include '## Success Criteria'");
+  const resultIncludesScope: boolean = result.includes("## Scope");
+  assertEquals(resultIncludesScope, true, "result should include '## Scope'");
+  const resultIncludesConstraints: boolean = result.includes("## Constraints");
+  assertEquals(resultIncludesConstraints, true, "result should include '## Constraints'");
+  const resultIncludesContext: boolean = result.includes("## Context");
+  assertEquals(resultIncludesContext, true, "result should include '## Context'");
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt omits empty sections", () => {
@@ -156,21 +156,21 @@ Deno.test("[clarification_persistence] renderSpecificationAsPrompt omits empty s
   assertFalse(result.includes("## Scope"));
   assertFalse(result.includes("## Constraints"));
   assertFalse(result.includes("## Context"));
-  const assertionResult8: boolean = result.includes("## Summary");
-  assertEquals(assertionResult8, true);
+  const resultIncludesSummary2: boolean = result.includes("## Summary");
+  assertEquals(resultIncludesSummary2, true, "result should include '## Summary'");
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt always includes summary", () => {
   const result = renderSpecificationAsPrompt(MINIMAL_SPEC);
-  const assertionResult9: boolean = result.includes("## Summary");
-  assertEquals(assertionResult9, true);
-  const assertionResult10: boolean = result.includes("Deploy to production");
-  assertEquals(assertionResult10, true);
+  const resultIncludesSummary3: boolean = result.includes("## Summary");
+  assertEquals(resultIncludesSummary3, true, "result should include '## Summary'");
+  const resultIncludesDeployToProduction: boolean = result.includes("Deploy to production");
+  assertEquals(resultIncludesDeployToProduction, true, "result should include 'Deploy to production'");
 });
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt handles minimal spec (summary only)", () => {
   const result = renderSpecificationAsPrompt(MINIMAL_SPEC);
   assertEquals(result.trim().length > 0, true);
-  const assertionResult11: boolean = result.includes("## Summary\nDeploy to production");
-  assertEquals(assertionResult11, true);
+  const resultIncludesSummaryDeployTo: boolean = result.includes("## Summary\nDeploy to production");
+  assertEquals(resultIncludesSummaryDeployTo, true, "result should include '## Summary Deploy to production'");
 });

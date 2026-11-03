@@ -76,8 +76,8 @@ The existing implementation already handles this case.
       for (const path of validPaths) {
         const fullPath = join(portalRoot, path);
         // Path should be within portal (not escape)
-        const assertionResult: boolean = fullPath.startsWith(portalRoot);
-        assertEquals(assertionResult, true);
+        const fullPathStartsWithPortalRoot: boolean = fullPath.startsWith(portalRoot);
+        assertEquals(fullPathStartsWithPortalRoot, true, "fullPath should start with portalRoot");
       }
     });
 

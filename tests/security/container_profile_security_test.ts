@@ -8,7 +8,7 @@
  *   workspace member that deno.json names, so the daemon config loads inside the image.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse } from "@std/yaml";
 import { fromFileUrl, join } from "@std/path";
 
@@ -41,8 +41,7 @@ Deno.test("[security] the sandbox Compose profile builds the runtime stage expli
   assertEquals(compose.services.exaix.build?.target, RUNTIME_STAGE);
 
   const stageNames = [...(await readDockerfileStages()).keys()];
-  const includesResult: boolean = stageNames.includes(RUNTIME_STAGE);
-  assert(includesResult, "the Dockerfile must define the runtime stage");
+  assertArrayIncludes(stageNames, [RUNTIME_STAGE], "the Dockerfile must define the runtime stage");
 });
 
 Deno.test("[security] the runtime stage copies every deno.json workspace member root", async () => {
@@ -56,7 +55,6 @@ Deno.test("[security] the runtime stage copies every deno.json workspace member 
 
   for (const member of denoJson.workspace) {
     const topLevel = member.replace(/^\.\//, "").split("/")[0];
-    const includesResult2: boolean = copied.includes(topLevel);
-    assert(includesResult2, `runtime stage does not copy workspace root '${topLevel}/'`);
+    assertArrayIncludes(copied, [topLevel], `runtime stage does not copy workspace root '${topLevel}/'`);
   }
 });

@@ -407,10 +407,10 @@ Deno.test("LayoutManager: listNamedLayouts returns layout names", () => {
 
   const names = manager.listNamedLayouts();
   assertEquals(names.length, 2);
-  const assertionResult: boolean = names.includes("layout-1");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = names.includes("layout-2");
-  assertEquals(assertionResult2, true);
+  const namesIncludesLayout1: boolean = names.includes("layout-1");
+  assertEquals(namesIncludesLayout1, true, "names should include 'layout-1'");
+  const namesIncludesLayout2: boolean = names.includes("layout-2");
+  assertEquals(namesIncludesLayout2, true, "names should include 'layout-2'");
 });
 
 // Serialization Tests
@@ -505,10 +505,10 @@ Deno.test("renderPaneBorder: renders focused pane", () => {
   };
 
   const result = renderPaneBorder(pane, theme);
-  const assertionResult3: boolean = result.includes("●");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = result.includes("PortalManager");
-  assertEquals(assertionResult4, true);
+  const resultIncludesText: boolean = result.includes("●");
+  assertEquals(resultIncludesText, true, "result should include '●'");
+  const resultIncludesPortalManage: boolean = result.includes("PortalManager");
+  assertEquals(resultIncludesPortalManage, true, "result should include 'PortalManager'");
 });
 
 Deno.test("renderPaneBorder: renders maximized pane", () => {
@@ -524,19 +524,19 @@ Deno.test("renderPaneBorder: renders maximized pane", () => {
   };
 
   const result = renderPaneBorder(pane, theme);
-  const assertionResult5: boolean = result.includes("[MAX]");
-  assertEquals(assertionResult5, true);
+  const resultIncludesMAX: boolean = result.includes("[MAX]");
+  assertEquals(resultIncludesMAX, true, "result should include '[MAX]'");
 });
 
 Deno.test("renderResizeIndicator: renders direction arrows", () => {
-  const assertionResult6: boolean = renderResizeIndicator(ResizeDirection.LEFT, theme).includes("◀");
-  assertEquals(assertionResult6, true);
-  const assertionResult7: boolean = renderResizeIndicator(ResizeDirection.RIGHT, theme).includes("▶");
-  assertEquals(assertionResult7, true);
-  const assertionResult8: boolean = renderResizeIndicator(ResizeDirection.UP, theme).includes("▲");
-  assertEquals(assertionResult8, true);
-  const assertionResult9: boolean = renderResizeIndicator(ResizeDirection.DOWN, theme).includes("▼");
-  assertEquals(assertionResult9, true);
+  const renderResizeIndicatorIncludesText: boolean = renderResizeIndicator(ResizeDirection.LEFT, theme).includes("◀");
+  assertEquals(renderResizeIndicatorIncludesText, true, "renderResizeIndicator should include '◀'");
+  const renderResizeIndicatorIncludesText2: boolean = renderResizeIndicator(ResizeDirection.RIGHT, theme).includes("▶");
+  assertEquals(renderResizeIndicatorIncludesText2, true, "renderResizeIndicator should include '▶'");
+  const renderResizeIndicatorIncludesText3: boolean = renderResizeIndicator(ResizeDirection.UP, theme).includes("▲");
+  assertEquals(renderResizeIndicatorIncludesText3, true, "renderResizeIndicator should include '▲'");
+  const renderResizeIndicatorIncludesText4: boolean = renderResizeIndicator(ResizeDirection.DOWN, theme).includes("▼");
+  assertEquals(renderResizeIndicatorIncludesText4, true, "renderResizeIndicator should include '▼'");
 });
 
 // View Picker Dialog Tests
@@ -712,8 +712,8 @@ Deno.test("handleNamedLayoutKey: saves on enter with name", () => {
 
 Deno.test("renderSwapIndicator: renders swap mode", () => {
   const result = renderSwapIndicator("pane-1", null, theme);
-  const assertionResult10: boolean = result.includes("Swapping from");
-  assertEquals(assertionResult10, true);
+  const resultIncludesSwappingFrom: boolean = result.includes("Swapping from");
+  assertEquals(resultIncludesSwappingFrom, true, "result should include 'Swapping from'");
 });
 
 Deno.test("renderSwapIndicator: renders swap with target", () => {
@@ -833,8 +833,8 @@ Deno.test("renderResizeModeIndicator: renders nothing when inactive", () => {
 Deno.test("renderResizeModeIndicator: renders when active", () => {
   const state = { isActive: true, paneId: "main" };
   const result = renderResizeModeIndicator(state, theme);
-  const assertionResult11: boolean = result.includes("RESIZE MODE");
-  assertEquals(assertionResult11, true);
+  const resultIncludesRESIZEMODE: boolean = result.includes("RESIZE MODE");
+  assertEquals(resultIncludesRESIZEMODE, true, "result should include 'RESIZE MODE'");
 });
 
 // Normalization Tests

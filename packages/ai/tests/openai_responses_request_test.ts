@@ -57,10 +57,16 @@ Deno.test("an incomplete reply with no output throws ProviderTruncationError nam
     };
     const error = assertThrows(() => assertResponsesNotFailed(response, "openai-fixture"), ProviderTruncationError);
     assertEquals(error.provider, "openai-fixture");
-    const assertionResult: boolean = error.message.includes("max_output_tokens");
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = error.message.includes("incomplete_details.reason=max_output_tokens");
-    assertEquals(assertionResult2, true);
+    const messageIncludesMaxOutputTokens: boolean = error.message.includes("max_output_tokens");
+    assertEquals(messageIncludesMaxOutputTokens, true, "message should include 'max_output_tokens'");
+    const messageIncludesIncompleteDetailsReason: boolean = error.message.includes(
+      "incomplete_details.reason=max_output_tokens",
+    );
+    assertEquals(
+      messageIncludesIncompleteDetailsReason,
+      true,
+      "message should include 'incomplete_details.reason=max_output_tok'",
+    );
     assertEquals(error instanceof ModelProviderError, true);
     assertEquals(isRetryable(error), false);
   }
@@ -72,8 +78,14 @@ Deno.test("an incomplete reply without incomplete_details is still typed and nam
       () => assertResponsesNotFailed({ status: "incomplete", incomplete_details }, "openai-fixture"),
       ProviderTruncationError,
     );
-    const assertionResult3: boolean = error.message.includes("incomplete_details.reason=unknown");
-    assertEquals(assertionResult3, true);
+    const messageIncludesIncompleteDetailsReason2: boolean = error.message.includes(
+      "incomplete_details.reason=unknown",
+    );
+    assertEquals(
+      messageIncludesIncompleteDetailsReason2,
+      true,
+      "message should include 'incomplete_details.reason=unknown'",
+    );
   }
 });
 

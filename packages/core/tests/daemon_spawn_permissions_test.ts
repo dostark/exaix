@@ -29,27 +29,33 @@ Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS includes net, read, write, ru
 });
 
 Deno.test("[daemon_perms] run allowlist includes git, deno, opencode, claude", () => {
-  const assertionResult: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("git");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("deno");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("opencode");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("claude");
-  assertEquals(assertionResult4, true);
+  const dAEMON_SPAWN_RUN_BINARIESIncludesGit: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("git");
+  assertEquals(dAEMON_SPAWN_RUN_BINARIESIncludesGit, true, "DAEMON_SPAWN_RUN_BINARIES should include 'git'");
+  const dAEMON_SPAWN_RUN_BINARIESIncludesDeno: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("deno");
+  assertEquals(dAEMON_SPAWN_RUN_BINARIESIncludesDeno, true, "DAEMON_SPAWN_RUN_BINARIES should include 'deno'");
+  const dAEMON_SPAWN_RUN_BINARIESIncludesOpencode: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("opencode");
+  assertEquals(dAEMON_SPAWN_RUN_BINARIESIncludesOpencode, true, "DAEMON_SPAWN_RUN_BINARIES should include 'opencode'");
+  const dAEMON_SPAWN_RUN_BINARIESIncludesClaude: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("claude");
+  assertEquals(dAEMON_SPAWN_RUN_BINARIESIncludesClaude, true, "DAEMON_SPAWN_RUN_BINARIES should include 'claude'");
 });
 
 Deno.test("[daemon_perms][security] run allowlist includes Codex and excludes arbitrary executables", () => {
-  const assertionResult5: boolean = DAEMON_SPAWN_RUN_BINARIES.includes(SESSION_BIN_CODEX);
-  assertEquals(assertionResult5, true);
+  const dAEMON_SPAWN_RUN_BINARIESIncludesSESSION_BIN_CODEX: boolean = DAEMON_SPAWN_RUN_BINARIES.includes(
+    SESSION_BIN_CODEX,
+  );
+  assertEquals(
+    dAEMON_SPAWN_RUN_BINARIESIncludesSESSION_BIN_CODEX,
+    true,
+    "DAEMON_SPAWN_RUN_BINARIES should include SESSION_BIN_CODEX",
+  );
   assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("arbitrary-executable"));
 });
 
 Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
   // Regression: a historical typo (`exoctl`) leaked into the daemon --allow-run set, so
   // the daemon could never spawn the real `exactl` CLI.
-  const assertionResult6: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("exactl");
-  assertEquals(assertionResult6, true, "must allow the real `exactl` binary");
+  const dAEMON_SPAWN_RUN_BINARIESIncludesExactl: boolean = DAEMON_SPAWN_RUN_BINARIES.includes("exactl");
+  assertEquals(dAEMON_SPAWN_RUN_BINARIESIncludesExactl, true, "must allow the real `exactl` binary");
   assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), "must not list the non-existent `exoctl`");
 });
 
@@ -58,10 +64,24 @@ Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS.run is the same reference as 
 });
 
 Deno.test("[daemon_perms] default net hosts cover the built-in providers", () => {
-  const assertionResult7: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("api.anthropic.com");
-  assertEquals(assertionResult7, true);
-  const assertionResult8: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("api.openai.com");
-  assertEquals(assertionResult8, true);
-  const assertionResult9: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("localhost:11434");
-  assertEquals(assertionResult9, true);
+  const dAEMON_DEFAULT_NET_HOSTSIncludesApiAnthropicCom: boolean = DAEMON_DEFAULT_NET_HOSTS.includes(
+    "api.anthropic.com",
+  );
+  assertEquals(
+    dAEMON_DEFAULT_NET_HOSTSIncludesApiAnthropicCom,
+    true,
+    "DAEMON_DEFAULT_NET_HOSTS should include 'api.anthropic.com'",
+  );
+  const dAEMON_DEFAULT_NET_HOSTSIncludesApiOpenaiCom: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("api.openai.com");
+  assertEquals(
+    dAEMON_DEFAULT_NET_HOSTSIncludesApiOpenaiCom,
+    true,
+    "DAEMON_DEFAULT_NET_HOSTS should include 'api.openai.com'",
+  );
+  const dAEMON_DEFAULT_NET_HOSTSIncludesLocalhost11434: boolean = DAEMON_DEFAULT_NET_HOSTS.includes("localhost:11434");
+  assertEquals(
+    dAEMON_DEFAULT_NET_HOSTSIncludesLocalhost11434,
+    true,
+    "DAEMON_DEFAULT_NET_HOSTS should include 'localhost:11434'",
+  );
 });

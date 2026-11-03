@@ -43,8 +43,8 @@ Deno.test("[deno-task-runner] the task runs with the given cwd", async () => {
     assertEquals(outcome.kind, "exited");
     const output = outcome.kind === "exited" ? outcome.stdout : outcome.kind;
     assert(outcome.kind === "exited" && outcome.code === 0, output);
-    const assertionResult: boolean = output.includes(`CWD=${tempDir}`);
-    assert(assertionResult, output);
+    const outputIncludesSubject: boolean = output.includes(`CWD=${tempDir}`);
+    assert(outputIncludesSubject, output);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

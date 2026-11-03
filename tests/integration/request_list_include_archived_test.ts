@@ -5,7 +5,7 @@
  * archived and rejected requests.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { RequestListHandler } from "../../apps/exactl/src/handlers/request_list_handler.ts";
 
@@ -48,12 +48,9 @@ Deno.test("Integration: Request List - includes archived when requested", async 
     assertEquals(allRequests.length, 3, "Should show all 3 requests with --all flag");
 
     const traceIds = allRequests.map((r: { trace_id: string }) => r.trace_id);
-    const includesResult: boolean = traceIds.includes(traceActive);
-    assert(includesResult);
-    const includesResult2: boolean = traceIds.includes(traceCompleted);
-    assert(includesResult2);
-    const includesResult3: boolean = traceIds.includes(traceFailed);
-    assert(includesResult3);
+    assertArrayIncludes(traceIds, [traceActive]);
+    assertArrayIncludes(traceIds, [traceCompleted]);
+    assertArrayIncludes(traceIds, [traceFailed]);
   } finally {
     await env.cleanup();
   }

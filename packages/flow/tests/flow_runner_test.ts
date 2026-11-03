@@ -210,12 +210,12 @@ Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts
   assertEquals(result.success, true);
   assertEquals(received.length, 1);
   const prompt = received[0].userPrompt;
-  const assertionResult: boolean = prompt.includes("test request");
-  assert(assertionResult, "the request text is still present");
-  const assertionResult2: boolean = prompt.includes("<content>");
-  assert(assertionResult2, "the prompt instructs the <content> envelope");
-  const assertionResult3: boolean = prompt.includes("MUST be valid JSON");
-  assert(assertionResult3, "the prompt demands valid JSON in <content>");
+  const promptIncludesTestRequest: boolean = prompt.includes("test request");
+  assert(promptIncludesTestRequest, "the request text is still present");
+  const promptIncludesContent: boolean = prompt.includes("<content>");
+  assert(promptIncludesContent, "the prompt instructs the <content> envelope");
+  const promptIncludesMUSTBeValid: boolean = prompt.includes("MUST be valid JSON");
+  assert(promptIncludesMUSTBeValid, "the prompt demands valid JSON in <content>");
   assert(
     /final step of a multi-agent flow/i.test(prompt),
     "the final output step's instruction is plan-shaped",
@@ -252,8 +252,8 @@ Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction 
   assertEquals(result.success, true);
   assertEquals(received.length, 2);
   const firstPrompt = received[0].userPrompt;
-  const assertionResult4: boolean = firstPrompt.includes("<content>");
-  assert(assertionResult4, "every agent step prompt carries the envelope instruction");
+  const firstPromptIncludesContent: boolean = firstPrompt.includes("<content>");
+  assert(firstPromptIncludesContent, "every agent step prompt carries the envelope instruction");
   assert(
     !/final step of a multi-agent flow/i.test(firstPrompt),
     "a non-final step must not claim to be the final step",
@@ -464,8 +464,8 @@ Deno.test("FlowRunner: handles failFast behavior", async () => {
     throw new Error("Expected FlowExecutionError to be thrown");
   } catch (error) {
     assert(error instanceof FlowExecutionError);
-    const assertionResult5: boolean = error.message.includes("Step step2 failed");
-    assert(assertionResult5);
+    const messageIncludesStepStep2Failed: boolean = error.message.includes("Step step2 failed");
+    assert(messageIncludesStepStep2Failed, "message should include 'Step step2 failed'");
   }
 });
 
@@ -955,8 +955,8 @@ Deno.test("FlowRunner: handles empty flow", async () => {
     throw new Error("Expected FlowExecutionError to be thrown");
   } catch (error) {
     assert(error instanceof FlowExecutionError);
-    const assertionResult6: boolean = error.message.includes("Flow must have at least one step");
-    assert(assertionResult6);
+    const messageIncludesFlowMustHave: boolean = error.message.includes("Flow must have at least one step");
+    assert(messageIncludesFlowMustHave, "message should include 'Flow must have at least one step'");
   }
 });
 

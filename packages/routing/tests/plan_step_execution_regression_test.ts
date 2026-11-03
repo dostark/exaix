@@ -49,8 +49,8 @@ Verify that the plan was actually executed.
 
   assertEquals(structuredPlan!.steps[0].number, 1, "First step should be number 1");
   assertEquals(structuredPlan!.steps[0].title, "Create test file", "First step title should match");
-  const assertionResult: boolean = structuredPlan!.steps[0].content.includes("Create a test file");
-  assert(assertionResult, "First step content should match");
+  const contentIncludesCreateATest: boolean = structuredPlan!.steps[0].content.includes("Create a test file");
+  assert(contentIncludesCreateATest, "First step content should match");
 
   assertEquals(structuredPlan!.steps[1].number, 2, "Second step should be number 2");
   assertEquals(structuredPlan!.steps[1].title, "Verify execution", "Second step title should match");

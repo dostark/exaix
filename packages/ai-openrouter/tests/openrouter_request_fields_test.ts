@@ -7,7 +7,7 @@
  * The widest requests switch on every optional feature, so a new field fails this test until it is documented.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { JSONObject, JSONValue } from "@exaix/core";
 import { OpenRouterProvider } from "../src/openrouter_provider.ts";
@@ -117,12 +117,9 @@ Deno.test("every field of the widest requests is in the README table", async () 
   const wide = fieldPaths(await sentBody(WIDE_OPTIONS, WIDE_ROUTING));
   const ordered = fieldPaths(await sentBody({ ...WIDE_OPTIONS, traceId: undefined }, ORDER_ROUTING));
   const paths = [...new Set([...wide, ...ordered])];
-  const includesResult: boolean = paths.includes("session_id");
-  assert(includesResult, "the widest request must carry the sticky session key");
-  const includesResult2: boolean = paths.includes("provider.order");
-  assert(includesResult2, "the ordered request must carry provider.order");
-  const includesResult3: boolean = paths.includes(CACHE_PATH);
-  assert(includesResult3, "the widest request must carry a cache breakpoint");
+  assertArrayIncludes(paths, ["session_id"], "the widest request must carry the sticky session key");
+  assertArrayIncludes(paths, ["provider.order"], "the ordered request must carry provider.order");
+  assertArrayIncludes(paths, [CACHE_PATH], "the widest request must carry a cache breakpoint");
   assert(paths.includes("reasoning") && paths.includes("response_format") && paths.includes("tool_choice"));
   assertEquals(undocumented(paths, README_TEXT), []);
 });

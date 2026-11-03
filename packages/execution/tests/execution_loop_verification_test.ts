@@ -227,10 +227,10 @@ Deno.test("[execution-verification] a passing check completes with verification_
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "passed");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    const assertionResult: boolean = events.includes("execution.verification.started");
-    assert(assertionResult, events.join(","));
-    const assertionResult2: boolean = events.includes("execution.verification.passed");
-    assert(assertionResult2, events.join(","));
+    const eventsIncludesExecutionVerificationStarted: boolean = events.includes("execution.verification.started");
+    assert(eventsIncludesExecutionVerificationStarted, events.join(","));
+    const eventsIncludesExecutionVerificationPassed: boolean = events.includes("execution.verification.passed");
+    assert(eventsIncludesExecutionVerificationPassed, events.join(","));
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {
@@ -250,8 +250,8 @@ Deno.test("[execution-verification] a failing check still registers the review a
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "failed");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    const assertionResult3: boolean = events.includes("execution.verification.failed");
-    assert(assertionResult3, events.join(","));
+    const eventsIncludesExecutionVerificationFailed: boolean = events.includes("execution.verification.failed");
+    assert(eventsIncludesExecutionVerificationFailed, events.join(","));
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {

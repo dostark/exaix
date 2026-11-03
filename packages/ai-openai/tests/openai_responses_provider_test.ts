@@ -116,8 +116,14 @@ Deno.test("OpenAIProvider rejects an empty incomplete Responses reply once with 
     assertEquals(error.provider, provider.id);
     assertEquals(scripted.sent.length, 1);
     assertEquals(scripted.sent[0].url, RESPONSES_URL);
-    const assertionResult: boolean = error.message.includes("incomplete_details.reason=max_output_tokens");
-    assertEquals(assertionResult, true);
+    const messageIncludesIncompleteDetailsReason: boolean = error.message.includes(
+      "incomplete_details.reason=max_output_tokens",
+    );
+    assertEquals(
+      messageIncludesIncompleteDetailsReason,
+      true,
+      "message should include 'incomplete_details.reason=max_output_tok'",
+    );
   } finally {
     scripted.restore();
   }

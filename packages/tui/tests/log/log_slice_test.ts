@@ -47,12 +47,12 @@ Deno.test("log slice: renderLogEntry formats context and truncates long messages
     maxMessageLength: 20,
   });
 
-  const assertionResult: boolean = rendered.includes("trace:abcdef12");
-  assert(assertionResult);
-  const assertionResult2: boolean = rendered.includes("corr:corr-123");
-  assert(assertionResult2);
-  const assertionResult3: boolean = rendered.includes("...");
-  assert(assertionResult3);
+  const renderedIncludesTraceAbcdef12: boolean = rendered.includes("trace:abcdef12");
+  assert(renderedIncludesTraceAbcdef12, "rendered should include 'trace:abcdef12'");
+  const renderedIncludesCorrCorr123: boolean = rendered.includes("corr:corr-123");
+  assert(renderedIncludesCorrCorr123, "rendered should include 'corr:corr-123'");
+  const renderedIncludesText: boolean = rendered.includes("...");
+  assert(renderedIncludesText, "rendered should include '...'");
 });
 
 Deno.test("log slice: LogStreamManager starts, flushes, and stops", async () => {

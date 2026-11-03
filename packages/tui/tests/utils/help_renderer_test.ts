@@ -201,21 +201,21 @@ Deno.test("renderQuickHelp: renders quick help bar", () => {
     { key: "q", action: "Quit" },
   ];
   const result = renderQuickHelp(items, false);
-  const assertionResult: boolean = result.includes("?");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.includes("Help");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = result.includes("q");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = result.includes("Quit");
-  assertEquals(assertionResult4, true);
+  const resultIncludesText: boolean = result.includes("?");
+  assertEquals(resultIncludesText, true, "result should include '?'");
+  const resultIncludesHelp: boolean = result.includes("Help");
+  assertEquals(resultIncludesHelp, true, "result should include 'Help'");
+  const resultIncludesQ: boolean = result.includes("q");
+  assertEquals(resultIncludesQ, true, "result should include 'q'");
+  const resultIncludesQuit: boolean = result.includes("Quit");
+  assertEquals(resultIncludesQuit, true, "result should include 'Quit'");
 });
 
 Deno.test("renderQuickHelp: renders with colors", () => {
   const items = [{ key: "x", action: "Test" }];
   const result = renderQuickHelp(items, true);
-  const assertionResult5: boolean = result.includes("\x1b[");
-  assertEquals(assertionResult5, true);
+  const resultIncludesText2: boolean = result.includes("\x1b[");
+  assertEquals(resultIncludesText2, true, "result should include '\u001b['");
 });
 
 Deno.test("renderQuickHelp: separates items with spaces", () => {
@@ -224,8 +224,8 @@ Deno.test("renderQuickHelp: separates items with spaces", () => {
     { key: "b", action: "B" },
   ];
   const result = renderQuickHelp(items, false);
-  const assertionResult6: boolean = result.includes("  ");
-  assertEquals(assertionResult6, true);
+  const resultIncludesText3: boolean = result.includes("  ");
+  assertEquals(resultIncludesText3, true, "result should include ' '");
 });
 
 Deno.test("getStandardQuickHelp: returns standard items", () => {

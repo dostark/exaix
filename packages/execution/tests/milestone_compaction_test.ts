@@ -103,8 +103,8 @@ Deno.test(
     assertEquals(mockEmitter.emitted[0].milestoneType, MILESTONE_CONTEXT_COMPACTION_APPLIED);
     assertEquals(mockEmitter.emitted[0].requiresAttention, false);
     assertEquals(mockEmitter.emitted[0].traceId, "trace-compaction-milestone");
-    const assertionResult: boolean = mockEmitter.emitted[0].summary.includes("compacted");
-    assertEquals(assertionResult, true);
+    const summaryIncludesCompacted: boolean = mockEmitter.emitted[0].summary.includes("compacted");
+    assertEquals(summaryIncludesCompacted, true, "summary should include 'compacted'");
   },
 );
 

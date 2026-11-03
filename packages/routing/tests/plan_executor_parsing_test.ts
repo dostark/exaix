@@ -71,16 +71,20 @@ Deno.test("Plan Executor - Parsing", async (t) => {
       const step1Content = stepMatches[0][2];
 
       // Check description
-      const assertionResult: boolean = step1Content.includes("Create the database schema");
-      assertEquals(assertionResult, true);
+      const step1ContentIncludesCreateTheDatabase: boolean = step1Content.includes("Create the database schema");
+      assertEquals(
+        step1ContentIncludesCreateTheDatabase,
+        true,
+        "step1Content should include 'Create the database schema'",
+      );
 
       // Check tasks
-      const assertionResult2: boolean = step1Content.includes("- Create users table");
-      assertEquals(assertionResult2, true);
-      const assertionResult3: boolean = step1Content.includes("- Add indexes");
-      assertEquals(assertionResult3, true);
-      const assertionResult4: boolean = step1Content.includes("- Set up migrations");
-      assertEquals(assertionResult4, true);
+      const step1ContentIncludesCreateUsersTable: boolean = step1Content.includes("- Create users table");
+      assertEquals(step1ContentIncludesCreateUsersTable, true, "step1Content should include '- Create users table'");
+      const step1ContentIncludesAddIndexes: boolean = step1Content.includes("- Add indexes");
+      assertEquals(step1ContentIncludesAddIndexes, true, "step1Content should include '- Add indexes'");
+      const step1ContentIncludesSetUpMigrations: boolean = step1Content.includes("- Set up migrations");
+      assertEquals(step1ContentIncludesSetUpMigrations, true, "step1Content should include '- Set up migrations'");
     });
 
     await t.step("should handle plans with single step", async () => {
@@ -303,8 +307,8 @@ trace_id: test-trace-123
       assertEquals(step1Content, "");
 
       const step2Content = stepMatches[1][2].trim();
-      const assertionResult5: boolean = step2Content.includes("Some content here");
-      assertEquals(assertionResult5, true);
+      const step2ContentIncludesSomeContentHere: boolean = step2Content.includes("Some content here");
+      assertEquals(step2ContentIncludesSomeContentHere, true, "step2Content should include 'Some content here'");
     });
   });
 
@@ -347,18 +351,30 @@ trace_id: test-trace-123
 
       assertEquals(stepMatches[0][1], "1");
       assertEquals(stepMatches[0][2], "Create User Model");
-      const assertionResult6: boolean = stepMatches[0][3].includes("Add User interface");
-      assertEquals(assertionResult6, true);
+      const stepMatchesItemItemIncludesAddUserInterface: boolean = stepMatches[0][3].includes("Add User interface");
+      assertEquals(
+        stepMatchesItemItemIncludesAddUserInterface,
+        true,
+        "stepMatchesItemItem should include 'Add User interface'",
+      );
 
       assertEquals(stepMatches[1][1], "2");
       assertEquals(stepMatches[1][2], "Add Authentication Routes");
-      const assertionResult7: boolean = stepMatches[1][3].includes("POST /api/auth/signup");
-      assertEquals(assertionResult7, true);
+      const stepMatchesItemItemIncludesPOSTApiAuth: boolean = stepMatches[1][3].includes("POST /api/auth/signup");
+      assertEquals(
+        stepMatchesItemItemIncludesPOSTApiAuth,
+        true,
+        "stepMatchesItemItem should include 'POST /api/auth/signup'",
+      );
 
       assertEquals(stepMatches[2][1], "3");
       assertEquals(stepMatches[2][2], "Add Middleware");
-      const assertionResult8: boolean = stepMatches[2][3].includes("Verify JWT tokens");
-      assertEquals(assertionResult8, true);
+      const stepMatchesItemItemIncludesVerifyJWTTokens: boolean = stepMatches[2][3].includes("Verify JWT tokens");
+      assertEquals(
+        stepMatchesItemItemIncludesVerifyJWTTokens,
+        true,
+        "stepMatchesItemItem should include 'Verify JWT tokens'",
+      );
     });
 
     await t.step("should parse plan from Workspace/Active directory", async () => {

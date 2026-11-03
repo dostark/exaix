@@ -83,10 +83,10 @@ Deno.test("[ToolRegistry] query_relationships and who_depends_on are registered"
     });
     const registry = new ToolRegistry({ config, baseDir: dir });
     const names = registry.getTools().map((t) => t.name);
-    const assertionResult: boolean = names.includes(ToolName.QUERY_RELATIONSHIPS);
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = names.includes(ToolName.WHO_DEPENDS_ON);
-    assertEquals(assertionResult2, true);
+    const namesIncludesQUERY_RELATIONSHIPS: boolean = names.includes(ToolName.QUERY_RELATIONSHIPS);
+    assertEquals(namesIncludesQUERY_RELATIONSHIPS, true, "names should include ToolName.QUERY_RELATIONSHIPS");
+    const namesIncludesWHO_DEPENDS_ON: boolean = names.includes(ToolName.WHO_DEPENDS_ON);
+    assertEquals(namesIncludesWHO_DEPENDS_ON, true, "names should include ToolName.WHO_DEPENDS_ON");
   }, { prefix: "tool-relq-registered-" });
 });
 

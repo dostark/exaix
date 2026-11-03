@@ -45,12 +45,12 @@ Deno.test("[net] unset allow_net grants every catalog host, bound or not", async
     });
     const grant = await computeStartNetGrant(config);
     // DAEMON_DEFAULT_NET_HOSTS hosts plus the two catalog hosts, deduped and sorted.
-    const assertionResult: boolean = grant.includes("alpha.example.com");
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = grant.includes("beta.example.com:8443");
-    assertEquals(assertionResult2, true);
-    const assertionResult3: boolean = grant.includes("api.anthropic.com");
-    assertEquals(assertionResult3, true);
+    const grantIncludesAlphaExampleCom: boolean = grant.includes("alpha.example.com");
+    assertEquals(grantIncludesAlphaExampleCom, true, "grant should include 'alpha.example.com'");
+    const grantIncludesBetaExampleCom: boolean = grant.includes("beta.example.com:8443");
+    assertEquals(grantIncludesBetaExampleCom, true, "grant should include 'beta.example.com:8443'");
+    const grantIncludesApiAnthropicCom: boolean = grant.includes("api.anthropic.com");
+    assertEquals(grantIncludesApiAnthropicCom, true, "grant should include 'api.anthropic.com'");
     assertEquals(new Set(grant).size, grant.length);
   }, { prefix: "net-grant-" });
 });
@@ -145,8 +145,8 @@ Deno.test("[net] daemon overlay catalog hosts are included in the grant", async 
     );
     const config = configWith(tempDir);
     const grant = await computeStartNetGrant(config);
-    const assertionResult4: boolean = grant.includes("gamma.internal.example.com");
-    assertEquals(assertionResult4, true);
+    const grantIncludesGammaInternalExample: boolean = grant.includes("gamma.internal.example.com");
+    assertEquals(grantIncludesGammaInternalExample, true, "grant should include 'gamma.internal.example.com'");
   }, { prefix: "net-grant-" });
 });
 

@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { loadPortTables, PORT_OUTCOME } from "./helpers/port_tables.ts";
 
 const SELECTION_VARIABLE = "EXAIX_LINT_RULES";
@@ -56,8 +56,11 @@ Deno.test("a ported rule with the decision extend-scripts-run is selected in the
     )
   ) {
     for (const part of row.parts.filter((candidate) => candidate.pack !== "exaix")) {
-      const includesResult: boolean = task.scriptsRunRules.includes(`${PLUGIN_NAME}/${part.key}`);
-      assert(includesResult, `${row.id} is not selected for scripts/`);
+      assertArrayIncludes(
+        task.scriptsRunRules,
+        [`${PLUGIN_NAME}/${part.key}`],
+        `${row.id} is not selected for scripts/`,
+      );
     }
   }
 });
@@ -67,8 +70,7 @@ Deno.test("the comment rules record the non-TypeScript surfaces that leave their
   const row = tables.rules.find((candidate) => candidate.id === COMMENT_RULE);
   assert(row !== undefined);
   for (const surface of NON_TYPESCRIPT_SURFACES) {
-    const includesResult2: boolean = row.scope.dropped.includes(surface);
-    assert(includesResult2, `long-comment does not record ${surface}`);
+    assertArrayIncludes(row.scope.dropped, [surface], `long-comment does not record ${surface}`);
   }
 });
 

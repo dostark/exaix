@@ -41,8 +41,8 @@ Deno.test("ToolRegistry: patch_file (flat search/replace shape)", async (t) => {
     assertEquals(data.path, "test.ts");
 
     const content = await Deno.readTextFile(file);
-    const assertionResult: boolean = content.includes('console.log("Goodbye World");');
-    assertEquals(assertionResult, true);
+    const contentIncludesConsoleLogGoodbye: boolean = content.includes('console.log("Goodbye World");');
+    assertEquals(contentIncludesConsoleLogGoodbye, true, "content should include 'console.log(\"Goodbye World\");'");
     assertFalse(content.includes('console.log("Hello World");'));
   });
 

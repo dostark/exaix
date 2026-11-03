@@ -102,8 +102,8 @@ describe("ReviewRegistry Portal Support", () => {
       );
 
       const portalBranches = await new GitTestHelper(portalRepoDir).listBranches();
-      const assertionResult: boolean = portalBranches.includes(branchName);
-      assertEquals(assertionResult, true);
+      const portalBranchesIncludesBranchName: boolean = portalBranches.includes(branchName);
+      assertEquals(portalBranchesIncludesBranchName, true, "portalBranches should include branchName");
 
       const workspaceBranches = await new GitTestHelper(workspaceRepoDir).listBranches();
       assertFalse(workspaceBranches.includes(branchName));
@@ -135,10 +135,10 @@ describe("ReviewRegistry Portal Support", () => {
 
       const diff = await registry.getDiff(reviewId);
 
-      const assertionResult2: boolean = diff.includes("portal content");
-      assertEquals(assertionResult2, true);
-      const assertionResult3: boolean = diff.includes("test.txt");
-      assertEquals(assertionResult3, true);
+      const diffIncludesPortalContent: boolean = diff.includes("portal content");
+      assertEquals(diffIncludesPortalContent, true, "diff should include 'portal content'");
+      const diffIncludesTestTxt: boolean = diff.includes("test.txt");
+      assertEquals(diffIncludesTestTxt, true, "diff should include 'test.txt'");
     });
 
     it("logs review.diff.read to IActivity Journal", async () => {
@@ -222,12 +222,12 @@ describe("ReviewRegistry Portal Support", () => {
       const portalDiff = await registry.getDiff(portalReviewId);
       const workspaceDiff = await registry.getDiff(workspaceReviewId);
 
-      const assertionResult4: boolean = portalDiff.includes("portal.txt");
-      assertEquals(assertionResult4, true);
+      const portalDiffIncludesPortalTxt: boolean = portalDiff.includes("portal.txt");
+      assertEquals(portalDiffIncludesPortalTxt, true, "portalDiff should include 'portal.txt'");
       assertFalse(portalDiff.includes("workspace.txt"));
 
-      const assertionResult5: boolean = workspaceDiff.includes("workspace.txt");
-      assertEquals(assertionResult5, true);
+      const workspaceDiffIncludesWorkspaceTxt: boolean = workspaceDiff.includes("workspace.txt");
+      assertEquals(workspaceDiffIncludesWorkspaceTxt, true, "workspaceDiff should include 'workspace.txt'");
       assertFalse(workspaceDiff.includes("portal.txt"));
     });
   });

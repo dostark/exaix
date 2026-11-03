@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { emittedRuleIds, loadPortTables, PORT_ORIGIN, PORT_OUTCOME } from "./helpers/port_tables.ts";
 
 const PLUGIN_RULE_ID = "exaix/exported-interface-naming";
@@ -36,10 +36,8 @@ Deno.test("a row is marked emitted exactly when the catalog does not list it", a
 Deno.test("the table also covers the plugin rule and the magic-literal checker", async () => {
   const tables = await loadPortTables();
   const ids = tables.rules.map((row) => row.id);
-  const includesResult: boolean = ids.includes(PLUGIN_RULE_ID);
-  assert(includesResult);
-  const includesResult2: boolean = ids.includes(MAGIC_CHECKER_ROW);
-  assert(includesResult2);
+  assertArrayIncludes(ids, [PLUGIN_RULE_ID]);
+  assertArrayIncludes(ids, [MAGIC_CHECKER_ROW]);
 });
 
 Deno.test("each row has a unique id and its parts match its outcome", async () => {

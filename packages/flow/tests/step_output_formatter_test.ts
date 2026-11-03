@@ -35,10 +35,10 @@ Deno.test("[StepOutputFormatter.applyTransform] passthrough returns input unchan
 Deno.test("[StepOutputFormatter.applyTransform] mergeAsContext merges array transformArgs", () => {
   const formatter = new StepOutputFormatter();
   const result = formatter.applyTransform("ignored", "mergeAsContext", ["a", "b"]);
-  const assertionResult: boolean = result.includes("a");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.includes("b");
-  assertEquals(assertionResult2, true);
+  const resultIncludesA: boolean = result.includes("a");
+  assertEquals(resultIncludesA, true, "result should include 'a'");
+  const resultIncludesB: boolean = result.includes("b");
+  assertEquals(resultIncludesB, true, "result should include 'b'");
 });
 
 Deno.test("[StepOutputFormatter.applyTransform] custom function transform is invoked", () => {

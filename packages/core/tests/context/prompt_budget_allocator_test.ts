@@ -186,10 +186,10 @@ Deno.test("[PromptBudgetAllocator] error message includes sections count", async
     throw new Error("Should have thrown");
   } catch (error) {
     assert(error instanceof ContextBudgetExceededError);
-    const assertionResult: boolean = error.message.includes("sections");
-    assert(assertionResult);
-    const assertionResult2: boolean = error.message.includes("6");
-    assert(assertionResult2); // 6 section keys
+    const messageIncludesSections: boolean = error.message.includes("sections");
+    assert(messageIncludesSections, "message should include 'sections'");
+    const messageIncludes6: boolean = error.message.includes("6");
+    assert(messageIncludes6, "message should include '6'"); // 6 section keys
   }
 });
 

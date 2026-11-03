@@ -122,9 +122,9 @@ describe("Plan Amendment CLI", () => {
       ];
 
       for (const event of events) {
-        const assertionResult: boolean = event.startsWith("plan.amendment.");
+        const eventStartsWithPlanAmendment: boolean = event.startsWith("plan.amendment.");
         assertEquals(
-          assertionResult,
+          eventStartsWithPlanAmendment,
           true,
           `Event "${event}" should follow "plan.amendment.*" pattern`,
         );

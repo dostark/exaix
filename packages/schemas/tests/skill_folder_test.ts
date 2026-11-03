@@ -10,7 +10,7 @@
  * @related-files [packages/schemas/src/skill_folder.ts, packages/schemas/src/runtime_skill.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertThrows } from "@std/assert";
 import {
   SkillAuthoringSchema,
   SkillAuthoringUpdateSchema,
@@ -88,8 +88,7 @@ Deno.test("[skill_folder] runtime view carries no removed counter, UUID or versi
     assert(!keys.includes(removed), `runtime view must not expose ${removed}`);
   }
   for (const required of ["title", "references", "root_kind", "content_sha256", "skill_id"]) {
-    const includesResult: boolean = keys.includes(required);
-    assert(includesResult, `runtime view must expose ${required}`);
+    assertArrayIncludes(keys, [required], `runtime view must expose ${required}`);
   }
 });
 

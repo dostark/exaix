@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { DaemonStatus, DialogStatus, MemoryBankSource } from "@exaix/core";
 import { GroupingMode, LogGroupingMode } from "@exaix/tui";
 import { LOG_COLORS, LOG_ICONS } from "@exaix/tui/config.ts";
@@ -471,16 +471,16 @@ Deno.test("Phase 13.5: MonitorTuiSession - key bindings", () => {
   assert(bindings.length > 0);
 
   const keys = bindings.map((b) => b.key);
-  const includesResult: boolean = keys.includes("up");
-  assert(includesResult);
-  const includesResult2: boolean = keys.includes("down");
-  assert(includesResult2);
-  const includesResult3: boolean = keys.includes("space");
-  assert(includesResult3);
-  const includesResult4: boolean = keys.includes("b");
-  assert(includesResult4);
-  const includesResult5: boolean = keys.includes("?");
-  assert(includesResult5);
+  const keysIncludesUp: boolean = keys.includes("up");
+  assert(keysIncludesUp, "keys should include 'up'");
+  const keysIncludesDown: boolean = keys.includes("down");
+  assert(keysIncludesDown, "keys should include 'down'");
+  const keysIncludesSpace: boolean = keys.includes("space");
+  assert(keysIncludesSpace, "keys should include 'space'");
+  const keysIncludesB: boolean = keys.includes("b");
+  assert(keysIncludesB, "keys should include 'b'");
+  const keysIncludesText: boolean = keys.includes("?");
+  assert(keysIncludesText, "keys should include '?'");
 });
 
 Deno.test("Phase 13.5: MonitorTuiSession - export logs", () => {
@@ -508,10 +508,8 @@ Deno.test("Phase 13.5: MonitorTuiSession - focusable elements", () => {
   const { session } = createMonitorSession([]);
 
   const elements = session.getFocusableElements();
-  const includesResult6: boolean = elements.includes("log-list");
-  assert(includesResult6);
-  const includesResult7: boolean = elements.includes("action-buttons");
-  assert(includesResult7);
+  assertArrayIncludes(elements, ["log-list"]);
+  assertArrayIncludes(elements, ["action-buttons"]);
 });
 
 // Helper to access protected/private members of MonitorTuiSession for testing

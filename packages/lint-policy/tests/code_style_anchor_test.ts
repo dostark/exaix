@@ -88,7 +88,7 @@ Deno.test("every generic rule that the catalog ports points at the guide", () =>
   for (const id of ids) {
     const entry = rules[id] ?? rules[`exaix/${id}`];
     if (entry === undefined || entry.codeStyle === undefined) continue;
-    const assertionResult: boolean = entry.codeStyle.startsWith(GUIDE);
-    assert(assertionResult, `${id} points at ${entry.codeStyle}, not the guide`);
+    const codeStyleStartsWithGUIDE: boolean = entry.codeStyle.startsWith(GUIDE);
+    assert(codeStyleStartsWithGUIDE, `${id} points at ${entry.codeStyle}, not the guide`);
   }
 });

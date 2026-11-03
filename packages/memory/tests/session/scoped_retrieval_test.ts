@@ -82,8 +82,8 @@ Deno.test("[SessionMemoryService] scoped lookup denies another portal's pattern 
     });
     const sources = memories.filter((m) => m.type === MemoryType.PATTERN).map((m) => m.source);
 
-    const assertionResult: boolean = sources.includes(`pattern:${patternA.id}`);
-    assertEquals(assertionResult, true, "portal-a's own pattern must surface");
+    const sourcesIncludesSubject: boolean = sources.includes(`pattern:${patternA.id}`);
+    assertEquals(sourcesIncludesSubject, true, "portal-a's own pattern must surface");
     assertFalse(sources.includes(`pattern:${patternB.id}`), "portal-b's pattern must never leak into scope");
   } finally {
     await cleanup();
@@ -165,8 +165,8 @@ Deno.test("[SessionMemoryService] scoped lookup denies a PENDING global learning
     });
     const sources = memories.filter((m) => m.type === MemoryType.LEARNING).map((m) => m.source);
 
-    const assertionResult2: boolean = sources.includes(`learning:${approved.id}`);
-    assertEquals(assertionResult2, true);
+    const sourcesIncludesSubject2: boolean = sources.includes(`learning:${approved.id}`);
+    assertEquals(sourcesIncludesSubject2, true, "sources should include `learning:${approved.id}`");
     assertFalse(sources.includes(`learning:${pending.id}`), "a PENDING learning must never surface");
   } finally {
     await cleanup();
@@ -322,10 +322,10 @@ Deno.test("[SessionMemoryService] legacy unscoped (3-argument) call keeps its ex
     const memories = await sessionMemory.lookupMemories("pattern", undefined);
     const sources = memories.filter((m) => m.type === MemoryType.PATTERN).map((m) => m.source);
 
-    const assertionResult3: boolean = sources.includes(`pattern:${patternA.id}`);
-    assertEquals(assertionResult3, true);
-    const assertionResult4: boolean = sources.includes(`pattern:${patternB.id}`);
-    assertEquals(assertionResult4, true, "unscoped calls must still see both portals");
+    const sourcesIncludesSubject3: boolean = sources.includes(`pattern:${patternA.id}`);
+    assertEquals(sourcesIncludesSubject3, true, "sources should include `pattern:${patternA.id}`");
+    const sourcesIncludesSubject4: boolean = sources.includes(`pattern:${patternB.id}`);
+    assertEquals(sourcesIncludesSubject4, true, "unscoped calls must still see both portals");
   } finally {
     await cleanup();
   }

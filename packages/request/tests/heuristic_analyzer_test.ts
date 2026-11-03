@@ -21,12 +21,18 @@ Deno.test("[HeuristicAnalyzer] detects file references in request text", () => {
   `;
   const result = analyzeHeuristic(text);
   assertExists(result.referencedFiles);
-  const assertionResult: boolean = result.referencedFiles!.includes("src/services/foo.ts");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = result.referencedFiles!.includes("tests/services/foo_test.ts");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = result.referencedFiles!.includes("@exaix/schemas/bar.ts");
-  assertEquals(assertionResult3, true);
+  const referencedFilesIncludesSrcServicesFoo: boolean = result.referencedFiles!.includes("src/services/foo.ts");
+  assertEquals(referencedFilesIncludesSrcServicesFoo, true, "referencedFiles should include 'src/services/foo.ts'");
+  const referencedFilesIncludesTestsServicesFoo: boolean = result.referencedFiles!.includes(
+    "tests/services/foo_test.ts",
+  );
+  assertEquals(
+    referencedFilesIncludesTestsServicesFoo,
+    true,
+    "referencedFiles should include 'tests/services/foo_test.ts'",
+  );
+  const referencedFilesIncludesExaixSchemasBar: boolean = result.referencedFiles!.includes("@exaix/schemas/bar.ts");
+  assertEquals(referencedFilesIncludesExaixSchemasBar, true, "referencedFiles should include '@exaix/schemas/bar.ts'");
 });
 
 Deno.test("[HeuristicAnalyzer] detects unquoted file paths with extensions", () => {

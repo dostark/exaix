@@ -40,8 +40,8 @@ Deno.test("HealthCheckService: checkHealth logs through the injected logger", as
 
   await service.checkHealth();
 
-  const includesResult: boolean = actions.includes(DomainEventType.HealthCheckAll);
-  assertEquals(includesResult, true);
+  const actionsIncludesHealthCheckAll: boolean = actions.includes(DomainEventType.HealthCheckAll);
+  assertEquals(actionsIncludesHealthCheckAll, true, "actions should include DomainEventType.HealthCheckAll");
 });
 
 Deno.test("HealthCheckService: registers health checks", () => {
@@ -445,16 +445,16 @@ Deno.test("[integration] initializeHealthChecks returns operational health check
     assertEquals(typeof report.checks.database.metadata?.response_time_ms, "number");
     assertEquals(report.checks.llm_provider.status, "pass");
     assertEquals(typeof report.checks.llm_provider.metadata?.response_time_ms, "number");
-    const includesResult2: boolean = ["pass", "warn"].includes(report.checks.disk_space.status);
-    assert(includesResult2);
+    const valuesIncludesStatus: boolean = ["pass", "warn"].includes(report.checks.disk_space.status);
+    assert(valuesIncludesStatus, "values should include report.checks.disk_space.status");
     assertEquals(typeof report.checks.disk_space.metadata?.used_percent, "number");
-    const includesResult3: boolean = ["pass", "warn"].includes(report.checks.memory.status);
-    assert(includesResult3);
+    const valuesIncludesStatus2: boolean = ["pass", "warn"].includes(report.checks.memory.status);
+    assert(valuesIncludesStatus2, "values should include report.checks.memory.status");
     assertEquals(typeof report.checks.memory.metadata?.used_mb, "number");
 
     // Report metadata — allow healthy or degraded (memory/disk may warn in constrained env)
-    const includesResult4: boolean = ["healthy", "degraded"].includes(report.status);
-    assert(includesResult4);
+    const valuesIncludesStatus3: boolean = ["healthy", "degraded"].includes(report.status);
+    assert(valuesIncludesStatus3, "values should include report.status");
     assertEquals(typeof report.uptime_seconds, "number");
     assertEquals(typeof report.timestamp, "string");
   } finally {

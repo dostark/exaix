@@ -214,8 +214,8 @@ Deno.test("TUI: error display and recovery", () => {
   ]);
   tui.setSelectedIndex(1); // out of bounds
   tui.handleKey(KEYS.ENTER);
-  const assertionResult: boolean = tui.getStatusMessage().includes("Error");
-  assert(assertionResult, "Error message shown");
+  const getStatusMessageIncludesError: boolean = tui.getStatusMessage().includes("Error");
+  assert(getStatusMessageIncludesError, "Error message shown");
   tui.setSelectedIndex(0);
   tui.handleKey(KEYS.R);
   assertEquals(service.actions[0], { type: "refresh", id: "Main" });
@@ -728,8 +728,8 @@ Deno.test("Phase 13.3: Loading state management", async () => {
 
   // Should be loading now
   assertEquals(tui.isLoading(), true, "Should be loading during operation");
-  const assertionResult2: boolean = tui.getLoadingMessage().includes("Opening");
-  assert(assertionResult2, "Loading message should mention opening");
+  const getLoadingMessageIncludesOpening: boolean = tui.getLoadingMessage().includes("Opening");
+  assert(getLoadingMessageIncludesOpening, "Loading message should mention opening");
 
   // Complete the operation
   resolvePromise!();
@@ -849,14 +849,14 @@ Deno.test("Phase 13.3: Key bindings are defined", () => {
 
   // Check for expected bindings
   const keys = bindings.map((b) => b.key);
-  const includesResult: boolean = keys.includes("up");
-  assert(includesResult, "Should have up key");
-  const includesResult2: boolean = keys.includes("down");
-  assert(includesResult2, "Should have down key");
-  const includesResult3: boolean = keys.includes("enter");
-  assert(includesResult3, "Should have enter key");
-  const includesResult4: boolean = keys.includes("?");
-  assert(includesResult4, "Should have ? key");
+  const keysIncludesUp: boolean = keys.includes("up");
+  assert(keysIncludesUp, "Should have up key");
+  const keysIncludesDown: boolean = keys.includes("down");
+  assert(keysIncludesDown, "Should have down key");
+  const keysIncludesEnter: boolean = keys.includes("enter");
+  assert(keysIncludesEnter, "Should have enter key");
+  const keysIncludesText: boolean = keys.includes("?");
+  assert(keysIncludesText, "Should have ? key");
 });
 
 Deno.test("Phase 13.3: Confirm dialog for remove", async () => {

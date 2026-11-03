@@ -9,6 +9,7 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import {
   assert,
+  assertArrayIncludes,
   assertEquals,
   assertExists,
   assertFalse,
@@ -471,8 +472,8 @@ orchestratorTest("AgentComposer: loads blueprint from file", async () => {
   assertEquals(blueprint.name, "test-agent");
   assertEquals(blueprint.model, "mock-model");
   assertEquals(blueprint.provider, "mock");
-  const assertionResult: boolean = blueprint.capabilities.includes("code_generation");
-  assert(assertionResult);
+  const capabilitiesIncludesCodeGeneration: boolean = blueprint.capabilities.includes("code_generation");
+  assert(capabilitiesIncludesCodeGeneration, "capabilities should include 'code_generation'");
 });
 
 orchestratorTest("AgentComposer: throws error for missing blueprint", async () => {
@@ -1762,8 +1763,7 @@ orchestratorTest("GitAuditService: getChangedFiles returns list of modifications
   await Deno.writeTextFile(join(portalDir, "README.md"), "New content");
   const changed = await auditService.getChangedFiles(portalDir);
 
-  const includesResult: boolean = changed.includes("README.md");
-  assert(includesResult);
+  assertArrayIncludes(changed, ["README.md"]);
 });
 
 orchestratorTest("AgentComposer: checkToolCallLimit validates threshold", () => {
@@ -1785,21 +1785,21 @@ Deno.test({
 
       // Sandboxed
       const sandboxed = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalPath);
-      const assertionResult2: boolean = sandboxed.includes("--allow-read=NONE");
-      assert(assertionResult2);
-      const assertionResult3: boolean = sandboxed.includes("--allow-write=NONE");
-      assert(assertionResult3);
-      const assertionResult4: boolean = sandboxed.includes("--allow-net");
-      assert(assertionResult4);
+      const sandboxedIncludesAllowReadNONE: boolean = sandboxed.includes("--allow-read=NONE");
+      assert(sandboxedIncludesAllowReadNONE, "sandboxed should include '--allow-read=NONE'");
+      const sandboxedIncludesAllowWriteNONE: boolean = sandboxed.includes("--allow-write=NONE");
+      assert(sandboxedIncludesAllowWriteNONE, "sandboxed should include '--allow-write=NONE'");
+      const sandboxedIncludesAllowNet: boolean = sandboxed.includes("--allow-net");
+      assert(sandboxedIncludesAllowNet, "sandboxed should include '--allow-net'");
 
       // Hybrid
       const hybrid = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalPath);
-      const assertionResult5: boolean = hybrid.includes(`--allow-read=${portalPath}`);
-      assert(assertionResult5);
-      const assertionResult6: boolean = hybrid.includes("--allow-write=NONE");
-      assert(assertionResult6);
-      const assertionResult7: boolean = hybrid.includes("--allow-net");
-      assert(assertionResult7);
+      const hybridIncludesSubject: boolean = hybrid.includes(`--allow-read=${portalPath}`);
+      assert(hybridIncludesSubject, "hybrid should include `--allow-read=${portalPath}`");
+      const hybridIncludesAllowWriteNONE: boolean = hybrid.includes("--allow-write=NONE");
+      assert(hybridIncludesAllowWriteNONE, "hybrid should include '--allow-write=NONE'");
+      const hybridIncludesAllowNet: boolean = hybrid.includes("--allow-net");
+      assert(hybridIncludesAllowNet, "hybrid should include '--allow-net'");
 
       // Note: Open mode is not explicitly handled in buildSubprocessPermissions yet,
       // it would probably use default Deno permissions or another set.
@@ -1891,10 +1891,10 @@ Deno.test({
         () => executor.loadBlueprint("bad-yaml"),
         SafeError,
       );
-      const includesResult2: boolean = ["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes(
+      const valuesIncludesErrorCode: boolean = ["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes(
         (error as SafeError).errorCode,
       );
-      assert(includesResult2);
+      assert(valuesIncludesErrorCode, "values should include (error as SafeError).errorCode");
 
       // 2. Invalid Schema (missing required field: model)
       const badSchemaPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "bad-schema.md");

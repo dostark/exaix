@@ -207,8 +207,8 @@ Deno.test("[session_return_watcher] onReconciled callback invoked on accept, not
     });
     await watcher.handleReturnPath(path1);
     assertEquals(reconciledCalls.length, 1, "onReconciled must fire on accept");
-    const assertionResult: boolean = reconciledCalls[0].startsWith(brief1.trace_id);
-    assertEquals(assertionResult, true);
+    const reconciledCallsItemStartsWithTrace_id: boolean = reconciledCalls[0].startsWith(brief1.trace_id);
+    assertEquals(reconciledCallsItemStartsWithTrace_id, true, "reconciledCallsItem should start with brief1.trace_id");
 
     // Forged-token rejection does NOT trigger onReconciled
     const brief2 = await setup(rig, "code_changes", ["src/**"]);

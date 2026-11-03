@@ -10,7 +10,7 @@
 import { assert, assertEquals, assertFalse, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
-import { fixSourceText, validateFileManifest } from "../../scripts/fix_bool_asserts.ts";
+import { fixSourceText, nameResultsInText, validateFileManifest } from "../../scripts/fix_bool_asserts.ts";
 
 const FILE = "packages/x/tests/a_test.ts";
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
@@ -452,4 +452,148 @@ Deno.test("a false check on a subject that cannot be undefined still becomes ass
   );
   assertEquals(result.changed, 1);
   assertStringIncludes(result.text, 'assertFalse(text?.includes("a"))');
+});
+
+const NAMING_IMPORT = 'import { assert, assertEquals } from "@std/assert";\n';
+
+Deno.test("primitive-array-pair-becomes-dedicated-assertion: a string array check becomes assertArrayIncludes", () => {
+  const source = `${NAMING_IMPORT}const names: string[] = ["a"];
+const includesResult: boolean = names.includes("a");
+assertEquals(includesResult, true);
+`;
+  const result = nameResultsInText(FILE, source);
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, 'assertArrayIncludes(names, ["a"]);');
+  assertStringIncludes(result.text, 'import { assert, assertArrayIncludes } from "@std/assert";');
+  assertFalse(result.text.includes("includesResult"));
+});
+
+Deno.test("primitive-array-pair-becomes-dedicated-assertion: a numeric array and a kept message", () => {
+  const source = `${NAMING_IMPORT}const ids: number[] = [1];
+const assertionResult: boolean = ids.includes(1);
+assert(assertionResult, "ids should hold 1");
+`;
+  const result = nameResultsInText(FILE, source);
+  assertStringIncludes(result.text, 'assertArrayIncludes(ids, [1], "ids should hold 1");');
+});
+
+Deno.test("object-array-and-optional-chain-stay-named: object elements, an untyped subject and a false check", () => {
+  const cases: Array<[string, string, string]> = [
+    [
+      "declare const items: { id: string }[];\ndeclare const item: { id: string };\nconst assertionResult: boolean = items.includes(item);\nassert(assertionResult);\n",
+      "const itemsIncludesItem: boolean = items.includes(item);",
+      'assert(itemsIncludesItem, "items should include item");',
+    ],
+    [
+      'declare const names: string[];\nconst assertionResult2: boolean = names.includes("a");\nassertEquals(assertionResult2, false);\n',
+      'const namesIncludesA: boolean = names.includes("a");',
+      "assertEquals(namesIncludesA, false, \"names should not include 'a'\");",
+    ],
+    [
+      'declare const path: string;\nconst assertionResult: boolean = path.startsWith("/tmp");\nassertEquals(assertionResult, true);\n',
+      'const pathStartsWithTmp: boolean = path.startsWith("/tmp");',
+      "assertEquals(pathStartsWithTmp, true, \"path should start with '/tmp'\");",
+    ],
+  ];
+  for (const [body, declaration, assertion] of cases) {
+    const result = nameResultsInText(FILE, withImport(body, NAMING_IMPORT));
+    assertEquals(result.changed, 1, body);
+    assertStringIncludes(result.text, declaration, body);
+    assertStringIncludes(result.text, assertion, body);
+  }
+});
+
+Deno.test("object-array-and-optional-chain-stay-named: an array that may hold undefined keeps its named boolean", () => {
+  const source = `${NAMING_IMPORT}declare const mixed: (string | undefined)[];
+const assertionResult: boolean = mixed.includes("a");
+assert(assertionResult, "kept");
+`;
+  const result = nameResultsInText(FILE, source);
+  assertStringIncludes(result.text, 'const mixedIncludesA: boolean = mixed.includes("a");');
+  assertStringIncludes(result.text, 'assert(mixedIncludesA, "kept");');
+  assertFalse(result.text.includes("assertArrayIncludes"));
+});
+
+Deno.test("rename-keeps-call-count-and-order: a stateful subject is evaluated once per original call", () => {
+  const source = `${NAMING_IMPORT}declare function next(): { id: string }[];
+declare const first: { id: string };
+declare const second: { id: string };
+const assertionResult: boolean = next().includes(first);
+assert(assertionResult);
+const assertionResult2: boolean = next().includes(second);
+assert(assertionResult2);
+`;
+  const result = nameResultsInText(FILE, source);
+  assertEquals(result.text.match(/next\(\)\./g)?.length, 2);
+  assert(result.text.indexOf("includes(first)") < result.text.indexOf("includes(second)"));
+  assertEquals(result.text.match(/const \w+: boolean/g)?.length, 2);
+  const merged = nameResultsInText(
+    FILE,
+    `${NAMING_IMPORT}declare function next(): string[];
+const includesResult: boolean = next().includes("a");
+assert(includesResult);
+const includesResult2: boolean = next().includes("b");
+assert(includesResult2);
+`,
+  );
+  assertEquals(merged.text.match(/assertArrayIncludes\(next\(\)/g)?.length, 2);
+  assert(merged.text.indexOf('["a"]') < merged.text.indexOf('["b"]'));
+});
+
+Deno.test("rename-keeps-call-count-and-order: a name already in the file gets a numeric suffix", () => {
+  const source = `${NAMING_IMPORT}declare const items: { id: string }[];
+declare const item: { id: string };
+const itemsIncludesItem = 1;
+const assertionResult: boolean = items.includes(item);
+assert(assertionResult);
+`;
+  const result = nameResultsInText(FILE, source);
+  assertStringIncludes(result.text, "const itemsIncludesItem2: boolean = items.includes");
+  assertStringIncludes(result.text, "const itemsIncludesItem = 1;");
+});
+
+Deno.test("renamed-sites-pass-the-repeated-and-boolean-gates: a result used twice or a separated pair is left alone", () => {
+  const cases = [
+    'declare const names: string[];\nconst assertionResult: boolean = names.includes("a");\nassert(assertionResult);\nassert(assertionResult);\n',
+    'declare const names: string[];\nconst assertionResult: boolean = names.includes("a");\n// kept apart\nassert(assertionResult);\n',
+    'declare const names: string[];\nconst custom: boolean = names.includes("a");\nassert(custom);\n',
+  ];
+  for (const body of cases) {
+    const source = withImport(body, NAMING_IMPORT);
+    const result = nameResultsInText(FILE, source);
+    assertEquals(result.changed, 0, body);
+    assertEquals(result.text, source, body);
+  }
+});
+
+Deno.test("renamed-sites-pass-the-repeated-and-boolean-gates: a second run changes nothing", () => {
+  const source = `${NAMING_IMPORT}declare const items: { id: string }[];
+declare const item: { id: string };
+const assertionResult: boolean = items.includes(item);
+assert(assertionResult);
+`;
+  const first = nameResultsInText(FILE, source);
+  const second = nameResultsInText(FILE, first.text);
+  assertEquals(second.changed, 0);
+  assertEquals(second.text, first.text);
+});
+
+Deno.test("the name-results command line renames named results, reports pending changes with --check and is idempotent", async () => {
+  await withTempDir(async (dir) => {
+    await layoutProject(dir);
+    const target = join(dir, "packages/x/tests/named_test.ts");
+    await Deno.writeTextFile(
+      target,
+      `${NAMING_IMPORT}declare const items: { id: string }[];\ndeclare const item: { id: string };\nconst assertionResult: boolean = items.includes(item);\nassert(assertionResult);\n`,
+    );
+    const args = ["run", "-A", "--config", REPO_CONFIG, SCRIPT, "--name-results"];
+    const pending = await runDeno([...args, "--check", "packages"], dir);
+    assertEquals(pending.code, 1, pending.output);
+    assertStringIncludes(await Deno.readTextFile(target), "assertionResult");
+    const applied = await runDeno([...args, "packages"], dir);
+    assert(applied.success, applied.output);
+    assertStringIncludes(await Deno.readTextFile(target), "itemsIncludesItem");
+    const again = await runDeno([...args, "--check", "packages"], dir);
+    assert(again.success, again.output);
+  });
 });

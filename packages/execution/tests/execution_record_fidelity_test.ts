@@ -46,9 +46,9 @@ Deno.test("generateMissionReport uses real completion content, not placeholders 
       record.summary.includes("Successfully executed plan for request:"),
       "the record summary must not be the placeholder string",
     );
-    const assertionResult: boolean = record.summary.includes("validated portal mount paths");
+    const summaryIncludesValidatedPortalMount: boolean = record.summary.includes("validated portal mount paths");
     assertEquals(
-      assertionResult,
+      summaryIncludesValidatedPortalMount,
       true,
       "the record summary must contain the real completion content",
     );
@@ -79,9 +79,11 @@ Deno.test("generateMissionReport without completion content uses the documented 
 
     const record = await bank.getExecutionByTraceId(traceId);
     assertExists(record);
-    const assertionResult2: boolean = record.summary.includes("Successfully executed plan for request:");
+    const summaryIncludesSuccessfullyExecutedPlan: boolean = record.summary.includes(
+      "Successfully executed plan for request:",
+    );
     assertEquals(
-      assertionResult2,
+      summaryIncludesSuccessfullyExecutedPlan,
       true,
       "without completion content the documented fallback applies",
     );

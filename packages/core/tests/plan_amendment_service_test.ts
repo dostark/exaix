@@ -39,20 +39,20 @@ Deno.test("PlanAmendmentService.applyApprovedAmendment correctly applies patches
 
   const updated = service.applyApprovedAmendment(planContent, patch);
 
-  const assertionResult: boolean = updated.includes(`status: ${PlanStatus.APPROVED}`);
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = updated.includes("## Step 2: title 2 updated");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = updated.includes("content 2 updated");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = updated.includes("## Step 3: title 3");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = updated.includes("content 3");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = updated.includes("## Next Steps");
-  assertEquals(assertionResult6, true);
-  const assertionResult7: boolean = updated.includes("## Step 1: title 1");
-  assertEquals(assertionResult7, true);
+  const updatedIncludesSubject: boolean = updated.includes(`status: ${PlanStatus.APPROVED}`);
+  assertEquals(updatedIncludesSubject, true, "updated should include `status: ${PlanStatus.APPROVED}`");
+  const updatedIncludesStep2Title: boolean = updated.includes("## Step 2: title 2 updated");
+  assertEquals(updatedIncludesStep2Title, true, "updated should include '## Step 2: title 2 updated'");
+  const updatedIncludesContent2Updated: boolean = updated.includes("content 2 updated");
+  assertEquals(updatedIncludesContent2Updated, true, "updated should include 'content 2 updated'");
+  const updatedIncludesStep3Title: boolean = updated.includes("## Step 3: title 3");
+  assertEquals(updatedIncludesStep3Title, true, "updated should include '## Step 3: title 3'");
+  const updatedIncludesContent3: boolean = updated.includes("content 3");
+  assertEquals(updatedIncludesContent3, true, "updated should include 'content 3'");
+  const updatedIncludesNextSteps: boolean = updated.includes("## Next Steps");
+  assertEquals(updatedIncludesNextSteps, true, "updated should include '## Next Steps'");
+  const updatedIncludesStep1Title: boolean = updated.includes("## Step 1: title 1");
+  assertEquals(updatedIncludesStep1Title, true, "updated should include '## Step 1: title 1'");
 });
 
 Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => {
@@ -78,7 +78,7 @@ Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => 
 
   const updated = service.applyApprovedAmendment(planContent, patch);
 
-  const assertionResult8: boolean = updated.includes("## Step 1: title 1");
-  assertEquals(assertionResult8, true);
+  const updatedIncludesStep1Title2: boolean = updated.includes("## Step 1: title 1");
+  assertEquals(updatedIncludesStep1Title2, true, "updated should include '## Step 1: title 1'");
   assertFalse(updated.includes("## Step 2: title 2"));
 });

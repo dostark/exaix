@@ -78,9 +78,9 @@ Deno.test("[ContextCache] markStable updates lastUsedAt on re-mark", () => {
 
   const stable = cache.getStableSections(["a", "b", "c"]);
   const keys = stable.map((s) => s.key);
-  const assertionResult: boolean = keys.includes("a");
-  assert(assertionResult, "'a' should survive eviction (recently used)");
+  const keysIncludesA: boolean = keys.includes("a");
+  assert(keysIncludesA, "'a' should survive eviction (recently used)");
   assert(!keys.includes("b"), "'b' should be evicted (least recently used)");
-  const assertionResult2: boolean = keys.includes("c");
-  assert(assertionResult2, "'c' should be in cache");
+  const keysIncludesC: boolean = keys.includes("c");
+  assert(keysIncludesC, "'c' should be in cache");
 });

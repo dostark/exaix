@@ -22,14 +22,14 @@ Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and ap
     ).all<{ name: string }>();
 
     const tableNames = tables.map((t) => t.name).sort();
-    const assertionResult: boolean = tableNames.includes("eval_runs");
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = tableNames.includes("eval_run_steps");
-    assertEquals(assertionResult2, true);
-    const assertionResult3: boolean = tableNames.includes("eval_criteria_results");
-    assertEquals(assertionResult3, true);
-    const assertionResult4: boolean = tableNames.includes("eval_schema_version");
-    assertEquals(assertionResult4, true);
+    const tableNamesIncludesEvalRuns: boolean = tableNames.includes("eval_runs");
+    assertEquals(tableNamesIncludesEvalRuns, true, "tableNames should include 'eval_runs'");
+    const tableNamesIncludesEvalRunSteps: boolean = tableNames.includes("eval_run_steps");
+    assertEquals(tableNamesIncludesEvalRunSteps, true, "tableNames should include 'eval_run_steps'");
+    const tableNamesIncludesEvalCriteriaResults: boolean = tableNames.includes("eval_criteria_results");
+    assertEquals(tableNamesIncludesEvalCriteriaResults, true, "tableNames should include 'eval_criteria_results'");
+    const tableNamesIncludesEvalSchemaVersion: boolean = tableNames.includes("eval_schema_version");
+    assertEquals(tableNamesIncludesEvalSchemaVersion, true, "tableNames should include 'eval_schema_version'");
 
     // Verify all migrations applied
     const versions = store["db"].prepare(

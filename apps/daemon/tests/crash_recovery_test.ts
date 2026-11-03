@@ -68,10 +68,10 @@ Deno.test("[crash_recovery] recovers an orphaned delegation (launched without te
     );
     const content = await Deno.readTextFile(requestFile);
     assertExists(content);
-    const assertionResult: boolean = content.includes("Crash-Recovery Request");
-    assertEquals(assertionResult, true);
-    const assertionResult2: boolean = content.includes(traceId);
-    assertEquals(assertionResult2, true);
+    const contentIncludesCrashRecoveryRequest: boolean = content.includes("Crash-Recovery Request");
+    assertEquals(contentIncludesCrashRecoveryRequest, true, "content should include 'Crash-Recovery Request'");
+    const contentIncludesTraceId: boolean = content.includes(traceId);
+    assertEquals(contentIncludesTraceId, true, "content should include traceId");
 
     await Deno.remove(workspaceRoot, { recursive: true });
   } finally {
@@ -176,8 +176,12 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     const request = await Deno.readTextFile(
       pathBuilders.workspacePath(workspaceRoot, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`),
     );
-    const assertionResult3: boolean = request.includes("Validated recovery objective");
-    assertEquals(assertionResult3, true);
+    const requestIncludesValidatedRecoveryObjective: boolean = request.includes("Validated recovery objective");
+    assertEquals(
+      requestIncludesValidatedRecoveryObjective,
+      true,
+      "request should include 'Validated recovery objective'",
+    );
 
     await db.waitForFlush();
     const event = (await db.getActivitiesByTraceSafe(traceId)).find(

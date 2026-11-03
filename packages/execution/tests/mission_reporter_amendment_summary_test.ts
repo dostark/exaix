@@ -49,9 +49,9 @@ Deno.test("amendment event constants follow naming convention", () => {
   ];
 
   for (const event of events) {
-    const assertionResult: boolean = event.startsWith("plan.amendment.");
+    const eventStartsWithPlanAmendment: boolean = event.startsWith("plan.amendment.");
     assertEquals(
-      assertionResult,
+      eventStartsWithPlanAmendment,
       true,
       `Event "${event}" should start with "plan.amendment."`,
     );

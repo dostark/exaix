@@ -69,8 +69,8 @@ Deno.test("[ToolRegistryAciCatalog] every tool renders a non-empty ACI fragment"
   assertEquals(result.fragmentCount, 22);
   assertEquals(result.truncated, false);
   for (const toolId of allIds) {
-    const assertionResult: boolean = result.text.includes(toolId);
-    assert(assertionResult, `rendered ACI text is missing a fragment for ${toolId}`);
+    const textIncludesToolId: boolean = result.text.includes(toolId);
+    assert(textIncludesToolId, `rendered ACI text is missing a fragment for ${toolId}`);
   }
 });
 

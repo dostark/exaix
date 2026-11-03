@@ -77,12 +77,12 @@ Deno.test("[flow] FlowStepHandlerRegistry — keys() returns all registered type
 
   const keys = registry.keys();
   assertEquals(keys.length, 3);
-  const assertionResult: boolean = keys.includes(FlowStepType.AGENT);
-  assert(assertionResult);
-  const assertionResult2: boolean = keys.includes(FlowStepType.GATE);
-  assert(assertionResult2);
-  const assertionResult3: boolean = keys.includes(FlowStepType.BRANCH);
-  assert(assertionResult3);
+  const keysIncludesAGENT: boolean = keys.includes(FlowStepType.AGENT);
+  assert(keysIncludesAGENT, "keys should include FlowStepType.AGENT");
+  const keysIncludesGATE: boolean = keys.includes(FlowStepType.GATE);
+  assert(keysIncludesGATE, "keys should include FlowStepType.GATE");
+  const keysIncludesBRANCH: boolean = keys.includes(FlowStepType.BRANCH);
+  assert(keysIncludesBRANCH, "keys should include FlowStepType.BRANCH");
 });
 
 Deno.test("[flow] FlowStepHandlerRegistry — registerWithKey registers under alias key", () => {
@@ -139,23 +139,23 @@ Deno.test("[flow] UnknownFlowStepError — message includes step type and id", (
   assertEquals(error.name, "UnknownFlowStepError");
   assertEquals(error.stepType, "voting_group");
   assertEquals(error.stepId, "step-42");
-  const assertionResult4: boolean = error.message.includes("voting_group");
-  assert(assertionResult4);
-  const assertionResult5: boolean = error.message.includes("step-42");
-  assert(assertionResult5);
+  const messageIncludesVotingGroup: boolean = error.message.includes("voting_group");
+  assert(messageIncludesVotingGroup, "message should include 'voting_group'");
+  const messageIncludesStep42: boolean = error.message.includes("step-42");
+  assert(messageIncludesStep42, "message should include 'step-42'");
 });
 
 Deno.test("[flow] UnknownFlowStepError — message includes known types when provided", () => {
   const error = new UnknownFlowStepError("unknown", "step-1", ["agent", "gate"]);
 
-  const assertionResult6: boolean = error.message.includes("unknown");
-  assert(assertionResult6);
-  const assertionResult7: boolean = error.message.includes("step-1");
-  assert(assertionResult7);
-  const assertionResult8: boolean = error.message.includes("agent");
-  assert(assertionResult8);
-  const assertionResult9: boolean = error.message.includes("gate");
-  assert(assertionResult9);
+  const messageIncludesUnknown: boolean = error.message.includes("unknown");
+  assert(messageIncludesUnknown, "message should include 'unknown'");
+  const messageIncludesStep1: boolean = error.message.includes("step-1");
+  assert(messageIncludesStep1, "message should include 'step-1'");
+  const messageIncludesAgent: boolean = error.message.includes("agent");
+  assert(messageIncludesAgent, "message should include 'agent'");
+  const messageIncludesGate: boolean = error.message.includes("gate");
+  assert(messageIncludesGate, "message should include 'gate'");
   assertEquals(error.knownTypes, ["agent", "gate"]);
 });
 

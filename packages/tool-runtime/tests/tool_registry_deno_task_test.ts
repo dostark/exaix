@@ -84,6 +84,6 @@ Deno.test("[deno-task] the run_deno_task description names only fields the resul
   assert(schema, "run_deno_task schema must exist");
   const namedFields = [...schema.description.matchAll(/data\.(\w+)/g)].map((match) => match[1]).sort();
   assertEquals(namedFields, ["errorOutput", "exitCode", "output"]);
-  const assertionResult: boolean = schema.description.includes(String(DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS));
-  assert(assertionResult, schema.description);
+  const descriptionIncludesString: boolean = schema.description.includes(String(DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS));
+  assert(descriptionIncludesString, schema.description);
 });

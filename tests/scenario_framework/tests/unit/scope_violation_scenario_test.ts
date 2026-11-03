@@ -62,9 +62,11 @@ Deno.test("[scope_violation_live] the scenario asserts session.delegate.scope_vi
   const raw = await Deno.readTextFile(SCOPE_VIOLATION_SCENARIO);
   const scenario = ScenarioSchema.parse(parseYaml(raw));
   const events = journalEventTypes(scenario);
-  const includesResult3: boolean = events.includes(DomainEventType.SessionDelegateScopeViolation);
+  const eventsIncludesSessionDelegateScopeViolation: boolean = events.includes(
+    DomainEventType.SessionDelegateScopeViolation,
+  );
   assert(
-    includesResult3,
+    eventsIncludesSessionDelegateScopeViolation,
     `scenario must assert ${DomainEventType.SessionDelegateScopeViolation}; found ${JSON.stringify(events)}`,
   );
 });

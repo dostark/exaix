@@ -434,8 +434,8 @@ agent_role: test-role
 
     // Report should contain trace_id
     const reportContent = await Deno.readTextFile(reportPath);
-    const assertionResult: boolean = reportContent.includes(traceId);
-    assert(assertionResult, "Report should include trace_id");
+    const reportContentIncludesTraceId: boolean = reportContent.includes(traceId);
+    assert(reportContentIncludesTraceId, "Report should include trace_id");
   });
 });
 

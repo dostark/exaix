@@ -36,18 +36,18 @@ Deno.test("layout dialogs: render view picker with purpose titles", () => {
 
   const splitState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.SPLIT as const };
   const splitLines = renderViewPickerDialog(splitState, theme).join("\n");
-  const assertionResult: boolean = splitLines.includes("Select View for New IPane");
-  assert(assertionResult);
+  const splitLinesIncludesSelectViewFor: boolean = splitLines.includes("Select View for New IPane");
+  assert(splitLinesIncludesSelectViewFor, "splitLines should include 'Select View for New IPane'");
 
   const changeState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.CHANGE as const };
   const changeLines = renderViewPickerDialog(changeState, theme).join("\n");
-  const assertionResult2: boolean = changeLines.includes("Change View");
-  assert(assertionResult2);
+  const changeLinesIncludesChangeView: boolean = changeLines.includes("Change View");
+  assert(changeLinesIncludesChangeView, "changeLines should include 'Change View'");
 
   const newState = { ...createViewPickerState(), isOpen: true, purpose: DialogPurpose.NEW as const };
   const newLines = renderViewPickerDialog(newState, theme).join("\n");
-  const assertionResult3: boolean = newLines.includes("Select View");
-  assert(assertionResult3);
+  const newLinesIncludesSelectView: boolean = newLines.includes("Select View");
+  assert(newLinesIncludesSelectView, "newLines should include 'Select View'");
 });
 
 Deno.test("layout dialogs: view picker key handling", () => {
@@ -134,17 +134,17 @@ Deno.test("layout dialogs: render named layout dialog empty state", () => {
   const theme = getTheme(true);
   const state = { ...createNamedLayoutState(), isOpen: true, mode: LayoutMode.LOAD as const };
   const lines = renderNamedLayoutDialog(state, theme).join("\n");
-  const assertionResult4: boolean = lines.includes("No saved layouts");
-  assert(assertionResult4);
+  const linesIncludesNoSavedLayouts: boolean = lines.includes("No saved layouts");
+  assert(linesIncludesNoSavedLayouts, "lines should include 'No saved layouts'");
 });
 
 Deno.test("layout dialogs: render swap indicator", () => {
   const theme = getTheme(true);
   const pending = renderSwapIndicator("pane-a", null, theme);
-  const assertionResult5: boolean = pending.includes("Swapping from");
-  assert(assertionResult5);
+  const pendingIncludesSwappingFrom: boolean = pending.includes("Swapping from");
+  assert(pendingIncludesSwappingFrom, "pending should include 'Swapping from'");
 
   const swap = renderSwapIndicator("pane-a", "pane-b", theme);
-  const assertionResult6: boolean = swap.includes("Swap: pane-a ⇄ pane-b");
-  assert(assertionResult6);
+  const swapIncludesSwapPaneA: boolean = swap.includes("Swap: pane-a ⇄ pane-b");
+  assert(swapIncludesSwapPaneA, "swap should include 'Swap: pane-a ⇄ pane-b'");
 });

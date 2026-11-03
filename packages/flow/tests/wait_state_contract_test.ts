@@ -98,20 +98,20 @@ Deno.test("TransitionWaitStateInputSchema requires waitStateId, action, resumeTo
 
 Deno.test("WaitStateStatusSchema has all required values", () => {
   const statuses = WaitStateStatusSchema.options;
-  const assertionResult: boolean = statuses.includes("pending");
-  assertEquals(assertionResult, true);
-  const assertionResult2: boolean = statuses.includes("resumed");
-  assertEquals(assertionResult2, true);
-  const assertionResult3: boolean = statuses.includes("fulfilled");
-  assertEquals(assertionResult3, true);
-  const assertionResult4: boolean = statuses.includes("rejected");
-  assertEquals(assertionResult4, true);
-  const assertionResult5: boolean = statuses.includes("amended");
-  assertEquals(assertionResult5, true);
-  const assertionResult6: boolean = statuses.includes("expired");
-  assertEquals(assertionResult6, true);
-  const assertionResult7: boolean = statuses.includes("cancelled");
-  assertEquals(assertionResult7, true);
+  const statusesIncludesPending: boolean = statuses.includes("pending");
+  assertEquals(statusesIncludesPending, true, "statuses should include 'pending'");
+  const statusesIncludesResumed: boolean = statuses.includes("resumed");
+  assertEquals(statusesIncludesResumed, true, "statuses should include 'resumed'");
+  const statusesIncludesFulfilled: boolean = statuses.includes("fulfilled");
+  assertEquals(statusesIncludesFulfilled, true, "statuses should include 'fulfilled'");
+  const statusesIncludesRejected: boolean = statuses.includes("rejected");
+  assertEquals(statusesIncludesRejected, true, "statuses should include 'rejected'");
+  const statusesIncludesAmended: boolean = statuses.includes("amended");
+  assertEquals(statusesIncludesAmended, true, "statuses should include 'amended'");
+  const statusesIncludesExpired: boolean = statuses.includes("expired");
+  assertEquals(statusesIncludesExpired, true, "statuses should include 'expired'");
+  const statusesIncludesCancelled: boolean = statuses.includes("cancelled");
+  assertEquals(statusesIncludesCancelled, true, "statuses should include 'cancelled'");
 });
 
 Deno.test("DefaultWaitStateTransitionPolicy: pending allows all transitions", () => {

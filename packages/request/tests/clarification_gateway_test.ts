@@ -86,8 +86,8 @@ Deno.test("[ClarificationGateway.runQualityGate] REJECT recommendation marks req
     const result = await gateway.runQualityGate("body", filePath, "req-1", createMockEventLogger(), "trace-1");
     assertEquals(result, { earlyReturn: true });
     const content = await Deno.readTextFile(filePath);
-    const assertionResult: boolean = content.includes(`status: ${RequestStatus.FAILED}`);
-    assertEquals(assertionResult, true);
+    const contentIncludesSubject: boolean = content.includes(`status: ${RequestStatus.FAILED}`);
+    assertEquals(contentIncludesSubject, true, "content should include `status: ${RequestStatus.FAILED}`");
   } finally {
     await Deno.remove(testDir, { recursive: true });
   }
@@ -115,8 +115,8 @@ Deno.test("[ClarificationGateway.runQualityGate] NEEDS_CLARIFICATION starts a cl
     const result = await gateway.runQualityGate("body", filePath, "req-1", createMockEventLogger(), "trace-1");
     assertEquals(result, { earlyReturn: true });
     const content = await Deno.readTextFile(filePath);
-    const assertionResult2: boolean = content.includes(`status: ${RequestStatus.REFINING}`);
-    assertEquals(assertionResult2, true);
+    const contentIncludesSubject2: boolean = content.includes(`status: ${RequestStatus.REFINING}`);
+    assertEquals(contentIncludesSubject2, true, "content should include `status: ${RequestStatus.REFINING}`");
   } finally {
     await Deno.remove(testDir, { recursive: true });
   }

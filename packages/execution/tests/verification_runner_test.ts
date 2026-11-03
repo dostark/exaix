@@ -7,7 +7,7 @@
  *   truncation, worktree-safe fmt and the cleared allowlist child environment.
  */
 
-import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -193,8 +193,8 @@ Deno.test("[verification-runner] a check cannot read a daemon env var", async ()
       );
 
       assertEquals(result.passed, false);
-      const assertionResult: boolean = result.failures[0].output.includes("SECRET=undefined");
-      assert(assertionResult, result.failures[0].output);
+      const outputIncludesSECRETUndefined: boolean = result.failures[0].output.includes("SECRET=undefined");
+      assert(outputIncludesSECRETUndefined, result.failures[0].output);
     });
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -255,8 +255,7 @@ Deno.test("[verification-runner] the check env is exactly buildChildEnv allowlis
     assertFalse(keys.includes("EXA_TEST_SECRET"));
     assertFalse(keys.includes("HTTP_PROXY"));
     assertFalse(keys.includes("LD_PRELOAD"));
-    const includesResult: boolean = keys.includes("PATH");
-    assert(includesResult, keys.join(","));
+    assertArrayIncludes(keys, ["PATH"], keys.join(","));
   } finally {
     s.restore();
     await Deno.remove(root, { recursive: true });
