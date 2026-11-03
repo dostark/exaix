@@ -178,11 +178,28 @@ other assertion forms are outside this detector's current matching scope; that d
 `exaix/no-boolean-assert` rule are active. A match is not proof of a weak test, and clearing a match does not
 prove better diagnostics.
 
+## Error Inputs {#error-inputs}
+
+Extends [No `unknown` as a stored type](../../../unslop-ts/docs/style_guide.md). The `exaix/no-explicit-unknown` rule
+allows `unknown` only for a catch binding and a type-predicate subject. A read-only consumer of a thrown value takes
+the value through a generic parameter instead of storing `unknown`.
+
+- A consumer declares `<TError>(..., error: TError, ...)`. It still admits every value that code can throw, and it keeps
+  the value's identity and its subclass. The generic is an incoming boundary only. Narrow the value with the existing
+  runtime checks before reading a member. Do not relabel a top type with an alias.
+- `IRejectedPlanHandler.handleError<TError>` in `packages/request/src/rejected_plan_handler.ts` follows this form. It is
+  still exported through `packages/request/src/mod.ts` as `@exaix/request`, so an existing handler stays assignable in
+  both directions.
+- The `FlowRunner` recovery methods return the final `IStepResult` and do not return an object that carries an untyped
+  error. `IStepResult` is still owned by `packages/flow/src/flow_runner.ts` and exported through `packages/flow/mod.ts` as
+  `@exaix/flow`. No shared error alias, wrapper class or barrel exists for this contract.
+
 ## Enforcement Status {#enforcement-status}
 
 The version 2 input is `unslop.config.json`; the separate `layout.json` holds path tokens. Management
-writes use `unslop:write`. The report tasks are `lint:report` and `lint:report:write`. The historical
-version 1 snapshot stays at `../tests/fixtures/catalog_v1.json`.
+writes use `unslop:write`. The report tasks are `lint:report` and `lint:report:write`. The
+version 1 file `../tests/fixtures/catalog_v1.json` is a maintained compatibility baseline. Each activation updates its
+legacy severity and opt-in fields, so it is not frozen activation state.
 
 The version 2 policy gives every rule a status. Check `unslop.config.json` or the generated
 [style_rules.md](./style_rules.md) for the details of one rule.
@@ -201,6 +218,9 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/re-export-imported`, `exaix/require-deno-shebang`,
   `exaix/require-module-header`, `exaix/require-script-usage`, `exaix/test-inline-multiline-fixture`,
   `exaix/ts-suppression-pragmas`, and `exaix/unslop-isolation`.
+- **Test-scoped plugin gates (`scope: test`):** `exaix/no-boolean-assert`, `exaix/no-constant-substring-assert`,
+  `exaix/no-repeated-assert-call`, and `exaix/test-inline-multiline-fixture`. Production files are out of their scope.
+- **Production-scoped plugin gates (`scope: prod`):** `exaix/magic-union-type`. Test files are out of its scope.
 - **Parked plugin rules (`severity: off`, opt-in):**
   `exaix/max-class-size`,
   `exaix/max-params`,
