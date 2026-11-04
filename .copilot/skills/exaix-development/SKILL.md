@@ -228,10 +228,12 @@ God object prevention
 
    d. **Interface-first design** — define the interface before the class; it forces the
       boundary first. A 3-method interface resists god-object growth better than none.
-   e. **check:god-objects as health check** — run weekly; the script scores every class
-      on 6 metrics and reports candidates. A rising score is a warning:
+   e. **check:god-objects as health check** — a god class has WMC >= 47, TCC < 1/3 and
+      ATFD > 5. The task fails when a package passes its ceiling in
+      `packages/lint-policy/rule_ceilings.json`. Lower the ceiling after a decomposition and
+      never raise it:
       ```bash
-      deno task check:god-objects -- --threshold=50
+      deno task check:god-objects
       ```
    f. **Extract adapters at interface boundaries** — a class implementing an interface
       consumed by another subsystem gets an adapter composing the required services, so
@@ -257,7 +259,7 @@ Prohibited anti-patterns
 
   - **God objects** — classes with > 500 lines, > 10 constructor params, or
     mixed concerns that should be separate services. Run `deno task check:god-objects`
-    to detect. Decompose via the [refactor skill](../refactor/SKILL.md#god-object-decomposition).
+    to find a god class (WMC, TCC, ATFD) against its package ceiling. Decompose via the [refactor skill](../refactor/SKILL.md#god-object-decomposition).
   - **Layer-violating constant imports** — a high-level class (orchestrator,
     coordinator) importing low-level implementation constants from packages whose
     services it delegates to. E.g. `AgentComposer` importing `SafeSubprocess`,
@@ -289,7 +291,7 @@ Implementation verification checklist
   [ ] Error handling follows classification patterns
   [ ] Constants used instead of magic numbers
   [ ] Injectable services implement IFoo; constructors accept interfaces, not classes
-  [ ] God object score passes threshold (`deno task check:god-objects -- --threshold=50`)
+  [ ] No package passes its god class ceiling (`deno task check:god-objects`)
   [ ] On a feature branch, not main (Gate 0)
   [ ] Working tree clean before rebase/pull
 

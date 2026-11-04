@@ -65,6 +65,17 @@ evaluated the rule, and fails on a count above the committed ceiling. A ceiling 
 measured count and never up. The configured limits 15, 15 and 60 are separate from the refactoring tranche limits
 of 20 cyclomatic and 30 cognitive complexity, which only bound the functions that the tranches rewrote.
 
+Exaix gates god classes with `deno task check:god-objects`. It runs the `exaix/max-class-size` rule with the `god-class`
+strategy (WMC at least 47, TCC below one third and ATFD above 5) over `packages`, `apps`, `tests`, `scripts`, `exaix-team` and
+`exaix-enterprise`, and it fails on a count above the per-package ceiling in `packages/lint-policy/rule_ceilings.json`. The task
+is a manual gate. It is not part of CI or the hooks, and a ceiling only moves down. `deno task check:god-objects:compare` lists
+the classes that the God Class strategy and the earlier `legacy-score` flag separately. The `exaix/max-params` rule is a separate
+gate: it is an error in `deno task lint` for every lint root, and a function or constructor with more than 7 parameters fails.
+It has no ceiling. An options object counts as one parameter, but an options object does not prove a good class design, because
+it can hide unrelated dependencies, so do not use it to pass the gate. The God Class limits come from the literature and are
+second-hand, so the ceiling is a guard against growth and not a verdict. The definitions and sources are in
+[the metrics methodology](../unslop-ts/docs/metrics_methodology.md).
+
 The parent removed its `classic` cyclomatic pin after measuring the cutover to the engine's `extended` default.
 A consumer that pins `variant: "classic"` keeps the legacy counts.
 The construct tables, the formulas and the calibration record are in

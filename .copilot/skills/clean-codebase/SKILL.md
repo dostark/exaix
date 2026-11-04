@@ -234,12 +234,13 @@ Phase 23 — Final full-suite validation
  47. All checks zero before committing.
 
 Phase 24 — God objects (advisory)
- 48. `check:god-objects` — classes > 300 lines scored on 6 metrics; reports candidates
-     without failing CI.
- 49. Score ≥ 50 → decompose per [refactor god-object](../refactor/SKILL.md#god-object-decomposition):
+ 48. `check:god-objects` — flags a class with WMC >= 47, TCC < 1/3 and ATFD > 5 and
+     fails over a per-package ceiling. It is a manual gate, not part of CI.
+ 49. A class over its ceiling → decompose per [refactor god-object](../refactor/SKILL.md#god-object-decomposition):
      extract cohesive services (own file, own tests, clear interface); the original
      becomes a thin orchestrator; TDD the service first.
- 50. Re-run — target score < 50.
+ 50. Re-run — the package count must fall. Then lower the ceiling in
+     `packages/lint-policy/rule_ceilings.json`.
 
 Phase 25 — Pre-commit-hook parity gates
  51. Fix directly from the script output (narrow, usually clean):

@@ -58,8 +58,10 @@ Patterns
   6. God-object decomposition — facade extraction
      Class > 500 lines, > 10 deps, or mixed concerns: extract cohesive sub-domains.
 
-     a. **Detect** — `deno task check:god-objects` scores on 6 metrics: line count,
-        method count, constructor params, max method length, import count, field count.
+     a. **Detect** — `deno task check:god-objects` flags a class with WMC >= 47, TCC < 1/3
+        and ATFD > 5 and fails over a package ceiling. `deno task check:god-objects:compare`
+        lists what the older size score flagged. After a decomposition, lower the package
+        ceiling in `packages/lint-policy/rule_ceilings.json`.
      b. **Analyze boundaries** — group fields/methods by concern. A group that owns its
         own field subset and forms a coherent responsibility is an extraction candidate.
      c. **Parameter object (safe first step)** — replace N positional constructor params
