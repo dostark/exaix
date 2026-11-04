@@ -43,7 +43,7 @@ Deno.test("[SkillSuppression] a suppressed default skill is absent from the reso
     };
     const request = { userPrompt: "do the thing", taskType: "feature" };
 
-    const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
     assertFalse(resolved.includes("tdd-methodology"), "the suppressed skill must not be in the resolved set");
@@ -58,7 +58,7 @@ Deno.test("[SkillSuppression] a suppressed pinned skill is absent from the resol
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: [] };
     const request = { skills: ["portal-grounding"], userPrompt: "do the thing", taskType: "feature" };
 
-    const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
     assertFalse(resolved.includes("portal-grounding"), "a pin does not override suppression");
@@ -72,7 +72,7 @@ Deno.test("[SkillSuppression] a suppressed dynamically-matched skill is absent f
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: [] };
     const request = { userPrompt: "fix the bug", taskType: "bugfix" };
 
-    const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
     assertFalse(resolved.includes("tdd-methodology"));
@@ -86,7 +86,7 @@ Deno.test("[SkillSuppression] skills.resolved records which skill(s) were suppre
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["tdd-methodology", "error-handling"] };
     const request = { userPrompt: "do the thing", taskType: "feature" };
 
-    await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
 
     const events = resolutionEvents(captured);
     assertEquals(events.length, 1);
@@ -102,7 +102,7 @@ Deno.test("[SkillSuppression] with no suppression env var set, resolution is una
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["tdd-methodology", "error-handling"] };
     const request = { userPrompt: "do the thing", taskType: "feature" };
 
-    const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
     assertArrayIncludes(resolved, ["tdd-methodology"]);
@@ -117,7 +117,7 @@ Deno.test("[SkillSuppression] an empty suppression list suppresses nothing", asy
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["tdd-methodology"] };
     const request = { userPrompt: "do the thing", taskType: "feature" };
 
-    const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
     const skillIdsIncludesTddMethodology: boolean = result.skillIds.includes("tdd-methodology");
     assertEquals(skillIdsIncludesTddMethodology, true, "skillIds should include 'tdd-methodology'");
   });

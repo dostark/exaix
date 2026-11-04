@@ -35,39 +35,23 @@ import {
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import { type JSONValue, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import {
-  PlanningToolLoopStopReason,
-  PlanningToolsSkipReason,
-  PortalOperation,
-  SkillMatchSource,
-  SkillRenderOutcome,
-  SkillRootKind,
-  SkillSubmissionKind,
-  TaskComplexity,
-} from "@exaix/core";
+import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation, TaskComplexity } from "@exaix/core";
 import type { ProviderType } from "@exaix/core";
 import { PortalPermissionsService } from "@exaix/portal";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PlanningToolLoop } from "./planning_tool_loop.ts";
+import { AgentRunnerSkills, type ISkillUsagePlan } from "./agent_runner_skills.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { providerSupportsNativeTools } from "./native_tool_turns.ts";
-import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalKnowledgeSelectionAppliedPayload } from "@exaix/core/events";
 import { buildAdaptivePortalKnowledge } from "@exaix/core/func";
 import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import {
-  buildSkillPin,
-  createSkillOperationContext,
-  type ISkillOperationContext,
-  type ISkillPin,
-  type ISkillSubmissionItem,
-  orderSkillPins,
-  skillToContextEntry,
-} from "@exaix/core/skills";
+import type { ISkillOperationContext, ISkillPin } from "@exaix/core/skills";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -86,8 +70,8 @@ import {
 import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
-import { extractKeywords } from "@exaix/core/func";
-import { renderCriticalSkillsSection, renderSkillEntry, renderSkillsSection } from "@exaix/core/func";
+
+import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -107,10 +91,6 @@ import {
   PORTAL_KNOWLEDGE_KEY,
   RESPONSE_STOP_REASON_MAX_TOKENS,
   RESPONSE_STOP_REASON_REFUSAL,
-  SKILL_EVENT_RESOLVED,
-  SKILL_EVENT_RETRIEVAL_FAILED,
-  SKILL_EVENT_RETRIEVAL_TIMEOUT,
-  SKILL_MATCH_TIMEOUT_MS,
   SkillRenderMode,
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -144,17 +124,6 @@ export interface IRequestContextContext {
     | IRequestContextContext
     | (string | number | boolean | null | undefined | IRequestContextContext)[]
     | string[];
-}
-
-/**
- * IParsedRequest represents the user's intent and any additional context
- */
-/** The skills one run submits to the model, with the round counter and any audit failure it hit. */
-interface ISkillUsagePlan {
-  operation: ISkillOperationContext;
-  items: ISkillSubmissionItem[];
-  round: number;
-  auditError?: Error;
 }
 
 export interface IParsedRequest {
@@ -338,16 +307,6 @@ interface IGenerationHints {
   effort: Opt<EffortTier, Reason.OptionalContext>;
 }
 
-/** Comma-separated skill ids to exclude from the resolved set for this process's lifetime.
- *  A skill-ablation arm's control side sets this instead of adding a request-contract
- *  field; safe because the scenario framework runs one scenario per daemon process. */
-export const EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR = "EXA_EVAL_SUPPRESS_SKILLS";
-
-function readSuppressedSkillIds(): Set<string> {
-  const raw = Deno.env.get(EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR) ?? "";
-  return new Set(raw.split(",").map((id) => id.trim()).filter((id) => id.length > 0));
-}
-
 // Agent Runner Service
 
 /** Remembers which run lane issued each explicit call site until its response is consumed. */
@@ -434,6 +393,7 @@ export class AgentRunner implements IAgentRunner {
   private outputValidator: IOutputValidator;
   private skillsService?: ISkillsService;
   private disableSkills: boolean;
+  private readonly skills: AgentRunnerSkills;
   private planAdapter: IPlanAdapter;
 
   private modelProvider: IModelProvider;
@@ -468,6 +428,12 @@ export class AgentRunner implements IAgentRunner {
     this.effortResolver = inputs.config?.effortResolver ?? new EffortResolver();
     this.skillsService = ctx?.skills || inputs.config?.skillsService;
     this.disableSkills = inputs.config?.disableSkills ?? false;
+    this.skills = new AgentRunnerSkills({
+      skillsService: this.skillsService,
+      disableSkills: this.disableSkills,
+      contextBudgetChars: () => this.config?.context?.config.get().skills?.context_budget_chars,
+      journal: { record: (action, target, payload) => this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload) },
+    });
     // The provider layer owns HTTP retries, so a classified provider error is final here.
     const providerErrorsAreFinal = { isPermanent: (error: Error) => error instanceof ModelProviderError };
     this.retryPolicy = retryPolicyOf(inputs.config, providerErrorsAreFinal);
@@ -521,8 +487,13 @@ export class AgentRunner implements IAgentRunner {
     const traceId = request.traceId;
     const requestId = request.requestId;
 
-    const skillOperation = this.buildSkillOperation(request, agentRole);
-    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole, skillOperation);
+    const skillOperation = this.skills.buildSkillOperation(request, agentRole);
+    const { skillIds, skillsContext } = await this.skills.matchAndApplySkills(
+      blueprint,
+      request,
+      agentRole,
+      skillOperation,
+    );
     this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
 
     const identity: IRunIdentity = { agentRole, requestId, traceId };
@@ -585,13 +556,13 @@ export class AgentRunner implements IAgentRunner {
     request: IParsedRequest,
     identity: IRunIdentity,
     skillIds: string[],
-    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
-    skillOperation: ReturnType<AgentRunner["buildSkillOperation"]>,
+    skillsContext: ISkillsContext | null,
+    skillOperation: ISkillOperationContext,
   ): Promise<{
     combinedPrompt: string;
     promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"];
-    skillUsage: ReturnType<AgentRunner["buildSkillUsagePlan"]>;
-    resolvedSkills: Awaited<ReturnType<AgentRunner["persistSkillPins"]>>;
+    skillUsage: ISkillUsagePlan | null;
+    resolvedSkills: ISkillPin[] | undefined;
   }> {
     const { agentRole, requestId, traceId } = identity;
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
@@ -603,8 +574,18 @@ export class AgentRunner implements IAgentRunner {
       skillContextString,
       criticalSkillContext,
     );
-    const skillUsage = this.buildSkillUsagePlan(skillsContext, combinedPrompt, trimmedSkillRender, skillOperation);
-    const resolvedSkills = await this.persistSkillPins(skillsContext, skillUsage, trimmedSkillRender, skillOperation);
+    const skillUsage = this.skills.buildSkillUsagePlan(
+      skillsContext,
+      combinedPrompt,
+      trimmedSkillRender,
+      skillOperation,
+    );
+    const resolvedSkills = await this.skills.persistSkillPins(
+      skillsContext,
+      skillUsage,
+      trimmedSkillRender,
+      skillOperation,
+    );
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
       DomainEventType.AgentPromptAssembled,
@@ -636,13 +617,13 @@ export class AgentRunner implements IAgentRunner {
     blueprint: IBlueprint,
     request: IParsedRequest,
     agentRole: string,
-    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
+    skillsContext: ISkillsContext | null,
     traceId: Opt<string, Reason.TraceAbsent>,
     requestId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<{ callSite: ReturnType<AgentRunner["resolveCallSite"]>; hints: IGenerationHints }> {
     const callSite = this.resolveCallSite(request);
-    const skillFloors = this.skillFloorsOf(skillsContext);
+    const skillFloors = this.skills.skillFloorsOf(skillsContext);
     const resolution = await this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
     const projection = projectResolvedCallOptions(resolution, {
       binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
@@ -690,17 +671,6 @@ export class AgentRunner implements IAgentRunner {
     }
     if (!toolsResult) this.markCallSiteConsumed(callSite);
     return { retryResult, toolsResult };
-  }
-
-  /** The skill floors of the matched context, for effort resolution. */
-  private skillFloorsOf(
-    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
-  ): ReadonlyArray<{ skillId: string; effort?: EffortTier; thinking?: boolean }> {
-    return skillsContext?.matched?.map((match) => ({
-      skillId: match.skillId,
-      effort: match.effort,
-      thinking: match.thinking,
-    })) ?? [];
   }
 
   /** Resolves declaration-time effort and thinking through EffortResolver, using the selected model's provider
@@ -778,255 +748,6 @@ export class AgentRunner implements IAgentRunner {
       },
       signals,
     );
-  }
-
-  /**
-   * Match and apply skills for the given request
-   */
-  private async matchAndApplySkills(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    agentRole: string,
-    operation: ISkillOperationContext = this.buildSkillOperation(request, agentRole),
-  ): Promise<{ skillIds: string[]; skillsContext: ISkillsContext | null }> {
-    if (!this.skillsService || this.disableSkills) {
-      return { skillIds: [], skillsContext: null };
-    }
-    const skills = this.skillsService.forContext(operation);
-
-    const matchingStartTime = Date.now();
-    try {
-      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ agent-role defaults —
-      // no branch-specific merge rules, so it's always predictable why a skill was or
-      // wasn't injected. Prompt bloat is controlled by keeping default_skills short.
-      const matchScores = new Map<string, number>();
-      const sources = new Map<string, SkillMatchSource>();
-      const matchedTriggers = new Map<string, ISkillMatch["matchedTriggers"]>();
-      const skillIds: string[] = [];
-      const add = (id: string, score: number, source: SkillMatchSource) => {
-        if (skillIds.includes(id)) return;
-        skillIds.push(id);
-        matchScores.set(id, score);
-        sources.set(id, source);
-      };
-
-      const pinned = request.skills ?? [];
-      for (const id of pinned) add(id, 1.0, SkillMatchSource.PINNED);
-
-      // Dynamic matching is skipped when the request pinned skills explicitly — the pin is
-      // the caller stating what they want, and matching would only add noise to it.
-      const matched: string[] = [];
-      if (!pinned.length) {
-        try {
-          const result = await this.performDynamicSkillMatching(request, agentRole, skills);
-          for (const match of result.matches) {
-            matched.push(match.skillId);
-            matchedTriggers.set(match.skillId, match.matchedTriggers);
-            add(match.skillId, match.confidence, SkillMatchSource.MATCHED);
-          }
-        } catch (error: unknown) {
-          this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), agentRole);
-        }
-      }
-
-      const defaults = blueprint.defaultSkills ?? [];
-      for (const id of defaults) add(id, 0.5, SkillMatchSource.DEFAULT);
-
-      // A skill-ablation arm's control side suppresses a skill from the FINAL resolved
-      // set — after pinned/matched/defaults are unioned, not only from the dynamic-match
-      // sub-path — so a pin- or default-only skill is suppressed just as reliably.
-      const suppressed = readSuppressedSkillIds();
-      const suppressedPresent = skillIds.filter((id) => suppressed.has(id));
-      for (const id of suppressedPresent) {
-        skillIds.splice(skillIds.indexOf(id), 1);
-        matchScores.delete(id);
-      }
-
-      this.logSkillResolution(agentRole, skillIds, pinned, matched, defaults, suppressedPresent);
-
-      const totalAvailable = skillIds.length;
-
-      // 5. Hydration
-      const skillsContext = await this.hydrateSkills(
-        skills,
-        skillIds,
-        { matchScores, sources, matchedTriggers },
-        totalAvailable,
-        matchingStartTime,
-      );
-
-      return { skillIds, skillsContext };
-    } catch (error) {
-      console.error("[IAgentRunner] Skill management critical failure:", error);
-      return { skillIds: [], skillsContext: null };
-    }
-  }
-
-  /** One immutable skill operation context per run, shared by matching, hydration and snapshots. */
-  private buildSkillOperation(request: IParsedRequest, agentRole: string): ISkillOperationContext {
-    return createSkillOperationContext({
-      agentRole,
-      portal: request.portal,
-      traceId: request.traceId,
-      requestId: request.requestId,
-      flowId: request.flowId,
-      flowStepId: request.flowStepId,
-      configGeneration: this.skillsService?.currentConfigGeneration(),
-    });
-  }
-
-  /** The skills whose complete rendered block survived budget fitting, one item each. Null when no skill reached the prompt.
-   *  A skill the budget dropped or truncated is not included. */
-  private buildSkillUsagePlan(
-    skillsContext: ISkillsContext | null,
-    combinedPrompt: string,
-    trimmed: boolean,
-    operation: ISkillOperationContext,
-  ): ISkillUsagePlan | null {
-    if (!this.skillsService || !skillsContext) return null;
-    const items: ISkillSubmissionItem[] = [];
-    for (const match of skillsContext.matched) {
-      const includeExamples = match.critical || !trimmed;
-      if (!combinedPrompt.includes(renderSkillEntry(match, includeExamples).trimEnd())) continue;
-      items.push({
-        skillName: match.skillId,
-        revisionId: match.revisionId,
-        matchSource: match.source,
-        renderMode: match.critical
-          ? SkillRenderOutcome.CRITICAL
-          : trimmed
-          ? SkillRenderOutcome.TRIMMED
-          : SkillRenderOutcome.FULL,
-        rootKind: match.rootKind,
-        sourcePath: match.sourcePath,
-      });
-    }
-    return items.length === 0 ? null : { operation, items, round: 0 };
-  }
-
-  /** The durable pin vector for every skill this run selected, ordered by confidence.
-   *  A skill the budget dropped stays a pin with `content_included` false. Pins are durable before the provider call.
-   *  A failure stops the run. Undefined when skills are off. */
-  private async persistSkillPins(
-    skillsContext: ISkillsContext | null,
-    usage: ISkillUsagePlan | null,
-    trimmed: boolean,
-    operation: ISkillOperationContext,
-  ): Promise<ISkillPin[] | undefined> {
-    if (!this.skillsService || this.disableSkills) return undefined;
-    const included = new Set(usage?.items.map((item) => item.skillName));
-    const pins = orderSkillPins(
-      (skillsContext?.matched ?? []).map((match) =>
-        buildSkillPin(match, {
-          portal: match.rootKind === SkillRootKind.PROJECT ? operation.portal : null,
-          renderMode: match.critical
-            ? SkillRenderOutcome.CRITICAL
-            : trimmed
-            ? SkillRenderOutcome.TRIMMED
-            : SkillRenderOutcome.FULL,
-          contentIncluded: included.has(match.skillId),
-        })
-      ),
-    );
-    await this.skillsService.ensureRevisions(pins.map((pin) => pin.revision_id), operation);
-    return pins;
-  }
-
-  /** Wraps one provider dispatch round. Each attempt records the skill vector under a fresh call id first.
-   *  A recording failure is rethrown unchanged and no further attempt reaches the provider. */
-  private withSkillUsage(
-    usage: ISkillUsagePlan | null,
-    generate: () => Promise<IGenerateResult>,
-  ): () => Promise<IGenerateResult> {
-    const skills = this.skillsService;
-    if (!usage || !skills) return generate;
-    usage.round += 1;
-    const round = usage.round;
-    let attempt = 0;
-    return async () => {
-      if (usage.auditError) throw usage.auditError;
-      attempt += 1;
-      try {
-        await skills.recordSubmission({
-          callId: crypto.randomUUID(),
-          submissionKind: SkillSubmissionKind.PROVIDER,
-          round,
-          attempt,
-          items: usage.items,
-        }, usage.operation);
-      } catch (error) {
-        if (error instanceof Error) usage.auditError = error;
-        throw error;
-      }
-      return await generate();
-    };
-  }
-
-  /** Performs dynamic skill matching with a timeout guard. */
-  private async performDynamicSkillMatching(
-    request: IParsedRequest,
-    agentRole: string,
-    skills: ISkillsService,
-  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
-    const skillsConfig = this.config?.context?.config.get().skills;
-
-    const matchingPromise = skills.matchSkills({
-      requestText: request.userPrompt,
-      keywords: this.extractKeywords(request.userPrompt),
-      taskType: request.taskType,
-      filePaths: request.filePaths,
-      tags: request.tags,
-      agentRole,
-      contextBudgetChars: skillsConfig?.context_budget_chars,
-    });
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const timeoutPromise = new Promise<{ matches: ISkillMatch[]; totalAvailable: number }>((_, reject) =>
-      timeoutId = setTimeout(() => reject(new Error("Skill matching timed out")), SKILL_MATCH_TIMEOUT_MS)
-    );
-
-    try {
-      return await Promise.race([matchingPromise, timeoutPromise]);
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    }
-  }
-
-  /**
-   * Hydrate skill IDs into full ISkillsContext for prompt injection
-   */
-  private async hydrateSkills(
-    skills: ISkillsService,
-    skillIds: string[],
-    resolution: {
-      matchScores: Map<string, number>;
-      sources: Map<string, SkillMatchSource>;
-      matchedTriggers: Map<string, ISkillMatch["matchedTriggers"]>;
-    },
-    totalAvailable: number,
-    startTime: number,
-  ): Promise<ISkillsContext | null> {
-    if (skillIds.length === 0) return null;
-
-    const skillsFound = await Promise.all(
-      skillIds.map((id) => skills.getSkill(id)),
-    );
-
-    const validSkills = skillsFound.filter((s): s is ISkill => s !== null);
-
-    return {
-      matched: validSkills.map((s) =>
-        skillToContextEntry(s, {
-          confidence: resolution.matchScores.get(s.skill_id) ?? 0.5,
-          source: resolution.sources.get(s.skill_id) ?? SkillMatchSource.MATCHED,
-          matchedTriggers: resolution.matchedTriggers.get(s.skill_id) ?? {},
-        })
-      ),
-      totalAvailable,
-      retrievalLatencyMs: Date.now() - startTime,
-    };
   }
 
   /**
@@ -1123,7 +844,7 @@ export class AgentRunner implements IAgentRunner {
   ): Promise<IRetryResult<IGenerateResult>> {
     const generateOptions = this.buildGenerateOptions(hints);
     return await this.runGeneration(
-      this.withSkillUsage(usage, () => this.modelProvider.generate(combinedPrompt, generateOptions)),
+      this.skills.withSkillUsage(usage, () => this.modelProvider.generate(combinedPrompt, generateOptions)),
       startTime,
     );
   }
@@ -1233,7 +954,7 @@ export class AgentRunner implements IAgentRunner {
       modelId: this.selectedModelId(),
       generate: (prompt, options) =>
         this.runGeneration(
-          this.withSkillUsage(usage, () => this.modelProvider.generate(prompt, options)),
+          this.skills.withSkillUsage(usage, () => this.modelProvider.generate(prompt, options)),
           startTime,
         ).then((r) => {
           if (!r.success) throw r.error ?? new Error("Planning tool round failed");
@@ -1651,7 +1372,7 @@ export class AgentRunner implements IAgentRunner {
    *  a joined string, and never a real LLM call. Runs its own skill matching (like `run()`). */
   async previewPrompt(blueprint: IBlueprint, request: IParsedRequest): Promise<IPromptPreview> {
     const agentRole = blueprint.agentRole || "unknown";
-    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole);
+    const { skillIds, skillsContext } = await this.skills.matchAndApplySkills(blueprint, request, agentRole);
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
     const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
@@ -1759,11 +1480,6 @@ export class AgentRunner implements IAgentRunner {
     return hints;
   }
 
-  /** Extracts keywords from text for skill matching. */
-  private extractKeywords(text: string): string[] {
-    return extractKeywords(text);
-  }
-
   /** A truncated or refused answer is journaled as a warning, so the parse failure that follows is attributable to it. */
   private warnOnStopReason(
     generateResult: Opt<IGenerateResult, Reason.OptionalInput>,
@@ -1810,41 +1526,6 @@ export class AgentRunner implements IAgentRunner {
   /**
    * Log activity to IActivity Journal (if database provided)
    */
-
-  /** Journals a dynamic skill-match that timed out or threw — this path silently
-   *  degrades the agent (proceeds with NO skills at all), so the Activity Journal must
-   *  record it. The 500ms timeout is distinguished from a genuine failure. */
-  private logSkillRetrievalFailure(message: string, agentRole: string): void {
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      message.includes("timed out") ? SKILL_EVENT_RETRIEVAL_TIMEOUT : SKILL_EVENT_RETRIEVAL_FAILED,
-      agentRole,
-      { agent_role: agentRole, error: message },
-    );
-    console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
-  }
-
-  /** Journals the final skill set together with the three inputs that produced it.
-   *  `skills.match_completed` alone is skipped entirely for a pinned request, so this
-   *  breakdown is what makes the union auditable without re-deriving the merge. */
-  private logSkillResolution(
-    agentRole: string,
-    skillIds: string[],
-    pinned: string[],
-    matched: string[],
-    defaults: string[],
-    suppressed: string[],
-  ): void {
-    this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, agentRole, {
-      agent_role: agentRole,
-      skill_ids: skillIds,
-      skill_count: skillIds.length,
-      pinned_skill_ids: pinned,
-      matched_skill_ids: matched,
-      default_skill_ids: defaults,
-      suppressed_skill_ids: suppressed,
-    });
-  }
 
   private logActivity(
     _actor: string,

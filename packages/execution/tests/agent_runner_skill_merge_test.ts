@@ -101,7 +101,7 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
     taskType: "feature",
   };
 
-  const result = await (runner as any).matchAndApplySkills(
+  const result = await (runner as any).skills.matchAndApplySkills(
     blueprint,
     request,
     "test-role",
@@ -144,7 +144,7 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
     taskType: "bugfix",
   };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+  const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
 
   assertExists(result);
   const resolved: string[] = result.skillIds;
@@ -175,7 +175,7 @@ Deno.test("[step17] explicit pin concatenates with every agent-role default", as
   };
   const request = { skills: ["portal-grounding"], userPrompt: "do the thing", taskType: "feature" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+  const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertArrayIncludes(resolved, ["portal-grounding"], "the pinned skill is present");
@@ -189,7 +189,7 @@ Deno.test("[step17] the resulting set has no duplicates when a pin repeats a def
   const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract", "error-handling"] };
   const request = { skills: ["error-handling"], userPrompt: "do the thing", taskType: "feature" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+  const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertEquals(resolved.filter((id) => id === "error-handling").length, 1);
@@ -209,7 +209,7 @@ Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not ju
   };
   const request = { userPrompt: "Fix the null-safety bug in src/utils.ts", taskType: "bugfix" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+  const result = await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertArrayIncludes(resolved, ["tdd-methodology"], "the dynamic match is present");

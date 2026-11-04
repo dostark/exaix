@@ -145,7 +145,7 @@
     "packages/ai": 4,
     "packages/cli": 1,
     "packages/core": 5,
-    "packages/execution": 4,
+    "packages/execution": 3,
     "packages/flow": 2,
     "packages/git": 1,
     "packages/memory": 3,

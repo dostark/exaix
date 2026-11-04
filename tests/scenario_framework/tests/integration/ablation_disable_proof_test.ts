@@ -77,7 +77,7 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: [] };
     const request = { skills: [], userPrompt: "do the thing", taskType: "feature" };
 
-    await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
     assertFalse(
@@ -102,7 +102,7 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: [] };
     const request = { skills: [], userPrompt: "do the thing", taskType: "feature" };
 
-    await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
+    await (runner as any).skills.matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
     assertArrayIncludes(
