@@ -31,16 +31,7 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
-import {
-  BINARY_VERSION,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  FlowInputSource,
-  PORTAL_LABEL,
-  RequestKind,
-  RequestOperation,
-  scrubProcessEnv,
-  WORKSPACE_SCHEMA_VERSION,
-} from "@exaix/core";
+import { BINARY_VERSION, DEFAULT_UNKNOWN_ERROR_MESSAGE, scrubProcessEnv, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { CLI_OUTPUT_FORMATS } from "@exaix/cli/config.ts";
 import { initializeServices, type IServiceContext, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
@@ -68,7 +59,8 @@ import {
   CLI_OPTION_PORTAL,
   CLI_OPTION_REASON,
   CLI_OUTPUT_FORMAT_OPTION,
-  CONFIG_LABEL,
+  ExaCtlCommandName,
+  ExaCtlJournalSubcommand,
 } from "./exactl_constants.ts";
 
 export interface IExaCtlCommandOptions {
@@ -216,69 +208,69 @@ const baseCommand: ExaCtlBaseCommand = new Command()
   .description("Exaix CLI - Human interface for agent orchestration")
   // Request commands (PRIMARY INTERFACE)
   .command(
-    FlowInputSource.REQUEST,
+    ExaCtlCommandName.REQUEST,
     buildRequestCommand(runtime),
   )
   // Plan commands
   .command(
-    RequestOperation.PLAN,
+    ExaCtlCommandName.PLAN,
     buildPlanCommand(runtime),
   )
   // Review commands (replaces review commands)
   .command(
-    "review",
+    ExaCtlCommandName.REVIEW,
     buildReviewCommand(runtime),
   )
   // Wait state commands
   .command(
-    "wait",
+    ExaCtlCommandName.WAIT,
     buildWaitCommand(runtime),
   )
   // Git commands
   .command(
-    "git",
+    ExaCtlCommandName.GIT,
     buildGitCommand(runtime),
   )
   // Daemon commands
   .command(
-    "daemon",
+    ExaCtlCommandName.DAEMON,
     buildDaemonCommand(runtime),
   )
   // Portal commands
   .command(
-    PORTAL_LABEL,
+    ExaCtlCommandName.PORTAL,
     buildPortalCommand(runtime),
   )
   // Config commands
   .command(
-    CONFIG_LABEL,
+    ExaCtlCommandName.CONFIG,
     buildConfigCommand(runtime),
   )
   // Blueprint commands
   .command(
-    "blueprint",
+    ExaCtlCommandName.BLUEPRINT,
     buildBlueprintCommand(runtime),
   )
   .command(
-    "routing",
+    ExaCtlCommandName.ROUTING,
     buildRoutingCommand(runtime),
   )
   // Flow commands
   .command(
-    RequestKind.FLOW,
+    ExaCtlCommandName.FLOW,
     buildFlowCommand(runtime),
   )
   // Memory commands
   .command(
-    "memory",
+    ExaCtlCommandName.MEMORY,
     buildMemoryCommand(runtime),
   )
   .command(
-    "dashboard",
+    ExaCtlCommandName.DASHBOARD,
     buildDashboardCommand(runtime),
   )
   .command(
-    "mcp",
+    ExaCtlCommandName.MCP,
     buildMcpCommand(runtime),
   );
 
@@ -299,7 +291,7 @@ const journalCommand = new Command()
     await cmd.show(options as IJournalCommandOptions);
   })
   .command(
-    "wait",
+    ExaCtlJournalSubcommand.WAIT,
     new Command()
       .description("Block until an event is journalled after a baseline (or timeout)")
       .option("--event <event:string>", "Action type to wait for (repeatable — OR semantics, e.g. daemon.ready)", {
@@ -347,10 +339,10 @@ const createCostCommand = () =>
 
 const logCommand = new Command()
   .description("Access system logs, activity journal and cost tracking")
-  .command("journal", journalCommand)
-  .command("cost", createCostCommand());
+  .command(ExaCtlCommandName.JOURNAL, journalCommand)
+  .command(ExaCtlCommandName.COST, createCostCommand());
 
-baseCommand.command("cost", createCostCommand());
+baseCommand.command(ExaCtlCommandName.COST, createCostCommand());
 
 const logsCommand = new Command()
   .description("Query system activity logs (alias for 'log journal')")
@@ -370,9 +362,9 @@ const logsCommand = new Command()
     await cmd.show(options as IJournalCommandOptions);
   });
 
-baseCommand.command("log", logCommand);
-baseCommand.command("logs", logsCommand);
-baseCommand.command("journal", journalCommand);
+baseCommand.command(ExaCtlCommandName.LOG, logCommand);
+baseCommand.command(ExaCtlCommandName.LOGS, logsCommand);
+baseCommand.command(ExaCtlCommandName.JOURNAL, journalCommand);
 
 // models subcommand (Solo model registry display)
 
@@ -425,7 +417,7 @@ const modelsCommand = new Command()
       }),
   );
 
-baseCommand.command("models", modelsCommand);
+baseCommand.command(ExaCtlCommandName.MODELS, modelsCommand);
 
 // version subcommand
 
@@ -499,7 +491,7 @@ function parseSemVerSegments(v: string): { major: number; minor: number; patch: 
   return { major: major ?? 0, minor: minor ?? 0, patch: patch ?? 0 };
 }
 
-baseCommand.command("version", versionCommand);
+baseCommand.command(ExaCtlCommandName.VERSION, versionCommand);
 
 // migrate subcommand
 
@@ -516,7 +508,7 @@ const migrateCommand = new Command()
       }),
   );
 
-baseCommand.command("migrate", migrateCommand);
+baseCommand.command(ExaCtlCommandName.MIGRATE, migrateCommand);
 
 // tool subcommand (Tool Confirmation CLI)
 
@@ -550,14 +542,14 @@ const toolCommand = new Command()
       }),
   );
 
-baseCommand.command("tool", toolCommand);
+baseCommand.command(ExaCtlCommandName.TOOL, toolCommand);
 
 // skills subcommand alias (wires the Skills Service)
 
 const skillsCommand = new Command().description("Manage procedural skills (alias of 'memory skill')");
 registerSkillCommands(skillsCommand, memoryCommands);
 
-baseCommand.command("skills", skillsCommand);
+baseCommand.command(ExaCtlCommandName.SKILLS, skillsCommand);
 
 // watch subcommand (live execution streaming)
 
@@ -575,13 +567,13 @@ const watchCommand = new Command()
     }
   });
 
-baseCommand.command("watch", watchCommand);
+baseCommand.command(ExaCtlCommandName.WATCH, watchCommand);
 
 // eval subcommand (evaluation framework)
 
 const evalCommand = buildEvalCommand(runtime);
 
-baseCommand.command("eval", evalCommand);
+baseCommand.command(ExaCtlCommandName.EVAL, evalCommand);
 
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
 
