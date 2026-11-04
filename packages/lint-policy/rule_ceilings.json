@@ -12,7 +12,7 @@
     "packages/ai-openrouter": 3,
     "packages/core": 7,
     "packages/eval-history": 1,
-    "packages/execution": 12,
+    "packages/execution": 11,
     "packages/flow": 7,
     "packages/model-registry": 1,
     "packages/portal": 1,

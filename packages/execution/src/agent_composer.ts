@@ -24,15 +24,15 @@ import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
 import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/skills";
 import type { IEventLogger } from "@exaix/core/logger";
-import { canonicalizeToolName, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IFixedModelClient, IModelCallOptions } from "@exaix/schemas";
-import { AGENT_EVENT_SECURITY_VIOLATION, type IAllocationHints } from "@exaix/core";
-import { SESSION_BIN_CLAUDE_CODE, SESSION_BIN_CODEX, SESSION_BIN_OPENCODE } from "@exaix/core/types";
+import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
+
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
@@ -40,15 +40,15 @@ import type {
   IExecutionContext,
 } from "@exaix/schemas/agent_composer.ts";
 import type { IToolRegistry } from "@exaix/core/types";
-import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
+import { AgentExecutionErrorType } from "@exaix/core";
+import type { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
-import { StrategyRegistry } from "./strategies/strategy_registry.ts";
-import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
-import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
-import { CliDelegateStrategy, type IRunCliDelegateProcess } from "./strategies/cli_delegate_strategy.ts";
+import type { StrategyRegistry } from "./strategies/strategy_registry.ts";
+
+import type { IRunCliDelegateProcess } from "./strategies/cli_delegate_strategy.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IDogfoodContextPort, Opt, Reason, TaskType } from "@exaix/core/types";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
@@ -67,23 +67,32 @@ import { EFFORT_MAX_TOKENS, EffortResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
 
 import type { IProjectedCallOptions } from "@exaix/ai";
-import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
-import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
-import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
+
+import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
-import { ExecutionContextService } from "./execution_context_service.ts";
+import type { ExecutionContextService } from "./execution_context_service.ts";
 import { type IGenerationUsage, logGenerationCompleted } from "./generation_log.ts";
 import { BlueprintService } from "./blueprint_service.ts";
-import { PromptBuilder } from "./prompt_builder.ts";
-import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
+import type { PromptBuilder } from "./prompt_builder.ts";
+
 import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
-import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
+
+import {
+  applyBlueprintToolScope,
+  authorizedPathsOf,
+  buildSubprocessPermissions,
+  resolveStepPortal,
+  resolveStrategyName,
+  stepAllocationHints,
+  usageReportOf,
+} from "./agent_step_policy.ts";
+import { registerCoreStrategies, resolveComposerServices } from "./agent_composer_wiring.ts";
 import { AgentComposerAudit, type IComposerUsage } from "./agent_composer_audit.ts";
 import { AgentComposerEffort } from "./agent_composer_effort.ts";
-import { GitAuditService } from "./git_audit_service.ts";
-import { HistoryManager } from "./history_manager.ts";
-import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
-import { ReActLoopAdapter } from "./react_loop_adapter.ts";
+import type { GitAuditService } from "./git_audit_service.ts";
+import type { HistoryManager } from "./history_manager.ts";
+import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
+import type { ReActLoopAdapter } from "./react_loop_adapter.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -133,7 +142,7 @@ export interface IAgentComposerOptions {
 }
 
 /** Dependencies for AgentComposer constructor. */
-interface IAgentComposerDeps {
+export interface IAgentComposerDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;
@@ -174,15 +183,6 @@ interface IAgentComposerDeps {
   skills?: Opt<ISkillsService, Reason.OptionalDependency>;
   /** Reads the resolved tool-round policy for each ReAct model turn. Absent uses the schema defaults. */
   toolsRoundPolicy?: () => IToolsRoundPolicy;
-}
-
-/** Explicit binary mapping for the supported cli-delegate session tools. Anything else
- *  (cursor, vscode, a future tool) has no binary and fails preflight. */
-function delegateBinary(tool: SessionTool): string | undefined {
-  if (tool === SessionToolSchema.enum["claude-code"]) return SESSION_BIN_CLAUDE_CODE;
-  if (tool === SessionToolSchema.enum.opencode) return SESSION_BIN_OPENCODE;
-  if (tool === SessionToolSchema.enum.codex) return SESSION_BIN_CODEX;
-  return undefined;
 }
 
 /**
@@ -272,24 +272,22 @@ export class AgentComposer {
     this.planWrittenFiles = deps.planWrittenFiles ?? new Set<string>();
     this.permissions = deps.permissions;
     this.provider = deps.provider;
-    this.strategyRegistry = deps.strategyRegistry;
     this._toolRegistry = deps.toolRegistry;
-    this._guardrailRunner = deps.guardrailRunner;
+    this._guardrailRunner = deps.options?.guardrailRunner ?? deps.guardrailRunner;
     this.contextPort = deps.contextPort;
     this.trustedAgentRoles = deps.trustedAgentRoles;
     this.skills = deps.skills;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
     this.effortResolver = deps.effortResolver ?? new EffortResolver();
-    this.blueprintService = deps.blueprintService ??
-      new BlueprintService(this.config, this.logger, deps.modelResolver, deps.options);
-    this.ctx = deps.executionContext ?? new ExecutionContextService(this.config, this.logger, {
-      promptBudgetAllocator: undefined,
-      contextCache: undefined,
-      tokenizer: undefined,
-      contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, this.logger),
-      snapshotStore: undefined,
-    });
+    const services = resolveComposerServices(deps, this._resolvedCallOptions);
+    this.blueprintService = services.blueprintService;
+    this.ctx = services.ctx;
+    this.promptBuilder = services.promptBuilder;
+    this.gitAuditService = services.gitAuditService;
+    this.outputParser = services.outputParser;
+    this.historyManager = services.historyManager;
+    this.reActAdapter = services.reActAdapter;
     this.audit = new AgentComposerAudit({
       logger: this.logger,
       estimateTokens: (text) => this.ctx.estimateTokensSync(text),
@@ -301,72 +299,10 @@ export class AgentComposer {
       provider: this.provider,
       options: this.options,
     });
-    this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
-    this.gitAuditService = deps.gitAuditService ?? new GitAuditService(this.logger);
-    this.outputParser = deps.outputParser ?? new OutputParser();
-    this.historyManager = deps.historyManager ??
-      new HistoryManager(this.config, this.logger, this.provider, this.db, this._resolvedCallOptions);
-    this.reActAdapter = new ReActLoopAdapter(
-      this.outputParser,
-      this.ctx,
-      this.logger,
-      this._toolRegistry,
-      {
-        guardrailRunner: deps.guardrailRunner,
-        aci: {
-          enabled: this.config.agents?.inject_aci_docs,
-          promptMaxChars: this.config.agents?.aci_doc_prompt_max_chars,
-        },
-        maxIterations: this.config.agents?.max_iterations,
-        toolsRoundPolicy: deps.toolsRoundPolicy,
-      },
-    );
-    if (deps.options?.guardrailRunner) {
-      this._guardrailRunner = deps.options.guardrailRunner;
-    }
-    // If no registry provided, create one and register core strategies
-    if (!this.strategyRegistry) {
-      this.strategyRegistry = new StrategyRegistry();
-      this.strategyRegistry.register(new ReActLoopStrategy(this.reActAdapter, this.provider));
-      this.strategyRegistry.register(new McpAgentStrategy(this));
-      if (deps.cliDelegateBinding || this.config.cli_delegate?.enabled) {
-        this.strategyRegistry.register(
-          this.buildCliDelegateStrategy(this.config.cli_delegate, deps.cliDelegateBinding, deps.cliDelegateRun),
-        );
-      }
-    }
-  }
-
-  /** Builds CliDelegateStrategy from the [cli_delegate] config block. A bound cli-delegate service beats the block,
-   *  even when `[cli_delegate].enabled` is false. Only claude-code, opencode and codex have a binary.
-   *  The ToolRegistry's baseDir beats the portal's static config path. */
-  private buildCliDelegateStrategy(
-    cliDelegateConfig?: Opt<NonNullable<Config["cli_delegate"]>, Reason.OptionalDependency>,
-    cliDelegateBinding?: Opt<{ tool: SessionTool; model: string }, Reason.OptionalDependency>,
-    cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>,
-  ): CliDelegateStrategy {
-    const tool = cliDelegateBinding?.tool ?? cliDelegateConfig?.tool;
-    if (!tool) {
-      throw new Error("cli-delegate strategy requires a tool from config.cli_delegate or a bound cli-delegate service");
-    }
-    const bin = cliDelegateConfig?.bin_overrides?.[0] ?? delegateBinary(tool);
-    if (!bin) {
-      throw new Error(`Unsupported cli-delegate tool: ${tool}`);
-    }
-    const providerEnv = cliDelegateConfig?.provider
-      ? readDelegateProviderEnv(cliDelegateConfig.provider, tool, (name) => Deno.env.get(name))
-      : undefined;
-    return new CliDelegateStrategy({
-      tool,
-      bin,
-      model: cliDelegateBinding?.model ?? cliDelegateConfig?.model,
-      effort: cliDelegateConfig?.effort,
-      providerEnv,
+    this.strategyRegistry = deps.strategyRegistry ?? registerCoreStrategies(this, deps, {
+      reActAdapter: this.reActAdapter,
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
-      contextPort: this.contextPort,
-      trustedAgentRoles: this.trustedAgentRoles,
-      ...(cliDelegateRun ? { run: cliDelegateRun } : {}),
     });
   }
 
@@ -549,30 +485,6 @@ export class AgentComposer {
   public static sanitizePrompt(prompt: string): string {
     return BlueprintService.sanitizePrompt(prompt);
   }
-  /** Bridges blueprint permitted_tools and allowed_paths onto per-call options.
-   *  It narrows permitted_tools to the matched skills' tools that the agent role also allows. A skill can narrow, never grant.
-   *  Both sides are canonicalized first. A role listing `grep_search` still matches a skill declaring `grep`. */
-  private applyBlueprintToolScope(
-    blueprint: IAgentFileBlueprint,
-    options: IAgentExecutionOptions,
-  ): void {
-    if (options.permitted_tools !== undefined) {
-      options.permitted_tools = options.permitted_tools.map(canonicalizeToolName);
-    }
-    if (blueprint.permitted_tools) {
-      options.permitted_tools = blueprint.permitted_tools.map(canonicalizeToolName);
-    }
-    if (blueprint.allowed_paths) {
-      options.allowed_paths = blueprint.allowed_paths;
-    }
-    if (this.options?.matchedSkillTools) {
-      options.permitted_tools = resolveEffectiveSkillTools(
-        this.options.matchedSkillTools.map((tools) => tools?.map(canonicalizeToolName)),
-        options.permitted_tools,
-      );
-    }
-  }
-
   /** Renders the plan's pinned skills from their stored snapshots. Absent pins keep live behavior.
    *  A pin that cannot resolve fails the step before any strategy runs. */
   private async resolvePinnedSkillPrompt(
@@ -603,26 +515,26 @@ export class AgentComposer {
     const startTime = Date.now();
 
     try {
-      const portal = this.resolveStepPortal(options);
+      const portal = resolveStepPortal(this.config, this.permissions, options);
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
-      const strategyName = this.resolveStrategyName(_blueprint, options);
+      const strategyName = resolveStrategyName(_blueprint, options);
       await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills, strategyName);
 
       await this.logExecutionStart(context.trace_id, options.agent_role ?? "", options.portal);
-      this.applyBlueprintToolScope(_blueprint, options);
+      applyBlueprintToolScope(_blueprint, options, this.options?.matchedSkillTools);
       this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
 
       const strategy = this.selectStrategy(strategyName);
       const validated = await strategy.execute(_blueprint, context, options, pinnedSkills);
-      const usage = this.usageReportOf(validated);
+      const usage = usageReportOf(validated);
 
       const portalPath = this.resolveAuditPortalPath(portal);
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
       const unauthorizedChanges = await this.auditGitChanges(
         portalPath,
-        this.authorizedPathsOf(options, validated),
+        authorizedPathsOf(options, validated, this.planWrittenFiles),
       );
       if (unauthorizedChanges.length > 0) {
         await this.rejectUnauthorizedChanges(
@@ -669,16 +581,6 @@ export class AgentComposer {
     return { context, options };
   }
 
-  /** Resolves the target portal and checks the role, inside the step's failure and cleanup boundary. */
-  private resolveStepPortal(options: IAgentExecutionOptions): IPortalConfig {
-    const portal = this.config.portals?.find((p) => p.alias === options.portal);
-    if (!portal) throw new Error(`Portal not found: ${options.portal}`);
-    if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
-      throw new Error(`Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`);
-    }
-    return portal;
-  }
-
   /** Reserves the strategy for this step and forwards the resolved call options. */
   private selectStrategy(strategyName: ExecutionStrategyName): ReturnType<StrategyRegistry["resolve"]> {
     const strategy = this.strategyRegistry!.resolve(strategyName);
@@ -686,30 +588,6 @@ export class AgentComposer {
       (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
     }
     return strategy;
-  }
-
-  /** The real usage block of one strategy result, when one was reported. */
-  private usageReportOf(validated: IChangesetResult): Opt<IComposerUsage, Reason.OptionalInput> {
-    if (!validated.usage) return undefined;
-    const usage = validated.usage;
-    return {
-      tokens: usage.prompt_tokens + usage.completion_tokens,
-      cost_usd_estimate: usage.cost_usd,
-      prompt_tokens: usage.prompt_tokens,
-      completion_tokens: usage.completion_tokens,
-      cache_read_tokens: usage.cache_read_tokens,
-      cache_creation_tokens: usage.cache_creation_tokens,
-      reasoning_tokens: usage.reasoning_tokens,
-      cost_source: usage.cost_source,
-    };
-  }
-
-  /** Authorizes this step's reported writes against the step policy. */
-  private authorizedPathsOf(options: IAgentExecutionOptions, validated: IChangesetResult): string[] {
-    const declaresAllowedPaths = (options.allowed_paths?.length ?? 0) > 0;
-    return declaresAllowedPaths
-      ? [...(options.allowed_paths ?? []), ...this.planWrittenFiles]
-      : [...this.planWrittenFiles, ...(validated.files_changed ?? [])];
   }
 
   /** Reverts and rejects one step that changed an unauthorized path. */
@@ -767,27 +645,8 @@ export class AgentComposer {
     await this.ctx.allocateBudget(
       this.resolveModelId(blueprint),
       options.request_analysis as IRequestAnalysis | undefined,
-      this.stepAllocationHints(options, pinnedSkills, strategyName),
+      stepAllocationHints(options, pinnedSkills, strategyName, this.provider),
     );
-  }
-
-  /** Sections the step expects to fill. An unused section is returned to the others, so pinned skills must be declared. */
-  private stepAllocationHints(
-    options: IAgentExecutionOptions,
-    pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
-    strategyName: ExecutionStrategyName,
-  ): Opt<IAllocationHints, Reason.OptionalInput> {
-    const hints: IAllocationHints = {};
-    // A ReAct loop carries prior actions and tool results into every later turn, in text and native mode.
-    const loops = strategyName === ExecutionStrategyName.REACT ||
-      (options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id));
-    if (loops) {
-      hints.loopHistoryUsedTokens = options.max_tool_calls * PLANNING_TOOL_CALL_OVERHEAD_TOKENS;
-    }
-    if (pinnedSkills && pinnedSkills.text.length > 0) {
-      hints.skillsUsedTokens = Math.ceil(pinnedSkills.text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
-    }
-    return Object.keys(hints).length > 0 ? hints : undefined;
   }
 
   /** Logs output from an agent subprocess. */
@@ -814,34 +673,6 @@ export class AgentComposer {
   /**
    * Parse agent response to extract changeset result
    */
-
-  /**
-   * Build subprocess permissions based on security mode
-   */
-  buildSubprocessPermissions(
-    mode: SecurityMode,
-    portalPath: string,
-  ): string[] {
-    const flags: string[] = [];
-
-    if (mode === SecurityMode.SANDBOXED) {
-      // No file system access
-      flags.push("--allow-read=NONE");
-      flags.push("--allow-write=NONE");
-    } else if (mode === SecurityMode.HYBRID) {
-      // Read-only access to portal
-      flags.push(`--allow-read=${portalPath}`);
-      flags.push("--allow-write=NONE");
-    }
-
-    // Always allow network (for MCP connection)
-    flags.push("--allow-net");
-
-    // Always allow environment variables
-    flags.push("--allow-env");
-
-    return flags;
-  }
 
   /** Audits git changes to detect unauthorized modifications. */
   auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
@@ -876,24 +707,6 @@ export class AgentComposer {
     return toolRegistryBaseDir && toolRegistryBaseDir !== this.config.system.root
       ? toolRegistryBaseDir
       : portal.target_path;
-  }
-
-  /** Resolve the executeStep strategy. MCP and CLI use explicit capabilities.
-   * ReAct is the default for provider-backed execution. */
-  private resolveStrategyName(
-    blueprint: IAgentFileBlueprint,
-    options: IAgentExecutionOptions,
-  ): ExecutionStrategyName {
-    if (options.strategy) {
-      return options.strategy;
-    }
-    if (blueprint.capabilities.includes(ExecutionStrategyName.MCP)) {
-      return ExecutionStrategyName.MCP;
-    }
-    if (blueprint.capabilities.includes(ExecutionStrategyName.CLI_DELEGATE)) {
-      return ExecutionStrategyName.CLI_DELEGATE;
-    }
-    return ExecutionStrategyName.REACT;
   }
 
   /**
@@ -940,6 +753,11 @@ export class AgentComposer {
     error: { type: string; message: string; trace_id?: string; providerReasonCode?: string },
   ): Promise<void> {
     return this.audit.logExecutionError(traceId, agentRole, error);
+  }
+
+  /** Build subprocess permissions based on security mode */
+  buildSubprocessPermissions(mode: SecurityMode, portalPath: string): string[] {
+    return buildSubprocessPermissions(mode, portalPath);
   }
 
   logGeneration(
