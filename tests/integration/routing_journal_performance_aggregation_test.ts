@@ -53,12 +53,13 @@ function seedActivity(
       portal: options.portal,
     },
     `trace-${index}`,
-    "agent",
-    options.agentRole,
-    null,
-    options.promptTokens,
-    0,
-    options.costUsd,
+    {
+      actorType: "agent",
+      agentRole: options.agentRole,
+      promptTokens: options.promptTokens,
+      completionTokens: 0,
+      costUsd: options.costUsd,
+    },
   );
 }
 

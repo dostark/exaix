@@ -6,7 +6,7 @@
  * @ungrounded
  * @description Shared DB-related test helpers for package-local tests.
  */
-import type { Opt, Reason } from "@exaix/core/types";
+import type { ILogActivityDetails, Opt, Reason } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 interface ILoggedActivity {
@@ -30,12 +30,7 @@ interface ITestDatabaseService {
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: Opt<string, Reason.OptionalInput>,
-    actorType?: Opt<string | null, Reason.OptionalInput>,
-    agentRole?: Opt<string | null, Reason.OptionalInput>,
-    runnerKind?: Opt<string | null, Reason.OptionalInput>,
-    promptTokens?: Opt<number, Reason.OptionalInput>,
-    completionTokens?: Opt<number, Reason.OptionalInput>,
-    costUsd?: Opt<number, Reason.OptionalInput>,
+    details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
   ): void;
 }
 
@@ -48,31 +43,19 @@ export function createLoggingTestDb(): ILoggingTestDb {
   const activities: ILoggedActivity[] = [];
 
   const db: ITestDatabaseService = {
-    logActivity(
-      actor,
-      actionType,
-      target,
-      payload,
-      traceId,
-      actorType,
-      agentRole,
-      runnerKind,
-      promptTokens,
-      completionTokens,
-      costUsd,
-    ) {
+    logActivity(actor, actionType, target, payload, traceId, details) {
       activities.push({
         actor,
         actionType,
         target,
         payload,
         traceId,
-        actorType,
-        agentRole,
-        runnerKind,
-        promptTokens,
-        completionTokens,
-        costUsd,
+        actorType: details?.actorType,
+        agentRole: details?.agentRole,
+        runnerKind: details?.runnerKind,
+        promptTokens: details?.promptTokens,
+        completionTokens: details?.completionTokens,
+        costUsd: details?.costUsd ?? undefined,
       });
     },
   };

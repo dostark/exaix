@@ -17,7 +17,7 @@ import { isTestMode } from "@exaix/core/config";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService, IJournalFilterOptions } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { IJournalIntegrityResult, Opt, Reason } from "@exaix/core/types";
+import type { IJournalIntegrityResult, ILogActivityDetails, Opt, Reason } from "@exaix/core/types";
 import type { IDatabaseConnection } from "./connection_pool.ts";
 import {
   computePayloadDigest,
@@ -79,21 +79,25 @@ const ACTIVITY_COLUMNS: ReadonlySet<string> = new Set([
   "timestamp",
 ]);
 
-interface LogEntry {
-  activityId: string;
-  traceId: string;
-  actor: string;
+/** The optional columns of one journal row, with the defaults of a bare call applied. */
+interface IJournalColumns {
   actorType: string | null;
   agentRole: string | null;
   runnerKind: string | null;
-  actionType: string;
-  target: string | null;
-  payload: string;
   promptTokens: number;
   completionTokens: number;
   costUsd: number | null;
   cacheReadTokens: number | null;
   cacheCreationTokens: number | null;
+}
+
+interface LogEntry extends IJournalColumns {
+  activityId: string;
+  traceId: string;
+  actor: string;
+  actionType: string;
+  target: string | null;
+  payload: string;
   timestamp: string;
 }
 
@@ -116,6 +120,20 @@ const ActivityRecordSchema = z.object({
   timestamp: z.string(),
   count: z.number().optional(),
 });
+
+/** The optional journal columns of one call, with the defaults of a bare call. */
+function journalColumnsOf(details: ILogActivityDetails): IJournalColumns {
+  return {
+    actorType: details.actorType || null,
+    agentRole: details.agentRole || null,
+    runnerKind: details.runnerKind || null,
+    promptTokens: details.promptTokens || 0,
+    completionTokens: details.completionTokens || 0,
+    costUsd: details.costUsd === undefined ? 0 : details.costUsd,
+    cacheReadTokens: details.cacheReadTokens ?? null,
+    cacheCreationTokens: details.cacheCreationTokens ?? null,
+  };
+}
 
 /** Activity record returned from database queries */
 export type ActivityRecord = z.infer<typeof ActivityRecordSchema>;
@@ -194,14 +212,7 @@ export class DatabaseService implements IDatabaseService {
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: Opt<string, Reason.TraceAbsent>,
-    actorType?: Opt<string | null, Reason.OptionalContext>,
-    agentRole?: Opt<string | null, Reason.OptionalContext>,
-    runnerKind?: Opt<string | null, Reason.OptionalContext>,
-    promptTokens?: Opt<number, Reason.OptionalInput>,
-    completionTokens?: Opt<number, Reason.OptionalInput>,
-    costUsd?: Opt<number | null, Reason.OptionalInput>,
-    cacheReadTokens?: Opt<number, Reason.OptionalInput>,
-    cacheCreationTokens?: Opt<number, Reason.OptionalInput>,
+    details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
   ): void {
     if (this.isClosing) {
       console.warn("Cannot log activity: DatabaseService is closing");
@@ -212,17 +223,10 @@ export class DatabaseService implements IDatabaseService {
       activityId: crypto.randomUUID(),
       traceId: traceId || crypto.randomUUID(),
       actor,
-      actorType: actorType || null,
-      agentRole: agentRole || null,
-      runnerKind: runnerKind || null,
+      ...journalColumnsOf(details ?? {}),
       actionType,
       target,
       payload: JSON.stringify(payload),
-      promptTokens: promptTokens || 0,
-      completionTokens: completionTokens || 0,
-      costUsd: costUsd === undefined ? 0 : costUsd,
-      cacheReadTokens: cacheReadTokens ?? null,
-      cacheCreationTokens: cacheCreationTokens ?? null,
       timestamp: new Date().toISOString(),
     };
 

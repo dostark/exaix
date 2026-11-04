@@ -103,8 +103,8 @@ export function main() {
           attempted_path: secretPath,
           reason: "Path outside portal boundary",
         },
-        alphaTraceId, // traceId as 5th parameter
-        "test-agent", // agentRole as 6th parameter
+        alphaTraceId,
+        { actorType: "test-agent" }, // agentRole as 6th parameter
       );
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -141,7 +141,7 @@ export function main() {
               portal_root: portalRoot,
             },
             alphaTraceId,
-            "test-agent",
+            { actorType: "test-agent" },
           );
         }
 

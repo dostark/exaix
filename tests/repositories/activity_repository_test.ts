@@ -50,9 +50,9 @@ Deno.test("IActivityRepository: interface defines contract", () => {
 
 Deno.test("DatabaseActivityRepository: logs activities through abstraction", async () => {
   type LogActivityArgs = Parameters<DatabaseService["logActivity"]>;
-  let capturedArgs: LogActivityArgs | null = null;
+  const captured: { args: LogActivityArgs | null } = { args: null };
   const logActivitySpy = spy((...args: LogActivityArgs) => {
-    capturedArgs = args;
+    captured.args = args;
   });
   const waitForFlushSpy = spy(() => Promise.resolve());
 
@@ -76,14 +76,15 @@ Deno.test("DatabaseActivityRepository: logs activities through abstraction", asy
   await repo.logActivity(activity);
 
   assertSpyCalls(logActivitySpy, 1);
+  const capturedArgs = captured.args;
   if (!capturedArgs) throw new Error("logActivitySpy not called");
   assertEquals(capturedArgs[0], "test-actor");
   assertEquals(capturedArgs[1], "test.action");
   assertEquals(capturedArgs[2], "test-target");
   assertEquals(capturedArgs[3], { key: "value" });
   assertEquals(capturedArgs[4], "test-trace-123");
-  assertEquals(capturedArgs[5], null); // actorType
-  assertEquals(capturedArgs[6], "test-agent-456"); // agentRole
+  assertEquals(capturedArgs[5]?.actorType, null);
+  assertEquals(capturedArgs[5]?.agentRole, "test-agent-456");
 });
 
 Deno.test("DatabaseActivityRepository: retrieves activities by trace ID", async () => {

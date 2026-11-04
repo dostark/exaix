@@ -21,7 +21,7 @@ import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { ILogActivityDetails, Opt, Reason } from "@exaix/core/types";
 
 /** Local interface matching IConfigService shape for use in testing package. */
 interface ILocalConfigService {
@@ -54,7 +54,7 @@ export function createStubDb(
       _target: string | null,
       _payload: JSONObject,
       _traceId?: Opt<string, Reason.AbstractBoundary>,
-      _agentRole?: Opt<string | null, Reason.AbstractBoundary>,
+      _details?: Opt<ILogActivityDetails, Reason.AbstractBoundary>,
     ) => {
       /* noop */
     },
@@ -223,7 +223,6 @@ export function createStubDisplay(db?: Opt<IDatabaseService, Reason.OptionalDepe
       target,
       payload as Record<string, JSONValue>,
       traceId,
-      null,
     );
     return Promise.resolve();
   };

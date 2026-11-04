@@ -40,7 +40,7 @@ describe("DatabaseService - Journal Queries", () => {
   });
 
   async function seedActivity(db: ITestDb, actor: string, actionType: string, agentRole: string, traceId: string) {
-    await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId, null, agentRole);
+    await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId, { agentRole });
   }
 
   it("should query all activities with default limit", async () => {

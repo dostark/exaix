@@ -88,7 +88,6 @@ Deno.test("malformed-row-keeps-failed-warning", async () => {
       null,
       { unrelated: true },
       fixture.trace,
-      null,
     );
     await fixture.db.waitForFlush();
     await fixture.db.preparedRun("UPDATE activity SET payload = ? WHERE trace_id = ? AND payload LIKE ?", [

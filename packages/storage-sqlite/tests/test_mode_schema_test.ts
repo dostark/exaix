@@ -32,7 +32,7 @@ Deno.test("[test_mode_schema] a DatabaseService built in test mode has the activ
       const db = new DatabaseService(config);
       try {
         // Logging + reading must work end-to-end with NO initActivityTableSchema call.
-        await db.logActivity("system", "test.event", "target", { ok: true }, "trace-x", null, "id-x");
+        await db.logActivity("system", "test.event", "target", { ok: true }, "trace-x", { agentRole: "id-x" });
         await db.waitForFlush();
         const rows = await db.getRecentActivity(10);
         assertEquals(rows.length, 1);
@@ -84,11 +84,11 @@ Deno.test("[test_mode_schema] opening a second DatabaseService while the first i
       const first = new DatabaseService(config);
       try {
         // Hold a write so the first connection has the DB actively locked.
-        await first.logActivity("system", "first.open", "t", { a: 1 }, "trace-1", null, "id-1");
+        await first.logActivity("system", "first.open", "t", { a: 1 }, "trace-1", { agentRole: "id-1" });
         // Second open on the SAME db while the first is live — must not throw "database is locked".
         const second = new DatabaseService(config);
         try {
-          await second.logActivity("system", "second.open", "t", { b: 2 }, "trace-2", null, "id-2");
+          await second.logActivity("system", "second.open", "t", { b: 2 }, "trace-2", { agentRole: "id-2" });
           await second.waitForFlush();
           const rows = await second.getRecentActivity(10);
           assert(rows.length >= 1, "second connection must be usable, not lock-crashed");

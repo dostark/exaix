@@ -40,8 +40,8 @@ describe("ReviewAnomalyIntegration", () => {
         const traceId = "int-anm-list";
         const branchName = "feat/request-01-int-anm-list";
 
-        db.logActivity("system", DomainEventType.McpToolFailed, "deploy-tool", {}, traceId, null);
-        db.logActivity("system", DomainEventType.SecurityViolation, "/etc/shadow", {}, traceId, null);
+        db.logActivity("system", DomainEventType.McpToolFailed, "deploy-tool", {}, traceId);
+        db.logActivity("system", DomainEventType.SecurityViolation, "/etc/shadow", {}, traceId);
         await db.waitForFlush();
 
         await db.preparedRun(
@@ -85,9 +85,9 @@ describe("ReviewAnomalyIntegration", () => {
         await initGitRepo(tempDir);
         const branchName = await createFeatureBranch(tempDir, requestId, traceId);
 
-        db.logActivity("system", DomainEventType.ExecutionActionFailed, "compile-step", {}, traceId, null);
-        db.logActivity("system", DomainEventType.ExecutionActionCompleted, "compile-step", {}, traceId, null);
-        db.logActivity("system", DomainEventType.McpPermissionDenied, "restricted-api", {}, traceId, null);
+        db.logActivity("system", DomainEventType.ExecutionActionFailed, "compile-step", {}, traceId);
+        db.logActivity("system", DomainEventType.ExecutionActionCompleted, "compile-step", {}, traceId);
+        db.logActivity("system", DomainEventType.McpPermissionDenied, "restricted-api", {}, traceId);
         await db.waitForFlush();
 
         const reviewCommands = new ReviewCommands(context);

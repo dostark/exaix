@@ -7,7 +7,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
+import type { IActivityRecord, IJournalFilterOptions, Opt, Reason, SqliteParam } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 /** Verify result for the Solo journal hash chain. `unhashed_prefix` counts legacy rows. */
@@ -20,6 +20,19 @@ export interface IJournalIntegrityResult {
   actual_hash: string | null;
 }
 
+/** The optional columns of one journal row: who acted, with which runner, and what the call cost. */
+export interface ILogActivityDetails {
+  readonly actorType?: Opt<string | null, Reason.OptionalContext>;
+  readonly agentRole?: Opt<string | null, Reason.OptionalContext>;
+  readonly runnerKind?: Opt<string | null, Reason.OptionalContext>;
+  readonly promptTokens?: Opt<number, Reason.OptionalInput>;
+  readonly completionTokens?: Opt<number, Reason.OptionalInput>;
+  /** An explicit null stays null, and an absent cost is stored as zero. */
+  readonly costUsd?: Opt<number | null, Reason.OptionalInput>;
+  readonly cacheReadTokens?: Opt<number, Reason.OptionalInput>;
+  readonly cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
+}
+
 export interface IDatabaseService {
   /**
    * Log an activity to the journal (non-blocking, batched writes).
@@ -29,15 +42,8 @@ export interface IDatabaseService {
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
-    traceId?: string,
-    actorType?: string | null,
-    agentRole?: string | null,
-    runnerKind?: string | null,
-    promptTokens?: number,
-    completionTokens?: number,
-    costUsd?: number | null,
-    cacheReadTokens?: number,
-    cacheCreationTokens?: number,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
   ): void;
 
   /**

@@ -92,14 +92,13 @@ for (const script of ["setup_db.ts", "migrate_db.ts"]) {
           "upgrade-fixture",
           {},
           "cache-upgrade",
-          null,
-          null,
-          null,
-          1,
-          1,
-          0,
-          CACHE_READ_TOKENS,
-          CACHE_CREATION_TOKENS,
+          {
+            promptTokens: 1,
+            completionTokens: 1,
+            costUsd: 0,
+            cacheReadTokens: CACHE_READ_TOKENS,
+            cacheCreationTokens: CACHE_CREATION_TOKENS,
+          },
         );
         await db.waitForFlush();
         for (const column of missingColumns) {

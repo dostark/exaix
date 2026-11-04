@@ -52,7 +52,7 @@ describe("ReviewAnomaly", () => {
   it("[Review] list returns metadata with anomalySummary for trace containing McpToolFailed", async () => {
     await createFeatureBranch(tempDir, "request-101", "anm-t1");
 
-    db.logActivity("system", DomainEventType.McpToolFailed, "read_file", {}, "anm-t1", null);
+    db.logActivity("system", DomainEventType.McpToolFailed, "read_file", {}, "anm-t1");
     await db.waitForFlush();
 
     const reviews = await reviewCommands.list();
@@ -67,8 +67,8 @@ describe("ReviewAnomaly", () => {
   it("[Review] show returns details with anomalies listing severity and target", async () => {
     await createFeatureBranch(tempDir, "request-102", "anm-t2");
 
-    db.logActivity("system", DomainEventType.McpToolFailed, "read_file", {}, "anm-t2", null);
-    db.logActivity("system", DomainEventType.SecurityViolation, "/etc/passwd", {}, "anm-t2", null);
+    db.logActivity("system", DomainEventType.McpToolFailed, "read_file", {}, "anm-t2");
+    db.logActivity("system", DomainEventType.SecurityViolation, "/etc/passwd", {}, "anm-t2");
     await db.waitForFlush();
 
     const details = await reviewCommands.show("feat/request-102-anm-t2");
@@ -93,8 +93,8 @@ describe("ReviewAnomaly", () => {
   it("[Review] recovered failure excluded from medium count in show anomalies", async () => {
     await createFeatureBranch(tempDir, "request-103", "anm-t3");
 
-    db.logActivity("system", DomainEventType.ExecutionActionFailed, "build-step", {}, "anm-t3", null);
-    db.logActivity("system", DomainEventType.ExecutionActionCompleted, "build-step", {}, "anm-t3", null);
+    db.logActivity("system", DomainEventType.ExecutionActionFailed, "build-step", {}, "anm-t3");
+    db.logActivity("system", DomainEventType.ExecutionActionCompleted, "build-step", {}, "anm-t3");
     await db.waitForFlush();
 
     const details = await reviewCommands.show("feat/request-103-anm-t3");
@@ -119,7 +119,7 @@ describe("ReviewAnomaly", () => {
   });
 
   it("[Review] DB-backed review-list path populates anomalySummary when activities exist", async () => {
-    db.logActivity("system", DomainEventType.McpToolFailed, "deploy", {}, "anm-t5", null);
+    db.logActivity("system", DomainEventType.McpToolFailed, "deploy", {}, "anm-t5");
     await db.waitForFlush();
 
     await db.preparedRun(

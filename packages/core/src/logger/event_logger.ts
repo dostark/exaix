@@ -81,11 +81,36 @@ export interface IEventLoggerOutput {
 
 export interface IEventLogger {
   log(event: ILogEvent): Promise<void>;
-  info(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void>;
-  warn(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void>;
-  error(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void>;
-  fatal(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void>;
-  debug(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void>;
+  info(
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
+  warn(
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
+  error(
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
+  fatal(
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
+  debug(
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
   child(overrides: Partial<ILogEvent>): IEventLogger;
 }
 
@@ -573,14 +598,16 @@ export class EventLogger implements IEventLogger {
           event.target,
           event.payload ?? {},
           event.traceId,
-          event.actorType ?? null,
-          event.agentRole ?? null,
-          event.runnerKind ?? null,
-          event.promptTokens,
-          event.completionTokens,
-          event.costUsd,
-          event.cacheReadTokens,
-          event.cacheCreationTokens,
+          {
+            actorType: event.actorType ?? null,
+            agentRole: event.agentRole ?? null,
+            runnerKind: event.runnerKind ?? null,
+            promptTokens: event.promptTokens,
+            completionTokens: event.completionTokens,
+            costUsd: event.costUsd,
+            cacheReadTokens: event.cacheReadTokens,
+            cacheCreationTokens: event.cacheCreationTokens,
+          },
         );
       } catch (error) {
         // Database write failed - log warning but don't crash

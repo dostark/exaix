@@ -91,14 +91,16 @@ export class DatabaseActivityRepository implements IActivityRepository {
       request.target,
       request.payload ?? {},
       request.traceId,
-      request.actorType,
-      request.agentRole,
-      request.runnerKind,
-      request.promptTokens,
-      request.completionTokens,
-      request.costUsd,
-      request.cacheReadTokens,
-      request.cacheCreationTokens,
+      {
+        actorType: request.actorType,
+        agentRole: request.agentRole,
+        runnerKind: request.runnerKind,
+        promptTokens: request.promptTokens,
+        completionTokens: request.completionTokens,
+        costUsd: request.costUsd,
+        cacheReadTokens: request.cacheReadTokens,
+        cacheCreationTokens: request.cacheCreationTokens,
+      },
     );
 
     // Wait for the activity to be flushed to ensure it's persisted

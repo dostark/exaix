@@ -291,12 +291,7 @@ export class CostTracker implements ICostTracker {
       `${provider}:${model}`,
       payload,
       traceId ?? crypto.randomUUID(),
-      null,
-      null,
-      null,
-      usage.promptTokens,
-      usage.completionTokens,
-      null,
+      { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens, costUsd: null },
     );
     await this.db.waitForFlush();
   }

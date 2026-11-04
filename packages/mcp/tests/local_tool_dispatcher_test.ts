@@ -13,7 +13,7 @@ import { DomainEventType, type IToolAliasRewrittenPayload } from "@exaix/core/ev
 import { EventLogger } from "@exaix/core/logger";
 import { ToolHandler } from "@exaix/mcp/server";
 import type { IApplicationContext } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types";
+import type { ILogActivityDetails, JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { createStubContext, initTestDbService } from "@exaix/testing";
 
@@ -26,8 +26,8 @@ const mockContext: IApplicationContext = createStubContext({
       _action: string,
       _target: string | null,
       _payload: Record<string, JSONValue>,
-      _traceId?: string,
-      _agentRole?: string | null,
+      _traceId?: Opt<string, Reason.TraceAbsent>,
+      _details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
     ) => {},
     waitForFlush: () => Promise.resolve(),
     queryActivity: () => Promise.resolve([]),

@@ -10,6 +10,7 @@ import { StatusManager } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubDb } from "@exaix/testing";
+import type { ILogActivityDetails, Opt, Reason } from "@exaix/core/types";
 
 Deno.test("StatusManager.updateStatus: rewrites status in frontmatter", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -46,7 +47,7 @@ Deno.test("StatusManager.updateStatus: logs on write failure", async () => {
       target: string | null;
       payload: TestPayload;
       traceId?: string;
-      agentRole?: string | null;
+      details?: ILogActivityDetails;
     }
   > = [];
   const db = createStubDb({
@@ -55,10 +56,10 @@ Deno.test("StatusManager.updateStatus: logs on write failure", async () => {
       actionType: string,
       target: string | null,
       payload: TestPayload,
-      traceId?: string,
-      agentRole?: string | null,
+      traceId?: Opt<string, Reason.TraceAbsent>,
+      details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
     ) => {
-      calls.push({ actor, actionType, target, payload, traceId, agentRole });
+      calls.push({ actor, actionType, target, payload, traceId, details });
     },
   });
   const logger = new EventLogger({ db });

@@ -20,14 +20,14 @@ Deno.test("[DatabaseService] logActivity persists cache_read_tokens/cache_creati
       "target",
       { model: "claude-sonnet-5" },
       "trace-cache-columns",
-      null,
-      "senior-coder",
-      null,
-      8,
-      2428,
-      0.1366,
-      134127,
-      19773,
+      {
+        agentRole: "senior-coder",
+        promptTokens: 8,
+        completionTokens: 2428,
+        costUsd: 0.1366,
+        cacheReadTokens: 134127,
+        cacheCreationTokens: 19773,
+      },
     );
     await db.waitForFlush();
 
@@ -49,8 +49,7 @@ Deno.test("[DatabaseService] logActivity without cache tokens persists them as n
       "target",
       { model: "claude-sonnet-5" },
       "trace-no-cache-columns",
-      null,
-      "senior-coder",
+      { agentRole: "senior-coder" },
     );
     await db.waitForFlush();
 

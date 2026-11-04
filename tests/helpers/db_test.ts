@@ -244,7 +244,7 @@ Deno.test("DatabaseService: handles null.agent_role", async () => {
     const traceId = crypto.randomUUID();
 
     // Log with explicit null agent
-    db.logActivity(MemoryBankSource.USER, "test.action", "target", { test: 1 }, traceId, null);
+    db.logActivity(MemoryBankSource.USER, "test.action", "target", { test: 1 }, traceId);
 
     await db.waitForFlush();
 

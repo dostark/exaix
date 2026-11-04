@@ -24,6 +24,7 @@ import {
 import type { ISkillOperationContext } from "@exaix/core/skills";
 import { runtimeSkillFixture, StubSkillsService } from "@exaix/testing";
 import {
+  type ILogActivityDetails,
   type Opt,
   type PortalAnalysisMode,
   type PortalExecutionStrategy,
@@ -233,7 +234,7 @@ export class MockLogService implements IDatabaseService, IJournalService {
     _target: string | null,
     _payload: Record<string, _JSONValue>,
     _traceId?: Opt<string, Reason.TestStub>,
-    _agentRole?: Opt<string | null, Reason.TestStub>,
+    _details?: Opt<ILogActivityDetails, Reason.TestStub>,
   ): void {}
 
   waitForFlush(): Promise<void> {

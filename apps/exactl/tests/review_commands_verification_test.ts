@@ -59,7 +59,6 @@ describe("ReviewVerificationStatus", () => {
         verification_status: "failed",
       },
       "vrf-failed",
-      null,
     );
     await db.waitForFlush();
 
@@ -83,7 +82,6 @@ describe("ReviewVerificationStatus", () => {
         failures: [{ task: "lint", exit_code: 1 }],
       },
       "vrf-historic",
-      null,
     );
     await db.waitForFlush();
 
@@ -105,7 +103,6 @@ describe("ReviewVerificationStatus", () => {
         verification_status: "not_configured",
       },
       "vrf-none",
-      null,
     );
     await db.waitForFlush();
 
@@ -142,7 +139,6 @@ function logLintSnapshot(
       ...payload,
     },
     traceId,
-    null,
   );
 }
 
@@ -175,7 +171,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "request-229", verification_status: "failed", verification_run_id: runId },
       "snp-failed",
-      null,
     );
     logLintSnapshot(db, "snp-failed", "request-229", runId, commit, {});
     await db.waitForFlush();
@@ -199,7 +194,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "request-230", verification_status: "repaired", verification_run_id: runId },
       "snp-repaired",
-      null,
     );
     logLintSnapshot(db, "snp-repaired", "request-230", runId, commit, {
       verification_status: "repaired",
@@ -226,7 +220,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "request-231", verification_status: "failed", verification_run_id: runId },
       "snp-bad",
-      null,
     );
     logLintSnapshot(db, "snp-bad", "request-231", runId, `${commit}-other`, {});
     await db.waitForFlush();
@@ -238,7 +231,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "request-231", run_id: runId, commit_sha: commit, malformed: true },
       "snp-bad",
-      null,
     );
     await db.waitForFlush();
     assertEquals((await reviewCommands.show(branch)).lint?.unavailable, true);
@@ -262,7 +254,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "execution-legacy", verification_status: "failed" },
       trace,
-      null,
     );
     await db.waitForFlush();
     const details = await reviewCommands.show(branch);
@@ -278,7 +269,6 @@ describe("ReviewUnslopSnapshot", () => {
       null,
       { request_id: "request-232", verification_status: "failed" },
       "snp-historic",
-      null,
     );
     await db.waitForFlush();
 
@@ -319,7 +309,6 @@ describe("ReviewUnslopSnapshot", () => {
             verification_run_id: run,
           },
           trace,
-          null,
         );
         logLintSnapshot(
           db,

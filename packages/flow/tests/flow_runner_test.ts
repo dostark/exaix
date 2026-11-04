@@ -30,7 +30,7 @@ import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import type { JSONValue } from "@exaix/core/types";
 import type { ActivityRecord, SqliteParam } from "@exaix/storage-sqlite";
-import type { IJournalFilterOptions } from "@exaix/core/types";
+import type { IJournalFilterOptions, ILogActivityDetails, Opt, Reason } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
 import type { ModelBindingService } from "@exaix/ai";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
@@ -1827,10 +1827,8 @@ class MockDatabaseService {
     _actionType: string,
     _target: string | null,
     _payload: Record<string, JSONValue>,
-    _traceId?: string,
-    _actorType?: string | null,
-    _agentRole?: string | null,
-    _runnerKind?: string | null,
+    _traceId?: Opt<string, Reason.TraceAbsent>,
+    _details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
   ): void {}
   waitForFlush(): Promise<void> {
     return Promise.resolve();

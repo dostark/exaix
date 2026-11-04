@@ -48,7 +48,6 @@ export async function createReviewJournalFixture(): Promise<IReviewJournalFixtur
         verification_status: status,
       },
       trace,
-      null,
     );
     ctx.db.logActivity(
       "daemon",
@@ -67,7 +66,6 @@ export async function createReviewJournalFixture(): Promise<IReviewJournalFixtur
         ...overrides,
       },
       trace,
-      null,
     );
     await ctx.db.waitForFlush();
   };

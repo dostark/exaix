@@ -81,7 +81,6 @@ describe("ReviewCommands", () => {
         "request-003",
         { approved_by: "test@example.com" },
         "abc-789-def",
-        null,
       );
       // Wait for batched write to complete
       await db.waitForFlush();
