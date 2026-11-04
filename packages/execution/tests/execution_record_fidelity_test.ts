@@ -31,7 +31,7 @@ Deno.test("generateMissionReport uses real completion content, not placeholders 
 
     // Generate the mission report with real completion content (what the success site
     // passes after threading workResult.completionSummary).
-    const reportGen = loop["generateMissionReport"].bind(loop) as (
+    const reportGen = loop["reporting"].generateMissionReport.bind(loop["reporting"]) as (
       traceId: string,
       requestId: string,
       frontmatter?: object,
@@ -71,7 +71,7 @@ Deno.test("generateMissionReport without completion content uses the documented 
     });
 
     const traceId = crypto.randomUUID();
-    const fallbackGen = loop["generateMissionReport"].bind(loop) as (
+    const fallbackGen = loop["reporting"].generateMissionReport.bind(loop["reporting"]) as (
       traceId: string,
       requestId: string,
     ) => Promise<void>;

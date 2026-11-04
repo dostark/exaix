@@ -14,6 +14,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { stub } from "@std/testing/mock";
 import { ExecutionLoop } from "@exaix/execution";
+import { ExecutionPlanRunner } from "../src/execution_plan_runner.ts";
 import { GitService } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { MemoryBankService } from "@exaix/memory";
@@ -168,7 +169,7 @@ async function runSecurityScenario(options: {
   await Deno.writeTextFile(planPath, plan);
 
   const repairStub = options.realRepair ? undefined : stub(
-    castAny<IExecutionLoopInternals>(ExecutionLoop.prototype),
+    castAny<IExecutionLoopInternals>(ExecutionPlanRunner.prototype),
     "executeStructuredPlan",
     (repairPlan: { steps: Array<{ content: string }> }) => {
       repairContents.push(repairPlan.steps[0].content);

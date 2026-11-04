@@ -15,6 +15,7 @@ import { ensureDir } from "@std/fs/ensure-dir";
 import { exists } from "@std/fs/exists";
 import { stub } from "@std/testing/mock";
 import { ExecutionLoop, type IVerificationRunContext, type IVerificationRunner } from "@exaix/execution";
+import { ExecutionPlanRunner } from "../src/execution_plan_runner.ts";
 import { GitService } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { MemoryBankService } from "@exaix/memory";
@@ -265,7 +266,7 @@ async function runRepairScenario(options: {
   await Deno.writeTextFile(planPath, actionPlan(traceId, `repair-${options.behavior}`));
 
   const repairStub = options.behavior === "real" ? undefined : stub(
-    castAny<IExecutionLoopInternals>(ExecutionLoop.prototype),
+    castAny<IExecutionLoopInternals>(ExecutionPlanRunner.prototype),
     "executeStructuredPlan",
     async (
       plan: { steps: IRepairPlanStepCapture[] },
