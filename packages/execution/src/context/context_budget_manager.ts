@@ -125,6 +125,35 @@ const ASYNC_COMPACTABLE_KINDS = new Set<IContextSegment["kind"]>([
   ContextSegmentKindSchema.enum.reflection,
 ]);
 
+/** The state that one budget pass builds up while it walks the sorted segments. */
+interface IBudgetRun {
+  readonly kept: IContextSegment[];
+  readonly decisions: IContextBudgetDecision[];
+  readonly consumed: Record<string, number>;
+  readonly sections: IPromptBudget["sections"];
+  readonly traceId: string;
+  readonly stepId: string;
+  readonly model: string;
+}
+
+/** One budget decision for a segment, stamped with the time that it was made. */
+function decisionFor(
+  segment: IContextSegment,
+  action: IContextBudgetDecision["action"],
+  resultingTokens: number,
+  reason: string,
+): IContextBudgetDecision {
+  return {
+    segmentId: segment.segmentId,
+    kind: segment.kind,
+    action,
+    originalTokens: segment.tokenEstimate,
+    resultingTokens,
+    reason,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 /** Sync tier: greedy-keep by priority within section budgets, no LLM calls. Async tier:
  *  schedules summarization for dropped segments via queueMicrotask.
  * @visible */
@@ -149,13 +178,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
       segmentCount: segments.length,
     }, traceId);
 
-    const decisions: IContextBudgetDecision[] = [];
-    const kept: IContextSegment[] = [];
-
     this._assertProtectedFitsCeiling({ segments, promptBudget, traceId, stepId, model });
-
-    // Track consumed tokens per section key to respect section limits.
-    const consumed: Record<string, number> = {};
 
     // Sort protected segments first, then by priority descending, preserving FIFO within ties.
     const sorted = [...segments].sort((a, b) => {
@@ -164,79 +187,18 @@ export class ContextBudgetManager implements IContextBudgetManager {
       return bp - ap;
     });
 
-    for (const segment of sorted) {
-      const sectionBudget = sectionBudgetFor(segment.kind, promptBudget.sections);
-      const sectionKey = sectionNameFor(segment.kind);
-      const used = consumed[sectionKey] ?? 0;
-
-      if (isProtected(segment)) {
-        kept.push(segment);
-        consumed[sectionKey] = used + segment.tokenEstimate;
-        decisions.push({
-          segmentId: segment.segmentId,
-          kind: segment.kind,
-          action: "keep",
-          originalTokens: segment.tokenEstimate,
-          resultingTokens: segment.tokenEstimate,
-          reason: "protected segment",
-          createdAt: new Date().toISOString(),
-        });
-        continue;
-      }
-
-      const remaining = sectionBudget - used;
-
-      if (remaining <= 0) {
-        decisions.push({
-          segmentId: segment.segmentId,
-          kind: segment.kind,
-          action: "drop",
-          originalTokens: segment.tokenEstimate,
-          resultingTokens: 0,
-          reason: `section budget exhausted (${sectionKey}: ${sectionBudget} tokens)`,
-          createdAt: new Date().toISOString(),
-        });
-        continue;
-      }
-
-      if (segment.tokenEstimate <= remaining) {
-        kept.push(segment);
-        consumed[sectionKey] = used + segment.tokenEstimate;
-        decisions.push({
-          segmentId: segment.segmentId,
-          kind: segment.kind,
-          action: "keep",
-          originalTokens: segment.tokenEstimate,
-          resultingTokens: segment.tokenEstimate,
-          reason: "fits within section budget",
-          createdAt: new Date().toISOString(),
-        });
-      } else {
-        // Keep whole lines where possible, then recount any fallback slice.
-        const trimmed = await this._trimToBudget(segment, remaining, model);
-        kept.push(trimmed.segment);
-        consumed[sectionKey] = used + trimmed.segment.tokenEstimate;
-        decisions.push({
-          segmentId: segment.segmentId,
-          kind: segment.kind,
-          action: "trim",
-          originalTokens: segment.tokenEstimate,
-          resultingTokens: trimmed.segment.tokenEstimate,
-          reason: `truncated at a line boundary to fit remaining section budget (${remaining} tokens)`,
-          createdAt: new Date().toISOString(),
-        });
-        void this.logger?.info(DomainEventType.ContextSectionTruncated, segment.segmentId, {
-          traceId,
-          stepId,
-          segmentId: segment.segmentId,
-          kind: segment.kind,
-          sectionKey,
-          originalTokens: segment.tokenEstimate,
-          resultingTokens: trimmed.segment.tokenEstimate,
-          remainingBudget: remaining,
-        }, traceId);
-      }
-    }
+    // Track consumed tokens per section key to respect section limits.
+    const run: IBudgetRun = {
+      kept: [],
+      decisions: [],
+      consumed: {},
+      sections: promptBudget.sections,
+      traceId,
+      stepId,
+      model,
+    };
+    for (const segment of sorted) await this.decideSegment(segment, run);
+    const { kept, decisions } = run;
 
     // Restore original insertion order.
     const segmentIdOrder = new Map(segments.map((s, i) => [s.segmentId, i]));
@@ -275,42 +237,88 @@ export class ContextBudgetManager implements IContextBudgetManager {
       durationMs,
     };
 
-    if (overflowRecovered && this.compactor) {
-      const compactor = this.compactor;
-      const snapshotStore = this.snapshotStore;
-      const logger = this.logger;
-      const provider = input.provider;
-      const tokensBefore = droppedCompactable.reduce((s, seg) => s + seg.tokenEstimate, 0);
-      queueMicrotask(() => {
-        void (async () => {
-          if (provider) {
-            for (const seg of droppedCompactable) {
-              await compactor.summarize(seg, provider);
-            }
-          }
-          await snapshotStore?.save(snapshot);
-          void logger?.info(DomainEventType.ExecutionContextCompacted, null, {
-            traceId: snapshot.traceId as string,
-            stepId: snapshot.stepId as string,
-            tokensBefore: tokensBefore as number,
-            tokensAfter: 0 as number,
-            compressedSegmentCount: droppedCompactable.length as number,
-          }, snapshot.traceId);
-          void this.milestoneEmitter?.emit({
-            milestoneId: crypto.randomUUID(),
-            traceId: snapshot.traceId as string,
-            milestoneType: MILESTONE_CONTEXT_COMPACTION_APPLIED,
-            requiresAttention: false,
-            occurredAt: new Date().toISOString(),
-            summary:
-              `Context compaction: ${droppedCompactable.length} segment(s) compacted, ~${tokensBefore} tokens recovered`,
-            progressHint: { currentStepLabel: "Compacting context" },
-          });
-        })();
-      });
-    }
+    if (overflowRecovered) this.scheduleCompaction(input.provider, snapshot, droppedCompactable);
 
     return { segments: kept, snapshot };
+  }
+
+  /** Keeps, drops or trims one segment against its section budget and records the decision. */
+  private async decideSegment(segment: IContextSegment, run: IBudgetRun): Promise<void> {
+    const sectionBudget = sectionBudgetFor(segment.kind, run.sections);
+    const sectionKey = sectionNameFor(segment.kind);
+    const used = run.consumed[sectionKey] ?? 0;
+    const keep = (reason: string): void => {
+      run.kept.push(segment);
+      run.consumed[sectionKey] = used + segment.tokenEstimate;
+      run.decisions.push(decisionFor(segment, "keep", segment.tokenEstimate, reason));
+    };
+
+    if (isProtected(segment)) return keep("protected segment");
+
+    const remaining = sectionBudget - used;
+    if (remaining <= 0) {
+      const reason = `section budget exhausted (${sectionKey}: ${sectionBudget} tokens)`;
+      run.decisions.push(decisionFor(segment, "drop", 0, reason));
+      return;
+    }
+    if (segment.tokenEstimate <= remaining) return keep("fits within section budget");
+
+    // Keep whole lines where possible, then recount any fallback slice.
+    const trimmed = await this._trimToBudget(segment, remaining, run.model);
+    run.kept.push(trimmed.segment);
+    run.consumed[sectionKey] = used + trimmed.segment.tokenEstimate;
+    const reason = `truncated at a line boundary to fit remaining section budget (${remaining} tokens)`;
+    run.decisions.push(decisionFor(segment, "trim", trimmed.segment.tokenEstimate, reason));
+    void this.logger?.info(DomainEventType.ContextSectionTruncated, segment.segmentId, {
+      traceId: run.traceId,
+      stepId: run.stepId,
+      segmentId: segment.segmentId,
+      kind: segment.kind,
+      sectionKey,
+      originalTokens: segment.tokenEstimate,
+      resultingTokens: trimmed.segment.tokenEstimate,
+      remainingBudget: remaining,
+    }, run.traceId);
+  }
+
+  /** Summarizes the dropped compactable segments off the request path, then saves the snapshot and reports it. */
+  private scheduleCompaction(
+    provider: IContextBudgetManagerInput["provider"],
+    snapshot: IContextBudgetSnapshot,
+    droppedCompactable: readonly IContextSegment[],
+  ): void {
+    const compactor = this.compactor;
+    if (!compactor) return;
+    const snapshotStore = this.snapshotStore;
+    const logger = this.logger;
+    const tokensBefore = droppedCompactable.reduce((s, seg) => s + seg.tokenEstimate, 0);
+    queueMicrotask(() => {
+      void (async () => {
+        if (provider) {
+          for (const seg of droppedCompactable) {
+            await compactor.summarize(seg, provider);
+          }
+        }
+        await snapshotStore?.save(snapshot);
+        void logger?.info(DomainEventType.ExecutionContextCompacted, null, {
+          traceId: snapshot.traceId as string,
+          stepId: snapshot.stepId as string,
+          tokensBefore: tokensBefore as number,
+          tokensAfter: 0 as number,
+          compressedSegmentCount: droppedCompactable.length as number,
+        }, snapshot.traceId);
+        void this.milestoneEmitter?.emit({
+          milestoneId: crypto.randomUUID(),
+          traceId: snapshot.traceId as string,
+          milestoneType: MILESTONE_CONTEXT_COMPACTION_APPLIED,
+          requiresAttention: false,
+          occurredAt: new Date().toISOString(),
+          summary:
+            `Context compaction: ${droppedCompactable.length} segment(s) compacted, ~${tokensBefore} tokens recovered`,
+          progressHint: { currentStepLabel: "Compacting context" },
+        });
+      })();
+    });
   }
 
   /** Fail closed when protected content alone cannot fit the hard ceiling: no provider call

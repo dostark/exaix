@@ -131,48 +131,64 @@ function lastTextFrom(event: IStreamAssistantEvent, current: string): string {
   return current;
 }
 
+/** What the parser has read so far from the lines of one turn. */
+interface ITurnProgress {
+  lastText: string;
+  sessionId: string | undefined;
+  readonly seenPaths: Set<string>;
+  readonly toolPaths: string[];
+}
+
+/** The token counts that a `result` event reports. A cache or thinking count is undefined when the CLI omits it. */
+function tokenStatsOf(event: IStreamResultEvent): ICliDelegateTurnResult["tokenStats"] {
+  const input = event.usage?.input_tokens ?? 0;
+  const output = event.usage?.output_tokens ?? 0;
+  return {
+    input,
+    output,
+    total: input + output,
+    cacheRead: event.usage?.cache_read_input_tokens,
+    cacheCreation: event.usage?.cache_creation_input_tokens,
+    reasoning: event.usage?.output_tokens_details?.thinking_tokens,
+  };
+}
+
+/** The finished turn that a `result` event ends. A result without text keeps the last assistant text. */
+function finishedTurn(event: IStreamResultEvent, progress: ITurnProgress): ICliDelegateTurnResult {
+  return {
+    lastText: typeof event.result === "string" ? event.result : progress.lastText,
+    isError: event.is_error === true,
+    tokenStats: tokenStatsOf(event),
+    costUsd: event.total_cost_usd,
+    toolPaths: progress.toolPaths,
+    sessionId: progress.sessionId,
+  };
+}
+
+/** Folds a system or assistant event into the progress. A result event is left to the caller. */
+function absorb(event: IStreamEvent, progress: ITurnProgress): void {
+  if (isSystemEvent(event)) {
+    progress.sessionId = event.session_id ?? progress.sessionId;
+  } else if (isAssistantEvent(event)) {
+    progress.lastText = lastTextFrom(event, progress.lastText);
+    collectToolPaths(event, progress.seenPaths, progress.toolPaths);
+  }
+}
+
 /** Unterminated input (no `result` line) returns an empty turn with isError=false —
  *  callers must treat a missing result as a distinct failure, not infer it here. */
 export function parseCliDelegateStreamTurn(lines: string[]): ICliDelegateTurnResult {
-  let lastText = "";
-  let sessionId: string | undefined;
-  const seenPaths = new Set<string>();
-  const toolPaths: string[] = [];
-
+  const progress: ITurnProgress = { lastText: "", sessionId: undefined, seenPaths: new Set(), toolPaths: [] };
   for (const line of lines) {
     const event = tryParseLine(line);
     if (!event) continue;
-
-    if (isSystemEvent(event)) {
-      sessionId = event.session_id ?? sessionId;
-      continue;
-    }
-
-    if (isAssistantEvent(event)) {
-      lastText = lastTextFrom(event, lastText);
-      collectToolPaths(event, seenPaths, toolPaths);
-      continue;
-    }
-
-    if (isResultEvent(event)) {
-      const resultText = typeof event.result === "string" ? event.result : lastText;
-      return {
-        lastText: resultText,
-        isError: event.is_error === true,
-        tokenStats: {
-          input: event.usage?.input_tokens ?? 0,
-          output: event.usage?.output_tokens ?? 0,
-          total: (event.usage?.input_tokens ?? 0) + (event.usage?.output_tokens ?? 0),
-          cacheRead: event.usage?.cache_read_input_tokens,
-          cacheCreation: event.usage?.cache_creation_input_tokens,
-          reasoning: event.usage?.output_tokens_details?.thinking_tokens,
-        },
-        costUsd: event.total_cost_usd,
-        toolPaths,
-        sessionId,
-      };
-    }
+    if (isResultEvent(event)) return finishedTurn(event, progress);
+    absorb(event, progress);
   }
-
-  return { ...EMPTY_TURN_RESULT, lastText, toolPaths, sessionId };
+  return {
+    ...EMPTY_TURN_RESULT,
+    lastText: progress.lastText,
+    toolPaths: progress.toolPaths,
+    sessionId: progress.sessionId,
+  };
 }

@@ -41,43 +41,58 @@ function pairOrUndefined(pair: Opt<IEffortDeclarationPair, Reason.OptionalInput>
   return undefined;
 }
 
+/** The declared pairs that carry a value, under their source names. */
+function declaredOf(declared: IAgentEffortResolvedInput["declared"]): IAgentEffortResolvedPayload["declared"] {
+  return {
+    ...(pairOrUndefined(declared.request) ? { request: declared.request } : {}),
+    ...(pairOrUndefined(declared.flow_step) ? { flow_step: declared.flow_step } : {}),
+    ...(pairOrUndefined(declared.role) ? { role: declared.role } : {}),
+  };
+}
+
+/** The heuristic inputs of a resolution, or nothing when the resolution used none. */
+function heuristicPart(resolution: IEffortResolution): Partial<IAgentEffortResolvedPayload> {
+  const inputs = resolution.heuristicInputs;
+  if (!inputs) return {};
+  return {
+    heuristic_inputs: {
+      task_complexity: inputs.taskComplexity,
+      complexity_source: inputs.complexitySource,
+      ...(inputs.modelSize !== undefined ? { model_size: inputs.modelSize } : {}),
+    },
+  };
+}
+
+/** The profile, the wire values and the reason of a projection, or nothing when it has no profile. */
+function projectionPart(
+  projection: Opt<IProjectedCallOptions, Reason.OptionalInput>,
+): Partial<IAgentEffortResolvedPayload> {
+  if (!projection?.profile) return {};
+  return {
+    profile: projection.profile,
+    wire: { effort: projection.effort ?? null, thinking: projection.thinking ?? null },
+    projection_reason: projection.reason ?? null,
+  };
+}
+
 /** Builds the agent.effort_resolved payload from a resolution and its call-site context.
  *  typed once here — the type checker links every emitter to IAgentEffortResolvedPayload. */
 export function buildAgentEffortResolvedPayload(input: IAgentEffortResolvedInput): IAgentEffortResolvedPayload {
+  const { resolution } = input;
   return {
     path: input.path,
     agent_role: input.agentRole ?? "",
-    ...(input.resolution.effort !== undefined ? { effort: input.resolution.effort } : {}),
-    ...(input.resolution.thinking !== undefined ? { thinking: input.resolution.thinking } : {}),
-    effort_basis: input.resolution.effortBasis,
-    thinking_basis: input.resolution.thinkingBasis,
-    effort_declaration_source: input.resolution.effortDeclarationSource,
-    thinking_declaration_source: input.resolution.thinkingDeclarationSource,
-    declared: {
-      ...(pairOrUndefined(input.declared.request) ? { request: input.declared.request } : {}),
-      ...(pairOrUndefined(input.declared.flow_step) ? { flow_step: input.declared.flow_step } : {}),
-      ...(pairOrUndefined(input.declared.role) ? { role: input.declared.role } : {}),
-    },
-    ...(input.resolution.heuristicInputs
-      ? {
-        heuristic_inputs: {
-          task_complexity: input.resolution.heuristicInputs.taskComplexity,
-          complexity_source: input.resolution.heuristicInputs.complexitySource,
-          ...(input.resolution.heuristicInputs.modelSize !== undefined
-            ? { model_size: input.resolution.heuristicInputs.modelSize }
-            : {}),
-        },
-      }
-      : {}),
-    floors_applied: input.resolution.floorsApplied,
+    ...(resolution.effort !== undefined ? { effort: resolution.effort } : {}),
+    ...(resolution.thinking !== undefined ? { thinking: resolution.thinking } : {}),
+    effort_basis: resolution.effortBasis,
+    thinking_basis: resolution.thinkingBasis,
+    effort_declaration_source: resolution.effortDeclarationSource,
+    thinking_declaration_source: resolution.thinkingDeclarationSource,
+    declared: declaredOf(input.declared),
+    ...heuristicPart(resolution),
+    floors_applied: resolution.floorsApplied,
     ...(input.providerType !== undefined ? { provider_type: input.providerType } : {}),
     ...(input.model !== undefined ? { model: input.model } : {}),
-    ...(input.projection?.profile
-      ? {
-        profile: input.projection.profile,
-        wire: { effort: input.projection.effort ?? null, thinking: input.projection.thinking ?? null },
-        projection_reason: input.projection.reason ?? null,
-      }
-      : {}),
+    ...projectionPart(input.projection),
   };
 }

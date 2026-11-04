@@ -28,30 +28,32 @@ interface IRegistryPredictedCostPrice {
  *  input price. https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching */
 const CACHE_READ_PRICE_MULTIPLIER = 0.1;
 
-/** Cache-creation tokens are priced at the standard input rate (no per-tier cache-write
- *  multiplier in the overlay table yet); cache-read tokens get the 0.1x discount. Returns
- *  undefined when neither the overlay nor the supplied catalog entry has a price. */
-export function computeRegistryPredictedCost(
+/** True when the entry carries at least one price. */
+function hasAnyRate(entry: IRegistryPredictedCostPrice): boolean {
+  return entry.inputPerMtok !== undefined || entry.outputPerMtok !== undefined;
+}
+
+/** The overlay prices when the overlay has any, otherwise the supplied catalog prices. */
+function ratesFor(
   provider: string,
   model: string,
-  tokens: IRegistryPredictedCostTokens,
-  price?: Opt<IRegistryPredictedCostPrice, Reason.OptionalContext>,
-): number | undefined {
+  price: Opt<IRegistryPredictedCostPrice, Reason.OptionalContext>,
+): IRegistryPredictedCostPrice | undefined {
   const overlay = getOverlayEntry(provider, model);
-  const rates = overlay && (overlay.inputPerMtok !== undefined || overlay.outputPerMtok !== undefined)
-    ? overlay
-    : price;
-  if (!rates || (rates.inputPerMtok === undefined && rates.outputPerMtok === undefined)) {
-    return undefined;
-  }
+  if (overlay && hasAnyRate(overlay)) return overlay;
+  return price && hasAnyRate(price) ? price : undefined;
+}
 
+/** True when the tokens include a kind that the rates leave unpriced. */
+function lacksRequiredRate(tokens: IRegistryPredictedCostTokens, rates: IRegistryPredictedCostPrice): boolean {
   const hasInputTokens = tokens.promptTokens > 0 || (tokens.cacheReadTokens ?? 0) > 0 ||
     (tokens.cacheCreationTokens ?? 0) > 0;
-  if (
-    (hasInputTokens && rates.inputPerMtok === undefined) ||
-    (tokens.completionTokens > 0 && rates.outputPerMtok === undefined)
-  ) return undefined;
+  return (hasInputTokens && rates.inputPerMtok === undefined) ||
+    (tokens.completionTokens > 0 && rates.outputPerMtok === undefined);
+}
 
+/** The cost of the tokens at the rates. A missing rate counts as zero. */
+function priceTokens(tokens: IRegistryPredictedCostTokens, rates: IRegistryPredictedCostPrice): number {
   const inputRate = rates.inputPerMtok ?? 0;
   const outputRate = rates.outputPerMtok ?? 0;
   const promptCost = (tokens.promptTokens * inputRate) / TOKENS_PER_MTOK;
@@ -59,6 +61,18 @@ export function computeRegistryPredictedCost(
   const cacheReadCost = ((tokens.cacheReadTokens ?? 0) * inputRate * CACHE_READ_PRICE_MULTIPLIER) /
     TOKENS_PER_MTOK;
   const cacheCreationCost = ((tokens.cacheCreationTokens ?? 0) * inputRate) / TOKENS_PER_MTOK;
-
   return promptCost + completionCost + cacheReadCost + cacheCreationCost;
+}
+
+/** Cache-creation tokens cost the standard input rate, and cache-read tokens get the 0.1x discount.
+ *  Returns undefined when neither the overlay nor the supplied catalog entry has a price. */
+export function computeRegistryPredictedCost(
+  provider: string,
+  model: string,
+  tokens: IRegistryPredictedCostTokens,
+  price?: Opt<IRegistryPredictedCostPrice, Reason.OptionalContext>,
+): number | undefined {
+  const rates = ratesFor(provider, model, price);
+  if (!rates || lacksRequiredRate(tokens, rates)) return undefined;
+  return priceTokens(tokens, rates);
 }

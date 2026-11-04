@@ -151,40 +151,43 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return batches;
 }
 
-/** Streams one regular file and reports whether a line starts with a file-level directive. */
-async function sourceHasFileIgnore(path: string, beforeChunk: () => void): Promise<boolean | null> {
-  let info: Deno.FileInfo;
+/** Opens a regular file that is not a symlink for reading. A missing, special or unreadable path gives null. */
+async function openRegularFile(path: string): Promise<Deno.FsFile | null> {
   try {
-    info = await Deno.lstat(path);
+    const info = await Deno.lstat(path);
+    if (!info.isFile || info.isSymlink) return null;
+    return await Deno.open(path, { read: true });
   } catch {
     return null;
   }
-  if (!info.isFile || info.isSymlink) return null;
-  let file: Deno.FsFile;
-  try {
-    file = await Deno.open(path, { read: true });
-  } catch {
-    return null;
-  }
-  try {
-    let prefix = "";
-    let prefixBytes = 0;
-    for await (const chunk of file.readable) {
-      beforeChunk();
-      for (const byte of chunk) {
-        if (byte === 0x0a) {
-          if (FILE_IGNORE_DIRECTIVE.test(prefix)) return true;
-          prefix = "";
-          prefixBytes = 0;
-          continue;
-        }
-        if (prefixBytes < LINE_PREFIX_MAX_BYTES) {
-          prefix += String.fromCharCode(byte);
-          prefixBytes++;
-        }
+}
+
+/** Reads the file in chunks and reports whether any line starts with a file-level directive. */
+async function readsFileIgnore(file: Deno.FsFile, beforeChunk: () => void): Promise<boolean> {
+  let prefix = "";
+  let prefixBytes = 0;
+  for await (const chunk of file.readable) {
+    beforeChunk();
+    for (const byte of chunk) {
+      if (byte === 0x0a) {
+        if (FILE_IGNORE_DIRECTIVE.test(prefix)) return true;
+        prefix = "";
+        prefixBytes = 0;
+      } else if (prefixBytes < LINE_PREFIX_MAX_BYTES) {
+        prefix += String.fromCharCode(byte);
+        prefixBytes++;
       }
     }
-    return FILE_IGNORE_DIRECTIVE.test(prefix);
+  }
+  return FILE_IGNORE_DIRECTIVE.test(prefix);
+}
+
+/** Streams one regular file and reports whether a line starts with a file-level directive. */
+async function sourceHasFileIgnore(path: string, beforeChunk: () => void): Promise<boolean | null> {
+  const file = await openRegularFile(path);
+  if (file === null) return null;
+  try {
+    return await readsFileIgnore(file, beforeChunk);
   } catch (error) {
     if (error instanceof DenoLintCheckError) throw error;
     return null;
@@ -196,6 +199,17 @@ async function sourceHasFileIgnore(path: string, beforeChunk: () => void): Promi
       // The resource already closed.
     }
   }
+}
+
+/** Requires the policy config to be a regular file that is not a link. */
+async function assertPolicyConfigFile(configPath: string): Promise<void> {
+  let configInfo: Deno.FileInfo;
+  try {
+    configInfo = await Deno.lstat(configPath);
+  } catch {
+    throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
+  }
+  if (!configInfo.isFile || configInfo.isSymlink) throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
 }
 
 /** Resolves a host `file:` URL to a confined repo-relative POSIX path. */
@@ -292,36 +306,45 @@ export class DenoLintCheckRunner {
     const policyRoot = join(this.options.systemRoot, this.options.settings.policy_root);
     const policyDir = join(policyRoot, context.check.policy);
     const configPath = join(policyDir, POLICY_CONFIG_FILENAME);
-    let configInfo: Deno.FileInfo;
+    await assertPolicyConfigFile(configPath);
     try {
-      configInfo = await Deno.lstat(configPath);
-    } catch {
-      throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
-    }
-    if (!configInfo.isFile || configInfo.isSymlink) throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
-    try {
-      const dirInfo = await Deno.lstat(policyDir);
-      if (dirInfo.isSymlink || !dirInfo.isDirectory) {
-        throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
-      }
-      const realRoot = await Deno.realPath(policyRoot);
-      const realDir = await Deno.realPath(policyDir);
-      if (realDir !== realRoot && !realDir.startsWith(realRoot + SEPARATOR)) {
-        throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
-      }
-      await this.options.pathResolver.validatePath(configPath, [policyRoot]);
-      for (const root of [context.executionRoot, ...(this.options.portalRoots ?? [])]) {
-        const realRoot = await Deno.realPath(root).catch(() => null);
-        if (realRoot === null) continue;
-        if (realDir === realRoot || realDir.startsWith(realRoot + SEPARATOR)) {
-          throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
-        }
-      }
+      await this.assertPolicyDirectory(context, policyRoot, policyDir, configPath);
     } catch (error) {
       if (error instanceof DenoLintCheckError) throw error;
       throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
     }
     return configPath;
+  }
+
+  /** Rejects a policy directory that is a link, lies outside the policy root, or sits under a work root. */
+  private async assertPolicyDirectory(
+    context: IDenoLintCheckContext,
+    policyRoot: string,
+    policyDir: string,
+    configPath: string,
+  ): Promise<void> {
+    const dirInfo = await Deno.lstat(policyDir);
+    if (dirInfo.isSymlink || !dirInfo.isDirectory) {
+      throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+    }
+    const realRoot = await Deno.realPath(policyRoot);
+    const realDir = await Deno.realPath(policyDir);
+    if (realDir !== realRoot && !realDir.startsWith(realRoot + SEPARATOR)) {
+      throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+    }
+    await this.options.pathResolver.validatePath(configPath, [policyRoot]);
+    await this.assertOutsideWorkRoots(context, realDir);
+  }
+
+  /** Rejects a policy directory that lies inside the execution root or a portal root. */
+  private async assertOutsideWorkRoots(context: IDenoLintCheckContext, realDir: string): Promise<void> {
+    for (const root of [context.executionRoot, ...(this.options.portalRoots ?? [])]) {
+      const realRoot = await Deno.realPath(root).catch(() => null);
+      if (realRoot === null) continue;
+      if (realDir === realRoot || realDir.startsWith(realRoot + SEPARATOR)) {
+        throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+      }
+    }
   }
 
   /** Rejects any selected file that carries a file-level ignore directive. */

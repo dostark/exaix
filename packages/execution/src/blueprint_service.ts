@@ -94,6 +94,14 @@ function splitProviderModel(model: string): { provider: string; model: string } 
   return { provider: model.substring(0, colonIdx), model: model.substring(colonIdx + 1) };
 }
 
+/** The request-level declaration when it is set, otherwise the blueprint declaration. */
+function preferRequest<T>(
+  fromRequest: Opt<T, Reason.OptionalInput>,
+  fromBlueprint: Opt<T, Reason.OptionalInput>,
+): T | undefined {
+  return fromRequest ?? fromBlueprint;
+}
+
 export class BlueprintService {
   constructor(
     private config: Config,
@@ -149,22 +157,27 @@ export class BlueprintService {
         resolvedCallOptions,
       };
     } catch (error) {
-      if (error instanceof ProviderFactoryError) throw error;
-      if (error instanceof Deno.errors.NotFound) {
-        throw new SafeError("Blueprint not found", "BLUEPRINT_NOT_FOUND", error, this.logger);
-      }
-      if (error instanceof z.ZodError) {
-        throw new SafeError("Blueprint contains invalid configuration", "INVALID_BLUEPRINT_SCHEMA", error, this.logger);
-      }
-      if (error instanceof Error && (error.message.includes("YAML") || error.message.includes("tag"))) {
-        throw new SafeError("Blueprint file contains invalid YAML syntax", "YAML_PARSE_ERROR", error, this.logger);
-      }
-      if (error instanceof Deno.errors.PermissionDenied) {
-        throw new SafeError("Access denied to blueprint file", "BLUEPRINT_ACCESS_DENIED", error, this.logger);
-      }
-      if (error instanceof SafeError) throw error;
-      throw new SafeError("Failed to load blueprint", "BLUEPRINT_LOAD_ERROR", error as Error, this.logger);
+      throw this.asLoadFailure(error as Error);
     }
+  }
+
+  /** The error that a failed blueprint load throws: a known error passes through, and any other becomes a safe error. */
+  private asLoadFailure(error: Error): Error {
+    if (error instanceof ProviderFactoryError) return error;
+    if (error instanceof Deno.errors.NotFound) {
+      return new SafeError("Blueprint not found", "BLUEPRINT_NOT_FOUND", error, this.logger);
+    }
+    if (error instanceof z.ZodError) {
+      return new SafeError("Blueprint contains invalid configuration", "INVALID_BLUEPRINT_SCHEMA", error, this.logger);
+    }
+    if (error instanceof Error && (error.message.includes("YAML") || error.message.includes("tag"))) {
+      return new SafeError("Blueprint file contains invalid YAML syntax", "YAML_PARSE_ERROR", error, this.logger);
+    }
+    if (error instanceof Deno.errors.PermissionDenied) {
+      return new SafeError("Access denied to blueprint file", "BLUEPRINT_ACCESS_DENIED", error, this.logger);
+    }
+    if (error instanceof SafeError) return error;
+    return new SafeError("Failed to load blueprint", "BLUEPRINT_LOAD_ERROR", error, this.logger);
   }
 
   /** Resolve model and provider via ModelResolver or fall back to inline colon split. */
@@ -194,21 +207,21 @@ export class BlueprintService {
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): IModelIntent {
     const extras = validatedFrontmatter as BlueprintInput;
-    const requestIntent = this.options?.requestIntent;
+    const request: Partial<NonNullable<IAgentComposerOptions["requestIntent"]>> = this.options?.requestIntent ?? {};
     const derivedTaskType = deriveTaskType({
-      frontmatterTaskType: requestIntent?.task_type,
+      frontmatterTaskType: request.task_type,
       agentRoleTaskType: extras.task_type,
       topSkillTaskTypes: this.options?.topSkillTaskTypes,
       agentRole: validatedFrontmatter.agent_role,
       taskTypeMap: this.config.model_registry?.task_type_map,
     });
     return {
-      model: requestIntent?.model || validatedFrontmatter.model,
-      model_size: requestIntent?.model_size ?? extras.model_size,
-      characteristics: requestIntent?.characteristics ?? extras.characteristics,
-      preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
-      thinking: thinkingLike(requestIntent?.thinking ?? extras.thinking),
-      effort: effortLike(requestIntent?.effort ?? extras.effort),
+      model: request.model || validatedFrontmatter.model,
+      model_size: preferRequest(request.model_size, extras.model_size),
+      characteristics: preferRequest(request.characteristics, extras.characteristics),
+      preferred_provider: preferRequest(request.preferred_provider, extras.preferred_provider),
+      thinking: thinkingLike(preferRequest(request.thinking, extras.thinking)),
+      effort: effortLike(preferRequest(request.effort, extras.effort)),
       task_type: derivedTaskType.taskType,
       task_type_source: derivedTaskType.source,
       ...(traceId ? { trace_id: traceId } : {}),

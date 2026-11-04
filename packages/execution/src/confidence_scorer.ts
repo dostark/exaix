@@ -150,6 +150,40 @@ Scoring Guidelines:
 
 // ConfidenceScorer Class
 
+/** The word lists of the quick assessment, each with the adjustment that one match adds to the score. */
+const QUICK_INDICATORS: ReadonlyArray<{ readonly words: readonly string[]; readonly adjustment: number }> = [
+  {
+    words: ["definitely", "certainly", "absolutely", "always", "never"],
+    adjustment: CONFIDENCE_ADJUSTMENT_CERTAIN,
+  },
+  {
+    words: ["maybe", "perhaps", "possibly", "might", "could be", "not sure", "uncertain"],
+    adjustment: CONFIDENCE_ADJUSTMENT_UNCERTAIN,
+  },
+  { words: ["I think", "I believe", "probably", "likely", "seems"], adjustment: CONFIDENCE_ADJUSTMENT_HEDGING },
+  { words: ["however", "although", "but", "on the other hand"], adjustment: CONFIDENCE_ADJUSTMENT_QUALIFIER },
+];
+
+/** The score change from the indicator words that the lowered response contains. */
+function wordAdjustment(lowered: string): number {
+  let total = 0;
+  for (const { words, adjustment } of QUICK_INDICATORS) {
+    for (const word of words) {
+      if (lowered.includes(word)) total += adjustment;
+    }
+  }
+  return total;
+}
+
+/** The score change from a question mark and from a short response. */
+function shapeAdjustment(response: string): number {
+  let total = 0;
+  if (response.includes("?") && !response.includes('?"')) total += CONFIDENCE_ADJUSTMENT_QUESTION;
+  if (response.length < CONFIDENCE_LENGTH_THRESHOLD_SHORT) total += CONFIDENCE_ADJUSTMENT_SHORT;
+  if (response.length < CONFIDENCE_LENGTH_THRESHOLD_VERY_SHORT) total += CONFIDENCE_ADJUSTMENT_VERY_SHORT;
+  return total;
+}
+
 export class ConfidenceScorer {
   private agentRunner: AgentRunner;
   private outputValidator: OutputValidator;
@@ -218,13 +252,12 @@ export class ConfidenceScorer {
     this.outputValidator = createOutputValidator({ autoRepair: true });
   }
 
-  /** */
-  async assess(
+  /** Asks the model for a confidence assessment, and falls back to the default one when the answer is not valid. */
+  private async requestAssessment(
     request: string,
     response: string,
-    traceId?: Opt<string, Reason.TraceAbsent>,
-    critique?: Opt<ICritique, Reason.OptionalInput>,
-  ): Promise<IConfidenceResult> {
+    traceId: Opt<string, Reason.TraceAbsent>,
+  ): Promise<ConfidenceAssessment> {
     const assessmentPrompt = this.config.extractionPromptTemplate
       .replace("{request}", request)
       .replace("{response}", response);
@@ -241,40 +274,31 @@ export class ConfidenceScorer {
     };
 
     const result = await this.agentRunner.run(blueprint, parsedRequest, undefined);
-
     const validationResult = this.outputValidator.validate(result.content, ConfidenceSchema);
+    return validationResult.success && validationResult.value ? validationResult.value : this.createDefaultAssessment();
+  }
 
-    let confidence: ConfidenceAssessment;
-    if (validationResult.success && validationResult.value) {
-      confidence = validationResult.value;
-    } else {
-      confidence = this.createDefaultAssessment();
-    }
-
+  /** Blends the share of met requirements into the score with the configured weights. */
+  private withGoalAlignment(
+    confidence: ConfidenceAssessment,
+    critique: Opt<ICritique, Reason.OptionalInput>,
+  ): ConfidenceAssessment {
     const fulfillment = critique?.requirementsFulfillment;
-    if (fulfillment && fulfillment.length > 0) {
-      const metCount = fulfillment.filter((r) => r.status === "MET").length +
-        0.5 * fulfillment.filter((r) => r.status === "PARTIAL").length;
-      const goalAlignmentScore = metCount / fulfillment.length;
-      confidence = {
-        ...confidence,
-        score: Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(
-              confidence.score * this.config.existingScoreWeight +
-                goalAlignmentScore * this.config.goalAlignmentWeight * 100,
-            ),
-          ),
-        ),
-      };
-    }
+    if (!fulfillment || fulfillment.length === 0) return confidence;
+    const metCount = fulfillment.filter((r) => r.status === "MET").length +
+      0.5 * fulfillment.filter((r) => r.status === "PARTIAL").length;
+    const goalAlignmentScore = metCount / fulfillment.length;
+    const blended = confidence.score * this.config.existingScoreWeight +
+      goalAlignmentScore * this.config.goalAlignmentWeight * 100;
+    return { ...confidence, score: Math.max(0, Math.min(100, Math.round(blended))) };
+  }
 
-    const flaggedForReview = this.shouldFlagForReview(confidence);
-
-    this.updateMetrics(confidence, flaggedForReview);
-
+  /** Prints the verbose line and logs a flagged assessment. */
+  private reportAssessment(
+    confidence: ConfidenceAssessment,
+    flaggedForReview: boolean,
+    traceId: Opt<string, Reason.TraceAbsent>,
+  ): void {
     if (this.config.verbose) {
       console.debug(
         `[ConfidenceScorer] score=${confidence.score} level=${confidence.level} flagged=${flaggedForReview}`,
@@ -300,6 +324,21 @@ export class ConfidenceScorer {
         traceId,
       );
     }
+  }
+
+  /** */
+  async assess(
+    request: string,
+    response: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    critique?: Opt<ICritique, Reason.OptionalInput>,
+  ): Promise<IConfidenceResult> {
+    const assessed = await this.requestAssessment(request, response, traceId);
+    const confidence = this.withGoalAlignment(assessed, critique);
+    const flaggedForReview = this.shouldFlagForReview(confidence);
+
+    this.updateMetrics(confidence, flaggedForReview);
+    this.reportAssessment(confidence, flaggedForReview, traceId);
 
     return {
       content: response,
@@ -313,41 +352,8 @@ export class ConfidenceScorer {
    * Quick assessment without LLM call - based on heuristics
    */
   assessQuick(response: string): ConfidenceAssessment {
-    let score = CONFIDENCE_SCORE_BASE;
-
-    const indicators = {
-      certainWords: ["definitely", "certainly", "absolutely", "always", "never"],
-      uncertainWords: ["maybe", "perhaps", "possibly", "might", "could be", "not sure", "uncertain"],
-      hedgingWords: ["I think", "I believe", "probably", "likely", "seems"],
-      qualifiers: ["however", "although", "but", "on the other hand"],
-    };
-
-    const lowered = response.toLowerCase();
-
-    for (const word of indicators.certainWords) {
-      if (lowered.includes(word)) score += CONFIDENCE_ADJUSTMENT_CERTAIN;
-    }
-
-    for (const word of indicators.uncertainWords) {
-      if (lowered.includes(word)) score += CONFIDENCE_ADJUSTMENT_UNCERTAIN;
-    }
-
-    for (const word of indicators.hedgingWords) {
-      if (lowered.includes(word)) score += CONFIDENCE_ADJUSTMENT_HEDGING;
-    }
-
-    for (const word of indicators.qualifiers) {
-      if (lowered.includes(word)) score += CONFIDENCE_ADJUSTMENT_QUALIFIER;
-    }
-
-    if (response.includes("?") && !response.includes('?"')) {
-      score += CONFIDENCE_ADJUSTMENT_QUESTION;
-    }
-
-    if (response.length < CONFIDENCE_LENGTH_THRESHOLD_SHORT) score += CONFIDENCE_ADJUSTMENT_SHORT;
-    if (response.length < CONFIDENCE_LENGTH_THRESHOLD_VERY_SHORT) score += CONFIDENCE_ADJUSTMENT_VERY_SHORT;
-
-    score = Math.max(0, Math.min(100, score));
+    const raw = CONFIDENCE_SCORE_BASE + wordAdjustment(response.toLowerCase()) + shapeAdjustment(response);
+    const score = Math.max(0, Math.min(100, raw));
 
     return {
       score,

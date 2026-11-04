@@ -64,6 +64,32 @@ function isJsonObject(value: JSONValue): value is JSONObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Parses each diagnostic entry. Null when any entry is malformed. */
+function parseDiagnostics(entries: readonly JSONValue[]): IDenoLintHostDiagnostic[] | null {
+  const diagnostics: IDenoLintHostDiagnostic[] = [];
+  for (const entry of entries) {
+    const diagnostic = parseDiagnostic(entry);
+    if (diagnostic === null) return null;
+    diagnostics.push(diagnostic);
+  }
+  return diagnostics;
+}
+
+/** True for a host error object that names a file path and a message. */
+function isHostErrorObject(entry: JSONValue): boolean {
+  return isJsonObject(entry) && typeof entry.file_path === "string" && typeof entry.message === "string";
+}
+
+/** Maps each host error to the one error class. Null when any entry is neither a string nor a host error object. */
+function parseHostErrors(entries: readonly JSONValue[]): string[] | null {
+  const errors: string[] = [];
+  for (const entry of entries) {
+    if (typeof entry !== "string" && !isHostErrorObject(entry)) return null;
+    errors.push("source_invalid");
+  }
+  return errors;
+}
+
 /** Strict host JSON guard. Null means malformed JSON or a malformed shape. */
 function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
   let document: JSONValue;
@@ -73,23 +99,10 @@ function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
     return null;
   }
   if (!isJsonObject(document)) return null;
-  const record = document;
-  if (!Array.isArray(record.diagnostics) || !Array.isArray(record.errors)) return null;
-  const diagnostics: IDenoLintHostDiagnostic[] = [];
-  for (const entry of record.diagnostics) {
-    const diagnostic = parseDiagnostic(entry);
-    if (diagnostic === null) return null;
-    diagnostics.push(diagnostic);
-  }
-  const errors: string[] = [];
-  for (const entry of record.errors) {
-    if (typeof entry !== "string") {
-      if (!isJsonObject(entry)) return null;
-      if (typeof entry.file_path !== "string" || typeof entry.message !== "string") return null;
-    }
-    errors.push("source_invalid");
-  }
-  return { diagnostics, errors };
+  if (!Array.isArray(document.diagnostics) || !Array.isArray(document.errors)) return null;
+  const diagnostics = parseDiagnostics(document.diagnostics);
+  const errors = parseHostErrors(document.errors);
+  return diagnostics === null || errors === null ? null : { diagnostics, errors };
 }
 
 function isPosition(value: JSONValue, allowZeroColumn: boolean): value is { line: number; col: number } {
