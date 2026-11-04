@@ -160,7 +160,7 @@
     "packages/ai": 2,
     "packages/cli": 1,
     "packages/core": 3,
-    "packages/execution": 4,
+    "packages/execution": 3,
     "packages/flow": 1,
     "packages/git": 1,
     "packages/memory": 1,

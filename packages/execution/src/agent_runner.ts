@@ -13,101 +13,58 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
-import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import type { ICallSite, IModelProvider } from "@exaix/ai/types.ts";
 import type { IBlueprint } from "@exaix/core/blueprint";
 import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
-import {
-  COMPLEXITY_SOURCE_DEFAULT,
-  EffortResolver,
-  ProviderRegistry,
-  readProviderModelInfo,
-  resolveProviderType,
-} from "@exaix/ai";
-import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
-import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
-import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
-import {
-  type EffortDeclaration,
-  type EffortTier,
-  type ThinkingDeclaration,
-  toolsRoundPolicyReader,
-} from "@exaix/schemas";
-import { toSafeJson } from "@exaix/core/types";
+import { EffortResolver } from "@exaix/ai";
+import type { IEffortResolver, TaskComplexitySource } from "@exaix/ai";
+
+import { projectResolvedCallOptions } from "@exaix/ai";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+
 import type { IToolRegistryFactory } from "@exaix/core/types";
-import { type JSONValue, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation, TaskComplexity } from "@exaix/core";
-import type { ProviderType } from "@exaix/core";
-import { PortalPermissionsService } from "@exaix/portal";
-import { readOnlyEditorTools } from "@exaix/tool-runtime";
-import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import { PlanningToolLoop } from "./planning_tool_loop.ts";
+import type { JSONValue } from "@exaix/core";
+import type { TaskComplexity } from "@exaix/core";
+
+import { CallSiteCounter } from "./agent_runner_call_sites.ts";
+import { AgentRunnerPlanningTools } from "./agent_runner_planning_tools.ts";
+import { buildGenerateOptions, type IGenerationHints } from "./agent_runner_generation_hints.ts";
+import { AgentRunnerEffort, type ISelectedModelIdentity } from "./agent_runner_effort.ts";
+import { AgentRunnerAudit } from "./agent_runner_audit.ts";
+import { AgentRunnerPrompts } from "./agent_runner_prompts.ts";
 import { AgentRunnerSkills, type ISkillUsagePlan } from "./agent_runner_skills.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import { providerSupportsNativeTools } from "./native_tool_turns.ts";
 
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IPortalKnowledgeSelectionAppliedPayload } from "@exaix/core/events";
-import { buildAdaptivePortalKnowledge } from "@exaix/core/func";
-import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
+
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ISkillOperationContext, ISkillPin } from "@exaix/core/skills";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
-import type { IContextSegment } from "./context/context_segment.ts";
-import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
-import type { IPromptBudget, IPromptPreview, IPromptPreviewSegment } from "@exaix/schemas/prompt_budget.ts";
+
+import type { IPromptBudget, IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 import type { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IPlanAdapter } from "@exaix/core/planning";
-import {
-  DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS,
-  DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS,
-  DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES,
-  PortalKnowledgeInclusion,
-} from "@exaix/core";
-import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
+
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 
 import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
-  AGENT_EVENT_EXECUTION_COMPLETED,
-  AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_LLM_RESPONSE_RECEIVED,
   AGENT_EVENT_PROMPT_DEBUG_DUMP,
-  AGENT_EVENT_RESPONSE_REFUSED,
-  AGENT_EVENT_RESPONSE_TRUNCATED,
   DEFAULT_MODEL_FALLBACK,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  DEFAULT_UNKNOWN_LABEL,
-  MEMORY_CONTEXT_KEY,
   MILESTONE_LLM_CALL_COMPLETED,
   MILESTONE_LLM_CALL_STARTED,
-  PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
-  PORTAL_CONTEXT_KEY,
-  PORTAL_KNOWLEDGE_KEY,
-  RESPONSE_STOP_REASON_MAX_TOKENS,
-  RESPONSE_STOP_REASON_REFUSAL,
   SkillRenderMode,
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { IRecordingLane, Opt, Reason } from "@exaix/core/types";
-import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
-import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, ToolsRoundLoop } from "@exaix/core";
-
-interface ISelectedModelIdentity {
-  provider: string;
-  model: string;
-  /** Canonical provider type — set from IProviderInfo.type at the construction sites;
-   *  AgentRunner falls back to resolveProviderType(provider) when absent. */
-  providerType?: ProviderType;
-}
-
-type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
 
 /** Blueprint defines the agent's persona and system instructions. Initially just a
  *  system prompt, can be extended later. */
@@ -296,37 +253,7 @@ export interface IAgentRunner {
   ): Promise<IAgentExecutionResult>;
 }
 
-/** Bundles executeWithRetry's per-call generation hints into one param, keeping it under
- *  the 7-parameter style limit. Effort/thinking here are always RESOLVED values from
- *  EffortResolver — the declaration-time surface ("auto") never enters this object. */
-interface IGenerationHints {
-  conversationId: Opt<string, Reason.TraceAbsent>;
-  jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>;
-  callSite: Opt<ICallSite, Reason.OptionalContext>;
-  thinking: Opt<boolean, Reason.OptionalContext>;
-  effort: Opt<EffortTier, Reason.OptionalContext>;
-}
-
 // Agent Runner Service
-
-/** Remembers which run lane issued each explicit call site until its response is consumed. */
-class LaneCallSites {
-  readonly #lanes = new WeakMap<ICallSite, IRecordingLane>();
-
-  track(callSite: ICallSite, lane: IRecordingLane): ICallSite {
-    this.#lanes.set(callSite, lane);
-    return callSite;
-  }
-
-  /** Advances the issuing lane. Returns false for a call site that the shared counter owns. */
-  consume(callSite: ICallSite): boolean {
-    const lane = this.#lanes.get(callSite);
-    if (!lane) return false;
-    lane.consume(callSite);
-    this.#lanes.delete(callSite);
-    return true;
-  }
-}
 
 /** Combines Blueprint (system prompt) with IParsedRequest (user prompt), executes via an
  *  LLM provider, and parses the structured XML response — with retry/recovery, output
@@ -347,6 +274,14 @@ function resolveRunnerInputs(
     : (modelProviderOrConfig as IModelProvider | undefined) || resolvedConfig?.context?.provider;
   if (!provider) throw new Error("IAgentRunner requires a model provider");
   return { planAdapter, provider, config: resolvedConfig };
+}
+
+/** True when skill matching is on and a skills service is present. */
+function skillsEnabledOf(
+  disableSkills: boolean,
+  skillsService: Opt<ISkillsService, Reason.OptionalDependency>,
+): boolean {
+  return !disableSkills && !!skillsService;
 }
 
 /** The retry policy the runner config selects, or the LLM default. */
@@ -372,19 +307,10 @@ interface IRunAttemptInput {
   readonly combinedPrompt: string;
   readonly startTime: number;
   readonly hints: IGenerationHints;
-  readonly promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"];
+  readonly promptBudget: IPromptBudget;
   readonly skillUsage: ISkillUsagePlan | null;
-  readonly callSite: ReturnType<AgentRunner["resolveCallSite"]>;
+  readonly callSite: ICallSite | undefined;
 }
-
-/** The token-usage hints that segment allocation reports to the budget allocator. */
-type TAllocationHintKey =
-  | "systemUsedTokens"
-  | "planUsedTokens"
-  | "portalKnowledgeUsedTokens"
-  | "memoryUsedTokens"
-  | "skillsUsedTokens"
-  | "loopHistoryUsedTokens";
 
 export class AgentRunner implements IAgentRunner {
   private logger?: IEventLogger;
@@ -394,22 +320,21 @@ export class AgentRunner implements IAgentRunner {
   private skillsService?: ISkillsService;
   private disableSkills: boolean;
   private readonly skills: AgentRunnerSkills;
+  private readonly prompts: AgentRunnerPrompts;
+  private readonly audit: AgentRunnerAudit;
+  private readonly effort: AgentRunnerEffort;
+  private readonly planningTools: AgentRunnerPlanningTools;
+  /** Shared with the siblings that `withProvider` returns, so one counter addresses every call. */
+  private callSites = new CallSiteCounter();
   private planAdapter: IPlanAdapter;
 
   private modelProvider: IModelProvider;
   private config?: IAgentRunnerConfig;
   private effortResolver: IEffortResolver;
-  /** Next call index per (scenarioId, stepId), for fixture replay addressing.
-   *  Incremented once per consumed response — a retried logical call keeps its index. */
-  private callIndexByCallSite = new Map<string, number>();
-  /** Explicit run-lane call sites awaiting consumption. They never touch the shared counter. */
-  private laneCallSites = new LaneCallSites();
-
   /** Return an invocation-local runner with the same dependencies and a bound model. */
   withProvider(provider: IModelProvider, selectedModel: ISelectedModelIdentity): AgentRunner {
     const sibling = new AgentRunner(this.planAdapter, provider, { ...this.config, selectedModel });
-    sibling.callIndexByCallSite = this.callIndexByCallSite;
-    sibling.laneCallSites = this.laneCallSites;
+    sibling.callSites = this.callSites;
     return sibling;
   }
 
@@ -434,28 +359,49 @@ export class AgentRunner implements IAgentRunner {
       contextBudgetChars: () => this.config?.context?.config.get().skills?.context_budget_chars,
       journal: { record: (action, target, payload) => this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload) },
     });
+    this.planningTools = new AgentRunnerPlanningTools({
+      config: this.config,
+      modelProvider: this.modelProvider,
+      logger: this.logger,
+      skills: this.skills,
+      callSites: {
+        resolve: (request) => this.callSites.resolve(request),
+        consume: (site) => this.callSites.consume(site),
+      },
+      modelId: () => this.prompts.modelId(),
+      runGeneration: (fn, startTime) => this.runGeneration(fn, startTime),
+      journal: (action, target, payload, traceId, agentRole) =>
+        this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload, traceId, agentRole),
+    });
+    this.effort = new AgentRunnerEffort({
+      effortResolver: this.effortResolver,
+      modelProvider: this.modelProvider,
+      config: this.config,
+      selectedModel: () => this.selectedModelIdentity(),
+      journal: (action, target, payload, traceId, agentRole) =>
+        this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload, traceId, agentRole),
+    });
+    this.audit = new AgentRunnerAudit({
+      logger: this.logger,
+      retryEnabled: !this.disableRetry,
+      skillsEnabled: skillsEnabledOf(this.disableSkills, this.skillsService),
+      journal: (action, target, payload, traceId, agentRole) =>
+        this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload, traceId, agentRole),
+    });
+    this.prompts = new AgentRunnerPrompts({
+      planAdapter: this.planAdapter,
+      config: this.config,
+      skills: this.skills,
+      selectedModel: () => this.selectedModelIdentity(),
+      planningEngaged: (request, agentRole) => this.planningTools.resolvePlanningGate(request, agentRole).engage,
+      journal: (action, target, payload, traceId) =>
+        this.logActivity(ACTIVITY_ACTOR_AGENT, action, target, payload, traceId),
+    });
     // The provider layer owns HTTP retries, so a classified provider error is final here.
     const providerErrorsAreFinal = { isPermanent: (error: Error) => error instanceof ModelProviderError };
     this.retryPolicy = retryPolicyOf(inputs.config, providerErrorsAreFinal);
     this.outputValidator = inputs.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
-    this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => this.logRetryAttempt(ctx));
-  }
-
-  /** Logs one provider retry attempt. */
-  private logRetryAttempt(ctx: IRetryContext): void {
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      "agent.retry_attempt",
-      null,
-      {
-        attempt: ctx.attempt,
-        delay_ms: ctx.delayMs,
-        temperature: ctx.temperature,
-        elapsed_ms: ctx.elapsedMs,
-        error_type: ctx.error.constructor.name,
-        error_message: ctx.error.message,
-      },
-    );
+    this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => this.audit.logRetryAttempt(ctx));
   }
 
   private async emitMilestone(
@@ -494,7 +440,7 @@ export class AgentRunner implements IAgentRunner {
       agentRole,
       skillOperation,
     );
-    this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
+    this.audit.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
 
     const identity: IRunIdentity = { agentRole, requestId, traceId };
     const prompt = await this.assembleRunPrompt(blueprint, request, identity, skillIds, skillsContext, skillOperation);
@@ -531,9 +477,9 @@ export class AgentRunner implements IAgentRunner {
       prompt_tokens: generateResult?.usage?.promptTokens ?? null,
       completion_tokens: generateResult?.usage?.completionTokens ?? null,
     }, traceId);
-    this.warnOnStopReason(generateResult, rawResponse, agentRole, requestId, traceId);
+    this.audit.warnOnStopReason(generateResult, rawResponse, agentRole, requestId, traceId);
     const result = this.parseResponse(rawResponse);
-    this.logExecutionCompletion({
+    this.audit.logExecutionCompletion({
       result,
       rawResponse,
       retryResult,
@@ -560,7 +506,7 @@ export class AgentRunner implements IAgentRunner {
     skillOperation: ISkillOperationContext,
   ): Promise<{
     combinedPrompt: string;
-    promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"];
+    promptBudget: IPromptBudget;
     skillUsage: ISkillUsagePlan | null;
     resolvedSkills: ISkillPin[] | undefined;
   }> {
@@ -568,7 +514,7 @@ export class AgentRunner implements IAgentRunner {
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
     const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
-    const { prompt: combinedPrompt, budget: promptBudget } = await this.constructPrompt(
+    const { prompt: combinedPrompt, budget: promptBudget } = await this.prompts.constructPrompt(
       blueprint,
       request,
       skillContextString,
@@ -621,17 +567,17 @@ export class AgentRunner implements IAgentRunner {
     traceId: Opt<string, Reason.TraceAbsent>,
     requestId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
-  ): Promise<{ callSite: ReturnType<AgentRunner["resolveCallSite"]>; hints: IGenerationHints }> {
-    const callSite = this.resolveCallSite(request);
+  ): Promise<{ callSite: ICallSite | undefined; hints: IGenerationHints }> {
+    const callSite = this.callSites.resolve(request);
     const skillFloors = this.skills.skillFloorsOf(skillsContext);
-    const resolution = await this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
+    const resolution = await this.effort.resolve(blueprint, request, agentRole, skillFloors);
     const projection = projectResolvedCallOptions(resolution, {
       binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
       role: { effort: blueprint.effort, thinking: blueprint.thinking },
       request: { effort: request.effort, thinking: request.thinking },
       flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
     }, this.modelProvider.callCapabilities);
-    this.journalEffortResolution(blueprint, request, agentRole, resolution, { traceId, requestId }, projection);
+    this.effort.journalResolution(blueprint, request, agentRole, resolution, { traceId, requestId }, projection);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     return {
       callSite,
@@ -652,11 +598,11 @@ export class AgentRunner implements IAgentRunner {
     attempt: IRunAttemptInput,
   ): Promise<{
     retryResult: Awaited<ReturnType<AgentRunner["executeWithRetry"]>>;
-    toolsResult: Awaited<ReturnType<AgentRunner["runPlanningToolsIfGated"]>>;
+    toolsResult: IRetryResult<IGenerateResult> | undefined;
   }> {
     const { agentRole, requestId, traceId } = identity;
     const { combinedPrompt, startTime, hints, promptBudget, skillUsage, callSite } = attempt;
-    const toolsResult = await this.runPlanningToolsIfGated(
+    const toolsResult = await this.planningTools.runPlanningToolsIfGated(
       request,
       agentRole,
       combinedPrompt,
@@ -667,170 +613,10 @@ export class AgentRunner implements IAgentRunner {
     const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints, skillUsage);
     if (skillUsage?.auditError) throw skillUsage.auditError;
     if (!retryResult.success) {
-      this.handleExecutionFailure(retryResult, requestId, agentRole, traceId, Date.now() - startTime);
+      this.audit.handleExecutionFailure(retryResult, requestId, agentRole, traceId, Date.now() - startTime);
     }
-    if (!toolsResult) this.markCallSiteConsumed(callSite);
+    if (!toolsResult) this.callSites.consume(callSite);
     return { retryResult, toolsResult };
-  }
-
-  /** Resolves declaration-time effort and thinking through EffortResolver, using the selected model's provider
-   *  and the request's TaskComplexity. Journals the result as agent.effort_resolved, joinable by traceId.
-   *  buildAgentEffortResolvedPayload owns the payload shape. */
-  private journalEffortResolution(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    agentRole: string,
-    resolution: IEffortResolution,
-    correlation: { traceId?: string; requestId?: string },
-    projection?: Opt<IProjectedCallOptions, Reason.OptionalContext>,
-  ): void {
-    const { traceId, requestId } = correlation;
-    const selectedModelId = this.selectedModelIdentity();
-    const payload = buildAgentEffortResolvedPayload({
-      path: request.flowStepId ? "flow_step" : "planning",
-      resolution,
-      agentRole,
-      declared: {
-        ...(request.effort !== undefined || request.thinking !== undefined
-          ? { request: { effort: request.effort, thinking: request.thinking } }
-          : {}),
-        ...(request.flowStepEffort !== undefined || request.flowStepThinking !== undefined
-          ? { flow_step: { effort: request.flowStepEffort, thinking: request.flowStepThinking } }
-          : {}),
-        ...(blueprint.effort !== undefined || blueprint.thinking !== undefined
-          ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
-          : {}),
-      },
-      providerType: selectedModelId.providerType,
-      model: selectedModelId.model,
-      projection,
-    });
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      DomainEventType.AgentEffortResolved,
-      requestId ?? null,
-      payload,
-      traceId,
-      agentRole,
-    );
-  }
-
-  private async resolveEffortAndThinking(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    agentRole: string,
-    skillFloors: ReadonlyArray<{ skillId: string; effort?: EffortTier; thinking?: boolean }>,
-  ): Promise<IEffortResolution> {
-    const selectedModel = this.selectedModelIdentity();
-    const providerType = selectedModel.providerType ?? resolveProviderType(selectedModel.provider);
-    const providerMetadata = providerType !== undefined
-      ? ProviderRegistry.getProviderMetadata(providerType)
-      : undefined;
-    const modelInfo = await readProviderModelInfo(providerMetadata, selectedModel.model);
-    const signals: IEffortResolutionSignals = {
-      taskComplexity: request.taskComplexity ?? TaskComplexity.MEDIUM,
-      complexitySource: request.taskComplexitySource ?? COMPLEXITY_SOURCE_DEFAULT,
-      modelSize: blueprint.modelSize,
-      providerType,
-      model: selectedModel.model,
-      providerSupportsThinking: modelInfo?.supportsThinking ?? this.modelProvider.callCapabilities?.supportsThinking ??
-        providerMetadata?.supportsThinking === true,
-      anthropicThinkingDefault: this.config?.context?.config.get().ai_anthropic?.thinking_default,
-      skillFloors,
-      agentRole,
-    };
-    return this.effortResolver.resolve(
-      {
-        binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
-        role: { effort: blueprint.effort, thinking: blueprint.thinking },
-        request: { effort: request.effort, thinking: request.thinking },
-        flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
-      },
-      signals,
-    );
-  }
-
-  /**
-   * Log the start of agent execution
-   */
-  private logExecutionStart(
-    request: IParsedRequest,
-    agentRole: string,
-    traceId: Opt<string, Reason.TraceAbsent>,
-    requestId: Opt<string, Reason.TraceAbsent>,
-    skillsApplied: string[],
-  ): void {
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      AGENT_EVENT_EXECUTION_STARTED,
-      requestId || null,
-      {
-        agent_role: agentRole,
-        prompt_length: request.userPrompt.length,
-        has_context: Object.keys(request.context).length > 0,
-        retry_enabled: !this.disableRetry,
-        skills_enabled: !this.disableSkills && !!this.skillsService,
-        skills_matched: skillsApplied.length,
-        skills_applied: skillsApplied,
-      },
-      traceId,
-      agentRole,
-    );
-  }
-
-  /** Assigns the call site for this logical call, reading (not yet incrementing) the next
-   *  call index for (scenarioId, stepId, flowStepId); flowStepId scopes the counter so
-   *  concurrent flow steps in the same parallel wave cannot collide on one callIndex. */
-  private resolveCallSite(request: IParsedRequest): ICallSite | undefined {
-    if (request.recordingLane) return this.laneCallSites.track(request.recordingLane.current(), request.recordingLane);
-    if (!request.scenarioId || !request.stepId) return undefined;
-    const key = this.callSiteCounterKey(request.scenarioId, request.stepId, request.flowStepId);
-    const callIndex = this.callIndexByCallSite.get(key) ?? 0;
-    return {
-      scenarioId: request.scenarioId,
-      stepId: request.stepId,
-      // Omitted entirely (not set to undefined) for non-flow calls, so a plain ReAct-loop
-      // callSite's shape is byte-identical to before this field existed.
-      ...(request.flowStepId ? { flowStepId: request.flowStepId } : {}),
-      callIndex,
-    };
-  }
-
-  /** Advances the call index for a call site once its response has actually been
-   *  consumed. Retries within the SAME logical call reuse the callSite object assigned
-   *  before the retry loop started, so only a subsequent run() sees the new index. */
-  private markCallSiteConsumed(callSite: Opt<ICallSite, Reason.OptionalContext>): void {
-    if (!callSite) return;
-    if (this.laneCallSites.consume(callSite)) return;
-    const key = this.callSiteCounterKey(callSite.scenarioId, callSite.stepId, callSite.flowStepId);
-    this.callIndexByCallSite.set(key, callSite.callIndex + 1);
-  }
-
-  /** Shared key builder for the callIndex counter map — resolveCallSite and
-   *  markCallSiteConsumed must compute an identical key or the counter never advances. */
-  private callSiteCounterKey(
-    scenarioId: string,
-    stepId: string,
-    flowStepId: Opt<string, Reason.OptionalContext>,
-  ): string {
-    return `${scenarioId}::${stepId}::${flowStepId ?? ""}`;
-  }
-
-  /** Builds the IModelOptions overlay executeWithRetry passes to the provider from a set of
-   *  generation hints — extracted so the planning-tools path (PlanningToolLoop's baseOptions)
-   *  builds the identical conversationId/jsonSchema/thinking/effort shape. */
-  private buildGenerateOptions(hints: IGenerationHints): IModelOptions | undefined {
-    const { conversationId, jsonSchema, callSite, thinking, effort } = hints;
-    return conversationId || jsonSchema || callSite || thinking !== undefined || effort
-      ? {
-        ...(conversationId ? { conversationId } : {}),
-        ...(conversationId ? { traceId: conversationId } : {}),
-        ...(thinking !== undefined ? { thinking } : {}),
-        ...(effort ? { effort } : {}),
-        ...(jsonSchema ? { jsonSchema } : {}),
-        ...(callSite ? { callSite } : {}),
-      }
-      : undefined;
   }
 
   /**
@@ -842,7 +628,7 @@ export class AgentRunner implements IAgentRunner {
     hints: IGenerationHints,
     usage: ISkillUsagePlan | null,
   ): Promise<IRetryResult<IGenerateResult>> {
-    const generateOptions = this.buildGenerateOptions(hints);
+    const generateOptions = buildGenerateOptions(hints);
     return await this.runGeneration(
       this.skills.withSkillUsage(usage, () => this.modelProvider.generate(combinedPrompt, generateOptions)),
       startTime,
@@ -878,560 +664,9 @@ export class AgentRunner implements IAgentRunner {
     return await this.retryPolicy.execute(fn);
   }
 
-  /** Bundles a planning-gate decision: either the request engages the tools path with a
-   *  resolved portal, or it doesn't (optionally with a reason worth journaling). */
-  private resolvePlanningGate(
-    request: IParsedRequest,
-    agentRole: string,
-  ): { engage: true; portal: IPortalPermissions } | { engage: false; reason?: PlanningToolsSkipReason } {
-    const planning = this.config?.context?.config.get().planning;
-    if (!planning?.tools_enabled || planning.max_tool_rounds <= 1) return { engage: false };
-
-    const providerId = this.config?.selectedModel?.provider ?? this.modelProvider.id;
-    if (!providerSupportsNativeTools(providerId)) {
-      return { engage: false, reason: PlanningToolsSkipReason.PROVIDER_UNSUPPORTED };
-    }
-
-    if (!request.portal) return { engage: false, reason: PlanningToolsSkipReason.NO_PORTAL };
-    const portals = this.config?.context?.config.get().portals ?? [];
-    const portal = portals.find((p) => p.alias === request.portal);
-    if (!portal) return { engage: false, reason: PlanningToolsSkipReason.NO_PORTAL };
-
-    if (!this.config?.plannerToolRegistryFactory || !this.config?.tokenizer) {
-      return { engage: false, reason: PlanningToolsSkipReason.NO_REGISTRY };
-    }
-
-    const permission = new PortalPermissionsService([portal]).checkOperationAllowed(
-      portal.alias,
-      agentRole,
-      PortalOperation.READ,
-    );
-    if (!permission.allowed) return { engage: false, reason: PlanningToolsSkipReason.PORTAL_READ_DENIED };
-
-    return { engage: true, portal };
-  }
-
-  /** Drives PlanningToolLoop when gated, returning an IRetryResult-shaped success (or
-   *  undefined, falling back to executeWithRetry); journals `planning.tools.skipped` when
-   *  a gate denied a flag-on request. */
-  private async runPlanningToolsIfGated(
-    request: IParsedRequest,
-    agentRole: string,
-    combinedPrompt: string,
-    startTime: number,
-    hints: IGenerationHints,
-    dispatch: { promptBudget: IPromptBudget; usage: ISkillUsagePlan | null },
-  ): Promise<IRetryResult<IGenerateResult> | undefined> {
-    const { promptBudget, usage } = dispatch;
-    const gate = this.resolvePlanningGate(request, agentRole);
-    const traceId = hints.conversationId;
-    if (!gate.engage) {
-      if (gate.reason) {
-        this.logActivity(
-          ACTIVITY_ACTOR_AGENT,
-          DomainEventType.PlanningToolsSkipped,
-          request.requestId ?? null,
-          { reason: gate.reason },
-          traceId,
-          agentRole,
-        );
-      }
-      return undefined;
-    }
-
-    const planning = this.config!.context!.config.get().planning!;
-    const registry = this.config!.plannerToolRegistryFactory!.createToolRegistry(
-      traceId ?? "",
-      gate.portal.target_path,
-    );
-    const allowedTools = new Set(readOnlyEditorTools().map((t) => t.name));
-    const baseOptions = this.buildGenerateOptions({ ...hints, callSite: undefined }) ?? {};
-
-    const loop = new PlanningToolLoop({
-      toolRegistry: registry,
-      tokenizer: this.config!.tokenizer!,
-      toolsRoundPolicy: toolsRoundPolicyReader(this.config!.context!, ToolsRoundLoop.PLANNING),
-      modelId: this.selectedModelId(),
-      generate: (prompt, options) =>
-        this.runGeneration(
-          this.skills.withSkillUsage(usage, () => this.modelProvider.generate(prompt, options)),
-          startTime,
-        ).then((r) => {
-          if (!r.success) throw r.error ?? new Error("Planning tool round failed");
-          return r.value!;
-        }),
-      logger: this.logger,
-      guardrailRunner: this.config!.guardrailRunner,
-      providerId: this.modelProvider.id,
-      measureInputTokens: this.modelProvider.measureInputTokens?.bind(this.modelProvider),
-    });
-
-    let lastCallSite: Opt<ICallSite, Reason.TraceAbsent> = undefined;
-    const result = await loop.run({
-      prompt: combinedPrompt,
-      baseOptions,
-      nextCallSite: () => {
-        if (lastCallSite) this.markCallSiteConsumed(lastCallSite);
-        lastCallSite = this.resolveCallSite(request);
-        return lastCallSite;
-      },
-      portalAlias: gate.portal.alias,
-      portalRoot: gate.portal.target_path,
-      allowedTools,
-      maxRounds: planning.max_tool_rounds,
-      maxToolResultTokens: planning.max_tool_result_tokens,
-      maxToolCallsPerRound: planning.max_tool_calls_per_round,
-      traceId: traceId ?? "",
-      promptBudget,
-    });
-    this.markCallSiteConsumed(lastCallSite);
-
-    // A provider that ignored toolChoice none left no plan text; retrying the whole loop would
-    // repeat the failure, so hand back to the single-call path.
-    if (result.stopReason === PlanningToolLoopStopReason.EMPTY_FINAL) return undefined;
-
-    return {
-      success: true,
-      value: result.final,
-      totalAttempts: result.rounds,
-      totalTimeMs: Date.now() - startTime,
-      retryHistory: [],
-    };
-  }
-
-  /**
-   * Handle execution failure by logging and throwing
-   */
-  private handleExecutionFailure(
-    retryResult: IRetryResult<IGenerateResult>,
-    requestId: Opt<string, Reason.TraceAbsent>,
-    agentRole: string,
-    traceId: Opt<string, Reason.TraceAbsent>,
-    duration: number,
-  ): never {
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      "agent.execution_failed",
-      requestId || null,
-      {
-        agent_role: agentRole,
-        duration_ms: duration,
-        total_attempts: retryResult.totalAttempts,
-        retry_history: toSafeJson(retryResult.retryHistory),
-        error_type: retryResult.error?.constructor.name || DEFAULT_UNKNOWN_LABEL,
-        error_message: retryResult.error?.message || DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      },
-      traceId,
-      agentRole,
-    );
-
-    throw retryResult.error || new Error("Agent execution failed after retries");
-  }
-
-  /**
-   * Log successful execution completion
-   */
-  private logExecutionCompletion(args: {
-    result: { thought: string; content: string };
-    rawResponse: string;
-    retryResult: IRetryResult<IGenerateResult>;
-    requestId: string | undefined;
-    agentRole: string;
-    traceId: string | undefined;
-    duration: number;
-    skillsApplied: string[];
-  }): void {
-    const {
-      result,
-      rawResponse,
-      retryResult,
-      requestId,
-      agentRole,
-      traceId,
-      duration,
-      skillsApplied,
-    } = args;
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      AGENT_EVENT_EXECUTION_COMPLETED,
-      requestId || null,
-      {
-        agent_role: agentRole,
-        duration_ms: duration,
-        total_attempts: retryResult.totalAttempts,
-        retry_history: retryResult.retryHistory.length > 0 ? toSafeJson(retryResult.retryHistory) : null,
-        response_length: rawResponse?.length || 0,
-        has_thought: result.thought.length > 0,
-        has_content: result.content.length > 0,
-        skills_applied: skillsApplied.length > 0 ? toSafeJson(skillsApplied) : null,
-      },
-      traceId,
-      agentRole,
-    );
-  }
-
-  /** Constructs the combined prompt from blueprint, request, and optional skill context. */
-  /** Builds every prompt segment through the budget pipeline; the one shared place
-   *  `constructPrompt` and `previewPrompt` both assemble from, so they can't diverge. */
-  private defaultPromptBudget(modelId: string): IPromptBudget {
-    return {
-      model: modelId,
-      totalBudgetTokens: Number.MAX_SAFE_INTEGER,
-      safetyBufferTokens: 0,
-      sections: {
-        system: Number.MAX_SAFE_INTEGER,
-        plan: Number.MAX_SAFE_INTEGER,
-        portalKnowledge: Number.MAX_SAFE_INTEGER,
-        memory: Number.MAX_SAFE_INTEGER,
-        skills: Number.MAX_SAFE_INTEGER,
-        loopHistory: Number.MAX_SAFE_INTEGER,
-      },
-    };
-  }
-
-  /** Builds every segment except adaptive mode's knowledge entry, which the caller sizes
-   *  separately (needs a preliminary budget pass) and appends itself. */
-  private async buildBaseEntries(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    inclusionMode: string,
-    skillContext?: Opt<string, Reason.OptionalContext>,
-    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-  ): Promise<{ entries: SegmentEntry[]; directoryListingEntryIndex: number }> {
-    const k = ContextSegmentKindSchema.enum;
-    const entries: SegmentEntry[] = [];
-
-    if (blueprint.systemPrompt.trim()) {
-      entries.push({ content: blueprint.systemPrompt, kind: k.system, priority: 100, nonCompactable: true });
-    }
-    // Critical skills (W16) — protected, non-droppable segment (same tier as the
-    // schema/acceptance-criteria instructions) so the contract + hard constraints
-    // survive budget pressure. Ordinary skills stay droppable below.
-    if (criticalSkillContext?.trim()) {
-      entries.push({ content: criticalSkillContext, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
-    }
-    if (skillContext?.trim()) {
-      entries.push({ content: skillContext, kind: k.skills, priority: 50, nonCompactable: false });
-    }
-    const schemaInstructions = request.flowOutputKind === "branch-json"
-      ? FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION
-      : this.planAdapter.getSchemaInstructions();
-    entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
-
-    let directoryListingEntryIndex = -1;
-    const portalContext = request.context?.[PORTAL_CONTEXT_KEY];
-    if (typeof portalContext === "string" && portalContext.trim()) {
-      directoryListingEntryIndex = entries.length;
-      entries.push({ content: portalContext, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
-    }
-
-    if (inclusionMode !== PortalKnowledgeInclusion.ADAPTIVE || !request.portalKnowledgeSnapshot) {
-      const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
-      if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
-        entries.push({
-          content: await this.capPortalKnowledge(portalKnowledge),
-          kind: k.portal_knowledge,
-          priority: 60,
-          nonCompactable: false,
-        });
-      }
-    }
-    const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
-    if (typeof memoryContext === "string" && memoryContext.trim()) {
-      entries.push({ content: memoryContext, kind: k.reflection, priority: 40, nonCompactable: false });
-    }
-    if (request.userPrompt.trim()) {
-      // Skills render under their own "### HEADING" markers; a markdown heading here would
-      // be outranked by a request body's own "#"/"##" headings, so use an hr-delimited
-      // block instead so the task boundary stays unambiguous either way.
-      const labeledRequest = `---\nYOUR TASK — this is the actual task to complete now:\n---\n\n${request.userPrompt}`;
-      entries.push({ content: labeledRequest, kind: k.request, priority: 75, nonCompactable: true });
-    }
-
-    return { entries, directoryListingEntryIndex };
-  }
-
-  private async assemblePromptSegments(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    skillContext?: Opt<string, Reason.OptionalContext>,
-    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-    opts?: Opt<{ journal?: boolean }, Reason.OptionalContext>,
-  ): Promise<{ allSegments: IContextSegment[]; includedSegments: IContextSegment[]; budget: IPromptBudget }> {
-    const k = ContextSegmentKindSchema.enum;
-    const portalKnowledgeConfig = this.config?.context?.config.get().portal_knowledge;
-    const inclusionMode = portalKnowledgeConfig?.inclusion ?? "summary";
-    const { entries, directoryListingEntryIndex } = await this.buildBaseEntries(
-      blueprint,
-      request,
-      inclusionMode,
-      skillContext,
-      criticalSkillContext,
-    );
-
-    const tokenizer = this.config?.tokenizer;
-    const modelId = this.selectedModelId();
-    const toSegments = async (list: SegmentEntry[]): Promise<IContextSegment[]> =>
-      await Promise.all(
-        list.map(async (e, i) => ({
-          segmentId: `prompt-part-${i}`,
-          content: e.content,
-          kind: e.kind,
-          priority: e.priority,
-          tokenEstimate: await tokenizer?.countTokens(e.content, modelId) ??
-            Math.ceil(e.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
-          metadata: { nonCompactable: e.nonCompactable },
-        })),
-      );
-
-    const adaptive = await this.maybeAddAdaptiveKnowledge(
-      {
-        request,
-        entries,
-        directoryListingEntryIndex,
-        portalKnowledgeConfig,
-        tokenizer,
-        modelId,
-        toSegments,
-      },
-      inclusionMode,
-      k.portal_knowledge,
-    );
-
-    const allSegments = await toSegments(entries);
-    const allocationHints = this.buildAllocationHints(allSegments);
-    const planningGate = this.resolvePlanningGate(request, blueprint.agentRole || "unknown");
-    if (planningGate.engage) {
-      const planning = this.config!.context!.config.get().planning!;
-      allocationHints.loopHistoryUsedTokens += (planning.max_tool_rounds - 1) * planning.max_tool_calls_per_round *
-        (planning.max_tool_result_tokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
-    }
-    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ??
-      this.defaultPromptBudget(modelId);
-
-    const manager = this.config?.contextBudgetManager;
-    const includedSegments = manager
-      ? (await manager.prepare({
-        traceId: request.traceId ?? "unknown",
-        stepId: "agent-runner",
-        model: modelId,
-        promptBudget: budget,
-        segments: allSegments,
-      })).segments
-      : allSegments;
-
-    this.journalSelection(adaptive.payload, includedSegments, adaptive.index, request, opts);
-
-    return { allSegments, includedSegments, budget };
-  }
-
-  /** Adds adaptive mode's knowledge entry to the entries, returning its payload and index. */
-  private async maybeAddAdaptiveKnowledge(
-    args: Omit<Parameters<AgentRunner["buildAdaptiveKnowledgeEntry"]>[0], "tokenizer"> & {
-      tokenizer: Opt<ITokenizer, Reason.OptionalContext>;
-    },
-    inclusionMode: string,
-    kind: IContextSegment["kind"],
-  ): Promise<{ payload: IPortalKnowledgeSelectionAppliedPayload | undefined; index: number }> {
-    if (
-      inclusionMode !== PortalKnowledgeInclusion.ADAPTIVE || !args.request.portalKnowledgeSnapshot || !args.tokenizer
-    ) {
-      return { payload: undefined, index: -1 };
-    }
-    const adaptive = await this.buildAdaptiveKnowledgeEntry({ ...args, tokenizer: args.tokenizer });
-    if (!adaptive) return { payload: undefined, index: -1 };
-    const index = args.entries.length;
-    args.entries.push({ content: adaptive.content, kind, priority: 60, nonCompactable: false });
-    return { payload: adaptive.payload, index };
-  }
-
-  /** Journals the applied adaptive selection, with its included token count. */
-  private journalSelection(
-    payload: Opt<IPortalKnowledgeSelectionAppliedPayload, Reason.OptionalContext>,
-    includedSegments: readonly IContextSegment[],
-    adaptiveEntryIndex: number,
-    request: IParsedRequest,
-    opts: Opt<{ journal?: boolean }, Reason.OptionalContext>,
-  ): void {
-    if (!payload) return;
-    const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
-    payload.includedTokens = includedById.get(`prompt-part-${adaptiveEntryIndex}`)?.tokenEstimate ?? 0;
-    if (opts?.journal === false) return;
-    this.logActivity(
-      ACTIVITY_ACTOR_AGENT,
-      DomainEventType.PortalKnowledgeSelectionApplied,
-      request.requestId ?? null,
-      { ...payload },
-      request.traceId,
-    );
-  }
-
-  /** Sizes and renders adaptive mode's knowledge entry: a preliminary allocation (without
-   *  this entry) yields the shared `portalKnowledge` section budget, then
-   *  `buildAdaptivePortalKnowledge` fills whatever remains after the directory listing. */
-  private async buildAdaptiveKnowledgeEntry(args: {
-    request: IParsedRequest;
-    entries: SegmentEntry[];
-    directoryListingEntryIndex: number;
-    portalKnowledgeConfig: { max_tokens?: number; core_max_tokens?: number; relevant_max_entries?: number } | undefined;
-    tokenizer: ITokenizer;
-    modelId: string;
-    toSegments: (list: SegmentEntry[]) => Promise<IContextSegment[]>;
-  }): Promise<{ content: string; payload: IPortalKnowledgeSelectionAppliedPayload } | undefined> {
-    const { request, entries, directoryListingEntryIndex, portalKnowledgeConfig, tokenizer, modelId, toSegments } =
-      args;
-    const preliminarySegments = await toSegments(entries);
-    const preliminaryHints = this.buildAllocationHints(preliminarySegments);
-    const preliminaryBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, preliminaryHints) ??
-      this.defaultPromptBudget(modelId);
-    const directoryListingTokens = directoryListingEntryIndex >= 0
-      ? preliminarySegments[directoryListingEntryIndex].tokenEstimate
-      : 0;
-    const maxTokens = portalKnowledgeConfig?.max_tokens ?? DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS;
-    const coreMaxTokens = portalKnowledgeConfig?.core_max_tokens ?? DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS;
-    const relevantMaxEntries = portalKnowledgeConfig?.relevant_max_entries ??
-      DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES;
-    const availableTokens = Math.max(
-      0,
-      Math.min(maxTokens, preliminaryBudget.sections.portalKnowledge - directoryListingTokens),
-    );
-    if (availableTokens === 0) return undefined;
-
-    const signals: IPortalKnowledgeRequestSignals = {
-      userPrompt: request.userPrompt,
-      filePaths: request.filePaths,
-      taskType: request.taskType,
-      tags: request.tags,
-    };
-    // Non-null: caller only invokes this when request.portalKnowledgeSnapshot is set.
-    const result = await buildAdaptivePortalKnowledge(request.portalKnowledgeSnapshot!, signals, {
-      tokenizer,
-      modelId,
-      availableTokens,
-      coreMaxTokens,
-      relevantMaxEntries,
-    });
-    if (!result.content.trim()) return undefined;
-
-    return {
-      content: result.content,
-      payload: {
-        inclusion: PortalKnowledgeInclusion.ADAPTIVE,
-        availableTokens,
-        coreTokens: await tokenizer.countTokens(result.core, modelId),
-        selectedEntryIds: result.relevant.map((entry) => entry.id),
-        selectedTokens: result.budgetUsedTokens,
-        includedTokens: result.budgetUsedTokens,
-      },
-    };
-  }
-
-  private async constructPrompt(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    skillContext?: Opt<string, Reason.OptionalContext>,
-    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-  ): Promise<{ prompt: string; budget: IPromptBudget }> {
-    const { includedSegments, budget } = await this.assemblePromptSegments(
-      blueprint,
-      request,
-      skillContext,
-      criticalSkillContext,
-    );
-    return { prompt: includedSegments.map((s) => s.content).join("\n\n"), budget };
-  }
-
-  /** Hard token cap on `portal_knowledge` at assembly (a direct-set block bypasses
-   *  `ContextBudgetManager` under an infinite/unset budget); keeps whole lines and uses the
-   *  real tokenizer to guarantee the kept prefix's estimate fits the cap. */
-  private async capPortalKnowledge(content: string): Promise<string> {
-    const maxTokens = this.config?.context?.config.get().portal_knowledge?.max_tokens ??
-      DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS;
-    const tokenizer = this.config?.tokenizer;
-    const estimate = async (text: string): Promise<number> =>
-      await tokenizer?.countTokens(text, this.selectedModelId()) ??
-        Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
-
-    if (await estimate(content) <= maxTokens) return content;
-
-    const lines = content.split("\n");
-    const kept: string[] = [];
-    for (const line of lines) {
-      const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
-      const candidateTokens = await estimate(candidate);
-      if (candidateTokens > maxTokens) break;
-      kept.push(line);
-    }
-    if (kept.length === 0) {
-      return await tokenBoundedPrefix(content, maxTokens, estimate);
-    }
-    return kept.join("\n");
-  }
-
-  /** Non-mutating preview of `constructPrompt`'s assembly — a per-segment breakdown, not
-   *  a joined string, and never a real LLM call. Runs its own skill matching (like `run()`). */
+  /** Non-mutating preview of the prompt assembly, never a real LLM call. */
   async previewPrompt(blueprint: IBlueprint, request: IParsedRequest): Promise<IPromptPreview> {
-    const agentRole = blueprint.agentRole || "unknown";
-    const { skillIds, skillsContext } = await this.skills.matchAndApplySkills(blueprint, request, agentRole);
-    const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
-    const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
-    const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
-
-    const { allSegments, includedSegments, budget } = await this.assemblePromptSegments(
-      blueprint,
-      request,
-      skillContextString,
-      criticalSkillContext,
-      { journal: false },
-    );
-
-    const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
-    const encoder = new TextEncoder();
-    const segments: IPromptPreviewSegment[] = allSegments.map((segment) => {
-      const resulting = includedById.get(segment.segmentId);
-      const resultingTokens = resulting?.tokenEstimate ?? 0;
-      const resultingBytes = resulting ? encoder.encode(resulting.content).length : 0;
-      return {
-        segmentId: segment.segmentId,
-        kind: segment.kind,
-        priority: segment.priority,
-        originalTokenEstimate: segment.tokenEstimate,
-        resultingTokenEstimate: resultingTokens,
-        tokenEstimate: resultingTokens,
-        originalByteLength: encoder.encode(segment.content).length,
-        resultingByteLength: resultingBytes,
-        byteLength: resultingBytes,
-        nonCompactable: segment.metadata.nonCompactable ?? false,
-        included: resulting !== undefined,
-      };
-    });
-
-    // A dropped segment is absent from includedContentById; a trimmed segment (same
-    // section's only occupant, still present but shortened) has different content — both
-    // count as real compaction, unlike a bare segment-count comparison would catch.
-    const compactionTriggered = allSegments.some((segment) =>
-      includedById.get(segment.segmentId)?.content !== segment.content
-    );
-
-    const selectedModel = this.selectedModelIdentity();
-    const totalTokenEstimate = segments.reduce((sum, segment) => sum + segment.resultingTokenEstimate, 0);
-    const modelInfo = await readProviderModelInfo(
-      ProviderRegistry.getMetadataForInstance(selectedModel.provider),
-      selectedModel.model,
-    );
-    const estimatedCostUsd = computeRegistryPredictedCost(selectedModel.provider, selectedModel.model, {
-      promptTokens: totalTokenEstimate,
-      completionTokens: 0,
-    }, modelInfo);
-
-    return {
-      segments,
-      totalTokenEstimate,
-      budgetTotalTokens: budget.totalBudgetTokens,
-      compactionTriggered,
-      matchedSkillIds: skillIds,
-      ...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
-    };
+    return await this.prompts.previewPrompt(blueprint, request);
   }
 
   private selectedModelIdentity(): ISelectedModelIdentity {
@@ -1439,71 +674,6 @@ export class AgentRunner implements IAgentRunner {
       provider: DEFAULT_MODEL_FALLBACK,
       model: DEFAULT_MODEL_FALLBACK,
     };
-  }
-
-  private selectedModelId(): string {
-    const selected = this.selectedModelIdentity();
-    return `${selected.provider}:${selected.model}`;
-  }
-
-  private buildAllocationHints(segments: IContextSegment[]): Record<TAllocationHintKey, number> {
-    const hints = {
-      systemUsedTokens: 0,
-      planUsedTokens: 0,
-      portalKnowledgeUsedTokens: 0,
-      memoryUsedTokens: 0,
-      skillsUsedTokens: 0,
-      loopHistoryUsedTokens: 0,
-    };
-    for (const segment of segments) {
-      switch (segment.kind) {
-        case ContextSegmentKindSchema.enum.system:
-          hints.systemUsedTokens += segment.tokenEstimate;
-          break;
-        case ContextSegmentKindSchema.enum.portal_knowledge:
-          hints.portalKnowledgeUsedTokens += segment.tokenEstimate;
-          break;
-        case ContextSegmentKindSchema.enum.reflection:
-          hints.memoryUsedTokens += segment.tokenEstimate;
-          break;
-        case ContextSegmentKindSchema.enum.skills:
-          hints.skillsUsedTokens += segment.tokenEstimate;
-          break;
-        case ContextSegmentKindSchema.enum.tool_result:
-        case ContextSegmentKindSchema.enum.summary:
-          hints.loopHistoryUsedTokens += segment.tokenEstimate;
-          break;
-        default:
-          hints.planUsedTokens += segment.tokenEstimate;
-      }
-    }
-    return hints;
-  }
-
-  /** A truncated or refused answer is journaled as a warning, so the parse failure that follows is attributable to it. */
-  private warnOnStopReason(
-    generateResult: Opt<IGenerateResult, Reason.OptionalInput>,
-    rawResponse: string,
-    agentRole: string,
-    requestId: Opt<string, Reason.TraceAbsent>,
-    traceId: Opt<string, Reason.TraceAbsent>,
-  ): void {
-    if (!this.logger || !generateResult) return;
-    if (generateResult.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS) {
-      void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
-        agent_role: agentRole,
-        stop_reason: generateResult.stop_reason,
-        response_length: rawResponse.length,
-        completion_tokens: generateResult.usage?.completionTokens ?? null,
-      }, traceId);
-    }
-    if (generateResult.stop_reason === RESPONSE_STOP_REASON_REFUSAL) {
-      void this.logger.warn(AGENT_EVENT_RESPONSE_REFUSED, requestId || null, {
-        agent_role: agentRole,
-        stop_reason: generateResult.stop_reason,
-        response_length: rawResponse.length,
-      }, traceId);
-    }
   }
 
   /** Parses the LLM response to extract <thought> and <content> tags via OutputValidator;
