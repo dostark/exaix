@@ -450,7 +450,8 @@
         "deslop"
       ],
       "options": {
-        "max": 60
+        "max": 100,
+        "softMax": 80
       },
       "limits": "Function length in source lines, excluding blank and comment-only lines."
     },

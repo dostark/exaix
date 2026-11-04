@@ -56,7 +56,8 @@ Find a rule by topic:
 
 ## Complexity Limits {#complexity-limits}
 
-Exaix gates every function at 15 cyclomatic complexity, 15 cognitive complexity and 60 function lines. The
+Exaix gates every function at 15 cyclomatic complexity, 15 cognitive complexity and 100 function lines, with a soft
+limit of 80 lines that `unslop health` reports as advice. The
 limits live in `unslop.config.json` and the compiled catalog under `packages/lint-policy`. The editor lint keeps
 reporting them as diagnostics. The ordinary `deno task lint` excludes the three rules with `--rules-exclude`, so a
 function above a limit does not fail it. The dedicated `deno task check:complexity` applies the limits: it runs three
@@ -64,6 +65,9 @@ per-package ceiling invocations from the descriptor root, accepts a scan only wh
 evaluated the rule, and fails on a count above the committed ceiling. A ceiling is a ratchet: a row moves down to a
 measured count and never up. The configured limits 15, 15 and 60 are separate from the refactoring tranche limits
 of 20 cyclomatic and 30 cognitive complexity, which only bound the functions that the tranches rewrote.
+The line limit is looser than the usual 60 on purpose: a flat sequence of up to 100 lines costs an agent no more context
+than the same lines split into helpers, and the split adds text. The reasoning is in the
+[style guide](../unslop-ts/docs/style_guide.md#agent-context).
 
 Exaix gates god classes with `deno task check:god-objects`. It runs the `exaix/max-class-size` rule with the `god-class`
 strategy (WMC at least 47, TCC below one third and ATFD above 5) over `packages`, `apps`, `tests`, `scripts`, `exaix-team` and

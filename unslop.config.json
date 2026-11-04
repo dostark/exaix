@@ -246,7 +246,8 @@
     "exaix/max-function-lines": {
       "level": "error",
       "options": {
-        "max": 60
+        "max": 100,
+        "softMax": 80
       },
       "scope": "prod",
       "include": [
