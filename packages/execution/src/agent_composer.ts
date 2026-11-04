@@ -24,31 +24,18 @@ import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
 import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/skills";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, canonicalizeToolName, LogLevel, RunnerKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { canonicalizeToolName, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IFixedModelClient, IModelCallOptions } from "@exaix/schemas";
-import {
-  AGENT_COMPOSER_ID,
-  AGENT_EVENT_EXECUTION_COMPLETED,
-  AGENT_EVENT_EXECUTION_FAILED,
-  AGENT_EVENT_EXECUTION_STARTED,
-  AGENT_EVENT_SECURITY_VIOLATION,
-  type IAllocationHints,
-} from "@exaix/core";
-import {
-  DEFAULT_MCP_AGENT_ROLE_ID,
-  SESSION_BIN_CLAUDE_CODE,
-  SESSION_BIN_CODEX,
-  SESSION_BIN_OPENCODE,
-} from "@exaix/core/types";
+import { AGENT_EVENT_SECURITY_VIOLATION, type IAllocationHints } from "@exaix/core";
+import { SESSION_BIN_CLAUDE_CODE, SESSION_BIN_CODEX, SESSION_BIN_OPENCODE } from "@exaix/core/types";
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
-  IChangesetCostSource,
   IChangesetResult,
   IExecutionContext,
 } from "@exaix/schemas/agent_composer.ts";
@@ -76,19 +63,10 @@ import type {
   SessionTool,
   ThinkingDeclaration,
 } from "@exaix/schemas";
-import {
-  COMPLEXITY_SOURCE_ANALYSIS,
-  COMPLEXITY_SOURCE_DEFAULT,
-  EFFORT_MAX_TOKENS,
-  EffortResolver,
-  ProviderRegistry,
-  readProviderModelInfo,
-  resolveProviderType,
-  taskComplexityFromAnalysis,
-} from "@exaix/ai";
+import { EFFORT_MAX_TOKENS, EffortResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
-import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
-import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
+
+import type { IProjectedCallOptions } from "@exaix/ai";
 import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
 import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -100,6 +78,8 @@ import { PromptBuilder } from "./prompt_builder.ts";
 import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
 import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
+import { AgentComposerAudit, type IComposerUsage } from "./agent_composer_audit.ts";
+import { AgentComposerEffort } from "./agent_composer_effort.ts";
 import { GitAuditService } from "./git_audit_service.ts";
 import { HistoryManager } from "./history_manager.ts";
 import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
@@ -219,21 +199,8 @@ export class AgentExecutionError extends Error {
   }
 }
 
-/** Orchestrator and strategy dispatcher for agent execution — delegates blueprint
- *  loading, prompt building, budget/context, git audit, output parsing, and loop history
- *  to the injected services named in the module header. */
-/** The real usage block one strategy may report. */
-type IComposerUsage = {
-  tokens: number;
-  cost_usd_estimate: number | null;
-  prompt_tokens?: number;
-  completion_tokens?: number;
-  cache_read_tokens?: number;
-  cache_creation_tokens?: number;
-  reasoning_tokens?: number;
-  cost_source?: IChangesetCostSource;
-};
-
+/** Orchestrator and strategy dispatcher for agent execution. It delegates blueprint loading, prompt building,
+ *  budgets, git audit, output parsing and loop history to the injected services. */
 export class AgentComposer {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
@@ -253,6 +220,8 @@ export class AgentComposer {
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
   private gitAuditService: GitAuditService;
+  private readonly audit: AgentComposerAudit;
+  private readonly effort: AgentComposerEffort;
   private outputParser: OutputParser;
   private historyManager: HistoryManager;
   private reActAdapter: ReActLoopAdapter;
@@ -320,6 +289,17 @@ export class AgentComposer {
       tokenizer: undefined,
       contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, this.logger),
       snapshotStore: undefined,
+    });
+    this.audit = new AgentComposerAudit({
+      logger: this.logger,
+      estimateTokens: (text) => this.ctx.estimateTokensSync(text),
+    });
+    this.effort = new AgentComposerEffort({
+      config: this.config,
+      logger: this.logger,
+      effortResolver: this.effortResolver,
+      provider: this.provider,
+      options: this.options,
     });
     this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
     this.gitAuditService = deps.gitAuditService ?? new GitAuditService(this.logger);
@@ -545,75 +525,6 @@ export class AgentComposer {
     const result = await this.blueprintService.loadBlueprint(rawAgentName, traceId);
     this._resolvedCallOptions = result.resolvedCallOptions;
     return result.blueprint;
-  }
-
-  /** Resolves the execution call's declaration-time effort and thinking. The request declaration wins over the blueprint's.
-   *  TaskComplexity comes from the persisted request_analysis. */
-  private async resolveStepEffort(
-    blueprint: IAgentFileBlueprint,
-    options: IAgentExecutionOptions,
-  ): Promise<IEffortResolution> {
-    const providerType = resolveProviderType(blueprint.provider);
-    const metadata = providerType !== undefined ? ProviderRegistry.getProviderMetadata(providerType) : undefined;
-    const modelInfo = await readProviderModelInfo(metadata, blueprint.model);
-    const analysis = options.request_analysis as IRequestAnalysis | undefined;
-    return this.effortResolver.resolve(
-      {
-        request: this.options?.requestDeclaration,
-        role: { effort: blueprint.effort, thinking: blueprint.thinking },
-        flowStep: { effort: options.effort, thinking: options.thinking },
-      },
-      {
-        taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),
-        complexitySource: analysis ? COMPLEXITY_SOURCE_ANALYSIS : COMPLEXITY_SOURCE_DEFAULT,
-        modelSize: blueprint.modelSize,
-        providerType,
-        model: blueprint.model,
-        providerSupportsThinking: modelInfo?.supportsThinking ?? this.provider?.callCapabilities?.supportsThinking ??
-          metadata?.supportsThinking === true,
-        anthropicThinkingDefault: this.config.ai_anthropic?.thinking_default,
-        skillFloors: this.options?.matchedSkillFloors ?? [],
-        agentRole: options.agent_role,
-      },
-    );
-  }
-
-  /** Journals the execution path's effort resolution as agent.effort_resolved, joinable by the plan's traceId.
-   *  buildAgentEffortResolvedPayload owns the payload shape. */
-  private journalStepEffortResolution(
-    resolution: IEffortResolution,
-    blueprint: IAgentFileBlueprint,
-    options: IAgentExecutionOptions,
-    traceId: string,
-    projection?: Opt<IProjectedCallOptions, Reason.OptionalContext>,
-  ): void {
-    const providerType = resolveProviderType(blueprint.provider);
-    const payload = buildAgentEffortResolvedPayload({
-      path: options.strategy ? "flow_step" : "execution",
-      resolution,
-      agentRole: options.agent_role,
-      declared: {
-        ...(this.options?.requestDeclaration?.effort !== undefined ||
-            this.options?.requestDeclaration?.thinking !== undefined
-          ? { request: this.options.requestDeclaration }
-          : {}),
-        ...(options.effort !== undefined || options.thinking !== undefined
-          ? { flow_step: { effort: options.effort, thinking: options.thinking } }
-          : {}),
-        ...(blueprint.effort !== undefined || blueprint.thinking !== undefined
-          ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
-          : {}),
-      },
-      providerType,
-      model: blueprint.model,
-      projection,
-    });
-    void this.logger.info(
-      DomainEventType.AgentEffortResolved,
-      options.agent_role ?? "",
-      payload,
-      traceId,
-    );
   }
 
   /** Rebuilds _resolvedCallOptions from the resolution. The final thinking and effort replace the ModelResolver values.
@@ -851,14 +762,8 @@ export class AgentComposer {
     pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
     strategyName: ExecutionStrategyName,
   ): Promise<void> {
-    const effortResolution = await this.resolveStepEffort(blueprint, options);
-    const projection = projectResolvedCallOptions(effortResolution, {
-      request: this.options?.requestDeclaration,
-      role: { effort: blueprint.effort, thinking: blueprint.thinking },
-      flowStep: { effort: options.effort, thinking: options.thinking },
-    }, this.provider?.callCapabilities);
-    this.applyEffortResolution(effortResolution, projection);
-    this.journalStepEffortResolution(effortResolution, blueprint, options, traceId, projection);
+    const { resolution, projection } = await this.effort.resolve(blueprint, options, traceId);
+    this.applyEffortResolution(resolution, projection);
     await this.ctx.allocateBudget(
       this.resolveModelId(blueprint),
       options.request_analysis as IRequestAnalysis | undefined,
@@ -999,110 +904,6 @@ export class AgentComposer {
   }
 
   /**
-   * Validate review result structure
-   */
-  /**
-   * Log execution start to IActivity Journal
-   */
-  async logExecutionStart(
-    traceId: string,
-    agentRole: string,
-    portal: string,
-  ): Promise<void> {
-    await this.logger.log({
-      action: AGENT_EVENT_EXECUTION_STARTED,
-      target: portal,
-      actor: DEFAULT_MCP_AGENT_ROLE_ID,
-      actorType: ActorType.SERVICE,
-      traceId: traceId,
-      runnerId: AGENT_COMPOSER_ID,
-      runnerKind: RunnerKind.AGENT_COMPOSER,
-      agentRole: agentRole,
-      payload: {
-        portal,
-        started_at: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Log execution completion to IActivity Journal
-   */
-  async logExecutionComplete(
-    traceId: string,
-    agentRole: string,
-    result: IChangesetResult,
-    usage?: Opt<IComposerUsage, Reason.OptionalInput>,
-    /** Real per-step wall-clock duration around executeStep, distinct from the
-     *  strategy-internal execution_time_ms already on `result`. */
-    durationMs?: Opt<number, Reason.OptionalInput>,
-  ): Promise<void> {
-    const usagePayload = usage ?? {
-      tokens: Math.max(1, this.ctx.estimateTokensSync(result.description)),
-      cost_usd_estimate: 0,
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      // No strategy reported usage at all — consistent with "no real figure was ever
-      // reported", the fallback defaults cost_source to predicted alongside its
-      // existing $0/token-estimate defaults.
-      cost_source: "predicted" as const,
-    };
-
-    await this.logger.log({
-      action: AGENT_EVENT_EXECUTION_COMPLETED,
-      target: result.branch,
-      actor: DEFAULT_MCP_AGENT_ROLE_ID,
-      actorType: ActorType.SERVICE,
-      traceId: traceId,
-      runnerId: AGENT_COMPOSER_ID,
-      runnerKind: RunnerKind.AGENT_COMPOSER,
-      agentRole: agentRole,
-      promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
-      completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
-      costUsd: usagePayload.cost_usd_estimate,
-      cacheReadTokens: usagePayload.cache_read_tokens,
-      cacheCreationTokens: usagePayload.cache_creation_tokens,
-      payload: {
-        branch: result.branch,
-        commit_sha: result.commit_sha,
-        files_changed: result.files_changed.length,
-        tool_calls: result.tool_calls,
-        execution_time_ms: result.execution_time_ms,
-        duration_ms: durationMs,
-        usage: usagePayload,
-        completed_at: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Log execution error to IActivity Journal
-   */
-  async logExecutionError(
-    traceId: string,
-    agentRole: string,
-    error: { type: string; message: string; trace_id?: string; providerReasonCode?: string },
-  ): Promise<void> {
-    await this.logger.log({
-      action: AGENT_EVENT_EXECUTION_FAILED,
-      target: agentRole,
-      actor: DEFAULT_MCP_AGENT_ROLE_ID,
-      actorType: ActorType.SERVICE,
-      traceId: traceId,
-      runnerId: AGENT_COMPOSER_ID,
-      runnerKind: RunnerKind.AGENT_COMPOSER,
-      agentRole: agentRole,
-      level: LogLevel.ERROR,
-      payload: {
-        error_type: error.type,
-        error_message: error.message,
-        ...(error.providerReasonCode ? { providerReasonCode: error.providerReasonCode } : {}),
-        failed_at: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
    * Log LLM generation metrics to IActivity Journal
    */
   public parseAgentResponse(
@@ -1116,6 +917,31 @@ export class AgentComposer {
   validateReviewResult(result: JSONValue): IChangesetResult {
     return this.outputParser.validateReviewResult(result);
   }
+  /** Log execution start to IActivity Journal */
+  logExecutionStart(traceId: string, agentRole: string, portal: string): Promise<void> {
+    return this.audit.logExecutionStart(traceId, agentRole, portal);
+  }
+
+  /** Log execution completion to IActivity Journal */
+  logExecutionComplete(
+    traceId: string,
+    agentRole: string,
+    result: IChangesetResult,
+    usage?: Opt<IComposerUsage, Reason.OptionalInput>,
+    durationMs?: Opt<number, Reason.OptionalInput>,
+  ): Promise<void> {
+    return this.audit.logExecutionComplete(traceId, agentRole, result, usage, durationMs);
+  }
+
+  /** Log execution error to IActivity Journal */
+  logExecutionError(
+    traceId: string,
+    agentRole: string,
+    error: { type: string; message: string; trace_id?: string; providerReasonCode?: string },
+  ): Promise<void> {
+    return this.audit.logExecutionError(traceId, agentRole, error);
+  }
+
   logGeneration(
     traceId: string,
     agentRole: string,

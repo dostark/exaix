@@ -7,29 +7,43 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import {
-  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-  DEFAULT_GIT_DIFF_TIMEOUT_MS,
-  DEFAULT_GIT_LOG_TIMEOUT_MS,
-  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
-} from "@exaix/git";
-import { join } from "@std/path";
+import { DEFAULT_GIT_DIFF_TIMEOUT_MS, DEFAULT_GIT_LOG_TIMEOUT_MS, DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
+
 import { AgentExecutionErrorType, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
-import {
-  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-  DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-  DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
-  GIT_EMPTY_SHA,
-} from "@exaix/git";
+import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_EMPTY_SHA } from "@exaix/git";
 import { GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GIT_FLAG_UNTRACKED_FILES_ALL } from "@exaix/git/constants.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { AgentExecutionError } from "@exaix/execution";
 
+import { validatePortalFilePath } from "./portal_file_path.ts";
+import { UnauthorizedChangeReverter } from "./unauthorized_change_reverter.ts";
+
 /** All git operations use SafeSubprocess with timeout guards. */
 export class GitAuditService {
-  constructor(private logger: IEventLogger) {}
+  private readonly reverter: UnauthorizedChangeReverter;
+
+  constructor(private logger: IEventLogger) {
+    this.reverter = new UnauthorizedChangeReverter(logger);
+  }
+
+  /** Returns the validated path, or null when it could allow path traversal or injection. */
+  validateFilePath(filePath: string, portalPath: string): string | null {
+    return validatePortalFilePath(filePath, portalPath);
+  }
+
+  /** Reverts unauthorized file changes using git restore and clean. */
+  revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
+    return this.reverter.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
+  }
+
+  /** Performs the git status check and the file reversion in one locked operation. */
+  auditAndRevertChanges(
+    portalPath: string,
+    authorizedFiles: string[],
+  ): Promise<{ reverted: string[]; failed: string[] }> {
+    return this.reverter.auditAndRevertChanges(portalPath, authorizedFiles);
+  }
 
   /** Returns file paths that were changed without authorization. */
   async auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
@@ -98,240 +112,6 @@ export class GitAuditService {
     } catch {
       return GIT_EMPTY_SHA;
     }
-  }
-
-  /** Prevents path traversal and injection; returns the validated path or null. */
-  validateFilePath(filePath: string, portalPath: string): string | null {
-    const normalizedPath = this.normalizeAndPreValidateFilePath(filePath);
-    if (!normalizedPath) return null;
-
-    const combinedPath = join(portalPath, normalizedPath);
-    try {
-      const resolved = Deno.realPathSync(combinedPath);
-      if (!resolved.startsWith(portalPath)) {
-        return null;
-      }
-      return normalizedPath;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Normalize and pre-validate a file path for security.
-   */
-  private normalizeAndPreValidateFilePath(filePath: string): string | null {
-    if (filePath.startsWith("/")) return null;
-    if (filePath.startsWith("../")) return null;
-    if (filePath.includes("..")) return null;
-
-    const normalizedPath = filePath.replace(/\\/g, "/");
-    if (normalizedPath.includes("..")) return null;
-
-    const decodedPath = decodeURIComponent(normalizedPath);
-    if (decodedPath !== normalizedPath) return null;
-
-    return normalizedPath;
-  }
-
-  /**
-   * Revert unauthorized file changes using git restore/clean.
-   */
-  async revertUnauthorizedChanges(
-    portalPath: string,
-    unauthorizedFiles: string[],
-  ): Promise<void> {
-    if (unauthorizedFiles.length === 0) return;
-
-    const validatedFiles = unauthorizedFiles
-      .map((file) => this.validateFilePath(file, portalPath))
-      .filter((file): file is string => file !== null);
-
-    if (validatedFiles.length === 0) {
-      await this.logger.log({
-        action: DomainEventType.SecurityFileValidationFilteredAll,
-        target: portalPath,
-        payload: {
-          original_count: unauthorizedFiles.length,
-          reason: "All files contained potentially malicious paths",
-        },
-      });
-      return;
-    }
-
-    const results = { successful: [] as string[], failed: [] as Array<{ file: string; error: string }> };
-    const chunks = this.chunkArray(validatedFiles, DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT);
-
-    for (const chunk of chunks) {
-      const promises = chunk.map(async (file) => {
-        try {
-          const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", file], {
-            cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-          });
-          if (lsResult.code === 0) {
-            const restoreResult = await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", file], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-            });
-            if (restoreResult.code === 0) {
-              results.successful.push(file);
-            } else {
-              results.failed.push({
-                file,
-                error: `git restore failed: ${restoreResult.stderr.trim() || "unknown error"}`,
-              });
-            }
-          } else {
-            const cleanResult = await SafeSubprocess.run("git", ["clean", "-f", file], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-            });
-            if (cleanResult.code === 0) {
-              results.successful.push(file);
-            } else {
-              results.failed.push({ file, error: `git clean failed: ${cleanResult.stderr.trim() || "unknown error"}` });
-            }
-          }
-        } catch (error) {
-          results.failed.push({ file, error: error instanceof Error ? error.message : String(error) });
-        }
-      });
-      await Promise.all(promises);
-    }
-
-    if (results.failed.length > 0) {
-      throw new AgentExecutionError(
-        `Failed to revert ${results.failed.length} file(s): ${results.failed.map((f) => f.file).join(", ")}`,
-      );
-    }
-  }
-
-  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-      chunks.push(array.slice(i, i + chunkSize));
-    }
-    return chunks;
-  }
-
-  /** Atomic — performs git status check and file reversion in a single locked operation
-   *  to prevent TOCTOU race conditions. */
-  async auditAndRevertChanges(
-    portalPath: string,
-    authorizedFiles: string[],
-  ): Promise<{ reverted: string[]; failed: string[] }> {
-    const lockFile = join(portalPath, ".exa-git-lock");
-    const lock = await this.acquireLock(lockFile);
-
-    try {
-      const result = await SafeSubprocess.run("git", [
-        "ls-files",
-        "--modified",
-        "--others",
-        "--deleted",
-        "--exclude-standard",
-        ".",
-      ], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
-      });
-
-      if (result.code !== 0) {
-        throw new Error(`Git audit failed: ${result.stderr}`);
-      }
-
-      const fileList = result.stdout;
-      if (!fileList) {
-        return { reverted: [], failed: [] };
-      }
-
-      const results = { reverted: [] as string[], failed: [] as string[] };
-      const _authorizedSet = new Set(authorizedFiles);
-
-      for (const line of fileList.split("\n")) {
-        const filename = line.trim();
-        if (!filename) continue;
-        if (filename === ".exa-git-lock") continue;
-
-        const validated = this.validateFilePath(filename, portalPath);
-        if (!validated) continue;
-
-        if (_authorizedSet.has(filename)) continue;
-
-        results.failed.push(filename);
-
-        try {
-          const stat = await Deno.lstat(join(portalPath, filename));
-          if (stat.isSymlink) {
-            await this.logger.error(DomainEventType.SecuritySymlinkDetected, portalPath, { filename });
-            continue;
-          }
-        } catch {
-          void 0;
-        }
-
-        try {
-          const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", validated], {
-            cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-          });
-
-          if (lsResult.code === 0) {
-            await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", validated], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-            });
-            results.reverted.push(filename);
-          } else {
-            await SafeSubprocess.run("git", ["clean", "-f", "--", validated], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-            });
-            results.reverted.push(filename);
-          }
-        } catch (error) {
-          console.error(`Failed to revert unauthorized change to ${filename}:`, error);
-        }
-      }
-
-      return results;
-    } finally {
-      await lock.release();
-    }
-  }
-
-  private async acquireLock(lockFile: string): Promise<{ release: () => Promise<void> }> {
-    const maxRetries = 10;
-    const retryDelay = 100;
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await Deno.open(lockFile, {
-          write: true,
-          create: true,
-          createNew: true,
-        });
-
-        return {
-          release: async () => {
-            try {
-              await Deno.remove(lockFile);
-            } catch {
-              void 0;
-            }
-          },
-        };
-      } catch (error) {
-        if (error instanceof Deno.errors.AlreadyExists) {
-          await new Promise((r) => setTimeout(r, retryDelay));
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    throw new Error("Failed to acquire git lock after maximum retries");
   }
 
   async getLatestCommitSha(portalPath: string): Promise<string> {
