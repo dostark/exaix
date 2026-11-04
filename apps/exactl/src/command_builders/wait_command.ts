@@ -11,6 +11,7 @@ import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
   CLI_CMD_LIST,
+  CLI_OPTION_REASON,
   CLI_OPTION_WAIT_MESSAGE,
   CLI_OPTION_WAIT_MESSAGE_DESC,
   CLI_OPTION_WAIT_RESOLVED_BY,
@@ -144,4 +145,41 @@ function createWaitCommand(runtime: IExaCtlRuntime) {
 
 export function buildWaitCommand(runtime: IExaCtlRuntime): ReturnType<typeof createWaitCommand> {
   return createWaitCommand(runtime);
+}
+
+function createToolCommand(runtime: IExaCtlRuntime) {
+  const { toolCommands } = runtime;
+  return new Command()
+    .description("Manage pending tool confirmations")
+    .command(
+      "pending",
+      new Command()
+        .description("List pending tool confirmations")
+        .action(async () => {
+          await toolCommands.pending();
+        }),
+    )
+    .command(
+      "confirm <id:string>",
+      new Command()
+        .description("Approve a pending tool confirmation")
+        .action(async (_options, ...args: string[]) => {
+          const id = args[0];
+          await toolCommands.confirm(id);
+        }),
+    )
+    .command(
+      "deny <id:string>",
+      new Command()
+        .description("Deny a pending tool confirmation")
+        .option(CLI_OPTION_REASON, "Reason for denial", { default: "User declined" })
+        .action(async (options: { reason: string }, ...args: string[]) => {
+          const id = args[0];
+          await toolCommands.deny(id, options.reason as string);
+        }),
+    );
+}
+
+export function buildToolCommand(runtime: IExaCtlRuntime): ReturnType<typeof createToolCommand> {
+  return createToolCommand(runtime);
 }

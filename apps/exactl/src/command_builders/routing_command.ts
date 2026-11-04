@@ -83,3 +83,59 @@ function createRoutingCommand(runtime: IExaCtlRuntime) {
 export function buildRoutingCommand(runtime: IExaCtlRuntime): ReturnType<typeof createRoutingCommand> {
   return createRoutingCommand(runtime);
 }
+
+function createModelsCommand(runtime: IExaCtlRuntime) {
+  const { display, modelCommands } = runtime;
+  return new Command()
+    .description("Inspect the Solo model registry floor (models list/pricing)")
+    .command(
+      "list",
+      new Command()
+        .description("List registry models with provenance and verified_at staleness")
+        .option("--benchmark <benchmark:string>", "Show the advisory score column for a tracked benchmark (Team)")
+        .action(async (options) => {
+          try {
+            await modelCommands.listModels(options);
+          } catch (error) {
+            display.error("cli.error", "models list", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
+        }),
+    )
+    .command(
+      "pricing",
+      new Command()
+        .description("Show per-Mtok model prices with provenance")
+        .action(async () => {
+          try {
+            await modelCommands.showPricing();
+          } catch (error) {
+            display.error("cli.error", "models pricing", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
+        }),
+    )
+    .command(
+      "refresh",
+      new Command()
+        .description("Trigger a Team live-registry catalog refresh (Team + model_registry.enabled only)")
+        .action(async () => {
+          try {
+            await modelCommands.refreshModels();
+          } catch (error) {
+            display.error("cli.error", "models refresh", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
+        }),
+    );
+}
+
+export function buildModelsCommand(runtime: IExaCtlRuntime): ReturnType<typeof createModelsCommand> {
+  return createModelsCommand(runtime);
+}

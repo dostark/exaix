@@ -24,6 +24,8 @@ import type { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import type { IServiceContext } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { EvalCommands } from "./commands/eval_commands.ts";
+import type { ToolCommands } from "./commands/tool_commands.ts";
+import type { WatchCommand } from "./commands/watch.ts";
 
 export interface IExaCtlRuntime {
   readonly context: ICliApplicationContext;
@@ -47,4 +49,7 @@ export interface IExaCtlRuntime {
   readonly waitStateCommands: WaitStateCommands;
   readonly evalCommands: EvalCommands;
   readonly modelCommands: ModelCommands;
+  readonly watchCommandInstance: WatchCommand;
+  readonly toolCommands: ToolCommands;
+  readonly services: IServiceContext;
 }
