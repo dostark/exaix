@@ -17,7 +17,7 @@ import {
   type EvaluationResult,
   getCriteriaByNames,
 } from "@exaix/core/evaluation";
-import type { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_types.ts";
 import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import type {
   ICriteriaGeneratorService,

@@ -596,7 +596,7 @@ Deno.test("FlowRunner: zero recovery attempts finish with the original failure",
   const logger = new MockEventLogger();
   const agent = new MockAgentRunner();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger });
-  const result = await runner["retryStepAttempts"]({
+  const result = await runner["stepRecovery"]["retryStepAttempts"]({
     flowRunId: "flow-zero",
     step: flow.steps[0],
     flow,

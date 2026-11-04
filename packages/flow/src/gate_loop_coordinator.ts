@@ -8,7 +8,7 @@
  */
 import { FlowGateAction } from "@exaix/core";
 import type { IGateResult, Opt, Reason } from "@exaix/core/types";
-import type { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_types.ts";
 import {
   FLOW_GATE_EVALUATION_LIMIT_CODE,
   FlowControlError,

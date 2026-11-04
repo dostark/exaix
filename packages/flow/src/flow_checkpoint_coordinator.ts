@@ -26,7 +26,8 @@ import {
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowCheckpointService } from "./checkpoint_service.ts";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "./contracts/step_durability.ts";
-import { FlowExecutionError, type IFlowEventLogger, type IStepResult } from "./flow_runner.ts";
+import { FlowExecutionError } from "./flow_errors.ts";
+import type { IFlowEventLogger, IStepResult } from "./flow_types.ts";
 import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
 import { FlowControlStateStore } from "./flow_control_state_store.ts";
 import type { IBindingRunSnapshot } from "@exaix/schemas";

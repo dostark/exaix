@@ -10,7 +10,7 @@
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { encodeHex } from "@std/encoding/hex";
 import { FlowStepExecutionMode, FlowStepType, StepSideEffectClass } from "@exaix/core";
-import type { IFlowStepRequest } from "./flow_runner.ts";
+import type { IFlowStepRequest } from "./flow_types.ts";
 
 export class StepContentHasher {
   async computeFlowContentHash(flow: IFlow): Promise<string> {

@@ -7,9 +7,9 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
-import type { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_types.ts";
 import type { IFlowControlState } from "./contracts/flow_control_state.ts";
-import { resolveAggregateSources } from "./flow_runner.ts";
+import { resolveAggregateSources } from "./flow_step_prompts.ts";
 import { FlowInputSource, FlowStepSkipCode } from "@exaix/core";
 
 export function branchSkipReason(

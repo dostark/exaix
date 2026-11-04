@@ -14,7 +14,7 @@ import { appendToRequest, extractSection, mergeAsContext, passthrough, templateF
 import { jsonExtract } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_types.ts";
 
 type IFlowOutput = IFlow["output"];
 

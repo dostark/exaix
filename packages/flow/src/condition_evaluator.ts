@@ -7,7 +7,7 @@
  */
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import type { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_types.ts";
 import type { JSONValue } from "@exaix/core";
 import { evaluateExpression, type ExpressionContext, validateExpression } from "./safe_expression.ts";
 import type { Opt, Reason } from "@exaix/core/types";

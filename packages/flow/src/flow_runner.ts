@@ -8,48 +8,34 @@
  * @visible
  */
 
-import type {
-  IFlow,
-  IFlowNamespaceWrite,
-  IFlowStep,
-  IGateEvaluate,
-  ISessionDelegateCycleRejectionReason,
-} from "@exaix/schemas/flow.ts";
+import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
-import { assertFlowCapabilities, FlowCapabilityUnavailableError } from "./flow_capabilities.ts";
+import { assertFlowCapabilities } from "./flow_capabilities.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
 import { FlowControlStateStore } from "./flow_control_state_store.ts";
 import { branchSkipReason } from "./branch_routing.ts";
 import { BranchStepHandler } from "./step_handlers/branch_step_handler.ts";
-import { computeLoopBody } from "./loop_body.ts";
-import { runGateLoop } from "./gate_loop_coordinator.ts";
-import { finalizeStepResult } from "./step_result_finalizer.ts";
 import { RetryBudgetService } from "./retry_budget_service.ts";
 import { CompensationService } from "./compensation_service.ts";
 import { WaveOrchestrator } from "./wave_orchestrator.ts";
 import { StepContentHasher } from "./step_content_hasher.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
-import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IBindingRunSnapshot } from "@exaix/schemas";
-import {
-  BindingIncompatibleError,
-  BOUND_TARGET_KIND_PROVIDER,
-  type ModelBindingService,
-  STEP_KIND_AGENT,
-} from "@exaix/ai";
+import type { IBindingRunSnapshot, IExecutionMilestone, IModelIntent } from "@exaix/schemas";
+import { BindingIncompatibleError, BOUND_TARGET_KIND_PROVIDER, STEP_KIND_AGENT } from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
   DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
-  FlowGateAction,
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepOnErrorAction,
+  DEFAULT_UNKNOWN_LABEL,
+  FLOW_EVENT_STEP_SKIPPED,
+  FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FlowStepSkipCode,
   FlowStepType,
+  MILESTONE_FLOW_STEP_REPLAYED,
+  MILESTONE_FLOW_STEP_SKIPPED,
+  MILESTONE_FLOW_STEP_STARTED,
   StepAttemptClass,
   StepExecutionDisposition,
   StepSideEffectClass,
@@ -57,798 +43,49 @@ import {
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
 import { buildConfirmationInterceptor } from "@exaix/tool-runtime";
-import type { IMcpClient } from "@exaix/mcp";
-import type { IToolManifestResolver } from "@exaix/core/types";
+import type { IMcpClient, McpToolName } from "@exaix/mcp";
+import type { IApplicationContext, IGateEvaluator, IToolManifestResolver, Opt, Reason } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { IModelProvider, ModelResolver } from "@exaix/ai";
-import type { IModelIntent } from "@exaix/schemas";
-import { EFFORT_AUTO, type EffortDeclaration, type IModelCallOptions, type ThinkingDeclaration } from "@exaix/schemas";
+import { EFFORT_AUTO, type IModelCallOptions } from "@exaix/schemas";
 import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
-import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
-import type {
-  IApplicationContext,
-  IGateConfig,
-  IGateEvaluator,
-  IGateResult,
-  IHitlPolicyEvaluator,
-  IToolConfirmationInterceptor,
-} from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
-import { FlowControlError, FlowGateHaltedError, gateEvaluationResult } from "./errors/flow_control_errors.ts";
-import type {
-  IFlowBranchDecidedEventPayload,
-  IFlowGateEvaluatedEventPayload,
-  IFlowLoopIterationEventPayload,
-} from "@exaix/core/events";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
 import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegate_cycle_step_handler.ts";
-import { UnknownFlowStepError } from "./step_handlers/flow_step_error.ts";
-import type { IStepExecutionContext } from "./step_handlers/step_handler.ts";
 import { type IFlowTraceStore, isUuid } from "./flow_trace_store.ts";
-import type { IPlanContextResolver } from "./plan_context_resolver.ts";
-import type { ISessionDelegationCoordinator } from "@exaix/session/session_delegation.ts";
-import {
-  createInMemorySessionDelegateCycleClaimStore,
-  type ISessionDelegateCycleClaimStore,
-} from "@exaix/session/session_delegate_cycle_claim_store.ts";
-import {
-  createInMemorySessionDelegateCycleStore,
-  type ISessionDelegateCycleStore,
-} from "@exaix/session/session_delegate_cycle_store.ts";
+import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { FlowCheckpointService, type IFlowCheckpointService } from "@exaix/flow";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
 import { StepOutputFormatter } from "./step_output_formatter.ts";
 import { FlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
-import type { IMilestoneEmitter } from "@exaix/core/observability";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { ITokenizer } from "@exaix/core/func";
-import type { PromptBudgetAllocator } from "@exaix/core";
-import { ContextBudgetExceededError } from "@exaix/core/errors";
-import { getProviderFailureReason } from "@exaix/ai";
-import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
-import {
-  DEFAULT_COST_PRECISION_FACTOR,
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  DEFAULT_UNKNOWN_LABEL,
-  FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION,
-  FLOW_EVENT_COMPLETED,
-  FLOW_EVENT_STEP_FALLBACK,
-  FLOW_EVENT_STEP_RETRY,
-  FLOW_EVENT_STEP_SKIPPED,
-  FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
-  FLOW_EVENT_VALIDATION_FAILED,
-  MILESTONE_FLOW_COMPLETED,
-  MILESTONE_FLOW_FAILED,
-  MILESTONE_FLOW_STEP_COMPLETED,
-  MILESTONE_FLOW_STEP_REPLAYED,
-  MILESTONE_FLOW_STEP_SKIPPED,
-  MILESTONE_FLOW_STEP_STARTED,
-} from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
-import type { IRecordingLaneSource, Opt, Reason } from "@exaix/core/types";
 import { createFlowRecordingContext, type IFlowRecordingContext } from "./contracts/flow_recording_context.ts";
-
-/**
- * Interface for agent executors (IAgentRunner or similar)
- */
-export interface IAgentExecutor {
-  run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
-  /** Trusted cycle review publishes reconciled paths for later cumulative strategy audits. */
-  recordReviewedWrites?: Opt<
-    (traceId: string, executionRoot: string, paths: readonly string[], portalAlias: string) => Promise<void>,
-    Reason.OptionalDependency
-  >;
-  /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the agent-role check. */
-  hasBlueprint?(agentRole: string): Promise<boolean>;
-  /** Strategy-routed step execution: forces `agentRole` through the agent strategy registry,
-   * bypassing `run()`'s single generate call. Absent executors fail fast rather than falling back. */
-  runWithStrategy?(
-    agentRole: string,
-    request: IFlowStepRequest,
-    strategy: NonNullable<IFlowStep["strategy"]>,
-  ): Promise<IAgentExecutionResult>;
-}
-
-/**
- * Interface for the flow runner service
- */
-export interface IFlowRunner {
-  execute(
-    flow: IFlow,
-    request: {
-      userPrompt: string;
-      traceId?: string;
-      requestId?: string;
-      requestAnalysis?: IRequestAnalysis;
-      portalKnowledge?: IPortalKnowledge;
-      portal?: string;
-      scenarioId?: string;
-      stepId?: string;
-      executionRoot?: string;
-      planContextRef?: string;
-      flowId?: string;
-      bindingSnapshot?: IBindingRunSnapshot;
-      /** Trusted canonical request path beneath Workspace/Requests.
-       *  It lets the run claim an operator per-run binding file.
-       *  It is never taken from request-file content. */
-      requestPath?: string;
-      /** SHA-256 of the exact request bytes read from `requestPath` by the daemon. */
-      requestSha256?: string;
-      /** True when the scenario request opted into run-local fixture recording lanes. */
-      recordingLanes?: boolean;
-    },
-  ): Promise<IFlowResult>;
-}
-
-/**
- * Request details for a single step execution
- */
-export interface IFlowStepRequest {
-  userPrompt: string;
-  context: Record<string, JSONValue>;
-  traceId?: string;
-  requestId?: string;
-  /** Call-site key: the scenario/step that submitted the request, so LLM calls can be addressed by call site instead of prompt hash. */
-  scenarioId?: string;
-  stepId?: string;
-  /** This flow-internal step's own id, e.g. "define-endpoints". Scopes call-index assignment per
-   *  flow step so steps racing in the same parallel wave (WaveOrchestrator.executeWave uses
-   *  Promise.all) cannot collide on the same index. */
-  flowStepId?: string;
-  flowId?: string;
-  flowOutputKind?: "branch-json";
-  bindingSnapshot?: IBindingRunSnapshot;
-  /** Run-local fixture recording allocator of an opted-in scenario run. */
-  recording?: IRecordingLaneSource;
-  /** Recording lane for this call when it differs from `flowStepId`, such as one voter of a group. */
-  recordingLaneId?: string;
-  /** Skills to apply for this step execution */
-  skills?: string[];
-  /** Structured request analysis. */
-  requestAnalysis?: IRequestAnalysis;
-  /** Resolved namespace reads for this step, keyed by binding key. */
-  sharedNamespace?: Record<string, string>;
-  /** Deterministic summaries for requested parallel groups. */
-  parallelGroupResults?: Record<string, IParallelGroupSummary>;
-  /** The flow's portal alias, threaded unchanged from `FlowRunner.execute()`'s `request.portal`.
-   *  Required by a strategy-routed step to resolve `AgentComposer.executeStep`'s mandatory
-   *  `options.portal`; absent is fine for a no-strategy step (`AgentRunner.run` never needs one). */
-  portal?: string;
-  /** True for the flow's terminal step of a `output.format: json` flow (see
-   *  `isFinalJsonStrategyStep`) — a strategy-routed executor uses this to decide whether a
-   *  raw, untagged response must be coerced into parseable Plan JSON before `PlanAdapter`. */
-  expectPlanJsonOutput?: boolean;
-  /** Per-step reasoning-effort declaration from the step YAML ("auto" defers to
-   *  EffortResolver). */
-  effort?: EffortDeclaration;
-  /** Per-step thinking declaration from the step YAML ("auto" defers to EffortResolver). */
-  thinking?: ThinkingDeclaration;
-}
-
-export interface IParallelGroupSummary {
-  groupId: string;
-  mergedOutput: string;
-  memberCount: number;
-  successCount: number;
-  completedAt: string;
-}
-
-/**
- * Configuration for FlowRunner
- */
-interface IFlowRunnerConfig {
-  edition?: Opt<string, Reason.OptionalInput>;
-  installedCapabilities?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
-  agentExecutor: IAgentExecutor;
-  bindingService?: ModelBindingService;
-  eventLogger: IFlowEventLogger;
-  /** Optional logger for provider-level LLM lifecycle events. */
-  llmEventLogger?: IEventLogger;
-  /** Tokenizer shared with prompt budgeting for native dynamic snapshots. */
-  tokenizer?: ITokenizer;
-  /** Shared section allocator used to reject oversized dynamic native snapshots before I/O. */
-  promptBudgetAllocator?: Pick<PromptBudgetAllocator, "allocate">;
-  eventRegistry?: IEventRegistry;
-  milestoneEmitter?: IMilestoneEmitter;
-  context?: IApplicationContext;
-  db?: IDatabaseService;
-  gateEvaluator?: IGateEvaluator;
-  config?: Config;
-  /** Canonical dynamic handler map from buildDynamicHandlers(context, permissions); takes
-   *  precedence over mcpHandlers and ensures only manifest-approved tools reach DynamicStepExecutor. */
-  dynamicHandlers?: Map<McpToolName, ToolHandler>;
-  /** @deprecated Use dynamicHandlers with buildDynamicHandlers() output instead. */
-  mcpHandlers?: ToolHandler[];
-  /** Optional step durability store for persisting execution records. No-op when omitted. */
-  stepDurabilityStore?: IStepDurabilityStore;
-  /** Optional replay policy for deciding whether a prior step result can be reused. No-op (deny all) when omitted. */
-  stepReplayPolicy?: IStepReplayPolicy;
-  /** Optional checkpoint service override for testing; takes precedence over config-derived service. */
-  checkpointService?: IFlowCheckpointService;
-  /** Model preset name for dynamic steps (e.g. "small", "medium", "large"); LlmClient defaults to "default" (models.default) when omitted. */
-  dynamicModel?: string;
-  /** Optional ModelResolver for resolving dynamicModel presets to provider:model. */
-  modelResolver?: ModelResolver;
-  /** Optional HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
-  hitlPolicyEvaluator?: IHitlPolicyEvaluator;
-  /** Dynamic-mode tool sets from the MCP manifest. Required for dynamic step execution. */
-  dynamicModeTools?: ReadonlySet<string>;
-  dynamicModeApprovalTools?: ReadonlySet<string>;
-  /** Pre-built MCP client for dynamic step execution. Overrides dynamicHandlers/mcpHandlers when provided. */
-  mcpClient?: IMcpClient & IToolManifestResolver;
-  /** Pre-built confirmation interceptor for dynamic step execution. Created internally when omitted. */
-  confirmationInterceptor?: IToolConfirmationInterceptor;
-  /** Durable per-request parent trace store. Required for a flow with a session_delegate_cycle step whose request omits `traceId`; unused otherwise. */
-  flowTraceStore?: IFlowTraceStore;
-  /** Daemon-owned session-delegation coordinator. Registers SessionDelegateCycleStepHandler when present. */
-  sessionDelegationCoordinator?: ISessionDelegationCoordinator;
-  /** Resolves a request's plan_context_ref beneath its executionRoot. Required alongside sessionDelegationCoordinator. */
-  planContextResolver?: IPlanContextResolver;
-  /** SQLite launch source of truth for session_delegate_cycle claims. Falls back to a process-local
-   *  in-memory store (correct within one process, not crash-durable) when omitted, so existing
-   *  sessionDelegationCoordinator wiring keeps working without also supplying this. */
-  sessionDelegateCycleClaimStore?: ISessionDelegateCycleClaimStore;
-  /** Atomic JSON checkpoint store for session_delegate_cycle resume. Falls back to a process-local in-memory store (not crash-durable) when omitted. */
-  sessionDelegateCycleStore?: ISessionDelegateCycleStore;
-}
-
-/**
- * Result of executing a single flow step
- */
-export interface IStepResult {
-  /** Step ID */
-  stepId: string;
-  /** Whether the step succeeded */
-  success: boolean;
-  /** Whether the step was skipped due to condition */
-  skipped?: boolean;
-  /** The condition that caused skipping (if skipped) */
-  skipReason?: string;
-  skipCode?: FlowStepSkipCode;
-  /** Execution result if successful */
-  result?: IAgentExecutionResult;
-  /** Error message if failed */
-  error?: string;
-  /** Terminal control error code retained through wave processing. */
-  errorCode?: string;
-  /** Allowlisted provider failure reason, when failure occurred before a model call. */
-  providerReasonCode?: string;
-  /** Execution duration in milliseconds */
-  duration: number;
-  /** When the step started */
-  startedAt: Date;
-  /** When the step completed */
-  completedAt: Date;
-  /** Zero-based wave number used for deterministic compensation ordering. */
-  waveIndex?: number;
-  /** True when the logical step eventually succeeded after retry recovery. */
-  wasRetried?: boolean;
-  /** Number of retry recovery attempts consumed before success. */
-  retryCount?: number;
-  /** True when the logical step succeeded via a fallback step. */
-  fallbackUsed?: boolean;
-  /** True when compensation actions were executed for this completed step. */
-  compensationRan?: boolean;
-  /** Deferred namespace writes flushed after the wave settles. */
-  namespaceWrites?: IStepNamespaceWrites;
-  /** When set, the step created a durable wait state that must be resolved before the flow can continue. */
-  waitStateId?: string;
-}
-
-interface IStepNamespaceWrites {
-  writes: IFlowNamespaceWrite[];
-  stepOutput: string;
-}
-
-/** The original flow-execution request, threaded unchanged from `FlowRunner.execute()` through
- *  every internal step method. `portal` is carried here so a strategy-routed step can resolve
- *  a portal alias for `AgentComposer.executeStep`. */
-type IFlowOriginalRequest = {
-  userPrompt: string;
-  traceId?: string;
-  requestId?: string;
-  bindingSnapshot?: IBindingRunSnapshot;
-  flowId?: string;
-  requestAnalysis?: IRequestAnalysis;
-  portal?: string;
-  /** Trusted canonical request path beneath Workspace/Requests.
-   *  It lets the run claim an operator per-run binding file.
-   *  It is never taken from request-file content. */
-  requestPath?: string;
-  /** SHA-256 of the exact request bytes the daemon read from `requestPath`. */
-  requestSha256?: string;
-  /** The portal's configured `target_path` verbatim — `SessionDelegationCoordinator.
-   *  prepareBrief` resolves it to a real per-trace worktree via `FlowWorktreeCoordinator`
-   *  before use when the portal opts into `execution_strategy: "worktree"`. Required by a session_delegate_cycle step. */
-  executionRoot?: string;
-  /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
-  planContextRef?: string;
-  /** Run-local fixture recording allocator, present only for an opted-in scenario run. */
-  recording?: IFlowRecordingContext;
-};
-
-/** Shared context for step-level execution (reduces parameter count across step methods). */
-interface IStepContext {
-  flowRunId: string;
-  step: IFlowStep;
-  flow: IFlow;
-  request: IFlowOriginalRequest;
-  stepResults: Map<string, IStepResult>;
-  startedAt: Date;
-  loopIteration?: number;
-  gateFeedback?: string;
-}
-
-type TFormatStepSuccessField = "flowRunId" | "step" | "request" | "startedAt";
-
-type IFormatStepSuccessContext = Pick<IStepContext, TFormatStepSuccessField>;
-
-interface IStepRecoveryMetadata {
-  wasRetried?: boolean;
-  retryCount?: number;
-  fallbackUsed?: boolean;
-  compensationRan?: boolean;
-}
-
-interface IFlowEventRequestContext {
-  traceId?: string;
-  requestId?: string;
-}
-
-export interface IFlowEventLogBase extends IFlowEventRequestContext {
-  flowId: string;
-}
-
-interface IFlowProviderTokenStats {
-  calls: number;
-  inputTokens: number;
-  outputTokens: number;
-  costUsd: number;
-}
-
-interface IFlowWaveErrorPayload {
-  stepId: string;
-  error: string;
-}
-
-export interface IFlowEventPayloadMap {
-  [DomainEventType.FlowLoopIteration]: IFlowLoopIterationEventPayload;
-  [DomainEventType.FlowValidating]: IFlowEventLogBase & { stepCount: number };
-  "flow.validation.failed": IFlowEventLogBase & { error: string };
-  [DomainEventType.FlowValidated]: IFlowEventLogBase & { stepCount: number; maxParallelism: number; failFast: boolean };
-  [DomainEventType.FlowStarted]: IFlowEventLogBase & {
-    flowRunId: string;
-    stepCount: number;
-    maxParallelism: number;
-    failFast: boolean;
-  };
-  [DomainEventType.FlowDependenciesResolving]: IFlowEventLogBase & { flowRunId: string };
-  [DomainEventType.FlowDependenciesResolved]: IFlowEventLogBase & {
-    flowRunId: string;
-    waveCount: number;
-    totalSteps: number;
-  };
-  [DomainEventType.FlowWaveStarted]: IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    waveSize: number;
-    stepIds: string[];
-  };
-  [DomainEventType.FlowWaveResumeSkipped]: IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    skippedStepIds: string[];
-  };
-  [DomainEventType.FlowWaveCompleted]: IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    waveSize: number;
-    successCount: number;
-    failureCount: number;
-    failed: boolean;
-  };
-  "flow.parallel_group.started": IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    groupId: string;
-    stepIds: string[];
-    startedAt: number;
-    isoStartedAt: string;
-  };
-  "flow.parallel_group.completed": IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    groupId: string;
-    stepIds: string[];
-    successCount: number;
-    failureCount: number;
-    failed: boolean;
-    duration: number;
-  };
-  "flow.parallel_group.merge_failed": IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    groupId: string;
-    mergeMode: string;
-    error: string;
-  };
-  [DomainEventType.FlowWaveErrors]: IFlowEventRequestContext & {
-    flowRunId: string;
-    waveNumber: number;
-    errorCount: number;
-    errors: IFlowWaveErrorPayload[];
-  };
-  [DomainEventType.FlowStepProcessingError]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    error: string;
-  };
-  [DomainEventType.FlowOutputAggregating]: IFlowEventRequestContext & {
-    flowRunId: string;
-    flowId: string;
-    outputFrom: IFlow["output"]["from"];
-    outputFormat: IFlow["output"]["format"];
-    totalSteps: number;
-  };
-  [DomainEventType.FlowOutputAggregated]: IFlowEventRequestContext & {
-    flowRunId: string;
-    flowId: string;
-    outputLength: number;
-  };
-  "flow.completed": IFlowEventRequestContext & {
-    flowRunId: string;
-    flowId: string;
-    success: boolean;
-    duration: number;
-    stepsCompleted: number;
-    successfulSteps: number;
-    failedSteps: number;
-    outputLength: number;
-  };
-  "flow.failed": IFlowEventRequestContext & {
-    flowRunId: string;
-    flowId: string;
-    error: string;
-    errorType: string;
-    duration: number;
-    stepsAttempted: number;
-    successfulSteps: number;
-    failedSteps: number;
-    reasonCode?: string;
-  };
-  [DomainEventType.FlowStepQueued]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    dependencies: string[];
-    inputSource: IFlowStep["input"]["source"];
-  };
-  [DomainEventType.FlowStepStarted]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    /** The step's declared strategy, when set. */
-    strategy?: string;
-  };
-  "flow.step.retry": IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    attempt: number;
-    maxRetries: number;
-    error: string;
-  };
-  "flow.step.fallback": IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    fallbackStepId: string;
-    fallbackAgentRole: string;
-    error: string;
-  };
-  "flow.step.compensated": IFlowEventRequestContext & {
-    flowRunId: string;
-    failedStepId: string;
-    sourceStepId: string;
-    tool: string;
-    args: Record<string, JSONValue>;
-    success: boolean;
-    result?: JSONValue;
-    error?: string;
-  };
-  "flow.step.compensation_failed": IFlowEventRequestContext & {
-    flowRunId: string;
-    failedStepId: string;
-    sourceStepId: string;
-    tool: string;
-    args: Record<string, JSONValue>;
-    error: string;
-  };
-  [DomainEventType.FlowStepConditionEvaluated]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    condition: string;
-    shouldExecute: boolean;
-    error?: string;
-  };
-  "flow.step.skipped": IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    condition?: string;
-    skipCode?: IStepResult["skipCode"];
-    reason: string;
-  };
-  [DomainEventType.FlowGateEvaluated]: IFlowGateEvaluatedEventPayload;
-  [DomainEventType.FlowBranchDecided]: IFlowBranchDecidedEventPayload;
-  [DomainEventType.FlowGateCriteriaNoAnalysis]: IFlowEventRequestContext & { flowRunId: string; stepId: string };
-  [DomainEventType.FlowStepCompleted]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    success: true;
-    duration: number;
-    outputLength: number;
-    hasThought: boolean;
-    /** The step's declared strategy, when set. */
-    strategy?: string;
-  };
-  [DomainEventType.FlowStepFailed]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    agentRole: string;
-    error: string;
-    errorType: string;
-    duration: number;
-    providerReasonCode?: string;
-  };
-  [DomainEventType.FlowStepTransformApplied]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    transformName: string;
-    inputSize: number;
-    outputSize: number;
-    duration: number;
-  };
-  [DomainEventType.FlowStepInputPrepared]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    hasSkills: boolean;
-  };
-  [DomainEventType.FlowStepUnexpectedError]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    error: string;
-    errorType: string;
-  };
-  [DomainEventType.FlowStepReplayed]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    recordId: string;
-    reason: string;
-    flowId: string;
-  };
-  "flow.step.skipped_by_reuse": IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    priorRecordId: string;
-    inputHash: string;
-  };
-  [DomainEventType.FlowStepInvalidated]: IFlowEventRequestContext & {
-    flowRunId: string;
-    stepId: string;
-    recordId: string;
-    reason: string;
-  };
-  "flow.checkpoint.stale": IFlowEventRequestContext & { flowRunId: string; flowId: string };
-  "flow.checkpoint.loaded": IFlowEventRequestContext & { flowRunId: string; flowId: string; restoredSteps: number };
-  "flow.checkpoint.saved": IFlowEventRequestContext & { flowRunId: string; flowId: string; completedSteps: number };
-  "flow.checkpoint.cleared": IFlowEventRequestContext & { flowRunId: string; flowId: string };
-  [DomainEventType.FlowTokenSummary]: {
-    flowRunId: string;
-    flowId: string;
-    totalLlmCalls: number;
-    totalInputTokens: number;
-    totalOutputTokens: number;
-    totalTokens: number;
-    totalCostUsd: number;
-    providers: Record<string, IFlowProviderTokenStats>;
-    traceId: string;
-    requestId?: string;
-  };
-  [DomainEventType.FlowTokenSummaryError]: {
-    flowRunId: string;
-    flowId: string;
-    error: string;
-    traceId: string;
-    requestId?: string;
-  };
-  [DomainEventType.WaitStateCreated]: IFlowEventLogBase & {
-    flowRunId: string;
-    stepId: string;
-    waitStateId: string;
-    resumeToken: string;
-    kind: string;
-    traceId: string;
-  };
-  [DomainEventType.WaitStateResolved]: IFlowEventLogBase & {
-    flowRunId: string;
-    waitStateId: string;
-    traceId: string;
-    stepIds: string[];
-  };
-  [DomainEventType.SessionDelegateCycleStarted]: {
-    flowRunId: string;
-    stepId: string;
-    traceId: string;
-    planStepCount: number;
-  };
-  [DomainEventType.SessionDelegateCycleStepCompleted]: {
-    flowRunId: string;
-    stepId: string;
-    traceId: string;
-    delegationTraceId: string;
-    sequence: number;
-  };
-  [DomainEventType.SessionDelegateCycleStepRejected]: {
-    flowRunId: string;
-    stepId: string;
-    traceId: string;
-    /** Absent for a plan-level rejection (too large / too many steps / parse failure). */
-    sequence?: number;
-    reason: ISessionDelegateCycleRejectionReason;
-  };
-  [DomainEventType.SessionDelegateCycleCompleted]: {
-    flowRunId: string;
-    stepId: string;
-    traceId: string;
-    stepCount: number;
-  };
-  [DomainEventType.SessionDelegateCycleResumed]: {
-    flowRunId: string;
-    stepId: string;
-    traceId: string;
-  };
-}
-
-export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
-  ? IFlowEventPayloadMap[TEvent] & Record<string, JSONValue | undefined>
-  : Record<string, JSONValue | undefined>;
-
-/**
- * Result of executing a complete flow
- */
-export interface IFlowResult {
-  /** Unique flow run identifier */
-  flowRunId: string;
-  /** Whether the overall flow succeeded */
-  success: boolean;
-  /** Results for each step */
-  stepResults: Map<string, IStepResult>;
-  /** Final aggregated output */
-  output: string;
-  /** Total execution duration */
-  duration: number;
-  /** When the flow started */
-  startedAt: Date;
-  /** When the flow completed */
-  completedAt: Date;
-  /** Absolute path to the persisted namespace artifact; undefined when namespace is disabled */
-  namespaceArtifactPath?: string;
-  /** Optional token usage summary for the flow */
-  tokenSummary?: {
-    input_tokens: number;
-    output_tokens: number;
-    total_tokens: number;
-    token_provider?: string;
-    token_model?: string;
-    token_cost_usd?: number;
-  };
-  /** True when the flow is waiting for an operator to resolve a durable wait state. */
-  waiting?: boolean;
-  /** The wait state ID the flow is waiting on, when waiting=true. */
-  waitStateId?: string;
-}
-
-/**
- * Interface for logging flow events
- */
-export interface IFlowEventLogger {
-  log<TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void;
-}
-
-/**
- * Error thrown when flow execution fails
- */
-export class FlowExecutionError extends Error {
-  get code(): string | undefined {
-    return this.reasonCode;
-  }
-  constructor(
-    message: string,
-    public readonly flowRunId?: Opt<string, Reason.TraceAbsent>,
-    public readonly reasonCode?: Opt<string, Reason.OptionalContext>,
-  ) {
-    super(message);
-    this.name = "FlowExecutionError";
-  }
-}
-
-export class FlowAbortError extends Error {
-  constructor(
-    public readonly stepId: string,
-    message: string,
-    public readonly flowRunId?: Opt<string, Reason.TraceAbsent>,
-    public readonly failureResult?: Opt<IStepResult, Reason.OptionalContext>,
-  ) {
-    super(message);
-    this.name = "FlowAbortError";
-  }
-}
-
-/** Converts an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator input),
- *  preserving all fields including `includeRequestCriteria`. */
-export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
-  return {
-    agentRole: evaluate.agent_role,
-    criteria: evaluate.criteria,
-    threshold: evaluate.threshold,
-    onFail: evaluate.onFail,
-    maxRetries: evaluate.maxRetries ?? 3,
-    includeRequestCriteria: evaluate.includeRequestCriteria,
-  };
-}
-
-/** The steps an `aggregate` input draws from: an explicit `from`, else the step's `dependsOn`. An explicit `from`
- *  still wins, so a step may legitimately depend on more than it consumes. Returns empty when neither is
- *  specified, which the caller treats as an error rather than silently aggregating nothing. */
-export function resolveAggregateSources(step: { input: { from?: string[] }; dependsOn?: string[] }): string[] {
-  if (step.input.from?.length) return step.input.from;
-  return step.dependsOn ?? [];
-}
-
-/** True when `step` is strategy-routed AND is the flow's terminal `output.format: json`
- *  source — shared by the prompt instruction below and `IFlowStepRequest.expectPlanJsonOutput`
- *  so the two conditions cannot drift apart. */
-function isFinalJsonStrategyStep(step: IFlowStep, flow: IFlow): boolean {
-  const outputFrom = flow.output.from;
-  return step.strategy !== undefined &&
-    flow.output.format === FlowOutputFormat.JSON &&
-    (outputFrom === step.id || (Array.isArray(outputFrom) && outputFrom.includes(step.id)));
-}
-
-/** Output-shape instruction appended to every AGENT step prompt. Without it a real model answers in prose, which
- *  fails both the capture contract (a flow-step response's <content> block must be valid JSON) and, for the final
- *  step, plan validation downstream. Exported so durability tests can seed replay records with the exact prompt hash. */
-export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string {
-  if (step.type === FlowStepType.BRANCH) {
-    return `\n\nClassify the input for ${step.name}. ${FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION}\n` +
-      `Routing contract: ${JSON.stringify({ branches: step.branches ?? [], default: step.default })}`;
-  }
-  const planShape = `{"subject": "Flow Step Output", "description": "Structured output for this step", ` +
-    `"steps": [{"step": 1, "title": "Step title", "description": "What this step produced"}]}`;
-  const from = flow.output?.from;
-  const isFinalStep = from === step.id || (Array.isArray(from) && from.includes(step.id));
-  const purpose = isFinalStep
-    ? "You are the FINAL step of a multi-agent flow: your response's <content> block becomes " +
-      "the flow's aggregated output and must parse as a plan."
-    : "You are a step in a multi-agent flow: your response's <content> block is consumed " +
-      "programmatically by the next step.";
-  return `\n\n${purpose}\nThis flow-specific output contract supersedes the agent's default response format. ` +
-    `Respond exactly in this format — no other text outside the tags:\n` +
-    `<thought>\nBrief reasoning (1-3 sentences).\n</thought>\n\n` +
-    `<content>\n${planShape}\n</content>\n` +
-    `The <content> block MUST be valid JSON: the first character after <content> must be ` +
-    `{ and the last before </content> must be }, with no prose, explanation, or markdown ` +
-    `fences inside it.`;
-}
+import type {
+  IAgentExecutor,
+  IFlowEventLogger,
+  IFlowOriginalRequest,
+  IFlowResult,
+  IFlowRunner,
+  IFlowRunnerConfig,
+  IStepContext,
+  IStepNamespaceWrites,
+  IStepResult,
+} from "./flow_types.ts";
+import { FlowTokenUsage } from "./flow_token_usage.ts";
+import { FlowStepIo } from "./flow_step_io.ts";
+import { getFlowLogBase } from "./flow_log_base.ts";
+import { FlowStepGates } from "./flow_step_gates.ts";
+import { FlowStepRecovery } from "./flow_step_recovery.ts";
+import { FlowAbortError, FlowExecutionError } from "./flow_errors.ts";
+import { FlowCompletion } from "./flow_completion.ts";
 
 /** Orchestrates multi-agent flow execution: step dispatch, gate evaluation, aggregation. */
 export class FlowRunner implements IFlowRunner {
@@ -884,6 +121,11 @@ export class FlowRunner implements IFlowRunner {
   private waveOrchestrator!: WaveOrchestrator;
   private flowTraceStore?: IFlowTraceStore;
   private readonly stepContentHasher = new StepContentHasher();
+  private completion!: FlowCompletion;
+  private stepRecovery!: FlowStepRecovery;
+  private stepGates!: FlowStepGates;
+  private stepIo!: FlowStepIo;
+  private tokenUsage!: FlowTokenUsage;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -927,7 +169,7 @@ export class FlowRunner implements IFlowRunner {
       {
         executeStepSafe: (flowRunId, stepId, flow, request, stepResults) =>
           this.executeStepSafe(flowRunId, stepId, flow, request, stepResults),
-        getIFlowLogBase: (flow, request) => this.getIFlowLogBase(flow, request),
+        getIFlowLogBase: (flow, request) => getFlowLogBase(flow, request),
         emitMilestone: (milestoneType, traceId, summary, progressHint) =>
           this.emitMilestone(milestoneType, traceId, summary, progressHint),
       },
@@ -949,6 +191,7 @@ export class FlowRunner implements IFlowRunner {
         eventLogger: this.eventLogger,
       }),
     );
+    this.initStepCollaborators();
     const agentHandler = new AgentStepHandler({
       agentExecutor: this.agentExecutor,
       dynamicStepExecutor: this.dynamicStepExecutor,
@@ -994,6 +237,54 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError("session_delegate_cycle requires a configured flowTraceStore", flowRunId);
     }
     return await this.flowTraceStore.getOrCreate(request.requestId);
+  }
+
+  /** Builds the collaborators that own step input, gates, recovery, token usage and completion. */
+  private initStepCollaborators(): void {
+    this.tokenUsage = new FlowTokenUsage({
+      db: this.db,
+      eventLogger: this.eventLogger,
+    });
+    this.stepIo = new FlowStepIo({
+      eventLogger: this.eventLogger,
+      namespaceCoordinator: this.namespaceCoordinator,
+      parallelGroupMergeService: this.parallelGroupMergeService,
+      pendingWaitStateRef: this.pendingWaitStateRef,
+      stepOutputFormatter: this.stepOutputFormatter,
+      emitMilestone: (...args) => this.emitMilestone(...args),
+    });
+    this.stepGates = new FlowStepGates({
+      checkpointCoordinator: this.checkpointCoordinator,
+      conditionEvaluator: this.conditionEvaluator,
+      controlStateStore: this.controlStateStore,
+      eventLogger: this.eventLogger,
+      namespaceCoordinator: this.namespaceCoordinator,
+      retryBudgetService: this.retryBudgetService,
+      stepHandlerRegistry: this.stepHandlerRegistry,
+      emitMilestone: (...args) => this.emitMilestone(...args),
+      executeStep: (...args) => this.executeStep(...args),
+      prepareStepRequest: (...args) => this.stepIo.prepareStepRequest(...args),
+    });
+    this.stepRecovery = new FlowStepRecovery({
+      compensationService: this.compensationService,
+      eventLogger: this.eventLogger,
+      retryBudgetService: this.retryBudgetService,
+      stepIo: this.stepIo,
+      executeStep: (...args) => this.executeStep(...args),
+      runStepAttempt: (...args) => this.runStepAttempt(...args),
+    });
+    this.completion = new FlowCompletion({
+      agentExecutor: this.agentExecutor,
+      eventLogger: this.eventLogger,
+      runtimeValidator: this.runtimeValidator,
+      checkpointCoordinator: this.checkpointCoordinator,
+      db: this.db,
+      namespaceCoordinator: this.namespaceCoordinator,
+      namespaceService: this.namespaceService,
+      stepOutputFormatter: this.stepOutputFormatter,
+      tokenUsage: this.tokenUsage,
+      emitMilestone: (...args) => this.emitMilestone(...args),
+    });
   }
 
   private initCoreServices(): void {
@@ -1236,29 +527,6 @@ export class FlowRunner implements IFlowRunner {
     });
   }
 
-  private getIFlowLogBase(
-    flow: IFlow,
-    request: { traceId?: string; requestId?: string },
-    options: { includeStepCount: true },
-  ): IFlowEventPayloadMap["flow.validating"];
-  private getIFlowLogBase(
-    flow: IFlow,
-    request: { traceId?: string; requestId?: string },
-    options?: Opt<{ includeStepCount?: false }, Reason.SensibleDefault>,
-  ): IFlowEventLogBase;
-  private getIFlowLogBase(
-    flow: IFlow,
-    request: { traceId?: string; requestId?: string },
-    options: { includeStepCount?: boolean } = {},
-  ): IFlowEventLogBase | IFlowEventPayloadMap["flow.validating"] {
-    return {
-      flowId: flow.id,
-      ...(options.includeStepCount ? { stepCount: flow.steps.length } : {}),
-      traceId: request.traceId,
-      requestId: request.requestId,
-    };
-  }
-
   /**
    * Execute a flow with the given request
    */
@@ -1314,7 +582,7 @@ export class FlowRunner implements IFlowRunner {
         new Set(this.options.installedCapabilities ?? []),
         this.stepHandlerRegistry,
       );
-      await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
+      await this.completion.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
       await this.ensureDynamicExecutor(flow, flowRunId);
       const captureBindingSnapshot = async (): Promise<void> => {
         const service = this.options.bindingService;
@@ -1372,7 +640,7 @@ export class FlowRunner implements IFlowRunner {
       if (waiting) return waiting;
 
       // Aggregate output and finalize
-      return await this.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);
+      return await this.completion.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);
     } catch (error) {
       if (error instanceof BindingIncompatibleError) {
         await this.eventLogger.log("flow.failed", {
@@ -1397,219 +665,10 @@ export class FlowRunner implements IFlowRunner {
           completedAt: new Date(),
         };
       }
-      return await this.handleExecutionError(flow, request, flowRunId, stepResults, startedAt, error);
+      return await this.completion.handleExecutionError(flow, request, flowRunId, stepResults, startedAt, error);
     } finally {
       if (snapshotTraceId) await this.options.bindingService?.releaseRun(snapshotTraceId);
     }
-  }
-
-  /**
-   * Validate the flow before execution
-   */
-  private async validateIFlow(
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    flowRunId: string,
-    ceiling: number,
-  ): Promise<void> {
-    // Log flow validation start
-    await this.eventLogger.log(DomainEventType.FlowValidating, {
-      ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
-    });
-
-    // Validate flow has steps
-    if (flow.steps.length === 0) {
-      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-        error: "IFlow must have at least one step",
-        ...this.getIFlowLogBase(flow, request),
-      });
-      throw new FlowExecutionError("IFlow must have at least one step", flowRunId);
-    }
-
-    const fallbackCycle = this.runtimeValidator.findCyclicFallbackChain(flow);
-    if (fallbackCycle) {
-      const errorMessage = `Cyclic fallback chain detected: ${fallbackCycle.join(" -> ")}`;
-      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-        error: errorMessage,
-        ...this.getIFlowLogBase(flow, request),
-      });
-      throw new FlowExecutionError(errorMessage, flowRunId);
-    }
-
-    const parallelValidationError = this.runtimeValidator.validateParallelGroups(flow);
-    if (parallelValidationError) {
-      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-        error: parallelValidationError,
-        ...this.getIFlowLogBase(flow, request),
-      });
-      throw new FlowExecutionError(parallelValidationError, flowRunId);
-    }
-
-    const gatePolicyError = this.runtimeValidator.validateGatePolicies(flow, ceiling);
-    if (gatePolicyError) throw new FlowExecutionError(gatePolicyError, flowRunId);
-
-    const strategyValidationError = this.runtimeValidator.validateStepStrategy(flow);
-    if (strategyValidationError) {
-      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-        error: strategyValidationError,
-        ...this.getIFlowLogBase(flow, request),
-      });
-      throw new FlowExecutionError(strategyValidationError, flowRunId);
-    }
-
-    if (this.agentExecutor.hasBlueprint) {
-      const agentRoleValidationError = await this.runtimeValidator.validateStepAgentRoles(
-        flow,
-        (agentRole) => this.agentExecutor.hasBlueprint!(agentRole),
-      );
-      if (agentRoleValidationError) {
-        await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-          error: agentRoleValidationError,
-          ...this.getIFlowLogBase(flow, request),
-        });
-        throw new FlowExecutionError(agentRoleValidationError, flowRunId);
-      }
-    }
-
-    // Log flow validation success
-    await this.eventLogger.log(DomainEventType.FlowValidated, {
-      maxParallelism: flow.settings?.maxParallelism ?? 3,
-      failFast: flow.settings?.failFast ?? true,
-      ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
-    });
-  }
-
-  /**
-   * Aggregate output and create final flow result
-   */
-  private async aggregateAndFinalize(
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    flowRunId: string,
-    stepResults: Map<string, IStepResult>,
-    startedAt: Date,
-  ): Promise<IFlowResult> {
-    // Aggregate output
-    await this.eventLogger.log(DomainEventType.FlowOutputAggregating, {
-      flowRunId,
-      flowId: flow.id,
-      outputFrom: flow.output?.from,
-      outputFormat: flow.output?.format,
-      totalSteps: stepResults.size,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    const output = this.stepOutputFormatter.aggregateOutput(flow.output, stepResults);
-
-    await this.eventLogger.log(DomainEventType.FlowOutputAggregated, {
-      flowRunId,
-      flowId: flow.id,
-      outputLength: output.length,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    const completedAt = new Date();
-    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
-
-    // Determine overall success
-    const success = Array.from(stepResults.values()).every((result) => result.success);
-    const successfulSteps = Array.from(stepResults.values()).filter((r) => r.success).length;
-    const failedSteps = stepResults.size - successfulSteps;
-
-    await this.checkpointCoordinator.clearCheckpointOnSuccess(flow, request, flowRunId, success);
-
-    // Log flow completion
-    await this.eventLogger.log(FLOW_EVENT_COMPLETED, {
-      flowRunId,
-      flowId: flow.id,
-      success,
-      duration,
-      stepsCompleted: stepResults.size,
-      successfulSteps,
-      failedSteps,
-      outputLength: output.length,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    await this.emitMilestone(
-      MILESTONE_FLOW_COMPLETED,
-      request.traceId,
-      success ? "Flow completed successfully" : "Flow completed with failures",
-      {
-        stepsCompleted: stepResults.size,
-        stepsTotal: flow.steps.length,
-      },
-    );
-
-    // Aggregate and log token usage summary
-    const tokenSummary = (this.db && request.traceId)
-      ? await this.aggregateAndLogTokenUsage(flowRunId, flow.id, request.traceId, request.requestId)
-      : null;
-    const namespaceArtifactPath = this.namespaceService && flow.namespace?.enabled
-      ? this.namespaceService.getNamespacePath(this.namespaceCoordinator.getNamespaceId(request, flowRunId))
-      : undefined;
-
-    return {
-      flowRunId,
-      success,
-      stepResults,
-      output,
-      duration,
-      startedAt,
-      completedAt,
-      namespaceArtifactPath,
-      tokenSummary: tokenSummary ?? undefined,
-    };
-  }
-
-  /**
-   * Handle execution errors and create error result
-   */
-  private async handleExecutionError<TError>(
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    flowRunId: string,
-    stepResults: Map<string, IStepResult>,
-    startedAt: Date,
-    error: TError,
-  ): Promise<never> {
-    const completedAt = new Date();
-    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
-
-    // Determine partial results
-    const successfulSteps = Array.from(stepResults.values()).filter((r) => r.success).length;
-    const failedSteps = stepResults.size - successfulSteps;
-
-    // Log flow failure
-    await this.eventLogger.log("flow.failed", {
-      flowRunId,
-      flowId: flow.id,
-      error: error instanceof Error ? error.message : String(error),
-      errorType: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
-      reasonCode: error instanceof FlowExecutionError || error instanceof FlowCapabilityUnavailableError
-        ? error.reasonCode
-        : undefined,
-      duration,
-      stepsAttempted: stepResults.size,
-      successfulSteps,
-      failedSteps,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    await this.emitMilestone(
-      MILESTONE_FLOW_FAILED,
-      request.traceId,
-      `Flow failed: ${error instanceof Error ? error.message : String(error)}`,
-      { stepsCompleted: stepResults.size, stepsTotal: flow.steps.length },
-      true,
-      "Flow execution encountered an unrecoverable error",
-    );
-
-    throw error;
   }
 
   /**
@@ -1664,7 +723,14 @@ export class FlowRunner implements IFlowRunner {
     }
 
     // Evaluate step condition if present
-    const conditionResult = await this.evaluateStepCondition(flowRunId, step, flow, stepResults, request, startedAt);
+    const conditionResult = await this.stepGates.evaluateStepCondition(
+      flowRunId,
+      step,
+      flow,
+      stepResults,
+      request,
+      startedAt,
+    );
     if (conditionResult) {
       return conditionResult;
     }
@@ -1699,15 +765,15 @@ export class FlowRunner implements IFlowRunner {
         stepCtx,
         repeat ? StepAttemptClass.RETRY : StepAttemptClass.INITIAL,
       );
-      return this.formatStepSuccess(
+      return this.stepIo.formatStepSuccess(
         stepCtx,
         attemptOutcome.result,
         undefined,
         attemptOutcome.namespaceWrites,
       );
     } catch (error) {
-      if (repeat) return this.formatStepFailure(flowRunId, step, request, error, startedAt);
-      return await this.handleStepFailureRecovery(
+      if (repeat) return this.stepIo.formatStepFailure(flowRunId, step, request, error, startedAt);
+      return await this.stepRecovery.handleStepFailureRecovery(
         stepCtx,
         error,
       );
@@ -1722,7 +788,7 @@ export class FlowRunner implements IFlowRunner {
     attemptClass: Opt<StepAttemptClass, Reason.SensibleDefault> = StepAttemptClass.INITIAL,
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
-    const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
+    const stepRequest = await this.stepIo.prepareStepRequest(flowRunId, step, flow, request, stepResults);
     if (ctx.loopIteration !== undefined) stepRequest.context.loopIteration = ctx.loopIteration;
     if (ctx.gateFeedback !== undefined) {
       stepRequest.context.gateFeedback = ctx.gateFeedback;
@@ -1804,7 +870,7 @@ export class FlowRunner implements IFlowRunner {
     await this.stepDurabilityStore.save(record);
 
     try {
-      const result = await this.executeStepLogic(ctx, stepRequest);
+      const result = await this.stepGates.executeStepLogic(ctx, stepRequest);
       record.completedAt = new Date().toISOString();
       record.durationMs = Math.max(0, Date.now() - startedAt.getTime());
       record.replayEligible = true;
@@ -1829,644 +895,6 @@ export class FlowRunner implements IFlowRunner {
       await this.stepDurabilityStore.save(record);
       throw error;
     }
-  }
-
-  /**
-   * Apply retry, fallback, or abort recovery policy after a step failure.
-   */
-  private async handleStepFailureRecovery<TError>(
-    ctx: IStepContext,
-    initialError: TError,
-  ): Promise<IStepResult> {
-    const { flowRunId, step, request, startedAt } = ctx;
-    if (initialError instanceof FlowGateHaltedError || initialError instanceof FlowControlError) {
-      return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
-    }
-    if (
-      initialError instanceof ContextBudgetExceededError ||
-      (initialError instanceof Error && getProviderFailureReason(initialError) !== undefined)
-    ) {
-      return await this.handleTerminalConfigurationFailure(ctx, initialError);
-    }
-    if (!step.onError) {
-      return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
-    }
-
-    if (step.onError.action === FlowStepOnErrorAction.RETRY) {
-      return await this.retryStepAttempts(ctx, initialError);
-    }
-
-    if (step.onError.action === FlowStepOnErrorAction.FALLBACK) {
-      return await this.runFallbackStep(ctx, initialError);
-    }
-
-    return await this.finishStepFailure(ctx, initialError);
-  }
-
-  private async runFallbackStep<TError>(
-    ctx: IStepContext,
-    originalError: TError,
-  ): Promise<IStepResult> {
-    const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
-    const fallbackStepId = step.onError?.fallbackStep;
-    const fallbackStep = fallbackStepId ? flow.steps.find((candidate) => candidate.id === fallbackStepId) : null;
-    if (!fallbackStep) {
-      return await this.finishStepFailure(
-        ctx,
-        new Error(`Fallback step not found for ${step.id}: ${fallbackStepId ?? DEFAULT_UNKNOWN_LABEL}`),
-      );
-    }
-    await this.eventLogger.log(FLOW_EVENT_STEP_FALLBACK, {
-      flowRunId,
-      stepId: step.id,
-      agentRole: step.agent_role,
-      fallbackStepId: fallbackStep.id,
-      fallbackAgentRole: fallbackStep.agent_role,
-      error: originalError instanceof Error ? originalError.message : String(originalError),
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-    try {
-      const fallbackResult = await this.executeStep(flowRunId, fallbackStep.id, flow, request, stepResults);
-      return this.mapFallbackResultToPrimaryResult(
-        flowRunId,
-        step,
-        fallbackStep,
-        request,
-        fallbackResult,
-        startedAt,
-      );
-    } catch (fallbackError) {
-      if (fallbackError instanceof FlowAbortError) throw fallbackError;
-      return await this.finishStepFailure(ctx, fallbackError);
-    }
-  }
-
-  private async retryStepAttempts<TError>(
-    ctx: IStepContext,
-    initialError: TError,
-  ): Promise<IStepResult> {
-    const { flowRunId, step, request } = ctx;
-    const maxRetries = step.onError?.maxRetries ?? 1;
-    const retryBackoffMs = step.onError?.backoffMs ?? DEFAULT_FLOW_STEP_BACKOFF_MS;
-    let readLastErrorMessage = () => initialError instanceof Error ? initialError.message : String(initialError);
-    for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
-      await this.retryBudgetService.enforceRetryCostBudget(flowRunId, request);
-      await this.eventLogger.log(FLOW_EVENT_STEP_RETRY, {
-        flowRunId,
-        stepId: step.id,
-        agentRole: step.agent_role,
-        attempt: retryAttempt,
-        maxRetries,
-        error: readLastErrorMessage(),
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-      await this.retryBudgetService.applyRetryBackoff(retryBackoffMs, retryAttempt);
-      try {
-        const retryOutcome = await this.runStepAttempt(ctx);
-        return this.formatStepSuccess(
-          ctx,
-          retryOutcome.result,
-          { wasRetried: true, retryCount: retryAttempt },
-          retryOutcome.namespaceWrites,
-        );
-      } catch (retryError) {
-        if (
-          retryError instanceof ContextBudgetExceededError ||
-          (retryError instanceof Error && getProviderFailureReason(retryError) !== undefined) ||
-          !(retryAttempt + 1 <= maxRetries)
-        ) return await this.finishRetryFailure(ctx, retryError);
-        readLastErrorMessage = () => retryError instanceof Error ? retryError.message : String(retryError);
-      }
-    }
-    return await this.finishRetryFailure(ctx, initialError);
-  }
-
-  private async finishRetryFailure<TError>(ctx: IStepContext, error: TError): Promise<IStepResult> {
-    if (
-      error instanceof ContextBudgetExceededError ||
-      (error instanceof Error && getProviderFailureReason(error) !== undefined)
-    ) return await this.handleTerminalConfigurationFailure(ctx, error);
-    return await this.finishStepFailure(ctx, error);
-  }
-
-  private async handleTerminalConfigurationFailure<TError>(
-    ctx: IStepContext,
-    error: TError,
-  ): Promise<IStepResult> {
-    return await this.finishStepFailure(ctx, error);
-  }
-
-  private async finishStepFailure<TError>(
-    ctx: IStepContext,
-    error: TError,
-  ): Promise<IStepResult> {
-    const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
-    const failureResult = this.formatStepFailure(flowRunId, step, request, error, startedAt);
-    if (step.onError?.action === FlowStepOnErrorAction.COMPENSATE) {
-      await this.compensationService.executeCompensatingTransactions(flowRunId, step, flow, request, stepResults);
-    }
-    if (step.onError?.action === FlowStepOnErrorAction.ABORT) {
-      throw new FlowAbortError(
-        step.id,
-        failureResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        flowRunId,
-        failureResult,
-      );
-    }
-    return failureResult;
-  }
-
-  private mapFallbackResultToPrimaryResult(
-    flowRunId: string,
-    step: IFlowStep,
-    fallbackStep: IFlowStep,
-    request: IFlowOriginalRequest,
-    fallbackResult: IStepResult,
-    startedAt: Date,
-  ): IStepResult {
-    if (!fallbackResult.success) {
-      return this.formatStepFailure(
-        flowRunId,
-        { ...step, agent_role: fallbackStep.agent_role },
-        request,
-        fallbackResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        startedAt,
-      );
-    }
-
-    if (fallbackResult.skipped || !fallbackResult.result) {
-      return {
-        ...fallbackResult,
-        stepId: step.id,
-        fallbackUsed: true,
-      };
-    }
-
-    return this.formatStepSuccess(
-      { flowRunId, step: { ...step, agent_role: fallbackStep.agent_role }, request, startedAt },
-      fallbackResult.result,
-      {
-        fallbackUsed: true,
-        wasRetried: fallbackResult.wasRetried,
-        retryCount: fallbackResult.retryCount,
-      },
-      fallbackResult.namespaceWrites,
-    );
-  }
-
-  /**
-   * Evaluate step condition and return skip result if condition fails
-   */
-  private async evaluateStepCondition(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    stepResults: Map<string, IStepResult>,
-    request: IFlowOriginalRequest,
-    startedAt: Date,
-  ): Promise<IStepResult | null> {
-    if (!step.condition) {
-      return null;
-    }
-
-    const conditionResult = this.conditionEvaluator.evaluateStepCondition(step, stepResults, request, flow);
-
-    await this.eventLogger.log(DomainEventType.FlowStepConditionEvaluated, {
-      flowRunId,
-      stepId: step.id,
-      condition: step.condition,
-      shouldExecute: conditionResult.shouldExecute,
-      error: conditionResult.error,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    if (!conditionResult.shouldExecute) {
-      const completedAt = new Date();
-      const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
-
-      await this.eventLogger.log(FLOW_EVENT_STEP_SKIPPED, {
-        flowRunId,
-        stepId: step.id,
-        condition: step.condition,
-        skipCode: FlowStepSkipCode.CONDITION,
-        reason: conditionResult.error || "Condition evaluated to false",
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-
-      await this.emitMilestone(
-        MILESTONE_FLOW_STEP_SKIPPED,
-        request.traceId,
-        `Step ${step.name || step.id} skipped: ${conditionResult.error || "Condition not met"}`,
-      );
-
-      return {
-        stepId: step.id,
-        success: true,
-        skipped: true,
-        skipCode: FlowStepSkipCode.CONDITION,
-        skipReason: conditionResult.error || `Condition "${step.condition}" evaluated to false`,
-        duration,
-        startedAt,
-        completedAt,
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Execute step logic by dispatching to a registered IFlowStepHandler.
-   */
-  private async executeStepLogic(
-    stepContext: IStepContext,
-    stepRequest: IFlowStepRequest,
-  ): Promise<IAgentExecutionResult> {
-    const { flowRunId, step, flow, request, startedAt, stepResults } = stepContext;
-    const stepType = step.type ?? FlowStepType.AGENT;
-    const handler = this.stepHandlerRegistry.get(stepType);
-    if (!handler) {
-      throw new UnknownFlowStepError(stepType, step.id, this.stepHandlerRegistry.keys());
-    }
-    const flowLogBase = this.getIFlowLogBase(flow, request);
-    const ctx: IStepExecutionContext = {
-      stepType,
-      step,
-      flow: { id: flow.id, name: flow.name, version: flow.version, settings: flow.settings },
-      conditionContext: this.conditionEvaluator.buildContext(stepResults, request, flow),
-      request: {
-        userPrompt: request.userPrompt,
-        traceId: request.traceId,
-        requestId: request.requestId,
-        requestAnalysis: request.requestAnalysis,
-        portal: request.portal,
-        executionRoot: request.executionRoot,
-        planContextRef: request.planContextRef,
-      },
-      stepRequest: {
-        userPrompt: stepRequest.userPrompt,
-        context: stepRequest.context ?? {},
-        traceId: stepRequest.traceId,
-        requestId: stepRequest.requestId,
-        scenarioId: stepRequest.scenarioId,
-        stepId: stepRequest.stepId,
-        flowStepId: stepRequest.flowStepId,
-        flowId: stepRequest.flowId,
-        flowOutputKind: stepRequest.flowOutputKind,
-        recording: stepRequest.recording,
-        bindingSnapshot: stepRequest.bindingSnapshot,
-        requestAnalysis: stepRequest.requestAnalysis,
-        skills: stepRequest.skills,
-        sharedNamespace: stepRequest.sharedNamespace,
-        parallelGroupResults: stepRequest.parallelGroupResults,
-        portal: stepRequest.portal,
-        expectPlanJsonOutput: stepRequest.expectPlanJsonOutput,
-        effort: stepRequest.effort,
-        thinking: stepRequest.thinking,
-      },
-      flowRunId,
-      startedAt,
-      flowLogBase,
-    };
-    if (handler instanceof GateStepHandler) {
-      const result = await this.executeGateLoop(ctx, handler, flow, request, stepResults);
-      return gateEvaluationResult(step.id, step.evaluate!.threshold, result);
-    }
-    if (handler instanceof BranchStepHandler) {
-      const result = await handler.decideBranch(ctx, ctx.conditionContext!);
-      await this.controlStateStore.settleBranch(flow, step, request, stepResults, result);
-      const run = this.controlStateStore.get(stepResults);
-      await this.checkpointCoordinator.saveCheckpointIfEnabled(
-        flow,
-        request,
-        flowRunId,
-        run.flowContentHash,
-        stepResults,
-      );
-      return result;
-    }
-    return await handler.execute(ctx);
-  }
-
-  private async executeGateLoop(
-    ctx: IStepExecutionContext,
-    handler: GateStepHandler,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    stepResults: Map<string, IStepResult>,
-  ): Promise<IGateResult> {
-    const bodyIds = computeLoopBody(flow, ctx.step);
-    const run = this.controlStateStore.get(stepResults);
-    const flowContentHash = run.flowContentHash;
-    const restored = run.state.gates[ctx.step.id];
-    if (restored?.phase === "settled" && restored.result) return restored.result;
-    const save = () =>
-      this.checkpointCoordinator.saveCheckpointIfEnabled(flow, request, ctx.flowRunId, flowContentHash, stepResults);
-    return await runGateLoop(
-      bodyIds,
-      ctx.step.loop?.backTo ?? ctx.step.input.stepId,
-      toGateConfig(ctx.step.evaluate!).maxRetries,
-      {
-        evaluate: async (attempt) => {
-          const stepRequest = attempt === 1
-            ? ctx.stepRequest
-            : await this.prepareStepRequest(ctx.flowRunId, ctx.step, flow, request, stepResults);
-          run.state.gates[ctx.step.id] = {
-            gateId: ctx.step.id,
-            bodyIds,
-            evaluationCount: attempt,
-            nextIteration: attempt,
-            phase: "evaluating",
-            ceiling: run.ceiling,
-            fingerprint: await this.controlStateStore.fingerprint(flow, ctx.step, request, stepResults),
-          };
-          await save();
-          const verdict = await handler.evaluateGate({ ...ctx, stepRequest }, attempt, run.ceiling);
-          if (verdict.action !== FlowGateAction.RETRY) {
-            Object.assign(run.state.gates[ctx.step.id], { phase: "settled", result: verdict });
-            await save();
-          }
-          return verdict;
-        },
-        admit: async (iteration, verdict) => {
-          await this.retryBudgetService.enforceRetryCostBudget(ctx.flowRunId, request);
-          run.state.gates[ctx.step.id].phase = "rerunning";
-          await save();
-          await this.eventLogger.log(DomainEventType.FlowLoopIteration, {
-            flowRunId: ctx.flowRunId,
-            gateStepId: ctx.step.id,
-            backTo: ctx.step.loop?.backTo ?? ctx.step.input.stepId ?? bodyIds[0],
-            iteration,
-            maxRetries: toGateConfig(ctx.step.evaluate!).maxRetries,
-            bodyStepIds: bodyIds,
-            previousScore: verdict.score,
-            traceId: request.traceId,
-            requestId: request.requestId,
-          });
-        },
-        invalidate: () => {
-          for (const id of bodyIds) stepResults.delete(id);
-        },
-        runMember: (id, iteration, feedback) =>
-          this.executeStep(ctx.flowRunId, id, flow, request, stepResults, { iteration, feedback }),
-        finalize: (result) =>
-          finalizeStepResult(
-            { flow, request, flowRunId: ctx.flowRunId, flowContentHash, stepResults },
-            result,
-            this.namespaceCoordinator,
-            this.checkpointCoordinator,
-          ),
-      },
-    );
-  }
-
-  /**
-   * Format successful step result
-   */
-  private formatStepSuccess(
-    ctx: IFormatStepSuccessContext,
-    result: IAgentExecutionResult,
-    recoveryMetadata?: Opt<IStepRecoveryMetadata, Reason.OptionalInput>,
-    namespaceWrites?: Opt<IStepNamespaceWrites, Reason.OptionalInput>,
-  ): IStepResult {
-    const { flowRunId, step, request, startedAt } = ctx;
-    const completedAt = new Date();
-    // Clock corrections must not invalidate nonnegative checkpoint durations.
-    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
-
-    this.eventLogger.log(DomainEventType.FlowStepCompleted, {
-      flowRunId,
-      stepId: step.id,
-      agentRole: step.agent_role,
-      success: true,
-      duration,
-      outputLength: result.content.length,
-      hasThought: !!result.thought,
-      strategy: step.strategy,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    void this.emitMilestone(MILESTONE_FLOW_STEP_COMPLETED, request.traceId, `Step ${step.name || step.id} completed`, {
-      currentStepLabel: step.name || step.id,
-    });
-
-    const waitStateId = this.pendingWaitStateRef.current;
-    this.pendingWaitStateRef.current = undefined;
-
-    return {
-      stepId: step.id,
-      success: true,
-      result,
-      duration,
-      startedAt,
-      completedAt,
-      namespaceWrites,
-      waitStateId,
-      ...recoveryMetadata,
-    };
-  }
-
-  /**
-   * Format failed step result
-   */
-  private formatStepFailure<TError>(
-    flowRunId: string,
-    step: IFlowStep,
-    request: IFlowOriginalRequest,
-    error: TError,
-    startedAt: Date,
-  ): IStepResult {
-    const completedAt = new Date();
-    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorType = error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL;
-    const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
-
-    this.eventLogger.log(DomainEventType.FlowStepFailed, {
-      flowRunId,
-      stepId: step.id,
-      agentRole: step.agent_role,
-      error: errorMessage,
-      errorType,
-      duration,
-      ...(providerReasonCode ? { providerReasonCode } : {}),
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
-
-    return {
-      stepId: step.id,
-      success: false,
-      error: errorMessage,
-      errorCode: error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : undefined,
-      ...(providerReasonCode ? { providerReasonCode } : {}),
-      duration,
-      startedAt,
-      completedAt,
-    };
-  }
-
-  /**
-   * Prepare the request for a step execution
-   */
-  private async prepareStepRequest(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: IFlowOriginalRequest & { scenarioId?: string; stepId?: string },
-    stepResults: Map<string, IStepResult>,
-  ): Promise<IFlowStepRequest> {
-    const inputData = this.collectStepInputData(step, originalRequest, stepResults);
-    const userPrompt = await this.buildStepUserPrompt(flowRunId, step, flow, originalRequest, inputData);
-
-    // Merge skills: step-level skills override flow-level defaults
-    const skills = step.skills ?? flow.defaultSkills;
-
-    // Log input.prepared event for test visibility
-    await this.eventLogger.log(DomainEventType.FlowStepInputPrepared, {
-      flowRunId,
-      stepId: step.id,
-      hasSkills: !!skills && Array.isArray(skills) ? skills.length > 0 : !!skills,
-      traceId: originalRequest.traceId,
-      requestId: originalRequest.requestId,
-    });
-
-    const stepRequest: IFlowStepRequest = {
-      userPrompt,
-      context: {},
-      traceId: originalRequest.traceId,
-      requestId: originalRequest.requestId,
-      scenarioId: originalRequest.scenarioId,
-      stepId: originalRequest.stepId,
-      flowStepId: step.id,
-      ...(originalRequest.recording ? { recording: originalRequest.recording } : {}),
-      flowOutputKind: step.type === FlowStepType.BRANCH ? "branch-json" : undefined,
-      flowId: originalRequest.flowId ?? flow.id,
-      bindingSnapshot: originalRequest.bindingSnapshot,
-      skills,
-      requestAnalysis: originalRequest.requestAnalysis,
-      portal: originalRequest.portal,
-      expectPlanJsonOutput: isFinalJsonStrategyStep(step, flow),
-      effort: step.effort,
-      thinking: step.thinking,
-    };
-
-    const stepRequestWithParallelGroups = this.parallelGroupMergeService.attachParallelGroupResults(
-      stepRequest,
-      flowRunId,
-      step,
-      flow,
-      originalRequest,
-      stepResults,
-    );
-
-    return await this.namespaceCoordinator.attachSharedNamespace(
-      stepRequestWithParallelGroups,
-      flowRunId,
-      step,
-      flow,
-      originalRequest,
-    );
-  }
-
-  private collectStepInputData(
-    step: IFlowStep,
-    originalRequest: { userPrompt: string },
-    stepResults: Map<string, IStepResult>,
-  ): string {
-    switch (step.input.source) {
-      case FlowInputSource.REQUEST:
-        return originalRequest.userPrompt;
-
-      case FlowInputSource.STEP:
-        return this.getStepResultContent(step, step.input.stepId, stepResults);
-
-      case "aggregate":
-        return this.getAggregatedStepInput(step, stepResults);
-
-      default:
-        throw new Error(`Invalid input source: ${step.input.source}`);
-    }
-  }
-
-  private getStepResultContent(
-    step: IFlowStep,
-    sourceStepId: Opt<string, Reason.OptionalInput>,
-    stepResults: Map<string, IStepResult>,
-  ): string {
-    if (!sourceStepId) {
-      throw new Error(`Step ${step.id} has source "step" but no stepId specified`);
-    }
-
-    const sourceResult = stepResults.get(sourceStepId);
-    if (!sourceResult?.result) {
-      throw new Error(`Step ${step.id} depends on ${sourceStepId} which has no result`);
-    }
-
-    return sourceResult.result.content;
-  }
-
-  private getAggregatedStepInput(
-    step: IFlowStep,
-    stepResults: Map<string, IStepResult>,
-  ): string {
-    const from = resolveAggregateSources(step);
-
-    if (from.length === 0) {
-      throw new Error(
-        `Step ${step.id} has source "aggregate" but neither "from" nor "dependsOn" names a step to aggregate`,
-      );
-    }
-
-    const aggregatedInputs = from.filter((id) => stepResults.get(id)?.skipCode !== FlowStepSkipCode.BRANCH_NOT_TAKEN)
-      .map((stepId) => this.getStepResultContent(step, stepId, stepResults));
-    return aggregatedInputs.length === 1 ? aggregatedInputs[0] : aggregatedInputs.join("\n\n");
-  }
-
-  private async buildStepUserPrompt(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: { userPrompt: string; traceId?: string; requestId?: string },
-    inputData: string,
-  ): Promise<string> {
-    const transformStart = Date.now();
-    const basePrompt = step.input.transform
-      ? this.stepOutputFormatter.applyTransform(
-        inputData,
-        step.input.transform as string | ((input: string) => string),
-        step.input.transformArgs as JSONValue | undefined,
-        originalRequest.userPrompt,
-      )
-      : inputData;
-
-    if (step.input.transform) {
-      await this.eventLogger.log(DomainEventType.FlowStepTransformApplied, {
-        flowRunId,
-        stepId: step.id,
-        transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
-        inputSize: inputData.length,
-        outputSize: basePrompt.length,
-        duration: Math.max(0, Date.now() - transformStart),
-        traceId: originalRequest.traceId,
-        requestId: originalRequest.requestId,
-      });
-    }
-
-    const isFinalJsonStep = isFinalJsonStrategyStep(step, flow);
-
-    // Strategy steps normally keep their action-oriented prompt: injecting a plan envelope makes live models return
-    // a plan instead of tool actions. A terminal JSON strategy step is the explicit exception because request flow
-    // routing sends its output to PlanAdapter, which requires the envelope's plan JSON.
-    const userPrompt = step.type === FlowStepType.GATE || (step.strategy && !isFinalJsonStep)
-      ? basePrompt
-      : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
-
-    return userPrompt;
   }
 
   /** Safe wrapper around `executeStep` to ensure unexpected throws are converted into an
@@ -2507,129 +935,6 @@ export class FlowRunner implements IFlowRunner {
         startedAt: new Date(),
         completedAt: new Date(),
       };
-    }
-  }
-
-  /**
-   * Aggregate token usage across all LLM calls in a flow and log summary
-   */
-  private async aggregateAndLogTokenUsage(
-    flowRunId: string,
-    flowId: string,
-    traceId: string,
-    requestId?: Opt<string, Reason.OptionalContext>,
-  ): Promise<IFlowResult["tokenSummary"] | null> {
-    try {
-      // Query all LLM usage events for this trace
-      const tokenEvents = await this.db!.queryActivity({
-        traceId,
-        actionType: "llm.usage",
-      });
-
-      if (tokenEvents.length === 0) {
-        // No token usage found, log zero summary
-        await this.eventLogger.log(DomainEventType.FlowTokenSummary, {
-          flowRunId,
-          flowId,
-          totalLlmCalls: 0,
-          totalInputTokens: 0,
-          totalOutputTokens: 0,
-          totalTokens: 0,
-          totalCostUsd: 0,
-          providers: {},
-          traceId,
-          requestId,
-        });
-        return null;
-      }
-
-      // Aggregate token usage by provider
-      const providerStats: Record<string, {
-        calls: number;
-        inputTokens: number;
-        outputTokens: number;
-        costUsd: number;
-      }> = {};
-
-      let totalInputTokens = 0;
-      let totalOutputTokens = 0;
-      let totalCostUsd = 0;
-      const models = new Set<string>();
-
-      for (const event of tokenEvents) {
-        try {
-          const payload = JSON.parse(event.payload);
-          const provider = payload.provider || event.target || "unknown";
-          const inputTokens = payload.input_tokens ?? payload.prompt_tokens ?? 0;
-          const outputTokens = payload.output_tokens ?? payload.completion_tokens ?? 0;
-          const costUsd = payload.cost_usd || 0;
-          const model = payload.model as string | undefined;
-
-          // Initialize provider stats if not exists
-          if (!providerStats[provider]) {
-            providerStats[provider] = {
-              calls: 0,
-              inputTokens: 0,
-              outputTokens: 0,
-              costUsd: 0,
-            };
-          }
-
-          // Accumulate stats
-          providerStats[provider].calls++;
-          providerStats[provider].inputTokens += inputTokens;
-          providerStats[provider].outputTokens += outputTokens;
-          providerStats[provider].costUsd += costUsd;
-
-          totalInputTokens += inputTokens;
-          totalOutputTokens += outputTokens;
-          totalCostUsd += costUsd;
-          if (model) {
-            models.add(model);
-          }
-        } catch (_parseError) {
-          // Skip malformed token events
-          console.warn(`Skipping malformed token event: ${event.payload}`);
-        }
-      }
-
-      // Log aggregated token summary
-      await this.eventLogger.log(DomainEventType.FlowTokenSummary, {
-        flowRunId,
-        flowId,
-        totalLlmCalls: tokenEvents.length,
-        totalInputTokens,
-        totalOutputTokens,
-        totalTokens: totalInputTokens + totalOutputTokens,
-        totalCostUsd: Math.round(totalCostUsd * DEFAULT_COST_PRECISION_FACTOR) / DEFAULT_COST_PRECISION_FACTOR, // Round to 4 decimal places
-        providers: providerStats,
-        traceId,
-        requestId,
-      });
-
-      return {
-        input_tokens: totalInputTokens,
-        output_tokens: totalOutputTokens,
-        total_tokens: totalInputTokens + totalOutputTokens,
-        token_provider: Object.keys(providerStats).join(", ") || undefined,
-        token_model: models.size > 0 ? Array.from(models).join(", ") : undefined,
-        token_cost_usd: Math.round(totalCostUsd * DEFAULT_COST_PRECISION_FACTOR) / DEFAULT_COST_PRECISION_FACTOR,
-      };
-    } catch (error) {
-      // Log error but don't fail the flow
-      console.warn(`Failed to aggregate token usage for flow ${flowRunId}:`, error);
-      try {
-        await this.eventLogger.log(DomainEventType.FlowTokenSummaryError, {
-          flowRunId,
-          flowId,
-          error: error instanceof Error ? error.message : String(error),
-          traceId,
-          requestId,
-        });
-      } catch {
-        // Swallow logging errors to avoid cascading failures
-      }
-      return null;
     }
   }
 }

@@ -9,7 +9,7 @@ import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { AgentComposerAdapter, type IRunner } from "../src/agent_composer_adapter.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { IFlowStepRequest } from "../src/flow_runner.ts";
+import type { IFlowStepRequest } from "../src/flow_types.ts";
 import type { IBlueprint } from "@exaix/execution";
 
 interface IRunnerRequest {

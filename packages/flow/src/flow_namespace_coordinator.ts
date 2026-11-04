@@ -14,7 +14,7 @@ import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { FLOW_EVENT_NAMESPACE_INITIALIZED, FLOW_EVENT_NAMESPACE_READ, FLOW_EVENT_NAMESPACE_WRITE } from "@exaix/core";
 import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
-import type { IFlowEventLogger, IFlowStepRequest, IStepResult } from "./flow_runner.ts";
+import type { IFlowEventLogger, IFlowStepRequest, IStepResult } from "./flow_types.ts";
 
 interface IFlowNamespaceOriginalRequest {
   userPrompt: string;

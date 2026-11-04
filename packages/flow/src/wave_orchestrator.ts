@@ -27,13 +27,8 @@ import type { IFlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.t
 import type { IFlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { Opt, Reason } from "@exaix/core/types";
-import {
-  FlowAbortError,
-  FlowExecutionError,
-  type IFlowEventLogBase,
-  type IFlowEventLogger,
-  type IStepResult,
-} from "./flow_runner.ts";
+import { FlowAbortError, FlowExecutionError } from "./flow_errors.ts";
+import type { IFlowEventLogBase, IFlowEventLogger, IStepResult } from "./flow_types.ts";
 
 type IWaveRequest = {
   userPrompt: string;

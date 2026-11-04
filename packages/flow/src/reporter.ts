@@ -13,7 +13,7 @@ import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IFlowResult } from "./flow_runner.ts";
+import type { IFlowResult } from "./flow_types.ts";
 
 export interface IFlowReportConfig {
   reportsDirectory: string;

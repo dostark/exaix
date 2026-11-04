@@ -13,7 +13,7 @@ import type { JSONValue } from "@exaix/core";
 import { FLOW_EVENT_STEP_COMPENSATED, FLOW_EVENT_STEP_COMPENSATION_FAILED } from "@exaix/core";
 import type { IMcpClient } from "@exaix/mcp";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IFlowEventLogger, IStepResult } from "./flow_runner.ts";
+import type { IFlowEventLogger, IStepResult } from "./flow_types.ts";
 
 /** Runs compensating tool calls against completed steps after a COMPENSATE failure. */
 export class CompensationService {

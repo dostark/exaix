@@ -19,7 +19,7 @@ import { AgentComposer, type IAgentExecutionResult, type IBlueprint } from "@exa
 import type { StrategyRegistry } from "@exaix/execution";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
-import type { IFlowStepRequest } from "./flow_runner.ts";
+import type { IFlowStepRequest } from "./flow_types.ts";
 import type { IDatabaseService, JSONValue } from "@exaix/core";
 import { ConfigValueType, ExecutionStrategyName, SwapClass, ToolsRoundLoop } from "@exaix/core";
 import { configurable } from "@exaix/core/config";

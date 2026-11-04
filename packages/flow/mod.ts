@@ -15,16 +15,18 @@ export type { IImprovementAgent } from "./src/feedback_loop.ts";
 export type { IParsedPhaseStep } from "./src/phase_step_manifest_parser.ts";
 export type { PhaseStepDiagnosticCode } from "./src/phase_step_manifest_parser.ts";
 export { parsePhaseStepManifests } from "./src/phase_step_manifest_parser.ts";
-export { flowStepOutputInstruction, resolveAggregateSources } from "./src/flow_runner.ts";
-export type { IAgentExecutor } from "./src/flow_runner.ts";
-export type { IFlowEventLogger } from "./src/flow_runner.ts";
-export type { IFlowEventPayload } from "./src/flow_runner.ts";
-export type { IFlowEventPayloadMap } from "./src/flow_runner.ts";
-export type { IFlowResult } from "./src/flow_runner.ts";
-export type { IFlowRunner } from "./src/flow_runner.ts";
-export type { IFlowStepRequest } from "./src/flow_runner.ts";
-export type { IParallelGroupSummary } from "./src/flow_runner.ts";
-export type { IStepResult } from "./src/flow_runner.ts";
+export { flowStepOutputInstruction, resolveAggregateSources } from "./src/flow_step_prompts.ts";
+export type {
+  IAgentExecutor,
+  IFlowEventLogger,
+  IFlowEventPayload,
+  IFlowEventPayloadMap,
+  IFlowResult,
+  IFlowRunner,
+  IFlowStepRequest,
+  IParallelGroupSummary,
+  IStepResult,
+} from "./src/flow_types.ts";
 export type { GateConfig } from "./src/gate_evaluator.ts";
 export type { IStepDurabilityStore } from "./src/contracts/step_durability.ts";
 export type { IStepExecutionRecord } from "./src/contracts/step_durability.ts";
@@ -46,7 +48,9 @@ export type { IActivityJournal, IDynamicStepExecutorDependencies, JournalEntry }
 export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop } from "./src/feedback_loop.ts";
 export { createFeedbackLoop, runSelfCorrectingAgent, SimpleImprovementAgent } from "./src/feedback_loop.ts";
-export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./src/flow_runner.ts";
+export { FlowRunner } from "./src/flow_runner.ts";
+export { FlowAbortError, FlowExecutionError } from "./src/flow_errors.ts";
+export { toGateConfig } from "./src/flow_step_prompts.ts";
 export { FlowCapabilityUnavailableError, getInstalledFlowCapabilities } from "./src/flow_capabilities.ts";
 export { StepContentHasher } from "./src/step_content_hasher.ts";
 export { FlowRuntimeValidator } from "./src/flow_runtime_validator.ts";

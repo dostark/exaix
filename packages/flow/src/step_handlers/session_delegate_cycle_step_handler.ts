@@ -48,7 +48,8 @@ import { type IParsedPhaseStep, parsePhaseStepManifests } from "../phase_step_ma
 import { computePlanDigest } from "../plan_digest.ts";
 import type { IBindingGateContext } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
-import { type IAgentExecutor, type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
+import { toGateConfig } from "../flow_step_prompts.ts";
+import type { IAgentExecutor, IFlowEventLogger } from "../flow_types.ts";
 import { delegateReviewLane } from "../contracts/flow_recording_context.ts";
 
 interface ISessionDelegateCycleStepHandlerDeps {

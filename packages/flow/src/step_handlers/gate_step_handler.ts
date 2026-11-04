@@ -13,7 +13,8 @@ import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IBindingGateContext, IBindingStepRef } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
-import { type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
+import { toGateConfig } from "../flow_step_prompts.ts";
+import type { IFlowEventLogger } from "../flow_types.ts";
 import { gateEvaluationResult } from "../errors/flow_control_errors.ts";
 
 /** Stores pending wait-state identity for non-gate flow handlers. */

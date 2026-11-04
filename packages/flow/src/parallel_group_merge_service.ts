@@ -12,8 +12,8 @@
 import type { IFlow, IFlowStep, IParallelMergeMode } from "@exaix/schemas/flow.ts";
 import { mergeAsContext } from "@exaix/core/func";
 import { FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED } from "@exaix/core";
-import type { IFlowEventLogger, IFlowStepRequest, IParallelGroupSummary, IStepResult } from "./flow_runner.ts";
-import { FlowExecutionError } from "./flow_runner.ts";
+import type { IFlowEventLogger, IFlowStepRequest, IParallelGroupSummary, IStepResult } from "./flow_types.ts";
+import { FlowExecutionError } from "./flow_errors.ts";
 
 /** Builds fan-in parallelGroupResults for steps that declare mergeFromGroups. */
 export class ParallelGroupMergeService {

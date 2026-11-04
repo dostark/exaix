@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/dynamic_step_executor.ts, packages/flow/src/flow_runner.ts]
  */
 import type { IActivityJournal, JournalEntry } from "./dynamic_step_executor.ts";
-import type { IFlowEventLogger } from "./flow_runner.ts";
+import type { IFlowEventLogger } from "./flow_types.ts";
 
 export class ActivityJournal implements IActivityJournal {
   constructor(private readonly eventLogger: IFlowEventLogger) {}

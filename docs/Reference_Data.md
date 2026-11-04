@@ -360,7 +360,7 @@ Core infrastructure modules for architecture validation:
 ## Flow Event Reference
 
 The flow engine publishes structured events via `EventLogger.log()` with typed
-payloads defined in `packages/flow/src/flow_runner.ts:IFlowEventPayloadMap`.
+payloads defined in `packages/flow/src/flow_types.ts:IFlowEventPayloadMap`.
 
 ### Step Durability Events
 

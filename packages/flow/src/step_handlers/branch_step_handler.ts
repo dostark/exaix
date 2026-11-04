@@ -10,7 +10,7 @@ import { JSONValueSchema } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { repairJSON } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
-import type { IFlowEventLogger } from "../flow_runner.ts";
+import type { IFlowEventLogger } from "../flow_types.ts";
 import type { IBranchExecutionResult } from "../contracts/flow_control_state.ts";
 import { ConditionEvaluator, type IConditionContext } from "../condition_evaluator.ts";
 import {
