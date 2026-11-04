@@ -22,6 +22,7 @@ import {
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { makeGenerateResult as makeResult } from "@exaix/testing";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 // Helpers
 
@@ -66,6 +67,7 @@ const mockToolRegistry = {
 
 function createBaseExecutor(bus?: EventBusService): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

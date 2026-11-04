@@ -11,6 +11,7 @@ import type { IAgentFileBlueprint } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
+import { createReActPromptBuilder } from "./react_prompt_builder.ts";
 
 export type TestToolParams = Record<string, JSONValue>;
 
@@ -44,6 +45,7 @@ export function createOptions(portal: string): IAgentExecutionOptions {
 }
 
 export const mockExecutor = {
+  promptBuilder: createReActPromptBuilder(),
   logAgentOutput: async () => {
     await Promise.resolve();
   },
@@ -90,6 +92,7 @@ export function createStubToolRegistry(overrides: Partial<TStubToolRegistry> = {
 /** A ReAct executor double that journals nothing and returns the model response as the description. */
 export function createStubExecutor(overrides: Partial<ReActExecutor> = {}): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

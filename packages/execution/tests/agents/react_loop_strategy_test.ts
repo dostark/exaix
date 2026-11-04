@@ -22,6 +22,7 @@ import {
   testBlueprint,
   type TestToolParams,
 } from "../helpers/react_loop_fixtures.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 class MockModelProvider implements IModelProvider {
   readonly id = "mock-react-provider";
@@ -57,6 +58,7 @@ const testContext = {
 } satisfies IExecutionContext;
 
 const mockExecutor = {
+  promptBuilder: createReActPromptBuilder(),
   logAgentOutput: async () => {
     await Promise.resolve();
   },

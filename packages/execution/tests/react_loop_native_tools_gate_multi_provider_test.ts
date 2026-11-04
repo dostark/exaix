@@ -39,6 +39,7 @@ import type { ITool, JSONValue } from "@exaix/core/types";
 import type { IToolsRoundPolicy } from "@exaix/schemas";
 import type { Opt, Reason } from "@exaix/core/types";
 import { PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX, ToolsRoundMode } from "@exaix/core";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -80,6 +81,7 @@ function makeTrackingExecutor(
   generationRecords?: Opt<Array<{ costUsd?: number; costSource?: string }>, Reason.OptionalContext>,
 ): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (r: IChangesetResult) => r,
     parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({

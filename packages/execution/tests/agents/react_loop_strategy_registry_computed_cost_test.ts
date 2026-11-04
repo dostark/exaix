@@ -20,6 +20,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 const testBlueprint = {
   name: "test-agent",
@@ -61,6 +62,7 @@ interface IPricedTurn {
 async function loggedCostUsd(turn: IPricedTurn): Promise<number | undefined> {
   let capturedCostUsd: number | undefined;
   const mockExecutor = {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

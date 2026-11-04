@@ -9,33 +9,34 @@
 import { assertFalse, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 function dummyExecutor(): IReActLoopExecutor {
-  return {} as never as IReActLoopExecutor;
+  return { promptBuilder: createReActPromptBuilder() } as never as IReActLoopExecutor;
 }
 
-Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILABLE TOOLS and guidelines", () => {
+Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILABLE TOOLS and guidelines", async () => {
   const strategy = new ReActLoopStrategy(dummyExecutor());
   const typed = strategy as never as {
     buildPrompt(
-      blueprint: { name: string; capabilities: string[] },
+      blueprint: { name: string; capabilities: string[]; model: string; provider: string },
       context: { trace_id: string; request: string; plan: string; portal: string },
       options: { agent_role: string; portal: string; permitted_tools?: string[] },
       history: Array<{ role: string; content: string }>,
       skipToolProse?: boolean,
-    ): string;
+    ): Promise<string>;
   };
 
-  const promptWithoutProse = typed.buildPrompt(
-    { name: "test", capabilities: ["write"] },
+  const promptWithoutProse = await typed.buildPrompt(
+    { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
     { agent_role: "i", portal: "p" },
     [],
     true,
   );
 
-  const promptWithProse = typed.buildPrompt(
-    { name: "test", capabilities: ["write"] },
+  const promptWithProse = await typed.buildPrompt(
+    { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
     { agent_role: "i", portal: "p" },
     [],
@@ -57,20 +58,20 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   assertStringIncludes(promptWithProse, "```toml");
 });
 
-Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finished tool call", () => {
+Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finished tool call", async () => {
   const strategy = new ReActLoopStrategy(dummyExecutor());
   const typed = strategy as never as {
     buildPrompt(
-      blueprint: { name: string; capabilities: string[] },
+      blueprint: { name: string; capabilities: string[]; model: string; provider: string },
       context: { trace_id: string; request: string; plan: string; portal: string },
       options: { agent_role: string; portal: string; permitted_tools?: string[] },
       history: Array<{ role: string; content: string }>,
       skipToolProse?: boolean,
-    ): string;
+    ): Promise<string>;
   };
 
-  const prompt = typed.buildPrompt(
-    { name: "test", capabilities: ["write"] },
+  const prompt = await typed.buildPrompt(
+    { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
     { agent_role: "i", portal: "p" },
     [],

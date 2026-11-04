@@ -32,6 +32,7 @@ import { ConfigSchema, type IResolvedBinding } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 import type { ITool } from "@exaix/core/types";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { createReActPromptBuilder } from "../../packages/execution/tests/helpers/react_prompt_builder.ts";
 
 const MODEL = "llama3.1:8b";
 const AGENT_ROLE = "self-hosted-native-tools-agent";
@@ -144,6 +145,7 @@ async function providerFromBinding(endpoint: string, supportsToolChoice: boolean
 
 function makeExecutor(): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (result: IChangesetResult) => result,
     parseAgentResponse: (_response: string, ctx: IExecutionContext, startedAt: number): IChangesetResult => ({

@@ -52,6 +52,7 @@ import {
 import { EventLogger } from "@exaix/core/logger";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { initTestDbService, makeGenerateResult, writeSkillFolder } from "@exaix/testing";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 const SKILL = "pinned-skill";
 const TRACE = "11111111-1111-4111-8111-111111111111";
@@ -148,6 +149,7 @@ const OPTIONS: IAgentExecutionOptions = {
 const BASE_EXECUTOR = {
   logAgentOutput: () => Promise.resolve(),
   validateReviewResult: (result: never) => result,
+  promptBuilder: createReActPromptBuilder(),
   parseAgentResponse: (_response: string, context: IExecutionContext, startTime: number) => ({
     branch: "feat/test",
     commit_sha: "0".repeat(40),

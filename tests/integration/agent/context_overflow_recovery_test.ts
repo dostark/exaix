@@ -21,13 +21,20 @@ function buildExecutionPrompt(
   options: IAgentExecutionOptions,
   pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
 ): Promise<string> {
+  const permitted = options.permitted_tools;
+  const visibleTools = (executor["_toolRegistry"]?.getTools() ?? []).filter((tool) =>
+    permitted === undefined || permitted.includes(tool.name)
+  );
   return executor["promptBuilder"].buildExecutionPrompt(
     blueprint,
     context,
     options,
-    executor["blueprintService"].resolveModelId(blueprint),
-    executor["_toolRegistry"]?.getTools(),
-    pinnedSkills,
+    {
+      historyText: "",
+      skipToolProse: false,
+      visibleToolIds: visibleTools.map((tool) => tool.name),
+    },
+    pinnedSkills?.text,
   );
 }
 

@@ -23,6 +23,7 @@ import {
   testBlueprint,
   type TestToolParams,
 } from "../helpers/react_loop_fixtures.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 const testContext = {
   trace_id: "trace-66666666-6666-4666-8666-666666666666",
@@ -35,6 +36,7 @@ const testContext = {
 Deno.test("[ReActLoopGenerationDuration] each provider.generate() call in a multi-turn loop produces a real duration_ms on logGeneration", async () => {
   const capturedDurations: (number | undefined)[] = [];
   const mockExecutor = {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

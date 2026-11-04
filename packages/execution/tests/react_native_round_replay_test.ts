@@ -30,6 +30,7 @@ import {
 } from "@exaix/core";
 import { makeGenerateResult } from "@exaix/testing";
 import type { ITool, JSONValue } from "@exaix/core/types";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -122,6 +123,7 @@ function registerGoogleReplayProvider(): void {
 
 function executorFor(executed: string[]): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (result: IChangesetResult) => result,
     parseAgentResponse: (_response: string, ctx: IExecutionContext, startTime: number): IChangesetResult => ({

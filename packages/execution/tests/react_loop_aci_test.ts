@@ -26,6 +26,7 @@ import { ToolSideEffectScope } from "@exaix/core";
 import type { AciDoc } from "@exaix/schemas";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
 import { testBlueprint } from "./helpers/react_loop_fixtures.ts";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 function testContext(traceId: string): IExecutionContext {
   return { trace_id: traceId, request_id: "request-aci-1", request: "test", plan: "test", portal: "test" };
@@ -81,12 +82,14 @@ interface IBuildPromptExecutor {
 }
 
 /** Direct-call bypass for the private buildPrompt method, mirroring react_loop_native_tools_gate_test.ts. */
-function callBuildPrompt(
+async function callBuildPrompt(
   executor: IBuildPromptExecutor,
   options: IAgentExecutionOptions,
   skipToolProse = false,
-): string {
-  const strategy = new ReActLoopStrategy(executor as never as IReActLoopExecutor);
+): Promise<string> {
+  const strategy = new ReActLoopStrategy(
+    { promptBuilder: createReActPromptBuilder(), ...executor } as never as IReActLoopExecutor,
+  );
   const typed = strategy as never as {
     buildPrompt(
       blueprint: IAgentFileBlueprint,
@@ -94,18 +97,18 @@ function callBuildPrompt(
       options: IAgentExecutionOptions,
       history: Array<{ role: string; content: string }>,
       skipToolProse?: boolean,
-    ): string;
+    ): Promise<string>;
   };
-  return typed.buildPrompt(testBlueprint, testContext("trace-buildprompt-1"), options, [], skipToolProse);
+  return await typed.buildPrompt(testBlueprint, testContext("trace-buildprompt-1"), options, [], skipToolProse);
 }
 
 function toolRegistryOf(tools: ITool[] = REGISTRY_TOOLS): { getTools(): ITool[] } {
   return { getTools: () => tools };
 }
 
-Deno.test("[ReActLoopAci] enabled read_file injection reaches the exact prompt, in both prose and skipToolProse modes", () => {
+Deno.test("[ReActLoopAci] enabled read_file injection reaches the exact prompt, in both prose and skipToolProse modes", async () => {
   for (const skipToolProse of [false, true]) {
-    const prompt = callBuildPrompt(
+    const prompt = await callBuildPrompt(
       { aciDocsEnabled: true, toolRegistry: toolRegistryOf() },
       createOptions(["read_file"]),
       skipToolProse,
@@ -119,14 +122,14 @@ Deno.test("[ReActLoopAci] enabled read_file injection reaches the exact prompt, 
   }
 });
 
-Deno.test("[ReActLoopAci] disabled prompt is byte-identical to the pre-ACI behaviour", () => {
-  const disabledPrompt = callBuildPrompt(
+Deno.test("[ReActLoopAci] disabled prompt is byte-identical to the pre-ACI behaviour", async () => {
+  const disabledPrompt = await callBuildPrompt(
     { aciDocsEnabled: false, toolRegistry: toolRegistryOf() },
     createOptions(["read_file"]),
   );
   // A pre-ACI executor (no aciDocsEnabled/toolRegistry.getTools() ever called) yields the
   // exact same bytes — proving the disabled path never even touches the renderer.
-  const preAciPrompt = callBuildPrompt(
+  const preAciPrompt = await callBuildPrompt(
     {
       toolRegistry: {
         getTools: () => {
@@ -140,8 +143,8 @@ Deno.test("[ReActLoopAci] disabled prompt is byte-identical to the pre-ACI behav
   assert(!disabledPrompt.includes("ACI TOOL GUIDANCE"), "disabled prompt must carry no ACI section");
 });
 
-Deno.test("[ReActLoopAci] permitted_tools: [] stays empty and injects no ACI section", () => {
-  const prompt = callBuildPrompt(
+Deno.test("[ReActLoopAci] permitted_tools: [] stays empty and injects no ACI section", async () => {
+  const prompt = await callBuildPrompt(
     { aciDocsEnabled: true, toolRegistry: toolRegistryOf() },
     createOptions([]),
   );
@@ -149,8 +152,8 @@ Deno.test("[ReActLoopAci] permitted_tools: [] stays empty and injects no ACI sec
   assertFalse(prompt.includes("ACI TOOL GUIDANCE"));
 });
 
-Deno.test("[ReActLoopAci] duplicate IDs are deduplicated everywhere; unknown IDs are ignored by ACI rendering", () => {
-  const prompt = callBuildPrompt(
+Deno.test("[ReActLoopAci] duplicate IDs are deduplicated everywhere; unknown IDs are ignored by ACI rendering", async () => {
+  const prompt = await callBuildPrompt(
     { aciDocsEnabled: true, toolRegistry: toolRegistryOf() },
     createOptions(["read_file", "read_file", "does_not_exist"]),
   );
@@ -192,6 +195,7 @@ Deno.test("[ReActLoopAci] repeated iterations emit one agent.prompt_assembled ev
       await Promise.resolve();
     },
     validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+    promptBuilder: createReActPromptBuilder(),
     parseAgentResponse: (): IChangesetResult => ({
       branch: "feat/test",
       commit_sha: "0000000000000000000000000000000000000000",
@@ -252,6 +256,7 @@ Deno.test("[ReActLoopAci] disabled mode emits no agent.prompt_assembled event", 
       await Promise.resolve();
     },
     validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+    promptBuilder: createReActPromptBuilder(),
     parseAgentResponse: (): IChangesetResult => ({
       branch: "feat/test",
       commit_sha: "0000000000000000000000000000000000000000",

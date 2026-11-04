@@ -214,25 +214,25 @@ Deno.test("[ReAct permissions] default (no permitted_tools) five-tool exposure i
   assertEquals(executedTools, [], "the default five visible tools do not include query_symbols");
 });
 
-Deno.test("[ReAct permissions] AVAILABLE TOOLS prompt text excludes an unlisted graph tool and includes a listed one", () => {
+Deno.test("[ReAct permissions] AVAILABLE TOOLS prompt text excludes an unlisted graph tool and includes a listed one", async () => {
   const strategy = new ReActLoopStrategy(buildExecutor([]));
   const typed = strategy as never as {
     buildPrompt(
-      blueprintArg: { name: string; capabilities: string[] },
+      blueprintArg: { name: string; capabilities: string[]; model: string; provider: string },
       contextArg: { trace_id: string; request: string; plan: string; portal: string },
       optionsArg: { agent_role: string; portal: string; permitted_tools?: string[] },
       history: Array<{ role: string; content: string }>,
-    ): string;
+    ): Promise<string>;
   };
 
-  const unlistedPrompt = typed.buildPrompt(
-    { name: "test", capabilities: ["write"] },
+  const unlistedPrompt = await typed.buildPrompt(
+    { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
     { agent_role: "i", portal: "p", permitted_tools: [ToolName.READ_FILE] },
     [],
   );
-  const listedPrompt = typed.buildPrompt(
-    { name: "test", capabilities: ["write"] },
+  const listedPrompt = await typed.buildPrompt(
+    { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
     { agent_role: "i", portal: "p", permitted_tools: [ToolName.QUERY_SYMBOLS] },
     [],

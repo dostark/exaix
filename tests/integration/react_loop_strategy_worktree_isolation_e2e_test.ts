@@ -35,6 +35,7 @@ import {
 import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import type { IReActLoopExecutor } from "../../packages/execution/src/react_loop_adapter.ts";
 import { castAny } from "@exaix/testing";
+import { createReActPromptBuilder } from "../../packages/execution/tests/helpers/react_prompt_builder.ts";
 
 const PORTAL_ALIAS = "todo-app";
 
@@ -90,6 +91,7 @@ Deno.test({
       });
 
       const mockExecutor = {
+        promptBuilder: createReActPromptBuilder(),
         logAgentOutput: async () => {
           await Promise.resolve();
         },

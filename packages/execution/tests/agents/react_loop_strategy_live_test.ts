@@ -33,6 +33,7 @@ import { ExecutionStrategyName, REACT_STATUS_COMPLETE, SecurityMode, ToolName } 
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
 import { bestSubstringSimilarity } from "../../../../tests/helpers/fuzzy_string_match.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 type TestToolParams = Record<string, JSONValue>;
@@ -82,6 +83,7 @@ const testOptions: IAgentExecutionOptions = {
 
 function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }>): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

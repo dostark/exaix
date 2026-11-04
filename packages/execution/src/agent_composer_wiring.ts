@@ -49,10 +49,11 @@ export function resolveComposerServices(
     snapshotStore: undefined,
   });
   const outputParser = deps.outputParser ?? new OutputParser();
+  const promptBuilder = deps.promptBuilder ?? new PromptBuilder(logger, ctx);
   return {
     blueprintService,
     ctx,
-    promptBuilder: deps.promptBuilder ?? new PromptBuilder(logger, ctx),
+    promptBuilder,
     gitAuditService: deps.gitAuditService ?? new GitAuditService(logger),
     outputParser,
     historyManager: deps.historyManager ?? new HistoryManager(config, logger, provider, deps.db, resolvedCallOptions),
@@ -64,6 +65,7 @@ export function resolveComposerServices(
       },
       maxIterations: config.agents?.max_iterations,
       toolsRoundPolicy: deps.toolsRoundPolicy,
+      promptBuilder,
     }),
   };
 }

@@ -27,6 +27,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 /** Provider that captures per-call options and stamps a scripted stop_reason. */
 class OptionsCapturingProvider implements IModelProvider {
@@ -74,6 +75,7 @@ function buildWarnCapturingLogger(sink: ICapturedWarn[]): IEventLogger {
 
 function buildExecutor(warnSink: ICapturedWarn[]): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: async () => {
       await Promise.resolve();
     },

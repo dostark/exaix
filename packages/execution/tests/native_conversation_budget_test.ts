@@ -19,6 +19,7 @@ import { createMockLogger, makeGenerateResult } from "@exaix/testing";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { DomainEventType } from "@exaix/core/events";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 const PROVIDER_ID = "openai-chat-budget-fixture";
 
@@ -50,6 +51,7 @@ Deno.test("native snapshot budget counts tool schema and stops before a generati
     },
   };
   const executor: IReActLoopExecutor = {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (result: IChangesetResult) => result,
     parseAgentResponse: () => ({

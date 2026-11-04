@@ -26,6 +26,7 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import type { JSONValue } from "@exaix/core/types";
 
 import { createStubExecutor } from "../helpers/react_loop_fixtures.ts";
+import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 type TestToolParams = Record<string, JSONValue>;
@@ -62,6 +63,7 @@ class StubGuardrailRunner implements IGuardrailRunner {
 }
 
 const baseExecutor = createStubExecutor({
+  promptBuilder: createReActPromptBuilder(),
   parseAgentResponse: (_response: string, context: IExecutionContext, startTime: number): IChangesetResult => ({
     branch: `feat/${context.portal || "test"}`,
     commit_sha: "0000000000000000000000000000000000000000",

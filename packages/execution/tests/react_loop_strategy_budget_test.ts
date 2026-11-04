@@ -28,6 +28,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IContextBudgetManager, IContextBudgetManagerInput, IContextBudgetManagerOutput } from "@exaix/execution";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { castAny, makeGenerateResult } from "@exaix/testing";
+import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 // Helpers
 
@@ -88,6 +89,7 @@ function makeTrackingExecutor(opts: {
   emittedEvents?: string[];
 }): ReActExecutor {
   return {
+    promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (r: IChangesetResult) => r,
     parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({
@@ -334,6 +336,7 @@ Deno.test(
     } as IModelProvider;
 
     const executor: ReActExecutor = {
+      promptBuilder: createReActPromptBuilder(),
       logAgentOutput: () => Promise.resolve(),
       validateReviewResult: (r: IChangesetResult) => r,
       parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({

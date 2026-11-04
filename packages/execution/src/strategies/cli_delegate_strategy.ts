@@ -86,6 +86,7 @@ import {
 } from "@exaix/core";
 import { parseCliDelegateStreamTurn } from "./cli_delegate_stream_parser.ts";
 import { ERROR_STDOUT_PREVIEW_MAX_CHARS } from "@exaix/core";
+import { buildDelegateObjective } from "../prompt_builder.ts";
 
 /** The subset of a parsed CLI-delegate outcome execute() actually consumes — satisfied by both claude's ICliDelegateTurnResult and opencode's IDelegateParsedReturn. */
 interface ICliDelegateParsedOutcome {
@@ -279,7 +280,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       );
     }
     const isFirstTurn = !this.sessionIds.has(context.trace_id);
-    const objective = this.buildObjective(blueprint, context, isFirstTurn, pinnedSkills?.text);
+    const objective = buildDelegateObjective(blueprint, context, isFirstTurn, pinnedSkills?.text);
     const { objective: finalObjective, recordId, connection } = await this.applyDogfoodContext(
       objective,
       context,
@@ -457,22 +458,6 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     } catch {
       return [];
     }
-  }
-
-  /** First turn leads with the whole plan (context.full_plan) so the CLI session orients
-   *  on the complete task before seeing an isolated step fragment. Later turns in the same
-   *  resumed session already carry that orientation in conversation history. */
-  private buildObjective(
-    blueprint: IAgentFileBlueprint,
-    context: IExecutionContext,
-    isFirstTurn: boolean,
-    skillsText: Opt<string, Reason.OptionalContext>,
-  ): string {
-    const taskSection = isFirstTurn && context.full_plan
-      ? `TASK: ${context.request}\n\nFULL PLAN:\n${context.full_plan}\n\nBEGIN WITH THE FIRST STEP BELOW.`
-      : `TASK: ${context.request}`;
-    const skillsSection = skillsText ? `${skillsText}\n\n` : "";
-    return `${blueprint.systemPrompt}\n\n${skillsSection}${taskSection}\n\nPLAN STEP: ${context.plan}`;
   }
 
   /** The next launch number for one plan, counted from one. */

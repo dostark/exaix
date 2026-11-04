@@ -26,7 +26,7 @@ import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/
 import type { IEventLogger } from "@exaix/core/logger";
 
 import { DomainEventType } from "@exaix/core/events";
-import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
+import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { ModelResolver } from "@exaix/ai";
@@ -201,8 +201,6 @@ export class AgentExecutionError extends Error {
 /** Orchestrator and strategy dispatcher for agent execution. It delegates blueprint loading, prompt building,
  *  budgets, git audit, output parsing and loop history to the injected services. */
 export class AgentComposer {
-  private executionContext?: IWorkspaceExecutionContext;
-  private originalWorkingDirectory?: string;
   private config: Config;
   private db: IDatabaseService;
   private logger: IEventLogger;
@@ -346,66 +344,6 @@ export class AgentComposer {
     });
   }
 
-  /** Sets execution context for agent operations; changes working directory to it. */
-  setExecutionContext(context: IWorkspaceExecutionContext): void {
-    // Store original directory if not already stored
-    if (!this.originalWorkingDirectory) {
-      this.originalWorkingDirectory = Deno.cwd();
-    }
-
-    this.executionContext = context;
-    this.promptBuilder.setPortalRoot(context.portalTarget);
-
-    // Change to context working directory
-    Deno.chdir(context.workingDirectory);
-  }
-
-  /**
-   * Get current execution context
-   */
-  getExecutionContext(): IWorkspaceExecutionContext | undefined {
-    return this.executionContext;
-  }
-
-  /**
-   * Clear execution context and restore original directory
-   */
-  clearExecutionContext(): void {
-    this.executionContext = undefined;
-
-    // Restore original working directory
-    if (this.originalWorkingDirectory) {
-      try {
-        Deno.chdir(this.originalWorkingDirectory);
-      } catch (_error) {
-        // Ignore if original directory no longer exists
-      }
-      this.originalWorkingDirectory = undefined;
-    }
-  }
-
-  /** Executes `fn` within execution context, then restores — even if `fn` throws. */
-  async withExecutionContext<T>(
-    context: IWorkspaceExecutionContext,
-    fn: () => Promise<T> | T,
-  ): Promise<T> {
-    const originalDir = Deno.cwd();
-
-    try {
-      this.setExecutionContext(context);
-      return await fn();
-    } finally {
-      // Always restore directory
-      try {
-        Deno.chdir(originalDir);
-      } catch (_error) {
-        // Ignore
-      }
-      this.executionContext = undefined;
-      this.originalWorkingDirectory = undefined;
-    }
-  }
-
   /** Disposes all resources (strategy signal listeners, etc.); call when no longer needed. */
   dispose(): void {
     // Invalidate context cache at end of execution
@@ -418,20 +356,6 @@ export class AgentComposer {
         strategy.dispose?.();
       }
     }
-  }
-
-  /**
-   * Get git repository path from current execution context
-   */
-  getGitRepository(): string | undefined {
-    return this.executionContext?.gitRepository;
-  }
-
-  /**
-   * Get allowed paths from current execution context
-   */
-  getAllowedPaths(): string[] | undefined {
-    return this.executionContext?.allowedPaths;
   }
 
   /**
@@ -499,6 +423,7 @@ export class AgentComposer {
 
     try {
       const portal = resolveStepPortal(this.config, this.permissions, options);
+      this.promptBuilder.setPortalRoot(this.resolveAuditPortalPath(portal));
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
       const strategyName = resolveStrategyName(_blueprint, options);

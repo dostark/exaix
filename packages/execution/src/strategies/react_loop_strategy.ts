@@ -21,7 +21,7 @@ import type {
   IValidatedProviderRound,
 } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
-import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
+
 import type { INativePromptSection } from "@exaix/ai";
 import { PromptBudgetAllocator, SkillSubmissionKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
@@ -579,7 +579,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const aciSection = this.renderAciSection(visibleToolIds);
     const initialSections: INativePromptSection[] = [];
     const initialPrompt = params.nativeConversationEnabled
-      ? params.nativeConversationInitialPrompt ?? this.buildPrompt(
+      ? params.nativeConversationInitialPrompt ?? await this.buildPrompt(
         blueprint,
         context,
         options,
@@ -589,7 +589,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         { aciSection: aciSection?.result, sections: initialSections, skillsText: params.pinnedSkills?.text },
       )
       : undefined;
-    const prompt = initialPrompt ?? this.buildPrompt(
+    const prompt = initialPrompt ?? await this.buildPrompt(
       blueprint,
       context,
       options,
@@ -1333,7 +1333,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return { result: renderAciDocFragments(tools, visibleToolIds, budgetChars), budgetChars };
   }
 
-  private buildPrompt(
+  private async buildPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
@@ -1341,90 +1341,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     skipToolProse = false,
     visibleToolIds: string[] = this.deriveVisibleToolIds(options),
     extras: IReActPromptExtras = {},
-  ): string {
+  ): Promise<string> {
     const aciSection = extras.aciSection ?? this.renderAciSection(visibleToolIds)?.result;
-    const sections = extras.sections;
-    const skillsSection = extras.skillsText ? `${extras.skillsText}\n\n` : "";
-    const historyText = this.buildBudgetedHistoryText(history);
-
-    const roleSection = `${
-      sections && blueprint.systemPrompt ? `${blueprint.systemPrompt}\n\n` : ""
-    }AGENT ROLE: ${blueprint.name}
-CAPABILITIES: ${blueprint.capabilities.join(", ")}
-
-CONTEXT:
-Portal: ${options.portal}
-Trace ID: ${context.trace_id}
-`;
-    const planSection = `Request: ${context.request}\nPlan Step: ${context.plan}\n`;
-    let prompt = `${roleSection}${skillsSection}${planSection}
-${history.length > 0 ? `HISTORY:\n${historyText}` : ""}
-
-INSTRUCTIONS:
-1. Reason about the current state.
-2. If you need more information or need to make changes, output one or more tool calls.
-3. If the task is finished, output "${REACT_STATUS_COMPLETE}" and provide a summary of changes.
-4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".`;
-
-    // Segment 1: Tool listing — always rendered (PGAP-2)
-    prompt += `
-
-AVAILABLE TOOLS:
-${visibleToolIds.join(", ")}`;
-
-    // Segment 1.5: ACI tool guidance — appended in both prose and skipToolProse (native-tools)
-    // modes when enabled and at least one complete fragment was allocated.
-    if (aciSection && aciSection.fragmentCount > 0) {
-      prompt += `
-
-ACI TOOL GUIDANCE:
-${aciSection.text}`;
-    }
-
-    // Segment 2: Behavioral guidance — always rendered (PGAP-2)
-    prompt += `
-
-TOOL SELECTION GUIDELINES:
-- For reading files or searching code: use read_file, search_text, or search_files.
-- For creating NEW files or overwriting entire files: use write_file.
-- For small targeted edits (fixing bugs, null-guard fixes): prefer patch_file over write_file.
-- For shell commands: use run_command only when no specialized tool exists for your task.`;
-
-    // Segment 3: Format specification — skipped when native tools are active (PGAP-2)
-    if (!skipToolProse) {
-      prompt += `
-
-FORMAT:
-${REACT_THOUGHT_PREFIX}[Your reasoning]
-\`\`\`toml
-[[actions]]
-tool = "[tool_name]"
-[actions.params]
-[param_name] = [value]
-\`\`\`
-
-OR
-
-${REACT_STATUS_COMPLETE}
-${REACT_SUMMARY_PREFIX}[What was done]`;
-    } else {
-      prompt += `
-
-When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SUMMARY_PREFIX}[summary]".
-Do not repeat a tool call whose result is already in the history.
-The plan step is finished once every file it names has been read. Then stop calling tools and output the status line.`;
-    }
-
-    sections?.push(
-      { section: PromptBudgetSection.SYSTEM, text: roleSection },
-      ...(skillsSection ? [{ section: PromptBudgetSection.SKILLS, text: skillsSection }] : []),
-      { section: PromptBudgetSection.PLAN, text: planSection },
+    return await this.executor.promptBuilder.buildExecutionPrompt(
+      blueprint,
+      context,
+      options,
       {
-        section: PromptBudgetSection.SYSTEM,
-        text: prompt.slice(roleSection.length + skillsSection.length + planSection.length),
+        historyText: history.length > 0 ? this.buildBudgetedHistoryText(history) : "",
+        skipToolProse,
+        visibleToolIds,
+        aciText: aciSection && aciSection.fragmentCount > 0 ? aciSection.text : undefined,
+        nativeSections: extras.sections,
       },
+      extras.skillsText,
     );
-    return prompt;
   }
 
   private buildBudgetedHistoryText(

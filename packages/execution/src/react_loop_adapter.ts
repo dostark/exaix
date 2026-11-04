@@ -23,6 +23,7 @@ import type { ITokenizer } from "@exaix/core/func";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
+import { PromptBuilder } from "./prompt_builder.ts";
 import { type IGenerationUsage, logGenerationCompleted } from "./generation_log.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -39,6 +40,8 @@ export interface IReActLoopExecutor {
     iteration: number,
   ): Promise<void>;
   validateReviewResult(result: JSONValue): IChangesetResult;
+  /** Builds the execution prompt of each ReAct iteration. */
+  promptBuilder: PromptBuilder;
   parseAgentResponse(response: string, context: IOutputParserContext, startTime: number): IChangesetResult;
   toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>;
   /** The round policy for the next model turn. Optional, since test doubles need not implement it. */
@@ -89,6 +92,8 @@ interface IReActLoopAdapterOptions {
   maxIterations?: number;
   /** Reads the resolved tool-round policy for each model turn. Absent uses the schema defaults. */
   toolsRoundPolicy?: () => IToolsRoundPolicy;
+  /** The prompt builder that the composer shares. Absent builds one from the adapter's own context. */
+  promptBuilder?: PromptBuilder;
 }
 
 /** Adapter that implements IReActLoopExecutor by composing AgentComposer's services.
@@ -100,6 +105,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
   public readonly aciDocsEnabled: boolean;
   public readonly aciDocPromptMaxChars: number;
   public readonly maxIterations?: number;
+  public readonly promptBuilder: PromptBuilder;
   private readonly toolsRoundPolicy?: () => IToolsRoundPolicy;
 
   constructor(
@@ -109,6 +115,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     public toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>,
     options?: Opt<IReActLoopAdapterOptions, Reason.OptionalInput>,
   ) {
+    this.promptBuilder = options?.promptBuilder ?? new PromptBuilder(logger, ctx);
     this.eventBus = options?.eventBus;
     this.guardrailRunner = options?.guardrailRunner;
     this.aciDocsEnabled = options?.aci?.enabled ?? false;

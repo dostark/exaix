@@ -102,6 +102,11 @@ function preferRequest<T>(
   return fromRequest ?? fromBlueprint;
 }
 
+/** The `provider:model` id of a blueprint, unless its model already carries the provider. */
+export function resolveBlueprintModelId(blueprint: IAgentFileBlueprint): string {
+  return blueprint.model.includes(":") ? blueprint.model : `${blueprint.provider}:${blueprint.model}`;
+}
+
 export class BlueprintService {
   constructor(
     private config: Config,
@@ -238,7 +243,7 @@ export class BlueprintService {
   }
 
   resolveModelId(blueprint: IAgentFileBlueprint): string {
-    return blueprint.model.includes(":") ? blueprint.model : `${blueprint.provider}:${blueprint.model}`;
+    return resolveBlueprintModelId(blueprint);
   }
 
   /**

@@ -968,7 +968,7 @@ AgentExecutor is a **thin orchestrator and strategy dispatcher** — its sole re
 ```text
 AgentExecutor (dispatcher)
   ├── loadBlueprint()      → BlueprintService
-  ├── buildExecutionPrompt() → PromptBuilder
+  ├── ReAct prompt, per iteration → PromptBuilder (via ReActLoopAdapter)
   ├── executeStep()        → StrategyRegistry.select() → IExecutionStrategy
   ├── budget allocation    → ExecutionContextService
   ├── guardrail screening  → GuardrailRunner
@@ -979,15 +979,15 @@ AgentExecutor (dispatcher)
 
 **Extracted services (completed):**
 
-| Service                   | File                           | Responsibility                                                                                 |
-| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store       |
-| `BlueprintService`        | `blueprint_service.ts`         | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization         |
-| `PromptBuilder`           | `prompt_builder.ts`            | Execution prompt assembly, token budget enforcement, input sanitization, context cache marking |
-| `GitAuditService`         | `git_audit_service.ts`         | Git audit, SHA resolution, file path validation, unauthorized change detection                 |
-| `OutputParser`            | `output_parser.ts`             | LLM JSON response parsing, changeset result validation                                         |
-| `HistoryManager`          | `history_manager.ts`           | Loop history ring buffer, compaction, budget checking                                          |
-| `ReActLoopAdapter`        | `react_loop_adapter.ts`        | IReActLoopExecutor implementation, decouples ReActLoopStrategy from AgentExecutor              |
+| Service                   | File                           | Responsibility                                                                                                |
+| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store                      |
+| `BlueprintService`        | `blueprint_service.ts`         | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization                        |
+| `PromptBuilder`           | `prompt_builder.ts`            | ReAct and CLI-delegate prompt assembly, token budget, input sanitization, portal context block, cache marking |
+| `GitAuditService`         | `git_audit_service.ts`         | Git audit, SHA resolution, file path validation, unauthorized change detection                                |
+| `OutputParser`            | `output_parser.ts`             | LLM JSON response parsing, changeset result validation                                                        |
+| `HistoryManager`          | `history_manager.ts`           | Loop history ring buffer, compaction, budget checking                                                         |
+| `ReActLoopAdapter`        | `react_loop_adapter.ts`        | IReActLoopExecutor implementation, decouples ReActLoopStrategy from AgentExecutor                             |
 
 **AgentExecutor trajectory:** ~1750 lines → ~950 lines, 16 direct deps → 11 deps.
 
