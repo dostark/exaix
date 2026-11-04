@@ -80,6 +80,13 @@ it can hide unrelated dependencies, so do not use it to pass the gate. The God C
 second-hand, so the ceiling is a guard against growth and not a verdict. The definitions and sources are in
 [the metrics methodology](../unslop-ts/docs/metrics_methodology.md).
 
+Exaix gates module size with `deno task check:module-size`. It runs the opt-in `exaix/max-file-lines` rule over `packages` and
+`apps` with a hard limit of 1,000 physical lines and a soft limit of 800, and it fails on a count above the per-package ceiling in
+`packages/lint-policy/rule_ceilings.json`. Physical lines count, because comments and blank lines are text that a reader loads.
+The soft limit is advice: `unslop health` lists the files above it under `LARGE FILES`. The task is a manual gate, like
+`check:god-objects`, and a ceiling only moves down. A file that is too large is decomposed into modules with one responsibility
+each, as the [style guide](../unslop-ts/docs/style_guide.md#agent-context) explains.
+
 The parent removed its `classic` cyclomatic pin after measuring the cutover to the engine's `extended` default.
 A consumer that pins `variant: "classic"` keeps the legacy counts.
 The construct tables, the formulas and the calibration record are in

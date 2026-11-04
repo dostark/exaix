@@ -594,6 +594,7 @@ async function main(): Promise<void> {
       nowEpoch: 0,
       duplication: null,
       duplicateRunner: null,
+      fileLines: null,
       publicEntries: [],
     });
     const comparison = compareComplexity(report, collection.rows, collection.errors.length, CALIBRATION_EXCLUSIONS);

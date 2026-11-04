@@ -44,6 +44,23 @@ const GOD_CLASS_CUTOVER_CEILINGS: Ceilings = {
     "packages/tui": 2,
   },
 };
+/** The module size ceilings at the first measurement, when `exaix/max-file-lines` joined the table. Rises beyond them still fail. */
+const MODULE_SIZE_CUTOVER_CEILINGS: Ceilings = {
+  "exaix/max-file-lines": {
+    "apps/exactl": 4,
+    "apps/tui": 3,
+    "packages/ai": 2,
+    "packages/cli": 1,
+    "packages/core": 3,
+    "packages/execution": 4,
+    "packages/flow": 1,
+    "packages/git": 1,
+    "packages/memory": 1,
+    "packages/request": 1,
+    "packages/schemas": 1,
+    "packages/tool-runtime": 1,
+  },
+};
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 
@@ -79,7 +96,7 @@ Deno.test("phase227_remediation_cutover", async () => {
     await gitOutput(REPO_ROOT, "show", `${COMPLETE_BUCKET_COMMIT}:${CEILINGS_PATH}`),
   );
   const before: Record<string, Readonly<Record<string, number>>> = { ...introduced, ...first, ...migrated };
-  for (const table of [TEAM_COVERAGE_CEILINGS, GOD_CLASS_CUTOVER_CEILINGS]) {
+  for (const table of [TEAM_COVERAGE_CEILINGS, GOD_CLASS_CUTOVER_CEILINGS, MODULE_SIZE_CUTOVER_CEILINGS]) {
     for (const [rule, buckets] of Object.entries(table)) before[rule] = { ...before[rule], ...buckets };
   }
   const after: Ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, CEILINGS_PATH)));

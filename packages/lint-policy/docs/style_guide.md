@@ -223,6 +223,7 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
 - **Production-scoped plugin gates (`scope: prod`):** `exaix/magic-union-type`. Test files are out of its scope.
 - **Parked plugin rules (`severity: off`, opt-in):**
   `exaix/max-class-size`,
+  `exaix/max-file-lines`,
   `exaix/no-conditional-empty-object-spread`,
   `exaix/no-runtime-typeof`,
   `exaix/prefer-named-imports`,

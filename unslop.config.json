@@ -260,6 +260,25 @@
         "deslop"
       ]
     },
+    "exaix/max-file-lines": {
+      "level": "off",
+      "options": {
+        "max": 1000,
+        "softMax": 800
+      },
+      "optIn": true,
+      "reason": "Manual: check:module-size gates module size with per-package ceilings, so the rule runs only when selected.",
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "limits": "Physical lines, so comments and blank lines count. The soft limit is advice in the health report.",
+      "tags": [
+        "complexity",
+        "module-structure"
+      ]
+    },
     "exaix/max-class-size": {
       "level": "off",
       "options": {

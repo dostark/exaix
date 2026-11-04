@@ -30,8 +30,8 @@ const RATCHETED_RULES = [
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
 ];
-/** The class-size rule has its own gate, `deno task check:god-objects`, so this test never counts it. */
-const GOD_OBJECT_RULES = ["exaix/max-class-size"];
+/** The class-size and module size rules have their own gates, so this test never counts them. */
+const GOD_OBJECT_RULES = ["exaix/max-class-size", "exaix/max-file-lines"];
 const ROOT_BUCKETS = ["tests", "exaix-team", "exaix-enterprise", "scripts"];
 /** The bucket of a file outside every workspace member. */
 const ROOT_OWNER = ".";

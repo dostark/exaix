@@ -107,6 +107,7 @@
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
     "check:magic": "deno run --allow-read --allow-env packages/lint-policy/src/checkers/check_magic_values.ts",
     "check:god-objects": "deno run --allow-run --allow-read --allow-env unslop-ts/src/cli/rule_report.ts --rule=exaix/max-class-size --descriptor=packages/lint-policy/unslop.project.ts --ceilings=packages/lint-policy/rule_ceilings.json --roots=packages,apps,tests,scripts,exaix-team,exaix-enterprise --fail",
+    "check:module-size": "deno run --allow-run --allow-read --allow-env unslop-ts/src/cli/rule_report.ts --rule=exaix/max-file-lines --descriptor=packages/lint-policy/unslop.project.ts --ceilings=packages/lint-policy/rule_ceilings.json --roots=packages,apps --fail",
     "check:god-objects:compare": "deno run --allow-run --allow-read --allow-write --allow-env scripts/god_objects_compare.ts",
     "check:agent-docs-integrity": "deno run --allow-read scripts/check_agent_docs_integrity.ts",
     "check:phase-references": "deno run --allow-read scripts/check_phase_references.ts",

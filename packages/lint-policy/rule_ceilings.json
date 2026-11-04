@@ -153,5 +153,19 @@
     "packages/storage-sqlite": 1,
     "packages/tool-runtime": 1,
     "packages/tui": 2
+  },
+  "exaix/max-file-lines": {
+    "apps/exactl": 4,
+    "apps/tui": 3,
+    "packages/ai": 2,
+    "packages/cli": 1,
+    "packages/core": 3,
+    "packages/execution": 4,
+    "packages/flow": 1,
+    "packages/git": 1,
+    "packages/memory": 1,
+    "packages/request": 1,
+    "packages/schemas": 1,
+    "packages/tool-runtime": 1
   }
 }
