@@ -6,19 +6,14 @@
  * @related-files ["packages/core/src/status/review_status.ts", "apps/daemon/main.ts"]
  */
 
-import { dirname, isAbsolute, join, resolve } from "@std/path";
-import { ensureDir, exists } from "@std/fs";
+import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestCommands } from "./request_commands.ts";
 import { PlanCommands } from "./plan_commands.ts";
-import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
-import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
-import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
-import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
-import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
+import type { IArtifact, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
 import { type LintCheckRunOutcome, type LintErrorClass, VerificationStatus } from "@exaix/schemas";
 import { projectReviewVerification } from "./review_verification.ts";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
@@ -27,14 +22,9 @@ import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
-import {
-  GIT_CMD_BRANCH,
-  GIT_CMD_CHECKOUT,
-  GIT_CMD_DIFF,
-  GIT_CMD_LIST,
-  GIT_CMD_REV_PARSE,
-  GIT_CMD_WORKTREE,
-} from "@exaix/git/constants.ts";
+import { GIT_CMD_DIFF, GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
+import { ReviewListing } from "./review_listing.ts";
+import { ReviewDecisions } from "./review_decisions.ts";
 
 export interface IReviewMetadata {
   type?: ReviewType;
@@ -174,12 +164,41 @@ const REVIEW_TARGET_ARTIFACT = "artifact";
 
 export class ReviewCommands extends BaseCommand {
   private requestCommands: RequestCommands;
+  private decisions: ReviewDecisions;
+  private listing: ReviewListing;
   private planCommands: PlanCommands;
 
   constructor(context: ICommandContext) {
     super(context);
     this.requestCommands = new RequestCommands(context);
     this.planCommands = new PlanCommands(context);
+    this.decisions = new ReviewDecisions(context, {
+      createPortalGitService: (...args) => this.createPortalGitService(...args),
+      findRepoForBranch: (...args) => this.findRepoForBranch(...args),
+      getArtifact: (...args) => this.getArtifact(...args),
+      getDefaultBranch: (...args) => this.getDefaultBranch(...args),
+      isArtifactId: (id) => this.isArtifactId(id),
+      resolveBaseBranchForBranch: (...args) => this.resolveBaseBranchForBranch(...args),
+      show: (...args) => this.show(...args),
+      updateArtifactStatus: (...args) => this.updateArtifactStatus(...args),
+    });
+    this.listing = new ReviewListing(
+      context,
+      (...args) => this.getDefaultBranch(...args),
+      (...args) => this.getStoredReviewTraceId(...args),
+      (...args) => this.getStoredReviewWorktreePath(...args),
+      (...args) => this.resolveBaseBranchForBranch(...args),
+    );
+  }
+
+  /** Approves a review by merging its branch. */
+  approve(branchName: string): Promise<void> {
+    return this.decisions.approve(branchName);
+  }
+
+  /** Rejects a review without merging, recording the reason. */
+  reject(branchName: string, reason: string): Promise<void> {
+    return this.decisions.reject(branchName, reason);
   }
 
   private isArtifactId(id: string): boolean {
@@ -271,47 +290,6 @@ export class ReviewCommands extends BaseCommand {
     }
   }
 
-  private async bestEffortLinkRequestRejection(
-    requestId: Opt<string, Reason.OptionalContext>,
-    rejectedRelative: string,
-  ): Promise<void> {
-    if (!requestId) return;
-
-    try {
-      const config = this.config;
-      const requestPath = join(
-        config.system.root,
-        config.paths.workspace,
-        config.paths.requests,
-        `${requestId}.md`,
-      );
-      if (!await exists(requestPath)) return;
-
-      const content = await Deno.readTextFile(requestPath);
-      const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
-      if (!fmMatch) return;
-      let fm = fmMatch[1];
-
-      if (/^rejected_path:/m.test(fm)) {
-        fm = fm.replace(/^rejected_path:.*$/m, `rejected_path: ${rejectedRelative}`);
-      } else {
-        fm = fm.trimEnd() + `\nrejected_path: ${rejectedRelative}`;
-      }
-
-      const updated = `---\n${fm}\n---\n` + content.slice(fmMatch[0].length);
-      await Deno.writeTextFile(requestPath, updated);
-      await this.display.info("request.rejected_linked", requestPath, {
-        request_id: requestId,
-        rejected_path: rejectedRelative,
-        via: "cli",
-      });
-    } catch (err) {
-      await this.display.warn("request.rejection_update_failed", requestId, {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
   private async getStoredReviewWorktreePath(branch: string): Promise<string | null> {
     try {
       const row = await this.db.preparedGet<{ worktree_path: string | null }>(
@@ -351,113 +329,8 @@ export class ReviewCommands extends BaseCommand {
     return fallbackDefaultBranch || await this.getDefaultBranch(repoPath);
   }
 
-  private getExecutionWorktreePointerPath(traceId: string): string {
-    return join(
-      this.config.system.root,
-      this.config.paths.memory,
-      this.config.paths.memoryExecution,
-      traceId,
-      GIT_CMD_WORKTREE,
-    );
-  }
-
-  private async removeExecutionWorktreePointer(traceId: string): Promise<void> {
-    const pointerPath = this.getExecutionWorktreePointerPath(traceId);
-
-    try {
-      const info = await Deno.lstat(pointerPath);
-      if (info.isSymlink) {
-        await Deno.remove(pointerPath);
-      } else {
-        await Deno.remove(pointerPath, { recursive: true });
-      }
-    } catch (error) {
-      if (error instanceof Deno.errors.NotFound) return;
-      throw error;
-    }
-  }
-
-  private async cleanupWorktreeReview(
-    portalGitService: Pick<IGitService, "runGitCommand">,
-    review: IReviewDetails,
-  ): Promise<void> {
-    const worktreePath = review.worktree_path?.trim();
-    if (!worktreePath) return;
-
-    // 1) Remove worktree checkout to release the branch.
-    await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath]);
-
-    // 2) Delete feature branch.
-    await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", review.branch]);
-
-    // 3) Remove discoverability pointer (avoid dangling symlink/PATH.txt).
-    await this.removeExecutionWorktreePointer(review.trace_id);
-  }
-
-  private async bestEffortAbortMerge(portalGitService: Pick<IGitService, "runGitCommand">): Promise<void> {
-    try {
-      await portalGitService.runGitCommand(["merge", "--abort"], { throwOnError: false });
-    } catch {
-      // Best-effort only
-    }
-  }
-
-  private async bestEffortCleanupWorktreeCheckout(
-    portalGitService: Pick<IGitService, "runGitCommand">,
-    review: IReviewDetails,
-  ): Promise<void> {
-    const worktreePath = review.worktree_path?.trim();
-    if (!worktreePath) return;
-
-    try {
-      await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath], {
-        throwOnError: false,
-      });
-    } catch {
-      // Best-effort only
-    }
-
-    try {
-      await this.removeExecutionWorktreePointer(review.trace_id);
-    } catch {
-      // Best-effort only
-    }
-  }
-
-  private resolvePortalEntryTarget(portalEntryPath: string, linkTarget: string): string {
-    if (isAbsolute(linkTarget)) return linkTarget;
-    return resolve(dirname(portalEntryPath), linkTarget);
-  }
-
-  /** Lists the git repositories that the Portals directory links to. A missing directory gives an empty list. */
-  private async scanPortalDirectory(): Promise<string[]> {
-    const portalsDir = join(this.config.system.root, this.config.paths.portals);
-    const portalPaths: string[] = [];
-    try {
-      for await (const entry of Deno.readDir(portalsDir)) {
-        const portalEntryPath = join(portalsDir, entry.name);
-        try {
-          // Prefer resolving symlink targets if possible, but also allow direct directories.
-          const resolvedPath = await Deno.readLink(portalEntryPath)
-            .then((linkTarget) => this.resolvePortalEntryTarget(portalEntryPath, linkTarget))
-            .catch(() => portalEntryPath);
-          // Skip broken portals and non-git repos.
-          await Deno.stat(join(resolvedPath, ".git"));
-          portalPaths.push(resolvedPath);
-        } catch {
-          continue;
-        }
-      }
-    } catch (error) {
-      if (!(error instanceof Deno.errors.NotFound)) {
-        throw error;
-      }
-    }
-    return portalPaths;
-  }
-
   private async findRepoForBranch(branchName: string): Promise<string> {
-    const portalPaths = await this.scanPortalDirectory();
+    const portalPaths = await this.listing.scanPortalDirectory();
 
     portalPaths.push(this.config.system.root);
 
@@ -535,63 +408,6 @@ export class ReviewCommands extends BaseCommand {
     };
   }
 
-  private async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
-    let query =
-      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
-       FROM artifacts WHERE 1=1`;
-    const params: (string | null)[] = [];
-
-    if (filters?.status) {
-      query += ` AND status = ?`;
-      params.push(filters.status);
-    }
-
-    if (filters?.agent_role) {
-      query += ` AND agent_role = ?`;
-      params.push(filters.agent_role);
-    }
-
-    if (filters?.portal !== undefined) {
-      query += ` AND portal = ?`;
-      params.push(filters.portal);
-    }
-
-    if (filters?.type) {
-      query += ` AND type = ?`;
-      params.push(filters.type);
-    }
-
-    query += ` ORDER BY created DESC`;
-
-    const rows = await this.db.preparedAll<{
-      id: string;
-      status: string;
-      type: string;
-      agent_role: string;
-      portal: string | null;
-      target_branch: string | null;
-      created: string;
-      updated: string | null;
-      request_id: string;
-      file_path: string;
-      rejection_reason: string | null;
-    }>(query, params);
-
-    return rows.map((row) => ({
-      id: row.id,
-      status: isReviewStatus(row.status) ? row.status : ReviewStatus.PENDING,
-      type: row.type as ArtifactSubtype,
-      agent_role: row.agent_role,
-      portal: row.portal,
-      target_branch: row.target_branch,
-      created: row.created,
-      updated: row.updated,
-      request_id: row.request_id,
-      file_path: row.file_path,
-      rejection_reason: row.rejection_reason,
-    }));
-  }
-
   private async getArtifact(artifactId: string): Promise<IArtifactWithContent> {
     const artifact = await this.getArtifactRecord(artifactId);
     const content = await Deno.readTextFile(join(this.config.system.root, artifact.file_path));
@@ -630,84 +446,6 @@ export class ReviewCommands extends BaseCommand {
     );
   }
 
-  private async extractReviewMetadataWithContext(
-    basicMetadata: IReviewMetadata,
-  ): Promise<IReviewMetadata> {
-    const metadata = await enrichWithRequest(
-      this.requestCommands,
-      basicMetadata,
-      `review ${basicMetadata.request_id}`,
-    );
-
-    // Try to find associated plan using trace_id
-    if (metadata.trace_id) {
-      try {
-        const plans = await this.planCommands.list();
-        const associatedPlan = plans.find((plan) => plan.trace_id === metadata.trace_id);
-
-        if (associatedPlan) {
-          metadata.plan_id = associatedPlan.id;
-          metadata.plan_status = associatedPlan.status;
-          // Propagate subject from plan if not already set (e.g. from request)
-          if (!metadata.subject && associatedPlan.subject) {
-            metadata.subject = associatedPlan.subject;
-          }
-        }
-      } catch (error) {
-        // If plan can't be loaded, continue without plan info
-        console.warn(`Warning: Could not load plan info for review ${metadata.request_id}:`, error);
-      }
-    }
-
-    return metadata;
-  }
-
-  private async getPortalRepoPaths(): Promise<string[]> {
-    const portalPaths = await this.scanPortalDirectory();
-
-    // Also scan configured portals (fallback for missing/broken symlinks)
-    for (const portal of this.config.portals || []) {
-      try {
-        await Deno.stat(join(portal.target_path, ".git"));
-        if (!portalPaths.includes(portal.target_path)) {
-          portalPaths.push(portal.target_path);
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    // Also scan repositories recorded in the reviews table.
-    // This makes `review list` resilient even if `Portals/<alias>` symlinks are missing
-    // or the CLI config does not include the portal entry.
-    try {
-      const rows = await this.db.preparedAll<{ repository: string }>(
-        "SELECT DISTINCT repository FROM reviews WHERE repository IS NOT NULL AND repository != ''",
-      );
-
-      for (const row of rows) {
-        const repoPath = row.repository?.trim();
-        if (!repoPath) continue;
-        if (portalPaths.includes(repoPath)) continue;
-
-        try {
-          await Deno.stat(join(repoPath, ".git"));
-          portalPaths.push(repoPath);
-        } catch {
-          // Skip non-existent or non-git repos.
-          continue;
-        }
-      }
-    } catch {
-      // Older DB schema or missing table; ignore.
-    }
-
-    // Also check workspace root for reviews (legacy/fallback)
-    portalPaths.push(this.config.system.root);
-
-    return portalPaths;
-  }
-
   async list(
     statusFilter?: Opt<string, Reason.QueryFilter>,
     typeFilter?: Opt<string, Reason.QueryFilter>,
@@ -716,312 +454,19 @@ export class ReviewCommands extends BaseCommand {
     const normalizedStatus = this.normalizeStatusFilter(statusFilter);
     const reviews: IReviewMetadata[] = [];
 
-    if (this.shouldIncludeArtifacts(requestedType)) {
-      await this.appendArtifactReviews(reviews, normalizedStatus);
+    if (this.listing.shouldIncludeArtifacts(requestedType)) {
+      await this.listing.appendArtifactReviews(reviews, normalizedStatus);
     }
 
-    if (!this.shouldIncludeCode(requestedType)) {
-      return this.sortReviewsNewestFirst(reviews);
+    if (!this.listing.shouldIncludeCode(requestedType)) {
+      return this.listing.sortReviewsNewestFirst(reviews);
     }
 
     const dbBranches = new Set<string>();
-    await this.appendDbCodeReviews(reviews, dbBranches, normalizedStatus);
-    await this.appendGitScannedCodeReviews(reviews, dbBranches, normalizedStatus);
+    await this.listing.appendDbCodeReviews(reviews, dbBranches, normalizedStatus);
+    await this.listing.appendGitScannedCodeReviews(reviews, dbBranches, normalizedStatus);
 
-    return this.sortReviewsNewestFirst(reviews);
-  }
-
-  private shouldIncludeArtifacts(type: ReviewTypeFilter): boolean {
-    return type === ReviewFilterEnum.ALL || type === ReviewFilterEnum.ARTIFACT;
-  }
-
-  private shouldIncludeCode(type: ReviewTypeFilter): boolean {
-    return type === ReviewFilterEnum.ALL || type === ReviewFilterEnum.CODE;
-  }
-
-  private sortReviewsNewestFirst(reviews: IReviewMetadata[]): IReviewMetadata[] {
-    return reviews.sort((a, b) => {
-      const ta = Number(new Date(a.created_at));
-      const tb = Number(new Date(b.created_at));
-      return (tb || 0) - (ta || 0);
-    });
-  }
-
-  private async appendArtifactReviews(
-    reviews: IReviewMetadata[],
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-  ): Promise<void> {
-    const artifacts = await this.listArtifacts({
-      status: normalizedStatus,
-    });
-
-    for (const artifact of artifacts) {
-      reviews.push({
-        type: ReviewType.ARTIFACT,
-        branch: artifact.id,
-        trace_id: artifact.id,
-        request_id: artifact.request_id,
-        files_changed: 0,
-        created_at: artifact.created,
-        agent_role: artifact.agent_role,
-        file_path: artifact.file_path,
-        portal: artifact.portal ?? undefined,
-        status: artifact.status,
-        rejected_at: artifact.status === ReviewStatus.REJECTED ? artifact.updated ?? undefined : undefined,
-        rejection_reason: artifact.rejection_reason ?? undefined,
-        approved_at: artifact.status === ReviewStatus.APPROVED ? artifact.updated ?? undefined : undefined,
-      });
-    }
-  }
-
-  private getDbReviewQuery(
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-  ): { sql: string; args: (string | number | boolean | null)[] } {
-    const base =
-      "SELECT trace_id, portal, branch, repository, base_branch, worktree_path, files_changed, created, created_by, status, approved_at, approved_by, rejected_at, rejected_by, rejection_reason FROM reviews";
-    if (!normalizedStatus) return { sql: base, args: [] };
-    return { sql: `${base} WHERE status = ?`, args: [normalizedStatus] };
-  }
-
-  private async appendDbCodeReviews(
-    reviews: IReviewMetadata[],
-    dbBranches: Set<string>,
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-  ): Promise<void> {
-    try {
-      const query = this.getDbReviewQuery(normalizedStatus);
-      const rows = await this.db.preparedAll<{
-        trace_id: string;
-        portal: string | null;
-        branch: string;
-        repository: string;
-        base_branch: string | null;
-        worktree_path: string | null;
-        files_changed: number | null;
-        created: string;
-        created_by: string;
-        status: string;
-        approved_at: string | null;
-        approved_by: string | null;
-        rejected_at: string | null;
-        rejected_by: string | null;
-        rejection_reason: string | null;
-      }>(query.sql, query.args);
-
-      for (const row of rows) {
-        const basic = this.rowToBasicCodeReview(row);
-        if (!basic) continue;
-        dbBranches.add(basic.branch);
-        await this.pushEnrichedOrBasic(reviews, basic);
-      }
-    } catch {
-      // Older DB schema or missing table; ignore and fall back to git scanning.
-    }
-  }
-
-  private rowToBasicCodeReview(row: {
-    trace_id: string;
-    portal: string | null;
-    branch: string;
-    base_branch: string | null;
-    worktree_path: string | null;
-    files_changed: number | null;
-    created: string;
-    created_by: string;
-    status: string;
-    approved_at: string | null;
-    approved_by: string | null;
-    rejected_at: string | null;
-    rejected_by: string | null;
-    rejection_reason: string | null;
-  }): IReviewMetadata | null {
-    const branch = row.branch?.trim();
-    if (!branch) return null;
-
-    const requestMatch = branch.match(/^feat\/(request-[\w]+)-/);
-    const request_id = requestMatch?.[1] ?? `request-${row.trace_id?.substring(0, 8)}`;
-
-    const normalizedStatus = typeof row.status === "string" ? row.status.toLowerCase().trim() : undefined;
-    const status = isReviewStatus(normalizedStatus) ? normalizedStatus : undefined;
-
-    return {
-      type: ReviewType.CODE,
-      branch,
-      trace_id: row.trace_id,
-      request_id,
-      base_branch: row.base_branch ?? undefined,
-      worktree_path: row.worktree_path ?? undefined,
-      files_changed: row.files_changed ?? 0,
-      created_at: row.created,
-      agent_role: row.created_by,
-      portal: row.portal ?? undefined,
-      status,
-      approved_at: row.approved_at ?? undefined,
-      approved_by: row.approved_by ?? undefined,
-      rejected_at: row.rejected_at ?? undefined,
-      rejected_by: row.rejected_by ?? undefined,
-      rejection_reason: row.rejection_reason ?? undefined,
-    };
-  }
-
-  private async pushEnrichedOrBasic(reviews: IReviewMetadata[], basic: IReviewMetadata): Promise<void> {
-    try {
-      const enrichedMetadata = await this.extractReviewMetadataWithContext(basic);
-      try {
-        const activities = await this.db.getActivitiesByTraceSafe(basic.trace_id);
-        const anomalySummary = summarizeAnomalies(classifyTraceAnomalies(activities));
-        if (
-          anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
-        ) {
-          enrichedMetadata.anomalySummary = anomalySummary;
-        }
-      } catch {
-        // silently skip anomalies on failure
-      }
-      reviews.push(enrichedMetadata);
-    } catch {
-      reviews.push(basic);
-    }
-  }
-
-  private async appendGitScannedCodeReviews(
-    reviews: IReviewMetadata[],
-    dbBranches: Set<string>,
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-  ): Promise<void> {
-    const portalPaths = await this.getPortalRepoPaths();
-
-    for (const repoPath of portalPaths) {
-      await this.appendGitScannedCodeReviewsFromRepo(reviews, dbBranches, normalizedStatus, repoPath);
-    }
-  }
-
-  private async appendGitScannedCodeReviewsFromRepo(
-    reviews: IReviewMetadata[],
-    dbBranches: Set<string>,
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-    repoPath: string,
-  ): Promise<void> {
-    const defaultBranch = await this.getDefaultBranch(repoPath);
-    const branches = await this.listFeatBranches(repoPath);
-
-    for (const branch of branches) {
-      if (dbBranches.has(branch)) continue;
-      const maybeReview = await this.buildCodeReviewFromGitBranch(repoPath, defaultBranch, branch, normalizedStatus);
-      if (maybeReview) reviews.push(maybeReview);
-    }
-  }
-
-  private async listFeatBranches(repoPath: string): Promise<string[]> {
-    const branchesCmd = new Deno.Command("git", {
-      args: [GIT_CMD_BRANCH, "--list", "feat/*"],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const { stdout, success } = await branchesCmd.output();
-    if (!success) return [];
-
-    return new TextDecoder().decode(stdout)
-      .trim()
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      // '*' => current branch, '+' => checked out in another worktree
-      .map((line) => line.replace(/^[*+]\s+/, ""));
-  }
-
-  private parseRequestAndTraceFromBranch(branch: string): { request_id: string; trace_id: string } | null {
-    const match = branch.match(/^feat\/(request-[\w]+)-(.+)$/);
-    if (!match) return null;
-    return { request_id: match[1], trace_id: match[2] };
-  }
-
-  private async getBranchTimestampAndAgent(
-    repoPath: string,
-    branch: string,
-  ): Promise<{ timestamp: string; agent_role: string } | null> {
-    const logCmd = new Deno.Command("git", {
-      args: ["log", branch, "--format=%H %aI %ae", "-1"],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const logResult = await logCmd.output();
-    if (!logResult.success) return null;
-
-    const logLine = new TextDecoder().decode(logResult.stdout).trim();
-    const parts = logLine.split(" ");
-    if (parts.length < 3) return null;
-    return { timestamp: parts[1], agent_role: parts[2] };
-  }
-
-  private async getFilesChangedCount(repoPath: string, baseBranch: string, branch: string): Promise<number> {
-    const diffCmd = new Deno.Command("git", {
-      args: ["diff", "--name-only", `${baseBranch}...${branch}`],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const diffResult = await diffCmd.output();
-    const files = new TextDecoder().decode(diffResult.stdout).trim().split("\n").filter((f) => f);
-    return files.length;
-  }
-
-  private getStatusFromActivities(activities: Array<{ action_type: string }>): IReviewStatus {
-    let hasRejected = false;
-    for (const a of activities) {
-      if (a.action_type === "review.approved") return ReviewStatus.APPROVED;
-      if (a.action_type === "review.rejected") hasRejected = true;
-    }
-    return hasRejected ? ReviewStatus.REJECTED : ReviewStatus.PENDING;
-  }
-
-  private async buildCodeReviewFromGitBranch(
-    repoPath: string,
-    defaultBranch: string,
-    branch: string,
-    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
-  ): Promise<IReviewMetadata | null> {
-    const parsed = this.parseRequestAndTraceFromBranch(branch);
-    if (!parsed) return null;
-
-    const logInfo = await this.getBranchTimestampAndAgent(repoPath, branch);
-    if (!logInfo) return null;
-
-    const baseBranch = await this.resolveBaseBranchForBranch(branch, repoPath, defaultBranch);
-    const storedWorktreePath = await this.getStoredReviewWorktreePath(branch);
-    const storedTraceId = await this.getStoredReviewTraceId(branch);
-    const effectiveTraceId = storedTraceId ?? parsed.trace_id;
-    const activities = await this.db.getActivitiesByTraceSafe(effectiveTraceId);
-    const status = this.getStatusFromActivities(activities);
-    if (normalizedStatus && status !== normalizedStatus) return null;
-
-    const anomalySummary = summarizeAnomalies(classifyTraceAnomalies(activities));
-
-    const filesChanged = await this.getFilesChangedCount(repoPath, baseBranch, branch);
-
-    const basicMetadata: IReviewMetadata = {
-      type: ReviewType.CODE,
-      branch,
-      trace_id: effectiveTraceId,
-      request_id: parsed.request_id,
-      base_branch: baseBranch,
-      worktree_path: storedWorktreePath ?? undefined,
-      files_changed: filesChanged,
-      created_at: logInfo.timestamp,
-      agent_role: logInfo.agent_role,
-      status,
-      anomalySummary:
-        anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
-          ? anomalySummary
-          : undefined,
-    };
-
-    return await this.extractReviewMetadataWithContext(basicMetadata);
+    return this.listing.sortReviewsNewestFirst(reviews);
   }
 
   private async loadAnomalyPayload(
@@ -1079,7 +524,7 @@ export class ReviewCommands extends BaseCommand {
       commits,
       storedTraceId,
     );
-    const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
+    const enrichedMetadata = await this.listing.extractReviewMetadataWithContext(basicMetadata);
     const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? basicMetadata.trace_id);
     const verification = await this.loadVerificationProjection(
       storedTraceId ?? basicMetadata.trace_id,
@@ -1133,7 +578,7 @@ export class ReviewCommands extends BaseCommand {
     const branches = await this.list(undefined, ReviewFilterEnum.CODE);
     const match = branches.find((branch) => branch.request_id === branchName || branch.branch === `feat/${branchName}`);
     if (match) return { kind: REVIEW_TARGET_BRANCH, branch: match.branch };
-    const artifacts = await this.listArtifacts();
+    const artifacts = await this.listing.listArtifacts();
     const byRequest = artifacts.find((artifact) => artifact.request_id === branchName);
     if (byRequest) {
       return {
@@ -1196,331 +641,6 @@ export class ReviewCommands extends BaseCommand {
     } catch {
       return { lint: unavailableLint() };
     }
-  }
-
-  async approve(branchName: string): Promise<void> {
-    try {
-      // Validate input
-      const validation = new ValidationChain()
-        .addRule("branchName", ValidationChain.required())
-        .addRule("branchName", ValidationChain.isString())
-        .validate({ branchName });
-
-      if (!validation.isValid) {
-        throw new Error(CommandUtils.formatValidationErrors(validation));
-      }
-
-      // Artifact approval path
-      if (this.isArtifactId(branchName)) {
-        await this.updateArtifactStatus(branchName, ReviewStatus.APPROVED);
-        await this.display.info(
-          "review.approved",
-          branchName,
-          {
-            artifact_id: branchName,
-            approved_at: new Date().toISOString(),
-            via: "cli",
-            command: this.getCommandLineString(),
-          },
-          branchName,
-        );
-        return;
-      }
-
-      const review = await this.show(branchName);
-
-      // If show() resolved to an artifact via request_id shorthand
-      if (review.type === "artifact") {
-        await this.updateArtifactStatus(review.branch, ReviewStatus.APPROVED);
-        await this.display.info(
-          "review.approved",
-          review.request_id,
-          {
-            artifact_id: review.branch,
-            approved_at: new Date().toISOString(),
-            via: "cli",
-            command: this.getCommandLineString(),
-          },
-          review.trace_id,
-        );
-        return;
-      }
-      const repoPath = await this.findRepoForBranch(review.branch);
-
-      // Get the default branch for this repository
-      const defaultBranch = await this.getDefaultBranch(repoPath);
-      const baseBranch = await this.resolveBaseBranchForBranch(review.branch, repoPath, defaultBranch);
-
-      // Verify we're on the default branch
-      const currentBranchCmd = new Deno.Command("git", {
-        args: [GIT_CMD_BRANCH, "--show-current"],
-        cwd: repoPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const branchResult = await currentBranchCmd.output();
-      const currentBranch = new TextDecoder().decode(branchResult.stdout).trim();
-
-      if (currentBranch !== baseBranch) {
-        throw new Error(
-          `Must be on '${baseBranch}' branch to approve reviews (currently on '${currentBranch}')\nRun: git checkout ${baseBranch}`,
-        );
-      }
-
-      const portalGitService = await this.createPortalGitService(repoPath, review.trace_id);
-
-      // Merge branch
-      try {
-        await portalGitService.runGitCommand([
-          "merge",
-          "--no-ff",
-          review.branch,
-          "-m",
-          `Merge ${review.request_id}: ${
-            review.commits[0]?.message || "agent changes"
-          }\n\nTrace-Id: ${review.trace_id}`,
-        ]);
-      } catch (mergeError) {
-        // If merge fails (e.g., conflict), avoid leaving the repo in a conflicted state and
-        // ensure we don't orphan a worktree checkout.
-        if (review.worktree_path) {
-          await this.bestEffortAbortMerge(portalGitService);
-          await this.bestEffortCleanupWorktreeCheckout(portalGitService, review);
-        }
-        throw mergeError;
-      }
-
-      // Get merge commit SHA
-      const shaResult = await portalGitService.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"]);
-      const commitSha = shaResult.output.trim();
-
-      // Log approval with user identity
-      const _userIdentity = await this.getUserIdentity();
-      await this.display.info("review.approved", review.request_id, {
-        commit_sha: commitSha,
-        branch: review.branch,
-        files_changed: review.files_changed,
-        approved_at: new Date().toISOString(),
-        via: "cli",
-        command: this.getCommandLineString(),
-      }, review.trace_id);
-
-      // Worktree lifecycle cleanup (opt-in strategy leaves an extra checkout). Keep
-      // branch-based reviews unchanged; only auto-clean worktree-based ones.
-      if (review.worktree_path) {
-        await this.cleanupWorktreeReview(portalGitService, review);
-      }
-    } catch (error) {
-      await DefaultErrorStrategy.handle({
-        commandName: "ReviewCommands.approve",
-        args: { branchName },
-        error: error as Error | string | object | null | undefined,
-      });
-    }
-  }
-
-  /** Reject review: delete `branchName` (or request_id) without merging, recording `reason`. */
-  async reject(branchName: string, reason: string): Promise<void> {
-    try {
-      // Validate input
-      const validation = new ValidationChain()
-        .addRule("branchName", ValidationChain.required())
-        .addRule("reason", (val) => (typeof val !== "string" || val.trim().length === 0) ? "is required" : null)
-        .validate({ branchName, reason });
-
-      if (!validation.isValid) {
-        throw new Error(
-          CommandUtils.formatValidationErrors(validation) +
-            '\nUse: exactl review reject <id> --reason "your reason"',
-        );
-      }
-
-      // Artifact rejection path
-      if (this.isArtifactId(branchName)) {
-        await this.updateArtifactStatus(branchName, ReviewStatus.REJECTED, reason);
-        await this.display.info(
-          "review.rejected",
-          branchName,
-          {
-            artifact_id: branchName,
-            rejection_reason: reason,
-            rejected_at: new Date().toISOString(),
-            via: "cli",
-            command: this.getCommandLineString(),
-          },
-          branchName,
-        );
-
-        // Persist a rejected artifact copy for discoverability, then link to request (best-effort)
-        try {
-          const artifact = await this.getArtifact(branchName);
-          const config = this.config;
-          const rejectedDir = join(config.system.root, config.paths.workspace, config.paths.rejected);
-          await ensureDir(rejectedDir);
-          const target = join(rejectedDir, `${branchName}_rejected.md`);
-          await Deno.writeTextFile(target, artifact.content);
-
-          const rejectedRelative = join(
-            config.paths.workspace,
-            config.paths.rejected,
-            `${branchName}_rejected.md`,
-          );
-          await this.bestEffortLinkRequestRejection(artifact.request_id, rejectedRelative);
-        } catch (err) {
-          await this.display.warn("review.rejected_artifact_persist_failed", branchName, {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-
-        return;
-      }
-
-      const review = await this.show(branchName);
-
-      // If show() resolved to an artifact via request_id shorthand
-      if (review.type === "artifact") {
-        await this.updateArtifactStatus(review.branch, ReviewStatus.REJECTED, reason);
-        await this.display.info(
-          "review.rejected",
-          review.request_id,
-          {
-            artifact_id: review.branch,
-            rejection_reason: reason,
-            rejected_at: new Date().toISOString(),
-            via: "cli",
-            command: this.getCommandLineString(),
-          },
-          review.trace_id,
-        );
-
-        // Persist a rejected artifact copy for discoverability, then link to request (best-effort)
-        try {
-          const artifact = await this.getArtifact(review.branch);
-          const config = this.config;
-          const rejectedDir = join(config.system.root, config.paths.workspace, config.paths.rejected);
-          await ensureDir(rejectedDir);
-          const target = join(rejectedDir, `${review.branch}_rejected.md`);
-          await Deno.writeTextFile(target, artifact.content);
-
-          const rejectedRelative = join(
-            config.paths.workspace,
-            config.paths.rejected,
-            `${review.branch}_rejected.md`,
-          );
-          await this.bestEffortLinkRequestRejection(artifact.request_id, rejectedRelative);
-        } catch (err) {
-          await this.display.warn("review.rejected_artifact_persist_failed", review.branch, {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-
-        return;
-      }
-      const repoPath = await this.findRepoForBranch(review.branch);
-
-      const portalGitService = await this.createPortalGitService(repoPath, review.trace_id);
-
-      if (review.worktree_path) {
-        await this.cleanupWorktreeReview(portalGitService, review);
-      } else {
-        await this.deleteBranchWithWorktreeHandling(portalGitService, review.branch, repoPath);
-      }
-
-      // Log rejection with user identity
-      const _userIdentity = await this.getUserIdentity();
-      await this.display.info("review.rejected", review.request_id, {
-        branch: review.branch,
-        rejection_reason: reason,
-        files_changed: review.files_changed,
-        rejected_at: new Date().toISOString(),
-        via: "cli",
-        command: this.getCommandLineString(),
-      }, review.trace_id);
-    } catch (error) {
-      await DefaultErrorStrategy.handle({
-        commandName: "ReviewCommands.reject",
-        args: { branchName, reason },
-        error: error as Error | string | object | null | undefined,
-      });
-    }
-  }
-
-  private async deleteBranchWithWorktreeHandling(
-    portalGitService: Pick<IGitService, "runGitCommand">,
-    branch: string,
-    repoPath: string,
-  ): Promise<void> {
-    const defaultBranch = await this.getDefaultBranch(repoPath);
-    try {
-      await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", branch]);
-      return;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes("used by worktree") && !errorMessage.includes("checked out")) {
-        throw error;
-      }
-
-      try {
-        const currentBranchResult = await portalGitService.runGitCommand([GIT_CMD_BRANCH, "--show-current"]);
-        const currentBranch = currentBranchResult.output.trim();
-
-        if (currentBranch === branch) {
-          await portalGitService.runGitCommand([GIT_CMD_CHECKOUT, defaultBranch]);
-        } else {
-          const worktreePath = await this.findWorktreePathForBranch(portalGitService, branch);
-          if (worktreePath) {
-            const mainWorktreeResult = await portalGitService.runGitCommand([
-              GIT_CMD_WORKTREE,
-              GIT_CMD_LIST,
-              "--porcelain",
-            ]);
-            const mainWorktree = mainWorktreeResult.output.trim().split("\n")[0];
-            if (mainWorktree && mainWorktree.includes(worktreePath)) {
-              await portalGitService.runGitCommand(["checkout", defaultBranch]);
-            } else {
-              await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath]);
-            }
-          }
-        }
-
-        await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", branch]);
-      } catch (worktreeError) {
-        const wtErrorMessage = worktreeError instanceof Error ? worktreeError.message : String(worktreeError);
-        throw new Error(
-          `Failed to delete branch: ${errorMessage}\n` +
-            `Attempted to resolve checkout/worktree conflict but failed: ${wtErrorMessage}\n` +
-            `Try manually checking out a different branch and then deleting: git checkout ${defaultBranch} && git branch -D ${branch}`,
-        );
-      }
-    }
-  }
-
-  private async findWorktreePathForBranch(
-    portalGitService: Pick<IGitService, "runGitCommand">,
-    branch: string,
-  ): Promise<string | null> {
-    const worktreeList = await portalGitService.runGitCommand([GIT_CMD_WORKTREE, GIT_CMD_LIST, "--porcelain"]);
-    const worktrees = worktreeList.output.trim().split("\n");
-
-    for (let i = 0; i < worktrees.length; i++) {
-      const line = worktrees[i];
-      if (!line.startsWith("worktree ")) continue;
-
-      const path = line.substring("worktree ".length);
-      for (let j = i + 1; j < worktrees.length && j < i + 4; j++) {
-        if (!worktrees[j].startsWith("branch ")) continue;
-        const branchRef = worktrees[j].substring("branch ".length);
-        const branchName = branchRef.startsWith("refs/heads/")
-          ? branchRef.substring("refs/heads/".length)
-          : branchRef.split("/").pop();
-        if (branchName === branch) {
-          return path;
-        }
-      }
-    }
-
-    return null;
   }
 }
 

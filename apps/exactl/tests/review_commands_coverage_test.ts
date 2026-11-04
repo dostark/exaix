@@ -64,6 +64,8 @@ describe("ReviewCommands Targeted Coverage", () => {
   });
 
   const internals = () => cast<IReviewCommandsInternals>(reviewCommands);
+  const listingInternals = () => cast<IReviewCommandsInternals>(reviewCommands["listing"]);
+  const decisionsInternals = () => cast<IReviewCommandsInternals>(reviewCommands["decisions"]);
 
   describe("Internal Helper Coverage", () => {
     it("normalizeTypeFilter: handles various inputs", () => {
@@ -104,9 +106,9 @@ describe("ReviewCommands Targeted Coverage", () => {
     });
 
     it("resolvePortalEntryTarget: handles absolute and relative paths", () => {
-      const abs = internals().resolvePortalEntryTarget("/a/b/c", "/x/y");
+      const abs = listingInternals().resolvePortalEntryTarget("/a/b/c", "/x/y");
       assertEquals(abs, "/x/y");
-      const rel = internals().resolvePortalEntryTarget("/a/b/c", "../d");
+      const rel = listingInternals().resolvePortalEntryTarget("/a/b/c", "../d");
       // dirname(/a/b/c) is /a/b, resolve(/a/b, ../d) is /a/d
       assertEquals(rel, "/a/d");
     });
@@ -209,9 +211,9 @@ branch refs/heads/other
           }),
       };
       const gitInternals = cast<Parameters<IReviewCommandsInternals["findWorktreePathForBranch"]>[0]>(mockGit);
-      const path = await internals().findWorktreePathForBranch(gitInternals, "my-branch");
+      const path = await decisionsInternals().findWorktreePathForBranch(gitInternals, "my-branch");
       assertEquals(path, "/path/to/wt");
-      const pathNotFound = await internals().findWorktreePathForBranch(gitInternals, "nonexistent");
+      const pathNotFound = await decisionsInternals().findWorktreePathForBranch(gitInternals, "nonexistent");
       assertEquals(pathNotFound, null);
     });
 
@@ -220,7 +222,7 @@ branch refs/heads/other
       await runGitCommand(tempDir, ["branch", branch]);
 
       const gitService = await internals().createPortalGitService(tempDir, "trace-1");
-      await internals().deleteBranchWithWorktreeHandling(gitService, branch, tempDir);
+      await decisionsInternals().deleteBranchWithWorktreeHandling(gitService, branch, tempDir);
 
       const log = await runGitCommand(tempDir, ["branch", "--list", branch]);
       assertEquals(log.trim(), "");
@@ -277,7 +279,7 @@ branch refs/heads/other
     });
 
     it("bestEffortLinkRequestRejection: handles missing request file", async () => {
-      await internals().bestEffortLinkRequestRejection("nonexistent-req", "some/path");
+      await decisionsInternals().bestEffortLinkRequestRejection("nonexistent-req", "some/path");
       // Should not throw
     });
 
@@ -292,7 +294,7 @@ title: My Request
 ---
 Content`,
       );
-      await internals().bestEffortLinkRequestRejection("req-1", "rejected/path.md");
+      await decisionsInternals().bestEffortLinkRequestRejection("req-1", "rejected/path.md");
 
       const updated = await Deno.readTextFile(requestFile);
       const updatedIncludesRejectedPathRejected: boolean = updated.includes("rejected_path: rejected/path.md");
