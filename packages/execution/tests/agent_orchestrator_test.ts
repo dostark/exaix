@@ -28,7 +28,6 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolName,
 } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { join } from "@std/path";
 
@@ -45,8 +44,9 @@ import { ContextCache } from "@exaix/core/context";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
+import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { ITokenizer } from "@exaix/core/func";
-import type { ITool, IToolRegistry } from "@exaix/core/types";
+import type { ITool, IToolRegistry, Opt, Reason } from "@exaix/core/types";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "@exaix/core/errors";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -61,6 +61,24 @@ import { StrategyRegistry } from "@exaix/execution";
 import type { IPinnedSkillPrompt } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { readFixtureTextSync } from "@exaix/testing";
+
+/** Builds the execution prompt through the composer's prompt builder, with the model and tools it would pass. */
+function buildExecutionPrompt(
+  executor: AgentComposer,
+  blueprint: IAgentFileBlueprint,
+  context: IExecutionContext,
+  options: IAgentExecutionOptions,
+  pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
+): Promise<string> {
+  return executor["promptBuilder"].buildExecutionPrompt(
+    blueprint,
+    context,
+    options,
+    executor["blueprintService"].resolveModelId(blueprint),
+    executor["_toolRegistry"]?.getTools(),
+    pinnedSkills,
+  );
+}
 
 /** Payload for context.budget.compacted event. */
 interface IBudgetCompactedPayload {
@@ -388,7 +406,7 @@ orchestratorTest("AgentComposer: compactLoopHistory with < 3 steps does nothing"
   }
 
   // compactLoopHistory with keepLastN=2 should not compact
-  await executor.compactLoopHistory(2);
+  await executor["historyManager"].compactLoopHistory(2);
 
   // All entries should still be individual steps
   for (const entry of executor.loopHistory) {
@@ -435,7 +453,7 @@ orchestratorTest("AgentComposer: compactLoopHistory emits context.budget.compact
     await executor.executeStep(context, options);
   }
 
-  await executor.compactLoopHistory(2);
+  await executor["historyManager"].compactLoopHistory(2);
 
   const compactedEvents = loggedPayloads.filter(
     (p) => p.tokensBefore !== undefined && p.tokensAfter !== undefined,
@@ -547,29 +565,6 @@ orchestratorTest("AgentComposer: validates agent has portal permissions", async 
   );
 });
 
-orchestratorTest("AgentComposer: sandboxed mode builds subprocess with no file access", () => {
-  const executor = createComposer();
-
-  const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalDir);
-
-  const flagText: string = permissions_flags.join(" ");
-  assertStringIncludes(flagText, "--allow-read=NONE");
-  assertStringIncludes(flagText, "--allow-write=NONE");
-});
-
-orchestratorTest("AgentComposer: hybrid mode builds subprocess with read-only portal access", () => {
-  const executor = createComposer();
-
-  const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalDir);
-
-  const flagText: string = permissions_flags.join(" ");
-  assertStringIncludes(
-    flagText,
-    `--allow-read=${portalDir}`,
-  );
-  assertStringIncludes(flagText, "--allow-write=NONE");
-});
-
 orchestratorTest("AgentComposer: detects unauthorized changes in hybrid mode", async () => {
   // Create a file outside of MCP tools
   const unauthorizedFile = join(portalDir, "unauthorized.txt");
@@ -577,7 +572,7 @@ orchestratorTest("AgentComposer: detects unauthorized changes in hybrid mode", a
 
   const executor = createComposer();
 
-  const unauthorizedChanges = await executor.auditGitChanges(
+  const unauthorizedChanges = await executor["gitAuditService"].auditGitChanges(
     portalDir,
     [],
   );
@@ -1044,7 +1039,7 @@ orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", a
   const executor = createComposer();
 
   // Detect unauthorized changes
-  const unauthorizedChanges = await executor.auditGitChanges(
+  const unauthorizedChanges = await executor["gitAuditService"].auditGitChanges(
     portalDir,
     [],
   );
@@ -1052,7 +1047,7 @@ orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", a
   assert(unauthorizedChanges.length >= 2);
 
   // Revert unauthorized changes
-  await executor.revertUnauthorizedChanges(portalDir, unauthorizedChanges);
+  await executor["gitAuditService"].revertUnauthorizedChanges(portalDir, unauthorizedChanges);
 
   // Verify tracked file was restored
   const restoredContent = await Deno.readTextFile(trackedFile);
@@ -1068,7 +1063,7 @@ orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", a
   assertEquals(untrackedExists, false);
 
   // Verify no unauthorized changes remain
-  const remainingChanges = await executor.auditGitChanges(portalDir, []);
+  const remainingChanges = await executor["gitAuditService"].auditGitChanges(portalDir, []);
   assertEquals(remainingChanges.length, 0);
 });
 
@@ -1076,7 +1071,7 @@ orchestratorTest("AgentComposer: revertUnauthorizedChanges handles empty list gr
   const executor = createComposer();
 
   // Should not throw when given empty array
-  await executor.revertUnauthorizedChanges(portalDir, []);
+  await executor["gitAuditService"].revertUnauthorizedChanges(portalDir, []);
 
   // No assertion needed - just verify it doesn't throw
 });
@@ -1101,7 +1096,7 @@ orchestratorTest("AgentComposer: allows authorized changes via MCP tools", async
   const executor = createComposer();
 
   // Audit should find no unauthorized changes (all committed)
-  const unauthorizedChanges = await executor.auditGitChanges(
+  const unauthorizedChanges = await executor["gitAuditService"].auditGitChanges(
     portalDir,
     ["authorized.txt"],
   );
@@ -1114,7 +1109,7 @@ orchestratorTest("AgentComposer: logs execution start to IActivity Journal", asy
   const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
-  await executor.logExecutionStart(trace_id, "test-agent", "TestPortal");
+  await executor["audit"].logExecutionStart(trace_id, "test-agent", "TestPortal");
 
   // Wait for batched logs to flush
   await db.waitForFlush();
@@ -1133,7 +1128,7 @@ orchestratorTest("AgentComposer: logs execution completion to IActivity Journal"
   const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
-  await executor.logExecutionComplete(trace_id, "test-agent", {
+  await executor["audit"].logExecutionComplete(trace_id, "test-agent", {
     branch: "feat/test",
     commit_sha: "abc1234",
     files_changed: ["file.txt"],
@@ -1159,7 +1154,7 @@ orchestratorTest("AgentComposer: logs execution errors to IActivity Journal", as
   const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
-  await executor.logExecutionError(trace_id, "test-agent", {
+  await executor["audit"].logExecutionError(trace_id, "test-agent", {
     type: "timeout",
     message: "Execution timed out after 5 minutes",
     trace_id,
@@ -1179,29 +1174,6 @@ orchestratorTest("AgentComposer: logs execution errors to IActivity Journal", as
     errorActivity.payload,
     "timeout",
   );
-});
-
-orchestratorTest("AgentComposer: enforces max tool call limit", () => {
-  const executor = createComposer();
-
-  const options: IAgentExecutionOptions = {
-    agent_role: "test-agent",
-    portal: "TestPortal",
-    security_mode: SecurityMode.SANDBOXED,
-    timeout_ms: 300000,
-    max_tool_calls: 10,
-    audit_enabled: true,
-  };
-
-  // Simulate 11 tool calls
-  const toolCalls = Array(11).fill(McpToolName.READ_FILE);
-
-  const exceededLimit = executor.checkToolCallLimit(
-    toolCalls.length,
-    options.max_tool_calls,
-  );
-
-  assert(exceededLimit);
 });
 
 orchestratorTest("AgentComposer: validates review result has required fields", () => {
@@ -1381,7 +1353,7 @@ orchestratorTest("AgentComposer: sanitizes inputs in execution prompt", async ()
 
   const options = promptOptions();
 
-  const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+  const prompt = await buildExecutionPrompt(executor, blueprint, context, options);
 
   // Verify prompt includes system prompt and context
   assertStringIncludes(prompt, "You are a helpful assistant.");
@@ -1424,7 +1396,7 @@ orchestratorTest(
 
     const options = promptOptions();
 
-    const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+    const prompt = await buildExecutionPrompt(executor, blueprint, context, options);
 
     // The prompt must name each available tool and describe it, sourced from the real registry.
     assertStringIncludes(prompt, "read_file");
@@ -1449,7 +1421,7 @@ orchestratorTest(
 
     const options = promptOptions();
 
-    const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+    const prompt = await buildExecutionPrompt(executor, blueprint, context, options);
 
     // Without a registry there is nothing truthful to advertise.
     // An Available Tools header over an empty list would invite hallucinated tool calls.
@@ -1486,7 +1458,7 @@ orchestratorTest(
     // For example, the union of tools of the matched skills, intersected with the agent role's permitted_tools, is read_file alone.
     const options = promptOptions({ permitted_tools: ["read_file"] });
 
-    const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+    const prompt = await buildExecutionPrompt(executor, blueprint, context, options);
 
     assertStringIncludes(prompt, "read_file");
     assert(!prompt.includes("delete_file"), "delete_file must not appear when permitted_tools excludes it");
@@ -1508,7 +1480,7 @@ orchestratorTest("AgentComposer: handles prompt injection attempts in request", 
 
   const options = promptOptions();
 
-  const prompt = await executor.buildExecutionPrompt(blueprint, maliciousContext, options);
+  const prompt = await buildExecutionPrompt(executor, blueprint, maliciousContext, options);
 
   // Verify prompt still contains system prompt (not overridden)
   assertStringIncludes(prompt, "You are a helpful assistant.");
@@ -1700,7 +1672,7 @@ DROP TABLE sensitive_data;
 
   const options = promptOptions();
 
-  const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+  const prompt = await buildExecutionPrompt(executor, blueprint, context, options);
 
   assertStringIncludes(prompt, "You are a helpful assistant.");
   // Verify potentially dangerous content is sanitized
@@ -1766,49 +1738,6 @@ orchestratorTest("GitAuditService: getChangedFiles returns list of modifications
   assertArrayIncludes(changed, ["README.md"]);
 });
 
-orchestratorTest("AgentComposer: checkToolCallLimit validates threshold", () => {
-  const executor = createComposer();
-
-  assertEquals(executor.checkToolCallLimit(10, 5), true);
-  assertEquals(executor.checkToolCallLimit(3, 5), false);
-});
-
-Deno.test({
-  name: "AgentComposer: buildSubprocessPermissions handles various security modes",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
-
-      const portalPath = "/fake/portal";
-
-      // Sandboxed
-      const sandboxed = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalPath);
-      const sandboxedIncludesAllowReadNONE: boolean = sandboxed.includes("--allow-read=NONE");
-      assert(sandboxedIncludesAllowReadNONE, "sandboxed should include '--allow-read=NONE'");
-      const sandboxedIncludesAllowWriteNONE: boolean = sandboxed.includes("--allow-write=NONE");
-      assert(sandboxedIncludesAllowWriteNONE, "sandboxed should include '--allow-write=NONE'");
-      const sandboxedIncludesAllowNet: boolean = sandboxed.includes("--allow-net");
-      assert(sandboxedIncludesAllowNet, "sandboxed should include '--allow-net'");
-
-      // Hybrid
-      const hybrid = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalPath);
-      const hybridIncludesSubject: boolean = hybrid.includes(`--allow-read=${portalPath}`);
-      assert(hybridIncludesSubject, "hybrid should include `--allow-read=${portalPath}`");
-      const hybridIncludesAllowWriteNONE: boolean = hybrid.includes("--allow-write=NONE");
-      assert(hybridIncludesAllowWriteNONE, "hybrid should include '--allow-write=NONE'");
-      const hybridIncludesAllowNet: boolean = hybrid.includes("--allow-net");
-      assert(hybridIncludesAllowNet, "hybrid should include '--allow-net'");
-
-      // Note: Open mode is not explicitly handled in buildSubprocessPermissions yet,
-      // it would probably use default Deno permissions or another set.
-    } finally {
-      await cleanup();
-    }
-  },
-});
-
 Deno.test({
   name: "AgentComposer: validateFilePath prevents path traversal and injection",
   fn: async () => {
@@ -1823,25 +1752,25 @@ Deno.test({
       await Deno.writeTextFile(join(realPortalPath, "subdir", "test.txt"), "content");
 
       // Valid path
-      assertEquals(executor.validateFilePath("test.txt", realPortalPath), "test.txt");
-      assertEquals(executor.validateFilePath("subdir/test.txt", realPortalPath), "subdir/test.txt");
+      assertEquals(executor["gitAuditService"].validateFilePath("test.txt", realPortalPath), "test.txt");
+      assertEquals(executor["gitAuditService"].validateFilePath("subdir/test.txt", realPortalPath), "subdir/test.txt");
 
       // Path traversal
-      assertEquals(executor.validateFilePath("../outside.txt", realPortalPath), null);
-      assertEquals(executor.validateFilePath("subdir/../../outside.txt", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("../outside.txt", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("subdir/../../outside.txt", realPortalPath), null);
 
       // Injection characters
-      assertEquals(executor.validateFilePath("test.txt; rm -rf", realPortalPath), null);
-      assertEquals(executor.validateFilePath("test.txt & whoami", realPortalPath), null);
-      assertEquals(executor.validateFilePath("test.txt\n", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("test.txt; rm -rf", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("test.txt & whoami", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("test.txt\n", realPortalPath), null);
 
       // Absolute paths
-      assertEquals(executor.validateFilePath("/etc/passwd", realPortalPath), null);
-      assertEquals(executor.validateFilePath("C:\\Windows", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("/etc/passwd", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("C:\\Windows", realPortalPath), null);
 
       // Hidden files
-      assertEquals(executor.validateFilePath(".hidden", realPortalPath), null);
-      assertEquals(executor.validateFilePath("subdir/.hidden", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath(".hidden", realPortalPath), null);
+      assertEquals(executor["gitAuditService"].validateFilePath("subdir/.hidden", realPortalPath), null);
     } finally {
       await cleanup();
     }
@@ -1851,8 +1780,6 @@ Deno.test({
 Deno.test({
   name: "AgentComposer: requiresGitTracking correctly identifies write capabilities",
   fn: () => {
-    const executor = createComposer();
-
     const writeBlueprint: IAgentFileBlueprint = {
       name: "write-agent",
       model: "mock-model",
@@ -1868,10 +1795,10 @@ Deno.test({
       systemPrompt: "Read agent",
     };
 
-    assertEquals(executor.requiresGitTracking(writeBlueprint), true);
-    assertEquals(executor.requiresGitTracking(readBlueprint), false);
-    assertEquals(executor.isReadOnlyAgent(readBlueprint), true);
-    assertEquals(executor.isReadOnlyAgent(writeBlueprint), false);
+    assertEquals(requiresGitTracking(writeBlueprint.capabilities, writeBlueprint.permitted_tools), true);
+    assertEquals(requiresGitTracking(readBlueprint.capabilities, readBlueprint.permitted_tools), false);
+    assertEquals(isReadOnlyAgentCapabilities(readBlueprint.capabilities, readBlueprint.permitted_tools), true);
+    assertEquals(isReadOnlyAgentCapabilities(writeBlueprint.capabilities, writeBlueprint.permitted_tools), false);
   },
 });
 
@@ -1945,7 +1872,7 @@ orchestratorTest("AgentComposer: applyTokenBudget uses tokenizer countTokens whe
     ctx: IExecutionContext,
     opts: IAgentExecutionOptions,
   ) => {
-    await executor.buildExecutionPrompt(blueprint, ctx, opts);
+    await buildExecutionPrompt(executor, blueprint, ctx, opts);
     return changesetResult("feat/tokenizer-test", [], "Tokenizer test");
   });
 
@@ -2058,7 +1985,7 @@ Deno.test({
         );
       }
 
-      await executor.compactLoopHistory(2);
+      await executor["historyManager"].compactLoopHistory(2);
 
       const compactedEvent = loggedPayloads.find(
         (p) => p.tokensBefore > 0 && p.compressedCount > 0,
@@ -2129,7 +2056,7 @@ Deno.test({
         record: () => Promise.resolve(),
         fit: () => skillsPrompt,
       };
-      const prompt = await executor.buildExecutionPrompt(blueprint, context, options, skillsPrompt);
+      const prompt = await buildExecutionPrompt(executor, blueprint, context, options, skillsPrompt);
       const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
 
       assertExists(skillMatch);
@@ -2637,7 +2564,7 @@ orchestratorTest("AgentComposer: compactLoopHistory preserves last 2 steps and c
   assertEquals(executor.loopHistory.length, 4);
 
   // Compact — compress steps older than N-2
-  await executor.compactLoopHistory(2);
+  await executor["historyManager"].compactLoopHistory(2);
 
   // After: 2 individual steps (3,4) + 1 compacted entry
   assertEquals(executor.loopHistory.length, 3);
@@ -2719,7 +2646,7 @@ orchestratorTest("AgentComposer: compacted originalStepIds match compressed step
   assertEquals(stepIds.length, 5);
 
   // Compact — compress steps older than N-2 (keep 2 newest)
-  await executor.compactLoopHistory(2);
+  await executor["historyManager"].compactLoopHistory(2);
 
   // 3 entries: 1 compacted + 2 individual steps
   assertEquals(executor.loopHistory.length, 3);
@@ -2849,7 +2776,7 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED 
     async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
       // buildExecutionPrompt is called within executeStep's strategy execution,
       // so currentPromptBudget is set. We just need to trigger prompt building.
-      await executor.buildExecutionPrompt(_blueprint, ctx, opts);
+      await buildExecutionPrompt(executor, _blueprint, ctx, opts);
       return changesetResult("feat/budget-event-test", [], "Budget event test");
     },
   );
@@ -2900,7 +2827,7 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATE
 
   const strategyRegistry = reactRegistry(
     async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
-      await executor.buildExecutionPrompt(_blueprint, ctx, opts);
+      await buildExecutionPrompt(executor, _blueprint, ctx, opts);
       return changesetResult("feat/trunc-event-test", [], "Truncation event test");
     },
   );
@@ -2966,7 +2893,7 @@ orchestratorTest("AgentComposer: marks stable sections in ContextCache during ex
   const contextCache = new ContextCache();
   const strategyRegistry = reactRegistry(
     async (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
-      await executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
+      await buildExecutionPrompt(executor, _blueprint, _ctx, _opts);
       return changesetResult("feat/cache-test", [], "Context cache test");
     },
   );
@@ -3025,14 +2952,6 @@ orchestratorTest("AgentComposer: getRecentActivitiesByTraceId returns empty for 
   const executor = createComposer();
   const activities = await executor.getRecentActivitiesByTraceId("nonexistent-trace");
   assertEquals(activities, []);
-  executor.dispose();
-});
-
-orchestratorTest("AgentComposer: buildSubprocessPermissions sandboxed mode blocks file access", () => {
-  const executor = createComposer();
-  const flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, "/tmp/portal");
-  assert(flags.some((f) => f.includes("--allow-read=NONE")));
-  assert(flags.some((f) => f.includes("--allow-write=NONE")));
   executor.dispose();
 });
 

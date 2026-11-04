@@ -7,10 +7,29 @@
 import { assert, assertEquals } from "@std/assert";
 import { AgentComposer, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
-import type { IPinnedSkillPrompt } from "@exaix/execution";
+import type { IAgentFileBlueprint, IPinnedSkillPrompt } from "@exaix/execution";
+import type { Opt, Reason } from "@exaix/core/types";
 import { ExecutionStrategyName, SecurityMode, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { setupAgentExecutorFixture } from "../helpers/agent_composer_fixture.ts";
+
+/** Builds the execution prompt through the composer's prompt builder, with the model and tools it would pass. */
+function buildExecutionPrompt(
+  executor: AgentComposer,
+  blueprint: IAgentFileBlueprint,
+  context: IExecutionContext,
+  options: IAgentExecutionOptions,
+  pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
+): Promise<string> {
+  return executor["promptBuilder"].buildExecutionPrompt(
+    blueprint,
+    context,
+    options,
+    executor["blueprintService"].resolveModelId(blueprint),
+    executor["_toolRegistry"]?.getTools(),
+    pinnedSkills,
+  );
+}
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {
   const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();
@@ -48,7 +67,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
           record: () => Promise.resolve(),
           fit: () => skillsPrompt,
         };
-        const prompt = await holder.executor!.buildExecutionPrompt(blueprint, context, options, skillsPrompt);
+        const prompt = await buildExecutionPrompt(holder.executor!, blueprint, context, options, skillsPrompt);
         promptLengthSeen = prompt.length;
         const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
         skillsBlockLengthSeen = skillMatch?.[1].length ?? 0;

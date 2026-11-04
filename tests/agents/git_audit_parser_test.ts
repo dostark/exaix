@@ -99,7 +99,7 @@ Deno.test({
       await Deno.writeTextFile(join(repoDir, "newfile.txt"), "untracked\n");
 
       try {
-        const unauthorized = await executor.auditGitChanges(repoDir, []);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(repoDir, []);
         assertArrayIncludes(unauthorized, ["newfile.txt"], "newfile.txt must be in unauthorized list");
       } finally {
         await ds2.cleanup();
@@ -127,7 +127,7 @@ Deno.test({
       await Deno.writeTextFile(join(repoDir, "tracked.md"), "# modified\n");
 
       try {
-        const unauthorized = await executor.auditGitChanges(repoDir, []);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(repoDir, []);
         assertArrayIncludes(unauthorized, ["tracked.md"], "tracked.md must be flagged after modification");
       } finally {
         await ds2.cleanup();
@@ -155,7 +155,7 @@ Deno.test({
       await Deno.writeTextFile(join(repoDir, "allowed.txt"), "allowed\n");
 
       try {
-        const unauthorized = await executor.auditGitChanges(repoDir, ["allowed.txt"]);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(repoDir, ["allowed.txt"]);
         assertFalse(unauthorized.includes("allowed.txt"), "allowed.txt must NOT appear in unauthorized list");
       } finally {
         await ds2.cleanup();
@@ -184,7 +184,7 @@ Deno.test({
       const { executor, dbService: ds2 } = await buildExecutor(tempDir, plainDir);
 
       try {
-        const unauthorized = await executor.auditGitChanges(plainDir, []);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(plainDir, []);
         assertEquals(unauthorized, [], "Non-git directory must return empty array");
       } finally {
         await ds2.cleanup();
@@ -212,7 +212,7 @@ Deno.test({
       await Deno.writeTextFile(join(repoDir, "forbidden.txt"), "not allowed\n");
 
       try {
-        const unauthorized = await executor.auditGitChanges(repoDir, ["permitted.txt"]);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(repoDir, ["permitted.txt"]);
         assertArrayIncludes(unauthorized, ["forbidden.txt"], "forbidden.txt must be unauthorized");
         assertFalse(unauthorized.includes("permitted.txt"), "permitted.txt must NOT be in unauthorized list");
       } finally {
@@ -239,7 +239,7 @@ Deno.test({
 
       try {
         // No changes made after initial commit
-        const unauthorized = await executor.auditGitChanges(repoDir, []);
+        const unauthorized = await executor["gitAuditService"].auditGitChanges(repoDir, []);
         assertEquals(unauthorized, [], "Clean working tree must return empty array");
       } finally {
         await ds2.cleanup();

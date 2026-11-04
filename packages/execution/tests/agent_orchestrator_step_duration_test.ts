@@ -41,7 +41,7 @@ Deno.test({
     const { executor, db, cleanup } = await setupExecutor();
     try {
       const trace_id = crypto.randomUUID();
-      await executor.logExecutionComplete(
+      await executor["audit"].logExecutionComplete(
         trace_id,
         "test-agent",
         {

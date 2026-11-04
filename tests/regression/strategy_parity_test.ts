@@ -29,7 +29,7 @@ Deno.test("ReActLoopStrategy returns a schema-valid, usable ChangesetResult", as
       plan: "Complete immediately",
       portal: "workspace",
     };
-    const result: IChangesetResult = await new ReActLoopStrategy(executor, provider).execute(
+    const result: IChangesetResult = await new ReActLoopStrategy(executor["reActAdapter"], provider).execute(
       TEST_BLUEPRINT,
       context,
       TEST_OPTIONS,

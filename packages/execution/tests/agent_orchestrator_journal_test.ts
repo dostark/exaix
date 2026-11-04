@@ -67,7 +67,7 @@ Deno.test("AgentComposer: logExecutionStart writes correct field separation", as
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act
-  await executor.logExecutionStart("trace-123", "senior-coder", "my-portal");
+  await executor["audit"].logExecutionStart("trace-123", "senior-coder", "my-portal");
 
   // Assert
   assertEquals(loggedEvents.length, 1);
@@ -97,7 +97,7 @@ Deno.test("AgentComposer: logExecutionComplete writes correct field separation",
   };
 
   // Act
-  await executor.logExecutionComplete("trace-456", "code-reviewer", mockResult);
+  await executor["audit"].logExecutionComplete("trace-456", "code-reviewer", mockResult);
 
   // Assert
   assertEquals(loggedEvents.length, 1);
@@ -128,7 +128,7 @@ Deno.test("AgentComposer: logExecutionError writes correct field separation", as
   };
 
   // Act
-  await executor.logExecutionError("trace-789", "test-agent", errorPayload);
+  await executor["audit"].logExecutionError("trace-789", "test-agent", errorPayload);
 
   // Assert
   assertEquals(loggedEvents.length, 1);
@@ -149,7 +149,7 @@ Deno.test("AgentComposer: REGRESSION - runnerId must never be agent role bluepri
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act - log with agentRole = "senior-coder"
-  await executor.logExecutionStart("trace-999", "senior-coder", "test-portal");
+  await executor["audit"].logExecutionStart("trace-999", "senior-coder", "test-portal");
 
   // Assert - most important regression guard
   const event = loggedEvents[0];

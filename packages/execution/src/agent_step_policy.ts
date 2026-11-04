@@ -12,7 +12,7 @@ import type { PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IAllocationHints } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
-import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import { ExecutionStrategyName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
 import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
@@ -124,32 +124,4 @@ export function resolveStepPortal(
     throw new Error(`Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`);
   }
   return portal;
-}
-
-/**
- * Build subprocess permissions based on security mode
- */
-export function buildSubprocessPermissions(
-  mode: SecurityMode,
-  portalPath: string,
-): string[] {
-  const flags: string[] = [];
-
-  if (mode === SecurityMode.SANDBOXED) {
-    // No file system access
-    flags.push("--allow-read=NONE");
-    flags.push("--allow-write=NONE");
-  } else if (mode === SecurityMode.HYBRID) {
-    // Read-only access to portal
-    flags.push(`--allow-read=${portalPath}`);
-    flags.push("--allow-write=NONE");
-  }
-
-  // Always allow network (for MCP connection)
-  flags.push("--allow-net");
-
-  // Always allow environment variables
-  flags.push("--allow-env");
-
-  return flags;
 }

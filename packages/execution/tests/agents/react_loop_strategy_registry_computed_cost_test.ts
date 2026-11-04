@@ -13,7 +13,9 @@
 
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
+import type { IAgentFileBlueprint } from "@exaix/execution";
+import type { IReActLoopExecutor } from "../../src/react_loop_adapter.ts";
+import { castAny } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
@@ -105,7 +107,7 @@ async function loggedCostUsd(turn: IPricedTurn): Promise<number | undefined> {
     },
   };
 
-  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
+  const strategy = new ReActLoopStrategy(castAny<IReActLoopExecutor>(mockExecutor), provider);
   await strategy.execute({ ...testBlueprint, model: turn.model }, testContext, createOptions("test"));
   return capturedCostUsd;
 }

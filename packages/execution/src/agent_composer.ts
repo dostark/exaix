@@ -41,10 +41,10 @@ import type {
 } from "@exaix/schemas/agent_composer.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType } from "@exaix/core";
-import type { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import type { ExecutionStrategyName } from "@exaix/core";
 
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
-import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
+
 import type { JSONValue } from "@exaix/core";
 import type { StrategyRegistry } from "./strategies/strategy_registry.ts";
 
@@ -71,7 +71,7 @@ import type { IProjectedCallOptions } from "@exaix/ai";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
-import { type IGenerationUsage, logGenerationCompleted } from "./generation_log.ts";
+
 import { BlueprintService } from "./blueprint_service.ts";
 import type { PromptBuilder } from "./prompt_builder.ts";
 
@@ -80,7 +80,6 @@ import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_tr
 import {
   applyBlueprintToolScope,
   authorizedPathsOf,
-  buildSubprocessPermissions,
   resolveStepPortal,
   resolveStrategyName,
   stepAllocationHints,
@@ -91,7 +90,7 @@ import { AgentComposerAudit, type IComposerUsage } from "./agent_composer_audit.
 import { AgentComposerEffort } from "./agent_composer_effort.ts";
 import type { GitAuditService } from "./git_audit_service.ts";
 import type { HistoryManager } from "./history_manager.ts";
-import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
+import type { OutputParser } from "./output_parser.ts";
 import type { ReActLoopAdapter } from "./react_loop_adapter.ts";
 
 /**
@@ -319,12 +318,6 @@ export class AgentComposer {
     return this.historyManager.loopHistory;
   }
 
-  compactLoopHistory(
-    keepLastN: Opt<number, Reason.SensibleDefault>,
-  ): Promise<void> {
-    return this.historyManager.compactLoopHistory(keepLastN);
-  }
-
   private async _checkLoopHistoryBudget(): Promise<void> {
     if (!this.ctx.currentPromptBudget) return;
     await this.historyManager.checkBudget(this.ctx.currentPromptBudget);
@@ -441,16 +434,6 @@ export class AgentComposer {
     return this.executionContext?.allowedPaths;
   }
 
-  /** True if the agent's write capabilities require branch creation and commit tracking. */
-  requiresGitTracking(blueprint: IAgentFileBlueprint): boolean {
-    return requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
-  }
-
-  /** True if the agent has no write capabilities (inverse of requiresGitTracking). */
-  isReadOnlyAgent(blueprint: IAgentFileBlueprint): boolean {
-    return isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools);
-  }
-
   /**
    * Load agent blueprint from file with security validation.
    */
@@ -521,7 +504,7 @@ export class AgentComposer {
       const strategyName = resolveStrategyName(_blueprint, options);
       await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills, strategyName);
 
-      await this.logExecutionStart(context.trace_id, options.agent_role ?? "", options.portal);
+      await this.audit.logExecutionStart(context.trace_id, options.agent_role ?? "", options.portal);
       applyBlueprintToolScope(_blueprint, options, this.options?.matchedSkillTools);
       this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
 
@@ -530,9 +513,9 @@ export class AgentComposer {
       const usage = usageReportOf(validated);
 
       const portalPath = this.resolveAuditPortalPath(portal);
-      validated.commit_sha = await this.getPortalHeadSha(portalPath);
+      validated.commit_sha = await this.gitAuditService.getPortalHeadSha(portalPath);
 
-      const unauthorizedChanges = await this.auditGitChanges(
+      const unauthorizedChanges = await this.gitAuditService.auditGitChanges(
         portalPath,
         authorizedPathsOf(options, validated, this.planWrittenFiles),
       );
@@ -549,7 +532,7 @@ export class AgentComposer {
       for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
       this.recordStepHistory(validated, _blueprint, context, usage);
       await this._checkLoopHistoryBudget();
-      await this.logExecutionComplete(
+      await this.audit.logExecutionComplete(
         context.trace_id,
         options.agent_role || "unknown",
         validated,
@@ -559,7 +542,7 @@ export class AgentComposer {
       return validated;
     } catch (error) {
       const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
-      await this.logExecutionError(context.trace_id, options.agent_role ?? "", {
+      await this.audit.logExecutionError(context.trace_id, options.agent_role ?? "", {
         type: AgentExecutionErrorType.EXECUTION_ERROR,
         message: error instanceof Error ? error.message : String(error),
         trace_id: context.trace_id,
@@ -598,7 +581,7 @@ export class AgentComposer {
     context: IExecutionContext,
     unauthorizedChanges: string[],
   ): Promise<never> {
-    await this.revertUnauthorizedChanges(portalPath, unauthorizedChanges);
+    await this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedChanges);
     await this.logger.error(AGENT_EVENT_SECURITY_VIOLATION, context.trace_id, {
       portal: portalAlias,
       unauthorized_files: unauthorizedChanges,
@@ -658,44 +641,14 @@ export class AgentComposer {
     return this.blueprintService.resolveModelId(blueprint);
   }
 
-  /** Builds execution prompt for LLM agent. Delegates to PromptBuilder. */
-  buildExecutionPrompt(
-    blueprint: IAgentFileBlueprint,
-    context: IExecutionContext,
-    options: IAgentExecutionOptions,
-    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
-  ): Promise<string> {
-    const modelId = this.resolveModelId(blueprint);
-    const tools = this._toolRegistry?.getTools();
-    return this.promptBuilder.buildExecutionPrompt(blueprint, context, options, modelId, tools, pinnedSkills);
-  }
-
   /**
    * Parse agent response to extract changeset result
    */
 
-  /** Audits git changes to detect unauthorized modifications. */
-  auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
-    return this.gitAuditService.auditGitChanges(portalPath, authorizedFiles);
-  }
-
-  getPortalHeadSha(portalPath: string): Promise<string> {
-    return this.gitAuditService.getPortalHeadSha(portalPath);
-  }
-
-  public validateFilePath(filePath: string, portalPath: string): string | null {
-    return this.gitAuditService.validateFilePath(filePath, portalPath);
-  }
-
-  /** Reverts unauthorized changes in hybrid mode via git checkout. */
-  revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
-    return this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
-  }
-
   /**
    * Get portal configuration by alias
    */
-  public getPortalConfig(alias: string): IPortalConfig | undefined {
+  private getPortalConfig(alias: string): IPortalConfig | undefined {
     return this.config.portals?.find((p) => p.alias === alias);
   }
 
@@ -709,64 +662,7 @@ export class AgentComposer {
       : portal.target_path;
   }
 
-  /**
-   * Is tool call budget exceeded?
-   */
-  checkToolCallLimit(toolCallCount: number, maxToolCalls: number): boolean {
-    return toolCallCount > maxToolCalls;
-  }
-
-  /**
-   * Log LLM generation metrics to IActivity Journal
-   */
-  public parseAgentResponse(
-    response: string,
-    context: IOutputParserContext,
-    startTime: number,
-  ): IChangesetResult {
-    return this.outputParser.parseAgentResponse(response, context, startTime);
-  }
-
   validateReviewResult(result: JSONValue): IChangesetResult {
     return this.outputParser.validateReviewResult(result);
-  }
-  /** Log execution start to IActivity Journal */
-  logExecutionStart(traceId: string, agentRole: string, portal: string): Promise<void> {
-    return this.audit.logExecutionStart(traceId, agentRole, portal);
-  }
-
-  /** Log execution completion to IActivity Journal */
-  logExecutionComplete(
-    traceId: string,
-    agentRole: string,
-    result: IChangesetResult,
-    usage?: Opt<IComposerUsage, Reason.OptionalInput>,
-    durationMs?: Opt<number, Reason.OptionalInput>,
-  ): Promise<void> {
-    return this.audit.logExecutionComplete(traceId, agentRole, result, usage, durationMs);
-  }
-
-  /** Log execution error to IActivity Journal */
-  logExecutionError(
-    traceId: string,
-    agentRole: string,
-    error: { type: string; message: string; trace_id?: string; providerReasonCode?: string },
-  ): Promise<void> {
-    return this.audit.logExecutionError(traceId, agentRole, error);
-  }
-
-  /** Build subprocess permissions based on security mode */
-  buildSubprocessPermissions(mode: SecurityMode, portalPath: string): string[] {
-    return buildSubprocessPermissions(mode, portalPath);
-  }
-
-  logGeneration(
-    traceId: string,
-    agentRole: string,
-    model: string,
-    providerStr: string,
-    usage: IGenerationUsage,
-  ): Promise<void> {
-    return logGenerationCompleted(this.logger, traceId, agentRole, model, providerStr, usage);
   }
 }

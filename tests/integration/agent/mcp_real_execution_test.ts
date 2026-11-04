@@ -129,7 +129,7 @@ Deno.test("AgentComposer Integration - Real MCP Execution & Audit", async () => 
     assertEquals(await Deno.readTextFile(join(portalPath, "authorized.txt")), "this is authorized");
 
     // Captured SHA should be the current HEAD
-    const headSha = await executor.getPortalHeadSha(portalPath);
+    const headSha = await executor["gitAuditService"].getPortalHeadSha(portalPath);
     assertEquals(result1.commit_sha, headSha);
 
     // 2. Test Unauthorized Write (Audit & Revert)

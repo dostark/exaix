@@ -316,7 +316,7 @@ Deno.test(
         permissions: {} as never,
       });
 
-      await composer.logExecutionStart(traceId, "senior-coder", "test-portal");
+      await composer["audit"].logExecutionStart(traceId, "senior-coder", "test-portal");
       await db.waitForFlush();
 
       const activities = db.getActivitiesByTrace(traceId);

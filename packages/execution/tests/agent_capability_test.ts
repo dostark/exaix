@@ -16,6 +16,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
+import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 
 describe("AgentComposer Capability Differentiation", () => {
   let config: Config;
@@ -51,7 +52,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Analyze code",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, false);
     });
 
@@ -64,7 +65,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Develop features",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, true);
     });
 
@@ -77,7 +78,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Commit changes",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, true);
     });
 
@@ -90,7 +91,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Create branches",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, true);
     });
 
@@ -103,7 +104,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Full development",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, true);
     });
 
@@ -116,7 +117,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Analyze and search",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, false);
     });
 
@@ -129,7 +130,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Minimal agent",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, false);
     });
 
@@ -142,7 +143,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Test case sensitivity",
       };
 
-      const result = executor.requiresGitTracking(blueprint);
+      const result = requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, false); // Should not match wrong case
     });
   });
@@ -157,7 +158,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Read only",
       };
 
-      const result = executor.isReadOnlyAgent(blueprint);
+      const result = isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, true);
     });
 
@@ -170,7 +171,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Read and write",
       };
 
-      const result = executor.isReadOnlyAgent(blueprint);
+      const result = isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools);
       assertEquals(result, false);
     });
   });
@@ -188,8 +189,8 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Senior software engineer",
       };
 
-      assertEquals(executor.requiresGitTracking(blueprint), true);
-      assertEquals(executor.isReadOnlyAgent(blueprint), false);
+      assertEquals(requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools), true);
+      assertEquals(isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools), false);
     });
 
     it("stays read-only when permitted_tools grants only read tools", () => {
@@ -202,8 +203,8 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Read-only analyst",
       };
 
-      assertEquals(executor.requiresGitTracking(blueprint), false);
-      assertEquals(executor.isReadOnlyAgent(blueprint), true);
+      assertEquals(requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools), false);
+      assertEquals(isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools), true);
     });
 
     it("still detects write tools declared in capabilities (legacy shape)", () => {
@@ -215,7 +216,7 @@ describe("AgentComposer Capability Differentiation", () => {
         systemPrompt: "Legacy write agent",
       };
 
-      assertEquals(executor.requiresGitTracking(blueprint), true);
+      assertEquals(requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools), true);
     });
   });
 });

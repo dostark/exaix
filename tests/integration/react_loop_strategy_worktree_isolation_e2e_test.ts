@@ -18,7 +18,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { type AgentComposer, ReActLoopStrategy } from "@exaix/execution";
+import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -33,6 +33,8 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
+import type { IReActLoopExecutor } from "../../packages/execution/src/react_loop_adapter.ts";
+import { castAny } from "@exaix/testing";
 
 const PORTAL_ALIAS = "todo-app";
 
@@ -127,7 +129,7 @@ Deno.test({
         },
       };
 
-      const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
+      const strategy = new ReActLoopStrategy(castAny<IReActLoopExecutor>(mockExecutor), provider);
       await strategy.execute(testBlueprint, {
         trace_id: "trace-e2e-1",
         request_id: "request-1",
