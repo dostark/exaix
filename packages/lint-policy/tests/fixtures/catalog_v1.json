@@ -1069,7 +1069,7 @@
     },
     "exaix/max-params": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
       "tags": [
@@ -1078,9 +1078,7 @@
       ],
       "options": {
         "max": 7
-      },
-      "optIn": true,
-      "reason": "Parked: the AST rule counts arrows and methods that the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      }
     },
     "exaix/long-comment": {
       "engine": "plugin",

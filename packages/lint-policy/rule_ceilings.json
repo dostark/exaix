@@ -138,12 +138,6 @@
     "packages/tui": 5,
     "scripts": 9
   },
-  "exaix/max-params": {
-    "packages/core": 1,
-    "packages/flow": 1,
-    "packages/storage-sqlite": 1,
-    "packages/testing": 1
-  },
   "exaix/max-class-size": {
     "apps/exactl": 8,
     "apps/tui": 5,

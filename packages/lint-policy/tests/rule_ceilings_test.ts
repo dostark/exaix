@@ -29,7 +29,6 @@ const RATCHETED_RULES = [
   "exaix/max-function-lines",
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
-  "exaix/max-params",
 ];
 /** The class-size rule has its own gate, `deno task check:god-objects`, so this test never counts it. */
 const GOD_OBJECT_RULES = ["exaix/max-class-size"];

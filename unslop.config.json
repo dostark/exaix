@@ -764,12 +764,10 @@
       ]
     },
     "exaix/max-params": {
-      "level": "off",
+      "level": "error",
       "options": {
         "max": 7
       },
-      "optIn": true,
-      "reason": "Parked: the AST rule counts arrows and methods that the line scanner skipped. Phase 230 burns them down and turns the rule on.",
       "tags": [
         "complexity",
         "module-structure"

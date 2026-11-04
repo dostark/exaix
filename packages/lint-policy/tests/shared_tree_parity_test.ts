@@ -165,6 +165,9 @@ function lineHoldsLiteralText(text: string, line: number): boolean {
   return false;
 }
 
+/** Rules whose base-commit findings were fixed and whose active rule now reports nothing. */
+const BURNED_DOWN_RULES: readonly string[] = ["max-params"];
+
 async function readLines(file: string): Promise<string | null> {
   try {
     return await Deno.readTextFile(join(REPO_ROOT, file));
@@ -186,6 +189,9 @@ async function collect(): Promise<ISharedTree> {
   const partition = partitionFiles(tracked, { script: scriptCovers, plugin: pluginCovers });
   const shared = new Set(partition.shared);
   const parkedScriptIds = new Set(moved.filter((rule) => parked.has(rule.pluginKey)).map((rule) => rule.scriptId));
+  const burnedDown = new Set(
+    BURNED_DOWN_RULES.filter((id) => !current.findings.some((finding) => finding.rule === id)),
+  );
   const texts = new Map<string, string | null>();
   for (const file of new Set(baselineFindings.map((finding) => finding.file))) texts.set(file, await readLines(file));
   const parity = compareProductionFindings({
@@ -193,6 +199,7 @@ async function collect(): Promise<ISharedTree> {
     current: current.findings,
     explainMissing: (finding) => {
       if (parkedScriptIds.has(finding.rule)) return "parked rule finding held by rule_ceilings.json";
+      if (burnedDown.has(finding.rule)) return "burn-down: the active rule reports nothing in the current tree";
       if (!pluginCovers(finding.file)) {
         return "scope loss: the plugin reads TypeScript under its lint roots only";
       }
@@ -232,7 +239,7 @@ Deno.test("ported_rules_match_baseline_on_shared_production_files", async () => 
   const reasons = new Set(tree.parity.accepted.map((entry) => entry.reason));
   for (const reason of reasons) {
     assert(
-      /^(scope loss|suppressed by a migrated|script matched text|parked rule finding)/.test(reason),
+      /^(scope loss|suppressed by a migrated|script matched text|parked rule finding|burn-down)/.test(reason),
       `unknown reason: ${reason}`,
     );
   }
