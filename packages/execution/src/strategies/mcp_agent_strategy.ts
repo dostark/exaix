@@ -7,7 +7,7 @@
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { type AgentComposer, AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
+import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SafeSubprocess } from "@exaix/core";
 import { ProcessManager } from "@exaix/core";
@@ -22,7 +22,26 @@ import {
   SystemCommand,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { IToolResult } from "@exaix/core/types";
+import type { IToolRegistry, IToolResult, Opt, Reason } from "@exaix/core/types";
+
+/** One journal row of a trace, as the sub-agent context query returns it. */
+type IRecentActivity = {
+  actionType: string;
+  target: string | null;
+  payload: Record<string, JSONValue>;
+  timestamp: string;
+};
+
+/** What the MCP strategy takes from the composer that owns it: tools, trace queries, output logging and result validation. */
+interface IMcpAgentExecutor {
+  readonly toolRegistry: Opt<IToolRegistry, Reason.OptionalDependency>;
+  getRecentActivitiesByTraceId(
+    traceId: string,
+    limit?: Opt<number, Reason.SensibleDefault>,
+  ): Promise<IRecentActivity[]>;
+  logAgentOutput(traceId: string, output: string): Promise<void>;
+  validateReviewResult(result: JSONValue): IChangesetResult;
+}
 
 /**
  * MCP execution strategy that spawns a separate Deno process
@@ -32,7 +51,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
   private readonly HANDSHAKE_TIMEOUT_MS = DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS;
 
   constructor(
-    private executor: AgentComposer,
+    private executor: IMcpAgentExecutor,
     private processManager: ProcessManager = new ProcessManager(),
   ) {}
 
