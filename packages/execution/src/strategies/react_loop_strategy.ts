@@ -10,85 +10,45 @@
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import { PlanActionSchema } from "@exaix/schemas/plan_schema.ts";
-import type {
-  IModelProvider,
-  INativeConversationSnapshot,
-  IProviderToolRound,
-  IProviderTurn,
-  IToolChoice,
-  IToolDefinition,
-  IValidatedProviderRound,
-} from "@exaix/ai/types.ts";
-import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
+
+import type { IModelProvider, IProviderToolRound, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
 
 import type { INativePromptSection } from "@exaix/ai";
-import { PromptBudgetAllocator, SkillSubmissionKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { SkillSubmissionKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
+import { AgentExecutionErrorType, canonicalizeToolName, ExecutionStrategyName, ToolName } from "@exaix/core";
 import {
-  AgentExecutionErrorType,
-  canonicalizeToolName,
-  ExecutionStrategyName,
-  ToolCallEntryPoint,
-  ToolName,
-} from "@exaix/core";
-import {
-  assertRoundWithinBounds,
   buildNativeToolDefinitions,
   buildPriorTurn,
-  buildToolRound,
   enrichPortalPathParam,
   type IRoundOutcome,
   providerSupportsNativeConversation,
-  providerSupportsNativeRoundReplay,
   providerSupportsNativeTools,
-  roundLimitsOf,
   TOOL_CALL_LIMIT_MESSAGE,
-  validateProviderRound,
 } from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
-import { parse as parseToml } from "@std/toml";
+
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
-import { DomainEventType, type IToolAliasRewrittenPayload } from "@exaix/core/events";
+
 import {
-  AGENT_EVENT_RESPONSE_REFUSED,
-  AGENT_EVENT_RESPONSE_TRUNCATED,
-  CONTEXT_PRIORITY_REFLECTION,
-  CONTEXT_PRIORITY_SYSTEM,
-  CONTEXT_PRIORITY_TOOL_RESULT,
   DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS,
   DEFAULT_AGENT_MAX_ITERATIONS,
-  EXECUTION_HEARTBEAT_INTERVAL_MS,
-  LOOP_HISTORY_BUDGET_THRESHOLD,
   PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
   REACT_CALLING_TOOL_PREFIX,
-  REACT_DEFAULT_MAX_TOKENS,
-  REACT_DEFAULT_TEMPERATURE,
-  REACT_EVENT_ACTION_PARSE_FAILED,
-  REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
-  REACT_TOOL_RESULT_BUDGET_RATIO,
   REACT_TOOL_RESULT_HISTORY_MAX,
-  REACT_TOOL_RESULT_SUMMARY_MAX,
-  RESPONSE_STOP_REASON_MAX_TOKENS,
-  RESPONSE_STOP_REASON_REFUSAL,
-  STREAMING_EVENT_HEARTBEAT,
   ToolsRoundLoop,
-  ToolsRoundMode,
+  type ToolsRoundMode,
 } from "@exaix/core";
 import { defaultToolsRoundPolicy, type IToolsRoundPolicy } from "@exaix/schemas";
 import type { IModelCallOptions } from "@exaix/schemas";
-import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
-import type { IContextSegment } from "../context/context_segment.ts";
+
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
-import { ContextBudgetExceededError } from "@exaix/core/errors";
-import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
-import { ProviderRegistry, readProviderModelInfo } from "@exaix/ai";
+
 import type { IPinnedSkillPrompt } from "../skill_pin_transport.ts";
 import {
   calculateAciDocBudgetChars,
@@ -96,26 +56,11 @@ import {
   type IAciRenderResult,
   renderAciDocFragments,
 } from "@exaix/tool-runtime";
-
-interface IReActAction {
-  tool: string;
-  params: Record<string, JSONValue>;
-  description?: string;
-}
-
-/** Internal type for dynamically-built provider.generate() options. */
-interface IGeneratedOptions {
-  traceId?: string;
-  temperature: number;
-  max_tokens: number;
-  tools?: IToolDefinition[];
-  toolChoice?: IToolChoice;
-  priorTurn?: IProviderTurn;
-  nativeConversation?: INativeConversationSnapshot;
-  /** "forced" means the preferred-tool branch chose this iteration's tool choice. "any" means the
-   *  unconstrained fallback. Non-wire: provider request builders ignore it. */
-  nativeToolChoiceMode?: NativeToolChoiceMode;
-}
+import { type IGeneratedOptions, type IReActAction, ReActRole } from "./react_loop_types.ts";
+import { parseReActResponse } from "./react_response_parser.ts";
+import { ReActHistoryBudget } from "./react_history_budget.ts";
+import { ReActNativeConversation } from "./react_native_conversation.ts";
+import { ReActJournal } from "./react_journal.ts";
 
 /** The five tools listed when an agent role/skill declares no permitted_tools restriction at all. */
 const DEFAULT_REACT_VISIBLE_TOOLS: readonly string[] = [
@@ -130,15 +75,6 @@ interface IToolExecutionResult {
   success?: boolean;
   error?: string;
   data?: JSONValue;
-}
-
-/**
- * Roles for the internal ReAct loop history.
- */
-enum ReActRole {
-  THOUGHT = "thought",
-  ACTION = "action",
-  RESULT = "result",
 }
 
 /** Tools that mutate a portal file; their `path` param is a change the audit must authorize. */
@@ -219,10 +155,18 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return this.executor.maxIterations ?? DEFAULT_AGENT_MAX_ITERATIONS;
   }
 
+  private readonly historyBudget: ReActHistoryBudget;
+  private readonly native: ReActNativeConversation;
+  private readonly journal: ReActJournal;
+
   constructor(
     private executor: IReActLoopExecutor,
     private provider?: Opt<IModelProvider, Reason.OptionalDependency>,
-  ) {}
+  ) {
+    this.historyBudget = new ReActHistoryBudget(executor, provider);
+    this.journal = new ReActJournal(executor, provider);
+    this.native = new ReActNativeConversation(executor, provider, () => this.callOptions);
+  }
 
   async execute(
     blueprint: IAgentFileBlueprint,
@@ -375,18 +319,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return this.executor.validateReviewResult(finalResult);
   }
 
-  /** Journal each dropped-action TOML parse error so a vanished action is attributable. */
-  private journalParseErrors(parseErrors: string[], context: IExecutionContext, iteration: number): void {
-    for (const parseError of parseErrors) {
-      void this.executor.budgetLogger?.warn(
-        REACT_EVENT_ACTION_PARSE_FAILED,
-        context.request_id ?? null,
-        { iteration, error: parseError, trace_id: context.trace_id },
-        context.trace_id,
-      );
-    }
-  }
-
   /** Record a successful write-type tool's target path as a change the audit must authorize. */
   private recordWrittenFile(
     action: IReActAction,
@@ -396,158 +328,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     if (!result.success || !REACT_WRITE_TOOLS.has(action.tool)) return;
     const path = action.params.path;
     if (typeof path === "string" && path.length > 0) writtenFiles.add(path);
-  }
-
-  /** Parses a native tool-use response into actions. Returns empty actions and
-   *  isComplete=true when the model chose not to use any tool. */
-  private parseNativeToolResponse(response: IGenerateResult): {
-    toolCalls: IProviderToolCall[] | undefined;
-    actions: IReActAction[];
-    isComplete: boolean;
-  } {
-    const toolCalls = response.toolCalls;
-    if (toolCalls && toolCalls.length > 0) {
-      const actions = toolCalls.map((tc) => ({
-        tool: tc.name,
-        params: tc.input as Record<string, JSONValue>,
-      }));
-      return { toolCalls, actions, isComplete: false };
-    }
-    return { toolCalls: undefined, actions: [], isComplete: true };
-  }
-
-  /** Builds the options object for provider.generate() when native tools are active:
-   *  tools, toolChoice (any + disable_parallel_tool_use), and priorTurn on iterations
-   *  after the first. Returns base options when native tools are inactive. */
-  private buildNativeGenerateOptions(
-    nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>,
-    nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
-    nativeToolsUsed = false,
-    nativePreferredTool?: Opt<string, Reason.OptionalInput>,
-    parallelMode: ToolsRoundMode = ToolsRoundMode.AUTO,
-  ): IGeneratedOptions {
-    const base = Object.assign({
-      temperature: REACT_DEFAULT_TEMPERATURE,
-      max_tokens: REACT_DEFAULT_MAX_TOKENS,
-    }, this.callOptions) as IGeneratedOptions;
-    // Off asks for one call per response. Auto sends no parallel flag, so the provider default applies.
-    const parallel: { disable_parallel_tool_use?: boolean } = parallelMode === ToolsRoundMode.OFF
-      ? { disable_parallel_tool_use: true }
-      : {};
-    if (nativeToolsUsed && nativeToolDefinitions) {
-      base.tools = nativeToolDefinitions;
-      // A provider that cannot honor an explicit tool_choice still receives the tool list.
-      const capabilities = this.provider?.callCapabilities;
-      // An unset flag counts as thinking on: DeepSeek models think by default, and only they declare the thinking-only refusal.
-      const thinkingOn = this.callOptions?.thinking !== false;
-      const forcedChoiceRefused = capabilities?.supportsForcedToolChoice === false ||
-        (thinkingOn && capabilities?.supportsForcedToolChoiceWithThinking === false);
-      if (capabilities?.supportsToolChoice !== false) {
-        const choice = this.nativeToolChoiceOf(
-          nativeToolDefinitions,
-          nativeToolsPriorTurn,
-          nativePreferredTool,
-          parallel,
-          forcedChoiceRefused,
-        );
-        base.toolChoice = choice.toolChoice;
-        base.nativeToolChoiceMode = choice.nativeToolChoiceMode;
-      }
-      // One-line diagnostic of the native toolChoice branch chosen.
-      console.debug(
-        `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode ?? "<unset>"} ` +
-          `preferredTool=${nativePreferredTool ?? "<unset>"} priorTurn=${nativeToolsPriorTurn ? "yes" : "no"}`,
-      );
-      if (nativeToolsPriorTurn) {
-        base.priorTurn = nativeToolsPriorTurn;
-      }
-    }
-    return base;
-  }
-
-  /** The native toolChoice and its mode for one round. */
-  private nativeToolChoiceOf(
-    definitions: IToolDefinition[],
-    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
-    preferredTool: Opt<string, Reason.OptionalInput>,
-    parallel: { disable_parallel_tool_use?: boolean },
-    forcedChoiceRefused: boolean,
-  ): {
-    toolChoice: NonNullable<IGeneratedOptions["toolChoice"]>;
-    nativeToolChoiceMode: NonNullable<IGeneratedOptions["nativeToolChoiceMode"]>;
-  } {
-    if (forcedChoiceRefused) {
-      return { toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }, nativeToolChoiceMode: TOOL_CHOICE_TYPE_AUTO };
-    }
-    if (preferredTool && !priorTurn && definitions.some((tool) => tool.name === preferredTool)) {
-      // A forced choice must name a tool in the list, or strict upstreams reject the request.
-      return { toolChoice: { type: "tool", name: preferredTool, ...parallel }, nativeToolChoiceMode: "forced" };
-    }
-    return priorTurn
-      ? { toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }, nativeToolChoiceMode: TOOL_CHOICE_TYPE_AUTO }
-      : { toolChoice: { type: "any", ...parallel }, nativeToolChoiceMode: "any" };
-  }
-
-  /** Log a warning when the response was truncated at max_tokens. */
-  private logMaxTokensTruncation(
-    response: IGenerateResult,
-    options: IAgentExecutionOptions,
-    iteration: number,
-    context: IExecutionContext,
-  ): void {
-    if (response.stop_reason !== RESPONSE_STOP_REASON_MAX_TOKENS) return;
-    void this.executor.budgetLogger?.warn(
-      AGENT_EVENT_RESPONSE_TRUNCATED,
-      context.request_id ?? null,
-      {
-        agent_role: options.agent_role ?? "",
-        iteration,
-        stop_reason: response.stop_reason,
-        response_length: response.content.length,
-        completion_tokens: response.usage.completionTokens,
-      },
-      context.trace_id,
-    );
-  }
-
-  /** Log a warning when the model refused the request, so the empty answer is attributable to the refusal. */
-  private logRefusal(
-    response: IGenerateResult,
-    options: IAgentExecutionOptions,
-    iteration: number,
-    context: IExecutionContext,
-  ): void {
-    if (response.stop_reason !== RESPONSE_STOP_REASON_REFUSAL) return;
-    void this.executor.budgetLogger?.warn(
-      AGENT_EVENT_RESPONSE_REFUSED,
-      context.request_id ?? null,
-      {
-        agent_role: options.agent_role ?? "",
-        iteration,
-        stop_reason: response.stop_reason,
-        response_length: response.content.length,
-      },
-      context.trace_id,
-    );
-  }
-
-  /** Journals the prompt_assembled event immediately before the provider-bound call —
-   *  exactly one event per enabled iteration, none on the disabled path. */
-  private async emitPromptAssembledEvent(
-    context: IExecutionContext,
-    iteration: number,
-    aciSection: Opt<{ result: IAciRenderResult; budgetChars: number }, Reason.OptionalContext>,
-  ): Promise<void> {
-    if (!this.executor.aciDocsEnabled || !this.executor.logPromptAssembled) return;
-    await this.executor.logPromptAssembled(context.trace_id, context.request_id, {
-      prompt_kind: "react",
-      iteration,
-      toolIds: aciSection?.result.toolIds ?? [],
-      fragmentCount: aciSection?.result.fragmentCount ?? 0,
-      fragmentChars: aciSection?.result.fragmentChars ?? 0,
-      budgetChars: aciSection?.budgetChars ?? 0,
-      truncated: aciSection?.result.truncated ?? false,
-    });
   }
 
   /** Executes one ReAct iteration; returns accumulated metrics and, if the loop should terminate early, a finished result. */
@@ -574,7 +354,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     } = params;
     const budgetedHistory = params.nativeConversationEnabled
       ? []
-      : await this.applyContextBudget(blueprint, context, history, i);
+      : await this.historyBudget.applyContextBudget(blueprint, context, history, i);
     const visibleToolIds = this.deriveVisibleToolIds(options);
     const aciSection = this.renderAciSection(visibleToolIds);
     const initialSections: INativePromptSection[] = [];
@@ -599,7 +379,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       { aciSection: aciSection?.result, skillsText: params.pinnedSkills?.text },
     );
 
-    const generateOptions = this.buildNativeGenerateOptions(
+    const generateOptions = this.native.buildNativeGenerateOptions(
       nativeToolDefinitions,
       nativeToolsPriorTurn,
       nativeToolsUsed,
@@ -628,49 +408,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return { prompt, initialPrompt, initialSections, generateOptions, aciSection };
   }
 
-  private async logIterationGeneration(
-    response: IGenerateResult,
-    context: IExecutionContext,
-    options: IAgentExecutionOptions,
-    generateDurationMs: number,
-  ): Promise<number | undefined> {
-    const metadata = ProviderRegistry.getMetadataForInstance(this.provider?.id) ??
-      ProviderRegistry.getMetadataForInstance(response.provider);
-    const canPredict = response.costStatus === undefined ||
-      (response.costStatus === "unknown" && metadata?.isAggregator === true);
-    const price = canPredict ? await readProviderModelInfo(metadata, response.model) : undefined;
-    const registryCostUsd = canPredict
-      ? computeRegistryPredictedCost(response.provider, response.model, {
-        promptTokens: response.usage.promptTokens,
-        completionTokens: response.usage.completionTokens,
-        cacheReadTokens: response.usage.cacheReadTokens,
-        cacheCreationTokens: response.usage.cacheCreationTokens,
-      }, price)
-      : undefined;
-    const costUsd = response.costStatus === "unknown"
-      ? registryCostUsd
-      : response.costStatus !== undefined
-      ? response.cost_usd
-      : registryCostUsd ?? response.cost_usd ?? 0;
-
-    await this.executor.logGeneration(
-      context.trace_id,
-      options.agent_role ?? "",
-      response.model,
-      response.provider,
-      {
-        ...response.usage,
-        costUsd,
-        ...(response.costStatus !== undefined
-          ? { costSource: costUsd === undefined ? "unknown" as const : "predicted" as const }
-          : {}),
-        durationMs: generateDurationMs,
-      },
-    );
-
-    return costUsd;
-  }
-
   private async runSingleIteration(
     params: IIterationParams,
   ): Promise<IIterationResult> {
@@ -688,26 +425,29 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       params,
       policy.mode,
     );
-    await this.preflightNativeConversationBudget(
+    await this.native.preflightNativeConversationBudget(
       params.blueprint,
       generateOptions.nativeConversation,
       generateOptions,
       context.trace_id,
     );
-    await this.emitPromptAssembledEvent(context, i, aciSection);
+    await this.journal.emitPromptAssembledEvent(context, i, aciSection);
     await params.pinnedSkills?.record(prompt, SkillSubmissionKind.PROVIDER, i + 1);
     const generateStartTime = Date.now();
-    const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
+    const response = await this.journal.withHeartbeat(
+      context,
+      () => this.provider!.generate(prompt, generateOptions as never),
+    );
     const generateDurationMs = Date.now() - generateStartTime;
 
-    this.logMaxTokensTruncation(response, options, i, context);
-    this.logRefusal(response, options, i, context);
-    const costUsd = await this.logIterationGeneration(response, context, options, generateDurationMs);
+    this.journal.logMaxTokensTruncation(response, options, i, context);
+    this.journal.logRefusal(response, options, i, context);
+    const costUsd = await this.journal.logIterationGeneration(response, context, options, generateDurationMs);
     const totals = this.iterationTotalsOf(params, response, costUsd);
     const parsed = this.parseIterationResponse(response, params.nativeToolsUsed);
 
     if (!params.nativeToolsUsed) {
-      this.journalParseErrors(parsed.parseErrors, context, i);
+      this.journal.journalParseErrors(parsed.parseErrors, context, i);
     }
     if (parsed.thought) {
       history.push({ role: ReActRole.THOUGHT, content: parsed.thought });
@@ -743,20 +483,20 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         AgentExecutionErrorType.EXECUTION_ERROR,
       );
     }
-    this.assertNativeRoundAdmitted(params.nativeToolsUsed, parsed.nativeToolCalls, policy, {
+    this.native.assertNativeRoundAdmitted(params.nativeToolsUsed, parsed.nativeToolCalls, policy, {
       provider: response.provider,
-      earlierIds: this.consumedCallIds(
+      earlierIds: this.native.consumedCallIds(
         params.nativeConversationTurns,
         params.nativeToolsPriorTurn,
         params.nativeConversationRounds,
       ),
     });
-    const groupedRound = this.groupedRoundFor(
+    const groupedRound = this.native.groupedRoundFor(
       params.nativeToolsUsed,
       params.nativeConversationEnabled,
       response,
       policy,
-      this.consumedCallIds(
+      this.native.consumedCallIds(
         params.nativeConversationTurns,
         params.nativeToolsPriorTurn,
         params.nativeConversationRounds,
@@ -813,7 +553,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   ): void {
     const maxToolCalls = params.options.max_tool_calls ?? 100;
     const admitted = params.toolCallCount +
-      this.admittedCallCount(params.nativeToolsUsed, parsed.actions.length, policy.executionCap);
+      this.native.admittedCallCount(params.nativeToolsUsed, parsed.actions.length, policy.executionCap);
     if (admitted > maxToolCalls) {
       throw new AgentExecutionError(
         `Exceeded maximum tool calls (${maxToolCalls})`,
@@ -828,7 +568,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     parsed: ReturnType<ReActLoopStrategy["parseIterationResponse"]>,
     response: IGenerateResult,
     policy: ReturnType<ReActLoopStrategy["roundPolicy"]>,
-    groupedRound: ReturnType<ReActLoopStrategy["groupedRoundFor"]>,
+    groupedRound: ReturnType<ReActNativeConversation["groupedRoundFor"]>,
   ): Promise<{
     toolCallCount: number;
     lastPriorTurn: IIterationResult["nativeToolsPriorTurn"];
@@ -849,7 +589,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         response.model,
       );
       // A native response past the policy cap executes nothing. Each extra call replays as an error result.
-      const withinCap = this.withinNativeCap(params.nativeToolsUsed, a, policy.executionCap);
+      const withinCap = this.native.withinNativeCap(params.nativeToolsUsed, a, policy.executionCap);
       const execResult = await this.attemptAction(action, params.options, withinCap);
       allActionsSucceeded &&= execResult.success === true;
       this.recordWrittenFile(action, execResult, params.writtenFiles);
@@ -868,7 +608,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         : resultEntry;
       params.history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
-      await this.journalAction(params.context, action, toolResultContent, params.i);
+      await this.journal.journalAction(params.context, action, toolResultContent, params.i);
 
       if (params.nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
         const turn = this.buildPriorTurn(parsed.nativeToolCalls[a], execResult as never);
@@ -876,7 +616,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           ...turn,
           toolResultContent: this.capResultTokens(String(turn.toolResultContent), policy.resultTokenCap),
         };
-        this.recordNativeCall(
+        this.native.recordNativeCall(
           completedNativeConversationTurns,
           roundOutcomes,
           groupedRound !== undefined,
@@ -884,7 +624,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
       }
     }
-    const completedNativeConversationRounds = this.nextNativeRounds(
+    const completedNativeConversationRounds = this.native.nextNativeRounds(
       params.nativeConversationRounds,
       groupedRound,
       roundOutcomes,
@@ -939,125 +679,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return total === undefined || next === undefined ? undefined : total + next;
   }
 
-  /** Keep each native tool call paired with its result. Reject an oversized complete snapshot before generation. */
-  private async preflightNativeConversationBudget(
-    blueprint: IAgentFileBlueprint,
-    snapshot: Opt<INativeConversationSnapshot, Reason.OptionalContext>,
-    options: IGeneratedOptions,
-    traceId: string,
-  ): Promise<void> {
-    if (!snapshot) return;
-    if (!this.provider?.measureInputTokens) throw new Error("Native conversation provider requires input measurement");
-    const budget = this.executor.currentPromptBudget ?? await new PromptBudgetAllocator(
-      { enabled: true },
-      this.executor.tokenizer,
-    ).allocate(blueprint.model, { loopHistoryUsedTokens: REACT_DEFAULT_MAX_TOKENS });
-    const measured = await this.provider.measureInputTokens(snapshot.initialPrompt, options);
-    const inputLimit = Math.max(
-      0,
-      budget.totalBudgetTokens - budget.safetyBufferTokens - (options.max_tokens ?? REACT_DEFAULT_MAX_TOKENS),
-    );
-    const sectionOverflow = Object.entries(measured.sections).some(([section, count]) =>
-      count > budget.sections[section as keyof typeof budget.sections]
-    );
-    if (measured.totalTokens > inputLimit || sectionOverflow) {
-      await this.executor.budgetLogger?.warn(DomainEventType.ContextBudgetExceeded, blueprint.model, {
-        model: blueprint.model,
-        section_counts: measured.sections,
-        limit: inputLimit,
-        input_tokens: measured.totalTokens,
-        token_source: measured.tokenSource,
-      }, traceId);
-      throw new ContextBudgetExceededError(
-        "Native conversation exceeds its allocated prompt budget",
-        blueprint.model,
-        inputLimit,
-        measured.totalTokens,
-        { ...measured.sections },
-      );
-    }
-  }
-
   private shouldFinishActionTurn(isComplete: boolean, allActionsSucceeded: boolean): boolean {
     return isComplete && allActionsSucceeded;
-  }
-
-  /** Refuses a native response that breaks the round ceilings of this turn, before any call runs. */
-  private assertNativeRoundAdmitted(
-    nativeToolsUsed: boolean,
-    calls: Opt<IProviderToolCall[], Reason.OptionalInput>,
-    policy: IToolsRoundPolicy,
-    context: { provider: string; earlierIds: ReadonlySet<string> },
-  ): void {
-    if (nativeToolsUsed) {
-      assertRoundWithinBounds(calls ?? [], roundLimitsOf(policy), context.provider, context.earlierIds);
-    }
-  }
-
-  /** Call ids of the turns already replayed to the provider. A later response may not reuse one. */
-  private consumedCallIds(
-    turns: readonly IProviderTurn[],
-    priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
-    rounds: readonly IProviderToolRound[] = [],
-  ): ReadonlySet<string> {
-    const ids = new Set(turns.map((turn) => turn.toolUseId));
-    if (priorTurn !== undefined) ids.add(priorTurn.toolUseId);
-    for (const round of rounds) for (const call of round.calls) ids.add(call.toolUseId);
-    return ids;
-  }
-
-  /** A provider that replays whole rounds gets its response validated as one round, before any call runs. */
-  private groupedRoundFor(
-    nativeToolsUsed: boolean,
-    nativeConversationEnabled: boolean,
-    response: IGenerateResult,
-    policy: IToolsRoundPolicy,
-    earlierIds: ReadonlySet<string>,
-  ): Opt<IValidatedProviderRound, Reason.OptionalInput> {
-    if (!nativeToolsUsed || !nativeConversationEnabled || !providerSupportsNativeRoundReplay(this.provider!.id)) {
-      return undefined;
-    }
-    return validateProviderRound(response, roundLimitsOf(policy), earlierIds);
-  }
-
-  /** A per-call turn joins the conversation, or the call's outcome joins the round it completes. */
-  private recordNativeCall(
-    completedTurns: IProviderTurn[],
-    outcomes: IRoundOutcome[],
-    grouped: boolean,
-    turn: IProviderTurn,
-  ): void {
-    if (!grouped) {
-      completedTurns.push(turn);
-      return;
-    }
-    outcomes.push({
-      toolUseId: turn.toolUseId,
-      toolResultContent: turn.toolResultContent,
-      toolResultIsError: turn.toolResultIsError,
-    });
-  }
-
-  /** The rounds a native conversation carries after this response: the prior ones, then this one if grouped. */
-  private nextNativeRounds(
-    prior: Opt<readonly IProviderToolRound[], Reason.OptionalInput>,
-    grouped: Opt<IValidatedProviderRound, Reason.OptionalInput>,
-    outcomes: readonly IRoundOutcome[],
-    policy: IToolsRoundPolicy,
-  ): IProviderToolRound[] {
-    const rounds = [...(prior ?? [])];
-    if (grouped !== undefined) rounds.push(buildToolRound(grouped, outcomes, roundLimitsOf(policy)));
-    return rounds;
-  }
-
-  /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */
-  private withinNativeCap(nativeToolsUsed: boolean, position: number, executionCap: number): boolean {
-    return !nativeToolsUsed || position < executionCap;
-  }
-
-  /** Calls of a response that can execute. The whole-run allowance counts these, not the refused extras. */
-  private admittedCallCount(nativeToolsUsed: boolean, requested: number, executionCap: number): number {
-    return nativeToolsUsed ? Math.min(requested, executionCap) : requested;
   }
 
   /** Executes one action, or returns the cap refusal without touching the tool. */
@@ -1067,22 +690,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     withinCap: boolean,
   ): Promise<IToolExecutionResult> {
     return withinCap ? await this.executeTool(action, options) : { success: false, error: TOOL_CALL_LIMIT_MESSAGE };
-  }
-
-  /** Journals a call with its result. A call refused by the cap carries the limit message as its result. */
-  private async journalAction(
-    context: IExecutionContext,
-    action: IReActAction,
-    toolResultContent: string,
-    iteration: number,
-  ): Promise<void> {
-    await this.executor.logDynamicToolCall?.(
-      context.trace_id,
-      action.tool,
-      action.params,
-      toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
-      iteration,
-    );
   }
 
   /** The tool-round policy for this model turn. Static callers without a reader get schema defaults. */
@@ -1109,7 +716,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     nativeToolCalls?: IProviderToolCall[];
   } {
     if (nativeToolsUsed) {
-      const nativeResult = this.parseNativeToolResponse(response);
+      const nativeResult = this.native.parseNativeToolResponse(response);
       return {
         actions: nativeResult.actions,
         isComplete: nativeResult.isComplete,
@@ -1117,7 +724,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeToolCalls: nativeResult.toolCalls,
       };
     }
-    const parsed = this.parseResponse(response.content);
+    const parsed = parseReActResponse(response.content);
     return {
       thought: parsed.thought,
       actions: parsed.actions,
@@ -1159,158 +766,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   private canonicalizeAction(action: IReActAction, traceId: string, provider: string, model: string): IReActAction {
     if (!this.executor.toolRegistry) return action;
     const canonical = canonicalizeForRegistry(this.executor.toolRegistry, action.tool, action.params);
-    if (canonical.rewritten) this.logAliasRewrite(canonical, traceId, provider, model);
+    if (canonical.rewritten) this.journal.logAliasRewrite(canonical, traceId, provider, model);
     return { ...action, tool: canonical.name, params: canonical.params };
-  }
-
-  private logAliasRewrite(
-    call: ReturnType<typeof canonicalizeForRegistry>,
-    traceId: string,
-    provider: string,
-    model: string,
-  ): void {
-    const logger = this.executor.budgetLogger;
-    if (!logger) return;
-    const payload: IToolAliasRewrittenPayload = {
-      requestedName: call.requestedName,
-      canonicalName: call.name,
-      renamedParams: [...call.renamedParams],
-      droppedParams: [...call.droppedParams],
-      entryPoint: ToolCallEntryPoint.REACT_LOOP,
-      provider,
-      model,
-    };
-    void logger.info(DomainEventType.ToolAliasRewritten, call.name, { ...payload }, traceId);
-  }
-
-  /** Wraps an async operation with a heartbeat timer, emitting STREAMING_EVENT_HEARTBEAT
-   *  every EXECUTION_HEARTBEAT_INTERVAL_MS while in flight. Timer always cleared in finally. */
-  private async withHeartbeat<T>(
-    context: IExecutionContext,
-    operation: () => Promise<T>,
-  ): Promise<T> {
-    const bus = this.executor.eventBus;
-    const stepName = context.plan;
-    const loopStart = Date.now();
-
-    let heartbeatId: ReturnType<typeof setInterval> | undefined;
-    if (bus) {
-      heartbeatId = setInterval(() => {
-        const event: IStreamingEvent = {
-          eventId: crypto.randomUUID(),
-          traceId: context.trace_id,
-          timestamp: new Date().toISOString(),
-          type: STREAMING_EVENT_HEARTBEAT,
-          payload: {
-            step: stepName,
-            elapsed_ms: Date.now() - loopStart,
-          },
-        };
-        bus.publish(event);
-      }, EXECUTION_HEARTBEAT_INTERVAL_MS);
-    }
-
-    try {
-      return await operation();
-    } finally {
-      if (heartbeatId !== undefined) {
-        clearInterval(heartbeatId);
-      }
-    }
-  }
-
-  /** Applies IContextBudgetManager to the current iteration's history. Returns filtered
-   *  history when the manager is configured, or the original history unchanged when it
-   *  is absent (backward-compatible). */
-  private async applyContextBudget(
-    blueprint: IAgentFileBlueprint,
-    context: IExecutionContext,
-    history: Array<{ role: ReActRole; content: string }>,
-    iteration: number,
-  ): Promise<Array<{ role: ReActRole; content: string }>> {
-    const budgetManager = this.executor.contextBudgetManager;
-    const promptBudget = this.executor.currentPromptBudget;
-    if (!budgetManager || !promptBudget) return history;
-
-    const segments: IContextSegment[] = [];
-
-    // Per-segment cap for tool_result kind in dynamic mode.
-    const toolResultCap = Math.floor(
-      promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO,
-    );
-
-    // System prompt — always protected
-    if (blueprint.systemPrompt) {
-      segments.push({
-        segmentId: `system-${context.trace_id}`,
-        kind: "system",
-        content: blueprint.systemPrompt,
-        priority: CONTEXT_PRIORITY_SYSTEM,
-        tokenEstimate: Math.ceil(
-          blueprint.systemPrompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-        ),
-        metadata: {},
-      });
-    }
-
-    // History entries: results → tool_result, thoughts/actions → reflection
-    for (let idx = 0; idx < history.length; idx++) {
-      const entry = history[idx];
-      const kind = entry.role === ReActRole.RESULT ? "tool_result" as const : "reflection" as const;
-      let tokenEstimate = Math.ceil(
-        entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-      );
-      if (kind === "tool_result" && toolResultCap > 0) {
-        tokenEstimate = Math.min(tokenEstimate, toolResultCap);
-      }
-      segments.push({
-        segmentId: `hist-${idx}-${context.trace_id}`,
-        kind,
-        content: entry.content,
-        priority: kind === "tool_result" ? CONTEXT_PRIORITY_TOOL_RESULT : CONTEXT_PRIORITY_REFLECTION,
-        tokenEstimate,
-        metadata: { iterationIndex: iteration },
-      });
-    }
-
-    const input: IContextBudgetManagerInput = {
-      traceId: context.trace_id,
-      stepId: `react-iter-${iteration}`,
-      model: blueprint.model,
-      promptBudget,
-      segments,
-      provider: this.provider,
-    };
-
-    const { snapshot } = await budgetManager.prepare(input);
-
-    // Emit budget pressure journal event if utilisation exceeds the threshold
-    if (
-      snapshot.maxContextTokens > 0 &&
-      snapshot.usedInputTokens / snapshot.maxContextTokens >=
-        LOOP_HISTORY_BUDGET_THRESHOLD
-    ) {
-      void this.executor.budgetLogger?.info(
-        DomainEventType.ContextBudgetExceeded,
-        context.trace_id,
-        {
-          model: blueprint.model as string,
-          contextWindow: snapshot.maxContextTokens as number,
-          estimatedTokens: snapshot.usedInputTokens as number,
-          tokenSource: "heuristic" as string,
-        },
-      );
-    }
-
-    // Rebuild history from kept history segments (system segment is not in history)
-    const keptHistoryIds = new Set(
-      snapshot.decisions
-        .filter((d) => d.action === "keep" || d.action === "trim")
-        .map((d) => d.segmentId)
-        .filter((id) => id.startsWith("hist-")),
-    );
-
-    return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
   }
 
   /** Tools visible to this iteration. Uses `options.permitted_tools` when declared, an empty array stays empty, otherwise the default five.
@@ -1348,7 +805,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       context,
       options,
       {
-        historyText: history.length > 0 ? this.buildBudgetedHistoryText(history) : "",
+        historyText: history.length > 0 ? this.historyBudget.buildBudgetedHistoryText(history) : "",
         skipToolProse,
         visibleToolIds,
         aciText: aciSection && aciSection.fragmentCount > 0 ? aciSection.text : undefined,
@@ -1356,102 +813,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       },
       extras.skillsText,
     );
-  }
-
-  private buildBudgetedHistoryText(
-    history: Array<{ role: ReActRole; content: string }>,
-  ): string {
-    const historyEntries = history.map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`);
-    const maxChars = this.getLoopHistoryCharBudget();
-
-    if (!maxChars) {
-      return historyEntries.join("\n\n");
-    }
-
-    let remainingEntries = [...historyEntries];
-    let historyText = remainingEntries.join("\n\n");
-
-    while (remainingEntries.length > 1 && historyText.length > maxChars) {
-      remainingEntries = remainingEntries.slice(1);
-      historyText = remainingEntries.join("\n\n");
-    }
-
-    if (historyText.length <= maxChars) {
-      return historyText;
-    }
-
-    return historyText.slice(Math.max(0, historyText.length - maxChars));
-  }
-
-  private getLoopHistoryCharBudget(): number | undefined {
-    const promptBudget = this.executor.currentPromptBudget;
-    const loopHistoryTokens = promptBudget?.sections?.loopHistory;
-
-    if (!loopHistoryTokens || loopHistoryTokens <= 0) {
-      return undefined;
-    }
-
-    return loopHistoryTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
-  }
-
-  private parseResponse(
-    response: string,
-  ): { thought?: string; actions: IReActAction[]; isComplete: boolean; parseErrors: string[] } {
-    const isComplete = response.includes(REACT_STATUS_COMPLETE);
-    const parseErrors: string[] = [];
-
-    // Captures the text after THOUGHT: up to the first action block, the completion marker or the end.
-    // The lookahead alternatives hold no literal spaces, so a fence on its own line still ends the thought.
-    const thoughtPattern = `${REACT_THOUGHT_PREFIX}\\s*(.*?)(?=\`\`\`toml|${REACT_STATUS_COMPLETE}|$)`;
-    const thoughtMatch = response.match(new RegExp(thoughtPattern, "s"));
-    const thought = thoughtMatch ? thoughtMatch[1].trim() : undefined;
-
-    const actions: IReActAction[] = [];
-    const codeBlockRegex = /```toml\s*([\s\S]*?)```/g;
-    let match;
-
-    while ((match = codeBlockRegex.exec(response)) !== null) {
-      try {
-        const block = match[1].trim();
-        const parsedRoot = parseToml(block) as JSONValue;
-
-        if (parsedRoot === null || typeof parsedRoot !== "object" || Array.isArray(parsedRoot)) {
-          continue;
-        }
-        const parsed = parsedRoot as Record<string, JSONValue>;
-        if (!Array.isArray(parsed.actions)) {
-          continue;
-        }
-
-        // Every action is validated with PlanActionSchema at this boundary before the
-        // registry sees it. A malformed or hostile action is rejected here and journaled
-        // as a parse error, never executed.
-        for (const act of parsed.actions) {
-          if (act === null || typeof act !== "object" || Array.isArray(act)) {
-            parseErrors.push("ReAct action is not an object");
-            continue;
-          }
-          const candidate = act as Record<string, JSONValue>;
-          const validated = PlanActionSchema.safeParse({
-            tool: candidate.tool,
-            params: candidate.params ?? {},
-            description: candidate.description,
-          });
-          if (!validated.success) {
-            parseErrors.push(validated.error.issues.map((issue) => issue.message).join("; "));
-            continue;
-          }
-          actions.push(validated.data);
-        }
-      } catch (error) {
-        // A malformed action block must not vanish silently — a dropped action is how a
-        // fix disappears while the loop reports success. Collect the error for the caller
-        // to journal.
-        parseErrors.push(error instanceof Error ? error.message : String(error));
-      }
-    }
-
-    return { thought, actions, isComplete, parseErrors };
   }
 
   private createFinalResult(
