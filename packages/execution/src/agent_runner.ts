@@ -401,6 +401,23 @@ function retryPolicyOf(
       : createLLMRetryPolicy(providerErrorsAreFinal));
 }
 
+/** The role of one run and the ids that correlate its journal rows. */
+interface IRunIdentity {
+  readonly agentRole: string;
+  readonly requestId: Opt<string, Reason.TraceAbsent>;
+  readonly traceId: Opt<string, Reason.TraceAbsent>;
+}
+
+/** The assembled prompt and the call options that one attempt runs with. */
+interface IRunAttemptInput {
+  readonly combinedPrompt: string;
+  readonly startTime: number;
+  readonly hints: IGenerationHints;
+  readonly promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"];
+  readonly skillUsage: ISkillUsagePlan | null;
+  readonly callSite: ReturnType<AgentRunner["resolveCallSite"]>;
+}
+
 /** The token-usage hints that segment allocation reports to the budget allocator. */
 type TAllocationHintKey =
   | "systemUsedTokens"
@@ -508,16 +525,8 @@ export class AgentRunner implements IAgentRunner {
     const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole, skillOperation);
     this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
 
-    const prompt = await this.assembleRunPrompt(
-      blueprint,
-      request,
-      agentRole,
-      requestId,
-      traceId,
-      skillIds,
-      skillsContext,
-      skillOperation,
-    );
+    const identity: IRunIdentity = { agentRole, requestId, traceId };
+    const prompt = await this.assembleRunPrompt(blueprint, request, identity, skillIds, skillsContext, skillOperation);
     const { callSite, hints } = await this.resolveRunHints(
       blueprint,
       request,
@@ -527,18 +536,14 @@ export class AgentRunner implements IAgentRunner {
       requestId,
       jsonSchema,
     );
-    const { retryResult } = await this.executeRunAttempt(
-      request,
-      agentRole,
-      prompt.combinedPrompt,
+    const { retryResult } = await this.executeRunAttempt(request, identity, {
+      combinedPrompt: prompt.combinedPrompt,
       startTime,
       hints,
-      prompt.promptBudget,
-      prompt.skillUsage,
-      traceId,
-      requestId,
+      promptBudget: prompt.promptBudget,
+      skillUsage: prompt.skillUsage,
       callSite,
-    );
+    });
 
     const generateResult = retryResult.value;
     await this.emitMilestone(
@@ -578,9 +583,7 @@ export class AgentRunner implements IAgentRunner {
   private async assembleRunPrompt(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    agentRole: string,
-    requestId: Opt<string, Reason.TraceAbsent>,
-    traceId: Opt<string, Reason.TraceAbsent>,
+    identity: IRunIdentity,
     skillIds: string[],
     skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
     skillOperation: ReturnType<AgentRunner["buildSkillOperation"]>,
@@ -590,6 +593,7 @@ export class AgentRunner implements IAgentRunner {
     skillUsage: ReturnType<AgentRunner["buildSkillUsagePlan"]>;
     resolvedSkills: Awaited<ReturnType<AgentRunner["persistSkillPins"]>>;
   }> {
+    const { agentRole, requestId, traceId } = identity;
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
     const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
@@ -663,19 +667,14 @@ export class AgentRunner implements IAgentRunner {
   /** Runs the planning tools or the provider call, then records the attempt's side effects. */
   private async executeRunAttempt(
     request: IParsedRequest,
-    agentRole: string,
-    combinedPrompt: string,
-    startTime: number,
-    hints: IGenerationHints,
-    promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"],
-    skillUsage: ISkillUsagePlan | null,
-    traceId: Opt<string, Reason.TraceAbsent>,
-    requestId: Opt<string, Reason.TraceAbsent>,
-    callSite: ReturnType<AgentRunner["resolveCallSite"]>,
+    identity: IRunIdentity,
+    attempt: IRunAttemptInput,
   ): Promise<{
     retryResult: Awaited<ReturnType<AgentRunner["executeWithRetry"]>>;
     toolsResult: Awaited<ReturnType<AgentRunner["runPlanningToolsIfGated"]>>;
   }> {
+    const { agentRole, requestId, traceId } = identity;
+    const { combinedPrompt, startTime, hints, promptBudget, skillUsage, callSite } = attempt;
     const toolsResult = await this.runPlanningToolsIfGated(
       request,
       agentRole,
