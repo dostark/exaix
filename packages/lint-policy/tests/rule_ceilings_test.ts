@@ -11,7 +11,12 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { classifyPath, type ICatalog, ruleSettings } from "@dostark/unslop-ts";
 import { matchesAnyGlob } from "../../../unslop-ts/src/engine/glob.ts";
 import { skipReasonOf } from "../../../unslop-ts/src/engine/rule_gate.ts";
-import { assertRuleEvidence, type ILintReport, parseDenoLintOutput } from "../../../unslop-ts/src/cli/rule_report.ts";
+import {
+  assertRuleEvidence,
+  type ILintReport,
+  parseDenoLintOutput,
+  workspaceMembersOf,
+} from "../../../unslop-ts/src/cli/rule_report.ts";
 import { formatTraceRecord } from "../../../unslop-ts/src/engine/trace.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 import { EXAIX_REGISTRY } from "../src/rule_packs.ts";
@@ -26,7 +31,11 @@ const RATCHETED_RULES = [
   "exaix/no-runtime-typeof",
   "exaix/max-params",
 ];
+/** The class-size rule has its own gate, `deno task check:god-objects`, so this test never counts it. */
+const GOD_OBJECT_RULES = ["exaix/max-class-size"];
 const ROOT_BUCKETS = ["tests", "exaix-team", "exaix-enterprise", "scripts"];
+/** The bucket of a file outside every workspace member. */
+const ROOT_OWNER = ".";
 
 const PHASE_230_RULES = new Set([
   "exaix/import-placement",
@@ -47,13 +56,10 @@ const PHASE_230_RULES = new Set([
   "exaix/no-boolean-assert",
 ]);
 
-/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for the other lint roots. */
+/** The workspace members, the root buckets for the other lint roots and the bucket of files outside every member. */
 async function workspacePackages(): Promise<string[]> {
-  const denoJson = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as { workspace?: string[] };
-  const workspace = (denoJson.workspace ?? [])
-    .map((entry) => entry.replace(/^\.\//, ""))
-    .filter((entry) => entry.startsWith("packages/") || entry.startsWith("apps/"));
-  return [...workspace, ...ROOT_BUCKETS];
+  const workspace = await workspaceMembersOf(REPO_ROOT, join(REPO_ROOT, "deno.json"));
+  return [...workspace, ...ROOT_BUCKETS, ROOT_OWNER];
 }
 
 /** The workspace package a lint diagnostic belongs to, or null when it is outside one. */
@@ -297,9 +303,26 @@ Deno.test("boolean-other-partition-guard: cleared parent and Team buckets still 
 
 Deno.test("the committed ceilings file names only known rules and packages", async () => {
   const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
-  const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, await workspacePackages());
+  const result = evaluateCeilings(
+    ceilings,
+    ceilings,
+    [...RATCHETED_RULES, ...GOD_OBJECT_RULES],
+    await workspacePackages(),
+  );
   assertEquals(result.unknownRules, []);
   assertEquals(result.unknownPackages, []);
+});
+
+Deno.test("god-objects-ceilings: the class-size ceilings name known owners and this test never counts them", async () => {
+  const ceilings: ICeilings = JSON.parse(
+    await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")),
+  );
+  const known = await workspacePackages();
+  for (const rule of GOD_OBJECT_RULES) {
+    assert(ceilings[rule] !== undefined, `${rule} has no ceilings row`);
+    assertEquals(Object.keys(ceilings[rule]).filter((owner) => !known.includes(owner)), [], rule);
+    assert(!RATCHETED_RULES.includes(rule), `${rule} must stay out of the counted rules`);
+  }
 });
 
 Deno.test({
@@ -336,7 +359,10 @@ Deno.test({
       }`,
     );
 
-    const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
+    const committed: ICeilings = JSON.parse(
+      await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")),
+    );
+    const ceilings = Object.fromEntries(Object.entries(committed).filter(([rule]) => !GOD_OBJECT_RULES.includes(rule)));
     const result = evaluateCeilings(ceilings, ceilingCounts(ceilings, counts), RATCHETED_RULES, knownPackages);
     assertEquals(result.over, [], `a count rose above its ceiling: ${JSON.stringify(result.over)}`);
     // A fall is progress, not a failure: the ceiling only holds a count from rising.

@@ -143,5 +143,21 @@
     "packages/flow": 1,
     "packages/storage-sqlite": 1,
     "packages/testing": 1
+  },
+  "exaix/max-class-size": {
+    "apps/exactl": 8,
+    "apps/tui": 5,
+    "exaix-team/packages/mcp-server": 1,
+    "packages/ai": 4,
+    "packages/cli": 1,
+    "packages/core": 5,
+    "packages/execution": 4,
+    "packages/flow": 2,
+    "packages/git": 1,
+    "packages/memory": 3,
+    "packages/session": 1,
+    "packages/storage-sqlite": 1,
+    "packages/tool-runtime": 1,
+    "packages/tui": 2
   }
 }

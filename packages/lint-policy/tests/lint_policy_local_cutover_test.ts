@@ -25,6 +25,25 @@ const TEAM_COVERAGE_CEILINGS: Ceilings = {
   "exaix/no-conditional-empty-object-spread": { "exaix-team": 6 },
   "exaix/no-boolean-assert": { "exaix-team": 121 },
 };
+/** The class-size ceilings at the God Class cutover, when `exaix/max-class-size` joined the table. Rises beyond them still fail. */
+const GOD_CLASS_CUTOVER_CEILINGS: Ceilings = {
+  "exaix/max-class-size": {
+    "apps/exactl": 8,
+    "apps/tui": 5,
+    "exaix-team/packages/mcp-server": 1,
+    "packages/ai": 4,
+    "packages/cli": 1,
+    "packages/core": 5,
+    "packages/execution": 4,
+    "packages/flow": 2,
+    "packages/git": 1,
+    "packages/memory": 3,
+    "packages/session": 1,
+    "packages/storage-sqlite": 1,
+    "packages/tool-runtime": 1,
+    "packages/tui": 2,
+  },
+};
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 
@@ -60,7 +79,9 @@ Deno.test("phase227_remediation_cutover", async () => {
     await gitOutput(REPO_ROOT, "show", `${COMPLETE_BUCKET_COMMIT}:${CEILINGS_PATH}`),
   );
   const before: Record<string, Readonly<Record<string, number>>> = { ...introduced, ...first, ...migrated };
-  for (const [rule, buckets] of Object.entries(TEAM_COVERAGE_CEILINGS)) before[rule] = { ...before[rule], ...buckets };
+  for (const table of [TEAM_COVERAGE_CEILINGS, GOD_CLASS_CUTOVER_CEILINGS]) {
+    for (const [rule, buckets] of Object.entries(table)) before[rule] = { ...before[rule], ...buckets };
+  }
   const after: Ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, CEILINGS_PATH)));
   assertEquals(raisedCeilings(before, after), []);
   assert(Object.keys(after).length > 0, "the ceiling table is empty");
