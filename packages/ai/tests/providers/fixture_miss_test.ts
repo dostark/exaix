@@ -13,7 +13,8 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { MockStrategy } from "@exaix/core";
 import type { ICallSite } from "../../src/types.ts";
-import { MockLLMError, MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../../src/providers/mock_llm_fixture_contract.ts";
 
 Deno.test("[fixture_miss] a missing call site fails under strict mode, naming the call site", async () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, {

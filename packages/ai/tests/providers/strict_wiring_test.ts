@@ -11,7 +11,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { MockStrategy, ProviderType } from "@exaix/core";
 import { ProviderFactory } from "../../src/provider_factory.ts";
-import { MockLLMError, type MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import type { MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../../src/providers/mock_llm_fixture_contract.ts";
 import { createTestConfig } from "../helpers/test_config.ts";
 
 Deno.test("[strict_wiring] mock.strict: true reaches MockLLMProvider as strictRecordings", async () => {

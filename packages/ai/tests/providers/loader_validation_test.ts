@@ -11,7 +11,8 @@
 
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { MockStrategy } from "@exaix/core";
-import { MockLLMError, MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../../src/providers/mock_llm_fixture_contract.ts";
 
 Deno.test("[loader_validation] invalid JSON in a fixture file fails construction, naming the file", async () => {
   const dir = await Deno.makeTempDir();

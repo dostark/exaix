@@ -19,9 +19,9 @@ import {
   createSlowMock,
   type IPatternMatcher,
   type IRecordedResponse,
-  MockLLMError,
   MockLLMProvider,
 } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../../src/providers/mock_llm_fixture_contract.ts";
 
 // Test 1: MockLLMProvider implements IModelProvider interface
 

@@ -12,14 +12,9 @@
 
 import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
-import {
-  describeCallSite,
-  hashPrompt,
-  type IRecordedResponse,
-  isFlowStepPrompt,
-  isReActLoopPrompt,
-  responseForPromptDialect,
-} from "./mock_llm_provider.ts";
+import { hashPrompt, type IRecordedResponse } from "./mock_llm_provider.ts";
+import { describeCallSite } from "./mock_llm_fixture_contract.ts";
+import { isFlowStepPrompt, isReActLoopPrompt, responseForPromptDialect } from "./mock_llm_patterns.ts";
 import { DEFAULT_CAPTURE_MAX_ATTEMPTS } from "../constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { validateJudgeResponse } from "./judge_response_contract.ts";

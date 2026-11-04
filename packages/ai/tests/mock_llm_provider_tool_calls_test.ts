@@ -17,12 +17,8 @@ import { ensureProviderRegistryInitialized } from "../src/provider_factory.ts";
 import type { IProviderToolCall } from "../src/providers/common.ts";
 import type { IProviderToolRound, IProviderTurn } from "../src/types.ts";
 import type { JSONValue } from "@exaix/core";
-import {
-  hashPrompt,
-  type IRecordedResponse,
-  MockLLMError,
-  MockLLMProvider,
-} from "../src/providers/mock_llm_provider.ts";
+import { hashPrompt, type IRecordedResponse, MockLLMProvider } from "../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../src/providers/mock_llm_fixture_contract.ts";
 import { withTempDir } from "@exaix/testing";
 
 const ROUND_ONE_CALL_SITE = { scenarioId: "plan-tools", stepId: "round-1", callIndex: 0 };

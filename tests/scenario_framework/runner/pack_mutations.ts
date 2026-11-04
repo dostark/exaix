@@ -77,7 +77,7 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
   },
   {
     subsystem: "subsystem:skills",
-    file: "packages/execution/src/agent_runner.ts",
+    file: "packages/execution/src/agent_runner_skills.ts",
     find: "      const pinned = request.skills ?? [];",
     replace: "      const pinned: string[] = [];",
     breaks:

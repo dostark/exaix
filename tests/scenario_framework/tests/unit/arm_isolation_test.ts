@@ -63,14 +63,14 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
   const armAResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
     "skill-x",
-    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
+    () => (runner as Any).skills.matchAndApplySkills(blueprint, request, "test-role"),
   );
   assertFalse(armAResult.skillIds.includes("skill-x"), "arm A suppresses skill-x");
 
   const armBResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
     "skill-y",
-    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
+    () => (runner as Any).skills.matchAndApplySkills(blueprint, request, "test-role"),
   );
   assertArrayIncludes(armBResult.skillIds, ["skill-x"], "arm B must not inherit arm A's suppression");
   assertFalse(armBResult.skillIds.includes("skill-y"), "arm B suppresses skill-y instead");

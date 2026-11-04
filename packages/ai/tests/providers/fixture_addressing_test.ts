@@ -12,7 +12,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { MockStrategy } from "@exaix/core";
 import type { ICallSite } from "../../src/types.ts";
-import { type IRecordedResponse, MockLLMError, MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { type IRecordedResponse, MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
+import { MockLLMError } from "../../src/providers/mock_llm_fixture_contract.ts";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 
 Deno.test("[fixture_addressing] resolves a recording by call site, regardless of prompt wording", async () => {

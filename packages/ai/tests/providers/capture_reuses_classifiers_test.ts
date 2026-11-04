@@ -3,7 +3,7 @@
  * @path packages/ai/tests/providers/capture_reuses_classifiers_test.ts
  * @description Phase 157 Step 2 — capture validation must call the SAME exported prompt
  *   classifiers replay trusts (`isFlowStepPrompt`, `isReActLoopPrompt`,
- *   `responseForPromptDialect`, exported from `mock_llm_provider.ts`), not a private copy.
+ *   `responseForPromptDialect`, exported from `mock_llm_patterns.ts`), not a private copy.
  *   Proven two ways: the classifiers themselves are importable and behave as documented, and
  *   CaptureRecordingProvider's contract validation classifies each dialect exactly the way
  *   these classifiers say it should — a well-formed response for the classified dialect is
@@ -17,7 +17,7 @@ import {
   isFlowStepPrompt,
   isReActLoopPrompt,
   responseForPromptDialect,
-} from "../../src/providers/mock_llm_provider.ts";
+} from "../../src/providers/mock_llm_patterns.ts";
 
 const FLOW_STEP_PROMPT = "## Step 1\nSome merged flow context from the prior step.";
 const REACT_LOOP_PROMPT = "AGENT ROLE: default\nAVAILABLE TOOLS: write_file, read_file";

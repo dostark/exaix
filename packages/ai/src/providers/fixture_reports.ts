@@ -11,7 +11,8 @@
  */
 
 import { DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD } from "../constants.ts";
-import { describeCallSite, type IRecordedResponse } from "./mock_llm_provider.ts";
+import type { IRecordedResponse } from "./mock_llm_provider.ts";
+import { describeCallSite } from "./mock_llm_fixture_contract.ts";
 
 interface IFlakinessEntry {
   /** Call-site description, or the fixture's promptHash when unkeyed. */
