@@ -42,7 +42,7 @@ export { DependencyResolver, FlowValidationError } from "./src/dependency_resolv
 export { ActivityJournal } from "./src/activity_journal.ts";
 export { ConditionEvaluationError, ConditionEvaluator } from "./src/condition_evaluator.ts";
 export { evaluateExpression, ExpressionError, parseCondition } from "./src/safe_expression.ts";
-export type { IActivityJournal, JournalEntry } from "./src/dynamic_step_executor.ts";
+export type { IActivityJournal, IDynamicStepExecutorDependencies, JournalEntry } from "./src/dynamic_step_executor.ts";
 export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop } from "./src/feedback_loop.ts";
 export { createFeedbackLoop, runSelfCorrectingAgent, SimpleImprovementAgent } from "./src/feedback_loop.ts";

@@ -183,16 +183,14 @@ Deno.test("DynamicStepExecutor confirmation: approved approval-required tool exe
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    interceptor,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    confirmationInterceptor: interceptor,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-approval" });
 
@@ -226,16 +224,14 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    interceptor,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    confirmationInterceptor: interceptor,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-denial" });
 
@@ -260,16 +256,13 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
   llmClient.setDecisions([{ done: true, output: "done" }]);
 
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-no-interceptor" });
 
@@ -286,7 +279,7 @@ Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-requi
   llmClient.setDecisions([{ done: false, tool: McpToolName.CREATE_REQUEST, args: {} }]);
 
   const journal = new MockActivityJournal();
-  const executor = new ApprovalForcingExecutor(mcpClient, llmClient, journal);
+  const executor = new ApprovalForcingExecutor({ mcpClient, llmClient, activityJournal: journal });
 
   await assertRejects(
     () => executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-defensive" }),
@@ -312,16 +305,14 @@ Deno.test("DynamicStepExecutor confirmation: approval request timeout window use
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    interceptor,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    confirmationInterceptor: interceptor,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-timeout-default" });
 
@@ -349,16 +340,14 @@ Deno.test("DynamicStepExecutor confirmation: config override changes approval re
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    interceptor,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    confirmationInterceptor: interceptor,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", {
     traceId: "trace-config-timeout",

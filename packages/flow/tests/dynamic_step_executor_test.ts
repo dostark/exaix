@@ -126,16 +126,13 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
@@ -190,16 +187,13 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
@@ -239,16 +233,13 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
@@ -283,16 +274,13 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from agent role", as
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
+  const executor = new DynamicStepExecutor({
     mcpClient,
     llmClient,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 
   const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
@@ -326,16 +314,13 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
   const mockMcp = new MockMcpClient();
   const mockLlm = new MockLlmClient();
   const mockJournal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(
-    mockMcp,
-    mockLlm,
-    mockJournal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mockMcp,
+    llmClient: mockLlm,
+    activityJournal: mockJournal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   const step = FlowStepSchema.parse({
     id: "id",
     name: "Standard",

@@ -322,17 +322,14 @@ function buildDynamicStep(): IFlowStep {
 
 Deno.test("[132.26][GAP-9] DynamicStepExecutor forwards resolved call options to every ReAct generate", async () => {
   const llm = new CapturingLlm();
-  const executor = new DynamicStepExecutor(
-    new RecordingMcpClient(),
-    llm,
-    noopJournal as never,
-    undefined,
-    undefined,
-    undefined,
-    new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
-    new Set(),
-    { thinking: true, effort: "high", max_tokens: 8192 },
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: new RecordingMcpClient(),
+    llmClient: llm,
+    activityJournal: noopJournal as never,
+    dynamicModeTools: new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
+    dynamicModeApprovalTools: new Set(),
+    callOptions: { thinking: true, effort: "high", max_tokens: 8192 },
+  });
 
   const agent_role: IBlueprintFrontmatter = {
     name: "agent1",
@@ -351,16 +348,13 @@ Deno.test("[132.26][GAP-9] DynamicStepExecutor forwards resolved call options to
 
 Deno.test("[132.26][GAP-9] DynamicStepExecutor without call options stays backward compatible", async () => {
   const llm = new CapturingLlm();
-  const executor = new DynamicStepExecutor(
-    new RecordingMcpClient(),
-    llm,
-    noopJournal as never,
-    undefined,
-    undefined,
-    undefined,
-    new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
-    new Set(),
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: new RecordingMcpClient(),
+    llmClient: llm,
+    activityJournal: noopJournal as never,
+    dynamicModeTools: new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
+    dynamicModeApprovalTools: new Set(),
+  });
 
   const agent_role: IBlueprintFrontmatter = {
     name: "agent1",

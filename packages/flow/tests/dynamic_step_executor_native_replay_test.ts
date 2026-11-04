@@ -93,16 +93,13 @@ function replayOf(id: string, name: string, args: string): IProviderAssistantRep
 Deno.test("DynamicStepExecutor forwards native controls and replays exact successful call id", async () => {
   const mcp = new ReplayMcpClient();
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor(
-    mcp,
-    llm,
-    new ReplayJournal(),
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcp,
+    llmClient: llm,
+    activityJournal: new ReplayJournal(),
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   llm.decisions = [
     {
       done: false,
@@ -137,16 +134,13 @@ Deno.test("DynamicStepExecutor forwards native controls and replays exact succes
 Deno.test("DynamicStepExecutor appends each completed native call as its own singleton round, in order", async () => {
   const mcp = new ReplayMcpClient();
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor(
-    mcp,
-    llm,
-    new ReplayJournal(),
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcp,
+    llmClient: llm,
+    activityJournal: new ReplayJournal(),
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   llm.decisions = [
     {
       done: false,
@@ -191,16 +185,14 @@ Deno.test("DynamicStepExecutor replays denied native call as an error without ex
     },
   };
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor(
-    mcp,
-    llm,
-    new ReplayJournal(),
-    interceptor,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcp,
+    llmClient: llm,
+    activityJournal: new ReplayJournal(),
+    confirmationInterceptor: interceptor,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   llm.decisions = [
     {
       done: false,
@@ -239,16 +231,13 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
   mcp.failure = new Error("portal access denied");
   const llm = new ReplayLlmClient();
   const journal = new ReplayJournal();
-  const executor = new DynamicStepExecutor(
-    mcp,
-    llm,
-    journal,
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcp,
+    llmClient: llm,
+    activityJournal: journal,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   llm.decisions = [{
     done: false,
     tool: McpToolName.READ_FILE,
@@ -273,16 +262,13 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
 Deno.test("DynamicStepExecutor starts each invocation with an empty native replay", async () => {
   const mcp = new ReplayMcpClient();
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor(
-    mcp,
-    llm,
-    new ReplayJournal(),
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcp,
+    llmClient: llm,
+    activityJournal: new ReplayJournal(),
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   const config = { execution: { native_tools_enabled: true } };
   for (const traceId of ["trace-isolated-1", "trace-isolated-2"]) {
     llm.decisions.push(

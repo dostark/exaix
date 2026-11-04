@@ -1047,16 +1047,16 @@ export class FlowRunner implements IFlowRunner {
     );
     const confirmationInterceptor = options.confirmationInterceptor ??
       (options.context ? buildConfirmationInterceptor(options.context, config, activityJournal) : undefined);
-    this.dynamicStepExecutor = new DynamicStepExecutor(
-      this.mcpClient!,
+    this.dynamicStepExecutor = new DynamicStepExecutor({
+      mcpClient: this.mcpClient!,
       llmClient,
       activityJournal,
       confirmationInterceptor,
-      this.options.milestoneEmitter,
-      this.options.hitlPolicyEvaluator,
-      this.options.dynamicModeTools,
-      this.options.dynamicModeApprovalTools,
-    );
+      milestoneEmitter: this.options.milestoneEmitter,
+      hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
+      dynamicModeTools: this.options.dynamicModeTools,
+      dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
+    });
   }
 
   private buildFallbackContext(config: Config, db: Opt<IDatabaseService, Reason.OptionalDependency>): object {
@@ -1113,19 +1113,18 @@ export class FlowRunner implements IFlowRunner {
       this.options.promptBudgetAllocator,
     );
     const confirmationInterceptor = this.options.confirmationInterceptor;
-    this.dynamicStepExecutor = new DynamicStepExecutor(
-      this.mcpClient!,
+    this.dynamicStepExecutor = new DynamicStepExecutor({
+      mcpClient: this.mcpClient!,
       llmClient,
       activityJournal,
       confirmationInterceptor,
-      this.options.milestoneEmitter,
-      this.options.hitlPolicyEvaluator,
-      this.options.dynamicModeTools,
-      this.options.dynamicModeApprovalTools,
-      // Forward the resolver's per-call options (thinking/effort) to every ReAct
-      // generate() call in dynamic steps.
-      resolved.options,
-    );
+      milestoneEmitter: this.options.milestoneEmitter,
+      hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
+      dynamicModeTools: this.options.dynamicModeTools,
+      dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
+      // The resolver's per-call options (thinking/effort) reach every ReAct generate in dynamic steps.
+      callOptions: resolved.options,
+    });
     // The agent step handler was registered during construction, before the lazy executor
     // existed, so it captured `dynamicStepExecutor: undefined`. Re-register it now.
     const agentHandler = new AgentStepHandler({
@@ -1187,17 +1186,17 @@ export class FlowRunner implements IFlowRunner {
               ? { thinking: bound.binding.thinking === true }
               : {}),
           };
-          executor = new DynamicStepExecutor(
-            this.mcpClient!,
+          executor = new DynamicStepExecutor({
+            mcpClient: this.mcpClient!,
             llmClient,
             activityJournal,
-            this.options.confirmationInterceptor,
-            this.options.milestoneEmitter,
-            this.options.hitlPolicyEvaluator,
-            this.options.dynamicModeTools,
-            this.options.dynamicModeApprovalTools,
-            Object.keys(callOptions).length > 0 ? callOptions : undefined,
-          );
+            confirmationInterceptor: this.options.confirmationInterceptor,
+            milestoneEmitter: this.options.milestoneEmitter,
+            hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
+            dynamicModeTools: this.options.dynamicModeTools,
+            dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
+            callOptions: Object.keys(callOptions).length > 0 ? callOptions : undefined,
+          });
           this.dynamicExecutorsByProvider.set(bound.provider, executor);
         }
         return executor;

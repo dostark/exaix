@@ -93,6 +93,22 @@ export interface IActivityJournal {
   log(entry: JournalEntry): Promise<void>;
 }
 
+/** The collaborators and settings of one dynamic step executor. */
+export interface IDynamicStepExecutorDependencies {
+  readonly mcpClient: IMcpClient & IToolManifestResolver;
+  readonly llmClient: ILlmClient;
+  readonly activityJournal: IActivityJournal;
+  readonly confirmationInterceptor?: Opt<IToolConfirmationInterceptor, Reason.OptionalDependency>;
+  readonly milestoneEmitter?: Opt<IMilestoneEmitter, Reason.OptionalDependency>;
+  readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>;
+  /** The read-only tools that dynamic mode allows. No tool is allowed when absent. */
+  readonly dynamicModeTools?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
+  /** The dynamic mode tools that need approval. None when absent. */
+  readonly dynamicModeApprovalTools?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
+  /** Per-call model options (thinking/effort/max_tokens) forwarded on every ReAct generate. */
+  readonly callOptions?: Opt<IModelCallOptions, Reason.OptionalInput>;
+}
+
 const DEFAULT_MAX_ITERATIONS = 10;
 
 /** Invariant: only tools in DYNAMIC_MODE_TOOLS (derived from the canonical manifest) may
@@ -100,20 +116,25 @@ const DEFAULT_MAX_ITERATIONS = 10;
  *  validated here defensively. */
 export class DynamicStepExecutor {
   private emitMilestoneFn?: (milestone: IExecutionMilestone) => Promise<void>;
+  private readonly mcpClient: IMcpClient & IToolManifestResolver;
+  private readonly llmClient: ILlmClient;
+  private readonly activityJournal: IActivityJournal;
+  readonly confirmationInterceptor?: Opt<IToolConfirmationInterceptor, Reason.OptionalDependency>;
+  private readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>;
+  private readonly dynamicModeTools: ReadonlySet<string>;
+  private readonly dynamicModeApprovalTools: ReadonlySet<string>;
+  private readonly callOptions?: Opt<IModelCallOptions, Reason.OptionalInput>;
 
-  constructor(
-    private readonly mcpClient: IMcpClient & IToolManifestResolver,
-    private readonly llmClient: ILlmClient,
-    private readonly activityJournal: IActivityJournal,
-    readonly confirmationInterceptor?: Opt<IToolConfirmationInterceptor, Reason.OptionalDependency>,
-    milestoneEmitter?: Opt<IMilestoneEmitter, Reason.OptionalDependency>,
-    private readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
-    private readonly dynamicModeTools: ReadonlySet<string> = new Set(),
-    private readonly dynamicModeApprovalTools: ReadonlySet<string> = new Set(),
-    /** Per-call model options (thinking/effort/max_tokens) forwarded on every ReAct generate. */
-    private readonly callOptions?: Opt<IModelCallOptions, Reason.OptionalInput>,
-  ) {
-    this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
+  constructor(dependencies: IDynamicStepExecutorDependencies) {
+    this.mcpClient = dependencies.mcpClient;
+    this.llmClient = dependencies.llmClient;
+    this.activityJournal = dependencies.activityJournal;
+    this.confirmationInterceptor = dependencies.confirmationInterceptor;
+    this.hitlPolicyEvaluator = dependencies.hitlPolicyEvaluator;
+    this.dynamicModeTools = dependencies.dynamicModeTools ?? new Set();
+    this.dynamicModeApprovalTools = dependencies.dynamicModeApprovalTools ?? new Set();
+    this.callOptions = dependencies.callOptions;
+    this.emitMilestoneFn = dependencies.milestoneEmitter?.emit.bind(dependencies.milestoneEmitter);
   }
 
   private async emitMilestone(

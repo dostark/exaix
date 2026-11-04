@@ -232,16 +232,13 @@ Deno.test("[recording] DYNAMIC reasoning sends one lane call site per consumed i
       tools.map((name) => ({ name, description: name, inputSchema: { type: "object" as const, properties: {} } })),
     requiresHumanApproval: () => false,
   };
-  const executor = new DynamicStepExecutor(
-    mcpClient as never,
+  const executor = new DynamicStepExecutor({
+    mcpClient: mcpClient as never,
     llmClient,
-    { log: () => Promise.resolve() },
-    undefined,
-    undefined,
-    undefined,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+    activityJournal: { log: () => Promise.resolve() },
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
   const step = FlowStepSchema.parse({
     id: "explore",
     name: "Explore",

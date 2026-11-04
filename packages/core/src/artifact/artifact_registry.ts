@@ -92,17 +92,17 @@ export class ArtifactRegistry {
     await Deno.writeTextFile(absoluteFilePath, fileContent);
 
     // Save to database
-    await this.repo.createArtifactRecord(
-      artifactId,
-      ReviewStatus.PENDING,
-      "analysis",
+    await this.repo.createArtifactRecord({
+      id: artifactId,
+      status: ReviewStatus.PENDING,
+      type: "analysis",
       agent_role,
-      portal || null,
-      targetBranch?.trim() ? targetBranch.trim() : null,
+      portal: portal || null,
+      target_branch: targetBranch?.trim() ? targetBranch.trim() : null,
       created,
-      requestId,
-      relativeFilePath,
-    );
+      request_id: requestId,
+      file_path: relativeFilePath,
+    });
 
     return artifactId;
   }

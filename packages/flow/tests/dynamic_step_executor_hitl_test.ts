@@ -119,16 +119,15 @@ function createExecutor(
   evaluator?: IHitlPolicyEvaluator,
   interceptor?: IToolConfirmationInterceptor,
 ): DynamicStepExecutor {
-  return new DynamicStepExecutor(
-    new MockMcpClient(),
-    new MockLlmClient(),
-    mockJournal,
-    interceptor,
-    undefined,
-    evaluator,
-    DYNAMIC_MODE_TOOLS,
-    DYNAMIC_MODE_APPROVAL_TOOLS,
-  );
+  return new DynamicStepExecutor({
+    mcpClient: new MockMcpClient(),
+    llmClient: new MockLlmClient(),
+    activityJournal: mockJournal,
+    confirmationInterceptor: interceptor,
+    hitlPolicyEvaluator: evaluator,
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
 }
 
 Deno.test("hitl: blueprint rule on a dynamic tool triggers confirmation", async () => {

@@ -110,16 +110,13 @@ Deno.test(
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
     const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor(
+    const executor = new DynamicStepExecutor({
       mcpClient,
       llmClient,
-      journal,
-      undefined,
-      undefined,
-      undefined,
-      DYNAMIC_MODE_TOOLS,
-      DYNAMIC_MODE_APPROVAL_TOOLS,
-    );
+      activityJournal: journal,
+      dynamicModeTools: DYNAMIC_MODE_TOOLS,
+      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+    });
 
     const agentRole = BlueprintFrontmatterSchema.parse({
       agent_role: "test-agent",
@@ -165,16 +162,13 @@ Deno.test(
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
     const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor(
+    const executor = new DynamicStepExecutor({
       mcpClient,
       llmClient,
-      journal,
-      undefined,
-      undefined,
-      undefined,
-      DYNAMIC_MODE_TOOLS,
-      DYNAMIC_MODE_APPROVAL_TOOLS,
-    );
+      activityJournal: journal,
+      dynamicModeTools: DYNAMIC_MODE_TOOLS,
+      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+    });
 
     const agentRole = BlueprintFrontmatterSchema.parse({
       agent_role: "test-agent",
