@@ -12,6 +12,7 @@
  */
 
 import { join } from "@std/path";
+import { loadConfigDescriptor, resolveLocalEntry } from "../unslop-ts/src/cli/project_loader.ts";
 
 /** The strategies the class-size rule offers, in the order that the report shows them. */
 const STRATEGIES = ["god-class", "legacy-score"] as const;
@@ -83,7 +84,15 @@ function section(title: string, members: readonly string[]): string[] {
 async function main(): Promise<void> {
   const rule = flag("rule", DEFAULT_RULE);
   const roots = flag("roots", DEFAULT_ROOTS);
-  const configPath = flag("config", DEFAULT_CONFIG);
+  const root = Deno.cwd();
+  const descriptor = await loadConfigDescriptor(root, flag("descriptor", DEFAULT_DESCRIPTOR), null);
+  const configPath = await resolveLocalEntry(flag("config", DEFAULT_CONFIG), root);
+  const expectedConfig = await resolveLocalEntry(descriptor.configUrl.href, root);
+  if (configPath.href !== expectedConfig.href) {
+    throw new Error(
+      "--config must match the selected descriptor's configUrl before comparison can rewrite the policy.",
+    );
+  }
   const original = await Deno.readTextFile(configPath);
   const flagged = new Map<Strategy, Set<string>>();
   try {

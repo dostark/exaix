@@ -15,6 +15,7 @@ import {
   CEILING_REPO_ROOT as REPO_ROOT,
   gateOver,
   type ICeilingRule,
+  type IProcessRun,
   runDeno,
   withCeilingProject,
 } from "./helpers/ceiling_project.ts";
@@ -27,6 +28,19 @@ const GOD_CLASS = "god-class";
 const GOD_RULE: ICeilingRule = { key: KEY, options: { strategy: GOD_CLASS, minClassLines: 1, threshold: 1 } };
 const SMALL_CLASS =
   "export class Small {\n  one(): number {\n    return 1;\n  }\n  two(): number {\n    return 2;\n  }\n}\n";
+
+async function compareOver(dir: string, extra: readonly string[] = []): Promise<IProcessRun> {
+  return await runDeno([
+    "run",
+    "-A",
+    COMPARE,
+    `--rule=${RULE}`,
+    "--roots=packages",
+    "--descriptor=unslop.project.ts",
+    "--ceilings=rule_ceilings.json",
+    ...extra,
+  ], dir);
+}
 
 function hub(name: string): string {
   return `import type { Other } from "./other.ts";\n${
@@ -72,15 +86,7 @@ Deno.test("god-objects-compare: the compare task lists the classes that only one
     { "packages/x/src/hub.ts": hub("Hub"), "packages/x/src/small.ts": SMALL_CLASS },
     async (dir) => {
       const before = await Deno.readTextFile(join(dir, "unslop.config.json"));
-      const result = await runDeno([
-        "run",
-        "-A",
-        COMPARE,
-        `--rule=${RULE}`,
-        "--roots=packages",
-        "--descriptor=unslop.project.ts",
-        "--ceilings=rule_ceilings.json",
-      ], dir);
+      const result = await compareOver(dir);
       assertEquals(result.code, 0, result.stderr);
       assertStringIncludes(result.stdout, "Only legacy-score");
       const [, onlyLegacy] = result.stdout.split("Only legacy-score");
@@ -91,6 +97,41 @@ Deno.test("god-objects-compare: the compare task lists the classes that only one
       assertEquals(await Deno.readTextFile(join(dir, "unslop.config.json")), before);
     },
   );
+});
+
+Deno.test("god-objects-compare-custom-config [security]: reject mismatches before writes and measure a matching custom policy", async () => {
+  await withCeilingProject(GOD_RULE, { "packages/x/src/small.ts": SMALL_CLASS }, async (dir) => {
+    const policyPath = join(dir, "unslop.config.json");
+    const customPath = join(dir, "custom.json");
+    const before = await Deno.readTextFile(policyPath);
+    await Deno.writeTextFile(customPath, before);
+    const mismatch = await compareOver(dir, ["--config=custom.json"]);
+    assertEquals(mismatch.code === 0, false, mismatch.stdout);
+    assertStringIncludes(mismatch.stderr, "--config must match");
+    assertEquals(await Deno.readTextFile(policyPath), before);
+    assertEquals(await Deno.readTextFile(customPath), before);
+    for (const name of ["unslop.project.ts", "plugin.ts"]) {
+      const path = join(dir, name);
+      await Deno.writeTextFile(path, (await Deno.readTextFile(path)).replaceAll("unslop.config.json", "custom.json"));
+    }
+    const matching = await compareOver(dir, ["--config=custom.json"]);
+    assertEquals(matching.code, 0, matching.stderr);
+    assertStringIncludes(matching.stdout, "god-class flags 0 class(es); legacy-score flags 1 class(es).");
+    assertEquals(await Deno.readTextFile(policyPath), before);
+    assertEquals(await Deno.readTextFile(customPath), before);
+  });
+});
+
+Deno.test("god-objects-compare-policy-preserved: a reporter failure restores the exact policy bytes", async () => {
+  await withCeilingProject(GOD_RULE, { "packages/x/src/small.ts": SMALL_CLASS }, async (dir) => {
+    const path = join(dir, "unslop.config.json");
+    const before = await Deno.readTextFile(path);
+    await Deno.remove(join(dir, "rule_ceilings.json"));
+    const failed = await compareOver(dir);
+    assertEquals(failed.code === 0, false);
+    assertStringIncludes(failed.stderr, "The report failed");
+    assertEquals(await Deno.readTextFile(path), before);
+  });
 });
 
 Deno.test("god-class-named-expression: the ceiling CLI rejects declarations and named expressions", async () => {
