@@ -486,7 +486,7 @@
       "scope": "test",
       "title": "Test Development Skill (#test-development)",
       "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
-      "version": "1.4.3",
+      "version": "1.5.0",
       "topics": [
         "testing",
         "tdd",

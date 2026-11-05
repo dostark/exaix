@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.4.3"
+version: "1.5.0"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -203,6 +203,34 @@ Assertion sensitivity — a test that cannot fail is worse than no test
   survive session restarts: `/tmp` must not be the sole user-facing proof artifact. Copy
   or write decisive logs and manifests to a durable, phase-named workspace/sandbox output directory
   and cite that path.
+
+Verification method selection — match the method to the defect
+
+  Default to an example-based test for one named behavior with a known input and
+  output. Choose another method only when it detects a defect the example misses.
+
+  | Method               | Use when                                               | Required control                                                 |
+  | -------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- |
+  | Example-based        | One behavior, one known input and output               | A canary that breaks the behavior                                |
+  | Property-based       | A rule holds across many inputs and a generator exists | Property from the contract, fixed seed, bounded cases            |
+  | Differential         | A replacement must match an independent reference      | Expectation from the reference, investigate every disagreement  |
+  | Fuzz                 | Malformed input is the defect model                    | Bounded iterations, fixed seed, minimized failing input          |
+  | Mutation (selective) | Assertion sensitivity is uncertain                     | A named mutation set and bounded run; no new dependency          |
+
+  For each proposed test, record:
+  - Behavior and the production entry point that must show it.
+  - The independent oracle or contract that supplies the expected value.
+  - Substituted dependencies and what they hide.
+  - What the test cannot establish.
+
+  An example-based test remains the right default for a simple formatter or a
+  fixed table. Do not add a fuzz or mutation campaign without a named defect it
+  detects.
+
+  Keep RED → GREEN → REFACTOR, canaries, placement, deterministic seeds, shared
+  helpers, and bounded runtime. Do not assert incidental internal structure.
+  Keep interaction checks when retry, ordering, or authorization is the contract.
+  Do not ban mocks or delete tests automatically.
 
 Edge case coverage — mandatory test dimensions
 
