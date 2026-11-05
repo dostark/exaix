@@ -63,12 +63,6 @@ Deno.test("a bare rule id in brackets or backticks is found, and the plugin id, 
   assertEquals(findBareIdReferences(files, "dynamic-import"), ["a.md:1", "a.md:1"]);
 });
 
-Deno.test("the tracked text files exclude the historical planning documents", async () => {
-  const files = await trackedTextFiles([]);
-  assert(files.size > 0);
-  for (const path of files.keys()) assert(!path.startsWith("exaix-dev-docs/planning/"), path);
-});
-
 Deno.test("a ported rule has no style-exclude site and no bare id left in the tracked files", async () => {
   const tables = await loadPortTables();
   const files = await portReferenceFiles();

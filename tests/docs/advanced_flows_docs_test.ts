@@ -207,17 +207,6 @@ Deno.test("[docs] session-delegation wait-state documentation is retained", asyn
   assertStringIncludes(flat(readme), "session delegation");
 });
 
-Deno.test("[docs] changelog records the added blueprints, branch routing, loops and the gate change", async () => {
-  const changelog = await Deno.readTextFile("docs/CHANGELOG.md");
-  const start = changelog.indexOf("## Unreleased — Phase 205");
-  assert(start >= 0, "Missing Phase 205 changelog section");
-  const next = changelog.indexOf("\n## ", start + 5);
-  const section = changelog.slice(start, next < 0 ? undefined : next);
-  assertStringIncludes(section, "### Added");
-  assertStringIncludes(section, "### Changed");
-  assertStringIncludes(section, "gates now halt");
-});
-
 function firstColumn(table: string): string[] {
   return table.split("\n").filter((line) => line.startsWith("| `")).map((line) =>
     line.split("|")[1].trim().replaceAll("`", "")

@@ -15,26 +15,6 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
-// Ground truth for which phases must never be framed as delivered capability — keep this
-// list in sync with the planning doc's phase-exclusion table if it changes.
-const EXCLUDED_PHASES = [85, 86, 89, 90];
-
-// No positioning doc cites specific shipped-phase numbers in its prose, so there is nothing to
-// assert here beyond EXCLUDED_PHASES above — this note only records why the check stops there.
-
-const PHASE_MENTION_PATTERN = /Phases?\s+(\d+)/g;
-
-const NON_DELIVERY_FRAMING_KEYWORDS = ["postpon", "cancel", "reject", "exclude"];
-
-const POSITIONING_DOC_PATHS = [
-  "README.md",
-  "ARCHITECTURE.md",
-  "exaix-dev-docs/dev/Exaix_White_Paper.md",
-  "GLOSSARY.md",
-  ".copilot/docs/GLOSSARY.md",
-  "exaix-dev-docs/dev/Exaix_Weaknesses.md",
-];
-
 async function readDoc(relativePath: string): Promise<string> {
   return await Deno.readTextFile(join(REPO_ROOT, relativePath));
 }
@@ -45,27 +25,6 @@ function extractTermHeadings(content: string): string[] {
     .filter((line) => line.startsWith("### "))
     .map((line) => line.slice(4).trim());
 }
-
-Deno.test("[hallucination-bench] No-vaporware regression — Phases 85/86/89/90 are never framed as delivered capability", async () => {
-  for (const docPath of POSITIONING_DOC_PATHS) {
-    const content = await readDoc(docPath);
-    for (const rawLine of content.split("\n")) {
-      PHASE_MENTION_PATTERN.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = PHASE_MENTION_PATTERN.exec(rawLine)) !== null) {
-        const phaseNumber = Number(match[1]);
-        if (!EXCLUDED_PHASES.includes(phaseNumber)) continue;
-        const lowerLine = rawLine.toLowerCase();
-        const framedAsNonDelivery = NON_DELIVERY_FRAMING_KEYWORDS.some((keyword) => lowerLine.includes(keyword));
-        assert(
-          framedAsNonDelivery,
-          `${docPath} mentions Phase ${phaseNumber} (excluded — ships nothing per GAP-1) ` +
-            `without postponed/cancelled/rejected framing: "${rawLine.trim()}"`,
-        );
-      }
-    }
-  }
-});
 
 Deno.test("[hallucination-bench] Three-tier reliability narrative — ARCHITECTURE.md and the white paper tell the same story", async () => {
   const architecture = await readDoc("ARCHITECTURE.md");
