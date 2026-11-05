@@ -92,3 +92,25 @@ Deno.test("god-objects-compare: the compare task lists the classes that only one
     },
   );
 });
+
+Deno.test("god-class-named-expression: the ceiling CLI rejects declarations and named expressions", async () => {
+  const expressionPath = "packages/x/src/expression.ts";
+  const declarationPath = "packages/x/src/declaration.ts";
+  const expression = `import type { Other } from "./other.ts";\nexport const makeHub = ${godClassSource(GOD)};`;
+  await withCeilingProject(GOD_RULE, { [declarationPath]: hub("Hub"), [expressionPath]: expression }, async (dir) => {
+    const both = await gateOver(dir, KEY, "packages");
+    assertEquals(both.code, 1);
+    assertEquals(both.over.map((row) => [row.packageName, row.count]), [["packages/x", 2]]);
+    await Deno.remove(join(dir, declarationPath));
+    const expressionOnly = await gateOver(dir, KEY, "packages");
+    assertEquals(expressionOnly.code, 1);
+    assertEquals(expressionOnly.over.map((row) => [row.packageName, row.count]), [["packages/x", 1]]);
+    await Deno.writeTextFile(
+      join(dir, expressionPath),
+      `export const makeSmall = ${SMALL_CLASS.replace("export ", "")};`,
+    );
+    const clean = await gateOver(dir, KEY, "packages");
+    assertEquals(clean.code, 0);
+    assertEquals(clean.over, []);
+  });
+});
