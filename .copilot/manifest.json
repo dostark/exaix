@@ -290,7 +290,7 @@
       "scope": "dev",
       "title": "Fix Bug Skill (#fix-bug)",
       "short_summary": "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "topics": [
         "bug-fix",
         "tdd",
