@@ -14,20 +14,20 @@ Follow the Red-Green-Refactor cycle for all code changes.
 1. **Run the test** to confirm it fails (for the right reason)
 1. **Name tests descriptively** - Test names should read like specifications
 
-````typescript
+```typescript
 // ✅ Good test name
 Deno.test("calculateTotal returns sum of items when cart has products");
 
 // ❌ Bad test name
 Deno.test("test1");
-```text
+```
 
 ## Phase 2: Green (Make It Pass)
 
 1. **Write ONLY enough code** to make the test pass
-2. **No additional features** or optimizations
-3. **Focus on correctness**, not elegance
-4. **Run tests frequently** - After every small change
+1. **No additional features** or optimizations
+1. **Focus on correctness**, not elegance
+1. **Run tests frequently** - After every small change
 
 ```typescript
 // ✅ Minimal implementation to pass
@@ -39,14 +39,14 @@ function calculateTotal(items: Item[]): number {
 function calculateTotal(items: Item[]): number {
   // Don't add caching, discounts, etc. until needed
 }
-```text
+```
 
 ## Phase 3: Refactor (Clean Up)
 
 1. **Improve code structure** while tests stay green
-2. **Extract helpers**, reduce duplication
-3. **Improve naming** and organization
-4. **Run tests after EVERY change**
+1. **Extract helpers**, reduce duplication
+1. **Improve naming** and organization
+1. **Run tests after EVERY change**
 
 ## Key Rules
 
@@ -78,12 +78,33 @@ assertEquals(registry.getTools().map((t) => t.name), createCoreToolSchemas().map
 assertEquals(registry.getTools().length, 22);
 ```
 
+## Verification method selection
+
+Choose the smallest method that detects a named defect. An example-based test remains the default.
+
+| Method               | Use when                                               | Required control                                               |
+| -------------------- | ------------------------------------------------------ | -------------------------------------------------------------- |
+| Example-based        | One behavior, one known input and output               | A failing test that names the behavior                         |
+| Property-based       | A rule holds across many inputs and a generator exists | Property from the contract, fixed seed, bounded cases          |
+| Differential         | A replacement must match an independent reference      | Expectation from the reference, investigate every disagreement |
+| Fuzz                 | Malformed input is the defect model                    | Bounded iterations, fixed seed, minimized failing input        |
+| Mutation (selective) | Assertion sensitivity is uncertain                     | A named mutation set and bounded run; no new dependency        |
+
+For each test, record:
+
+- Behavior and the production entry point that must show it.
+- The independent oracle or contract that supplies the expected value.
+- Substituted dependencies and what they hide.
+- What the test cannot establish.
+
+Keep RED → GREEN → REFACTOR. Test observable behavior that survives an internal refactor. Keep retry, ordering, or authorization interaction checks when the contract requires them. Report any check you did not run. Do not add a per-test approval gate, ban mocks, or inspect unrelated internals.
+
 ## Example Workflow
 
 1. Write the failing test: "should return an empty array when no items match".
-2. Run it and confirm it fails for the right reason (RED).
-3. Implement the minimal code to pass (GREEN).
-4. Refactor with the test green, then re-run.
+1. Run it and confirm it fails for the right reason (RED).
+1. Implement the minimal code to pass (GREEN).
+1. Refactor with the test green, then re-run.
 
 ## Test design reference
 
@@ -125,4 +146,3 @@ Deno.test("should do something", () => {
 - **Unit** — single functions/methods; mock external deps; fast (<100ms); high coverage.
 - **Integration** — component interactions; real deps where feasible (DB, FS, network).
 - **Edge case** — boundary values, empty/null inputs, error conditions, concurrency.
-````

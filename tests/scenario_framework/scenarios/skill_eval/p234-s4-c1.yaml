@@ -1,0 +1,56 @@
+schema_version: "1.0.0"
+id: p234-s4-c1
+title: "Runtime verification — bounded malformed-input exploration"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:tdd-methodology"]
+request_fixture: fixtures/requests/skill_eval/phase234/p234-s4-c1.md
+mode_support: [auto]
+portals:
+  - alias: p234-s4
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/p234_s4"
+    target_path: "$WORKSPACE_ROOT/p234-s4"
+    git_init: true
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: ["--agent-role", "general", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s4"]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: assert-plan
+    type: run-script
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/runner/runtime_verification_oracle.ts"
+      - "p234-s4-c1"
+      - "$WORKSPACE_ROOT"
+    timeout_sec: 60
+    output_criteria:
+      - id: plan-matches
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

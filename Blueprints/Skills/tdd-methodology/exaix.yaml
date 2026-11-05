@@ -32,11 +32,17 @@ constraints:
   - "Preserve equality, identity, truth direction, messages, and call order and count when changing assertions"
   - "Keep stateful calls separate and test constants through consumers or independent value contracts"
   - Follow the target project's fixture and test-boundary policy
+  - Choose a verification method only for a named defect; example-based tests remain the default
+  - "Record behavior, production entry point, independent oracle, substitutes, and what the test cannot establish"
+  - "Use bounded seeds and minimized failing inputs for fuzz and property checks"
+  - "Report checks not run and keep contract-relevant interaction checks"
   - "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set"
 output_requirements:
   - Test file must exist before implementation
   - All tests must pass before completion
   - Test names describe expected behavior
+  - Verification method and the defect it detects
+  - Independent oracle or contract and what the test cannot establish
 quality_criteria:
   - name: Test Coverage
     description: New code has corresponding test coverage
