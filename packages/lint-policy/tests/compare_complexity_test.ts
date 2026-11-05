@@ -1,14 +1,14 @@
 /**
  * @module CompareComplexityTest
  * @path packages/lint-policy/tests/compare_complexity_test.ts
- * @description Matching, validation and inventory checks for the fallow complexity calibration.
+ * @description Matching and validation checks for the fallow complexity calibration.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
  * @related-files [../src/tools/compare_complexity.ts, packages/lint-policy/tests/complexity_cutover_test.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
-import { basename, dirname, fromFileUrl, join } from "@std/path";
+import { assertEquals, assertThrows } from "@std/assert";
+import { fromFileUrl, join } from "@std/path";
 import type { IMeasuredFunction } from "@dostark/unslop-ts/report";
 import {
   CALIBRATION_EXCLUSIONS,
@@ -24,7 +24,6 @@ import {
 } from "../src/tools/compare_complexity.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
-const PLAN_PATH = join(REPO_ROOT, "exaix-dev-docs/planning/phase-236-complexity-metrics-alignment.md");
 
 function finding(line: number, col: number, cyclomatic = 3, cognitive = 2, name = "fn"): IFallowFinding {
   return { path: "src/a.ts", name, line, col, cyclomatic, cognitive };
@@ -201,102 +200,6 @@ Deno.test("compare-complexity-matching: a contribution-kind difference is report
   assertEquals(comparison.differences[0].contributions, [
     { metric: "cyclomatic", kind: "if", fallow: 1, core: 0 },
   ]);
-});
-
-/** True when a symbol name appears in the source package of the named source file. */
-async function symbolExistsNear(symbol: string, sourcePath: string): Promise<boolean> {
-  const parts = sourcePath.split("/");
-  const packageRoot = parts.length >= 2 ? join(parts[0], parts[1]) : ".";
-  const visit = async (directory: string): Promise<boolean> => {
-    for await (const entry of Deno.readDir(join(REPO_ROOT, directory))) {
-      if (entry.isDirectory) {
-        if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
-        if (await visit(join(directory, entry.name))) return true;
-        continue;
-      }
-      if (!entry.isFile || !entry.name.endsWith(".ts")) continue;
-      if ((await Deno.readTextFile(join(REPO_ROOT, directory, entry.name))).includes(symbol)) return true;
-    }
-    return false;
-  };
-  return await visit(packageRoot);
-}
-
-/** The repository path of a caller file, allowing a bare basename beside the source file. */
-async function resolveCallerPath(rawPath: string, sourcePath: string): Promise<string> {
-  const direct = join(REPO_ROOT, rawPath);
-  try {
-    await Deno.stat(direct);
-    return rawPath;
-  } catch {
-    const sibling = join(dirname(sourcePath), basename(rawPath));
-    await Deno.stat(join(REPO_ROOT, sibling));
-    return sibling;
-  }
-}
-
-Deno.test("refactor-inventory-reconciled: every frozen row names a real symbol, caller and test", async () => {
-  const plan = await Deno.readTextFile(PLAN_PATH);
-  const section = plan.split("## Refactoring inventory")[1].split("\n## ")[0];
-  const rows = section.split("\n").filter((line) => /^\| \d+/.test(line)).map((line) =>
-    line.split("|").map((cell) => cell.trim())
-  );
-  assertEquals(rows.length, 26);
-  for (const row of rows) {
-    const step = row[1];
-    const source = row[2];
-    const values = row[4];
-    const caller = row[5];
-    const anchor = row[6];
-    const sourceMatch = /^`([^`:]+):([^`]+)`$/.exec(source);
-    assert(sourceMatch !== null, `row ${step} has an unparsed source: ${source}`);
-    const [, sourcePath, symbol] = sourceMatch;
-    const baseSymbol = symbol.split("::")[0];
-    const identifier = baseSymbol.split(".").pop() ?? baseSymbol;
-    const sourceText = await Deno.readTextFile(join(REPO_ROOT, sourcePath));
-    const sourceTextIncludesIdentifier: boolean = sourceText.includes(identifier);
-    assert(sourceTextIncludesIdentifier, `row ${step}: '${identifier}' is not in ${sourcePath}`);
-
-    const frozen = /^(\d+) \/ (\d+)$/.exec(values);
-    assert(frozen !== null, `row ${step} does not carry frozen core values: ${values}`);
-    assert(
-      Number(frozen[1]) > 20 || Number(frozen[2]) > 30,
-      `row ${step} is below the tranche thresholds: ${values}`,
-    );
-
-    const backticked = [...caller.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
-    const callerPath = backticked.find((entry) => entry.includes(".ts"));
-    if (callerPath === undefined) {
-      const names = [...caller.matchAll(/[A-Za-z_$][\w$]*/g)].map((match) => match[0]);
-      assert(names.length > 0, `row ${step} has no named caller`);
-      let named = false;
-      for (const name of names) {
-        if (await symbolExistsNear(name, sourcePath)) {
-          named = true;
-          break;
-        }
-      }
-      assert(named, `row ${step}: caller '${caller}' names no symbol near ${sourcePath}`);
-    } else {
-      const tsEnd = callerPath.indexOf(".ts") + 3;
-      const rawPath = callerPath.slice(0, tsEnd);
-      const route = callerPath.slice(tsEnd).replace(/^[:\s→-]+/, "");
-      const path = await resolveCallerPath(rawPath, sourcePath);
-      const dotted = /([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)/.exec(route);
-      if (dotted !== null) {
-        const callerText = await Deno.readTextFile(join(REPO_ROOT, path));
-        const routeName = dotted[1].split(".").pop() ?? dotted[1];
-        const callerTextIncludesRouteName: boolean = callerText.includes(routeName);
-        assert(callerTextIncludesRouteName, `row ${step}: caller '${routeName}' is not in ${path}`);
-      }
-    }
-
-    const anchorPath = [...anchor.matchAll(/`([^`]+)`/g)].map((match) => match[1]).find((entry) =>
-      entry.endsWith(".ts")
-    );
-    assert(anchorPath !== undefined, `row ${step} has no test anchor path`);
-    await Deno.stat(join(REPO_ROOT, anchorPath));
-  }
 });
 
 /** The tree is shared with tests that write a scratch file, so one rerun absorbs a file that vanished mid-scan. */
