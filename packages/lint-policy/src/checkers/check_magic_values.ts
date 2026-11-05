@@ -198,6 +198,7 @@ async function main(): Promise<void> {
     DUPLICATE_UNITS.push({ path: relative(REPO_ROOT, entry.path), text });
   }
 
+  files.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
   const violations = detectMagicLiterals(files, detectorOptions());
   const duplicateCount = runDuplicateConstantPass();
 
