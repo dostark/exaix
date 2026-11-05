@@ -18,6 +18,17 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 237 (Class Design Metrics and God Class Detection)
+
+### Added
+
+- `unslop health --classes` reports class design metrics, God Class, Data Class and Feature Envy findings, and the sourced class thresholds.
+- `deno task check:god-objects` uses the God Class strategy with per-package ceilings over every linted root.
+
+### Changed
+
+- Default lint enforces `exaix/max-params` at seven parameters for functions and constructors across all linted roots.
+
 ## Unreleased — Phase 233 (Lean Portal Lint Verification)
 
 ### Added
