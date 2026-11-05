@@ -21,19 +21,23 @@ triggers:
     - bugfix
     - debugging
 constraints:
-  - Confirm the defect is real and reproduced (or clearly reasoned) before editing any code
+  - Reproduce the reported symptom with one bounded project-appropriate command and observed failure
+  - Rank plausible causes and test one falsifiable prediction at a time
   - 'State the specific root cause before making a change — name the file, symbol, and why it fails'
   - 'Fix the root cause, not the symptom'
   - Make the smallest safe change; every edited line must relate to this bug
   - Prefer patch_file for the targeted change; use write_file only when a full-file rewrite is genuinely required
   - 'Do not refactor, rename, or reformat code unrelated to the bug'
-  - Add or update a test that fails before the fix and passes after it (guard against recurrence)
+  - Write the regression test before the patch; it must fail for the reported symptom
+  - For intermittent or performance defects, record attempts, controls, and comparable workloads
   - Verify with the most relevant checks available before declaring the fix done
 output_requirements:
+  - 'Reproduction: command, observed symptom, controls, and bounds'
+  - 'Rejected causes: ranked hypotheses and the observations that rejected them'
   - 'Root cause: the specific reason the bug occurs (file, symbol, condition)'
   - 'Changed: the files and the minimal edit made'
-  - 'Verified: which checks/tests were run and their result'
-  - 'Not verified / risk: anything left unchecked and residual risk'
+  - 'Verified: regression, original reproduction, checks, and their results'
+  - 'Not verified / risk: anything left unchecked, including residual uncertainty'
 quality_criteria:
   - name: Root Cause Identified
     description: 'The specific cause is named before editing, not guessed after'
