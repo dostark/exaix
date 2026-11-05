@@ -17,6 +17,7 @@ import { UIOutputFormat } from "@exaix/tui";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import { type MemoryCommands, SkillCommandError } from "../commands/memory_commands.ts";
+import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 
 const FORMAT_OPTION = "--format <format:string>";
 const FORMAT_HELP = "Output format: table, json, md";
@@ -241,4 +242,11 @@ export function registerSkillCommands(group: Command, memory: MemoryCommands): v
           )
         ),
     );
+}
+
+/** The top-level skills alias of the memory skill commands. */
+export function buildSkillsCommand(runtime: IExaCtlRuntime): Command {
+  const command = new Command().description("Manage procedural skills (alias of 'memory skill')");
+  registerSkillCommands(command, runtime.memoryCommands);
+  return command;
 }
