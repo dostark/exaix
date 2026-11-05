@@ -8,6 +8,7 @@
 
 import { Command } from "@cliffy/command";
 import { GeneralStatus, MemoryScope, RequestOperation } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
@@ -19,6 +20,17 @@ import {
   CLI_OUTPUT_FORMAT_HELP,
   CLI_OUTPUT_FORMAT_OPTION,
 } from "../exactl_constants.ts";
+
+interface IExecutionListOptions {
+  portal?: Opt<string, Reason.OptionalInput>;
+  limit?: Opt<number, Reason.OptionalInput>;
+  format?: Opt<string, Reason.OptionalInput>;
+}
+
+interface IPendingListOptions {
+  eligible?: Opt<boolean, Reason.OptionalInput>;
+  format?: Opt<string, Reason.OptionalInput>;
+}
 
 function createMemoryCommand(runtime: IExaCtlRuntime) {
   const { memoryCommands } = runtime;
@@ -114,6 +126,14 @@ function addMemoryCommands1(runtime: IExaCtlRuntime) {
 
 function addMemoryCommands2(runtime: IExaCtlRuntime) {
   const { memoryCommands } = runtime;
+  const listExecutions = async (options: IExecutionListOptions): Promise<void> => {
+    const result = await memoryCommands.executionList({
+      portal: options.portal,
+      limit: options.limit,
+      format: options.format as OutputFormat,
+    });
+    console.log(result);
+  };
   return [
     [
       "execution",
@@ -122,15 +142,7 @@ function addMemoryCommands2(runtime: IExaCtlRuntime) {
         .option(CLI_OPTION_PORTAL, "Filter by portal")
         .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
         .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-        .action(async (options) => {
-          // Default: list executions
-          const result = await memoryCommands.executionList({
-            portal: options.portal,
-            limit: options.limit,
-            format: options.format as OutputFormat,
-          });
-          console.log(result);
-        })
+        .action(listExecutions)
         .command(
           RequestOperation.LIST,
           new Command()
@@ -138,14 +150,7 @@ function addMemoryCommands2(runtime: IExaCtlRuntime) {
             .option(CLI_OPTION_PORTAL, "Filter by portal")
             .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
             .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(async (options) => {
-              const result = await memoryCommands.executionList({
-                portal: options.portal,
-                limit: options.limit,
-                format: options.format as OutputFormat,
-              });
-              console.log(result);
-            }),
+            .action(listExecutions),
         )
         .command(
           "show <traceId:string>",
@@ -193,6 +198,10 @@ function addMemoryCommands3(runtime: IExaCtlRuntime) {
 
 function addMemoryCommands4(runtime: IExaCtlRuntime) {
   const { memoryCommands } = runtime;
+  const listPending = async (options: IPendingListOptions): Promise<void> => {
+    const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
+    console.log(result);
+  };
   return [
     [
       GeneralStatus.PENDING,
@@ -200,21 +209,14 @@ function addMemoryCommands4(runtime: IExaCtlRuntime) {
         .description("Manage pending memory update proposals")
         .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
         .option("--eligible", "Show only auto-approval eligible pending proposals")
-        .action(async (options) => {
-          // Default: list pending
-          const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
-          console.log(result);
-        })
+        .action(listPending)
         .command(
           RequestOperation.LIST,
           new Command()
             .description("List all pending proposals")
             .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
             .option("--eligible", "Show only auto-approval eligible pending proposals")
-            .action(async (options) => {
-              const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
-              console.log(result);
-            }),
+            .action(listPending),
         )
         .command(
           "show <proposalId:string>",

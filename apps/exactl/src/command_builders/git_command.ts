@@ -8,13 +8,34 @@
 
 import { Command } from "@cliffy/command";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { CLI_PORTAL_LONG_OPTION } from "../exactl_constants.ts";
 
+function resolveWorktreeTarget(
+  runtime: IExaCtlRuntime,
+  portalName?: Opt<string, Reason.OptionalInput>,
+  repo?: Opt<string, Reason.OptionalInput>,
+) {
+  const { fullContext, config } = runtime;
+  if (portalName && repo) {
+    throw new Error("Use either --portal or --repo (not both)");
+  }
+  let repoPath = config.system.root as string;
+  if (portalName) {
+    const portal = fullContext.config?.getPortal(portalName);
+    if (!portal) throw new Error(`Portal not found in config: ${portalName}`);
+    repoPath = portal.target_path;
+  } else if (repo) {
+    repoPath = repo;
+  }
+  return { repoPath, effectiveGit: new GitService({ config, repoPath }) };
+}
+
 function createGitCommand(runtime: IExaCtlRuntime) {
-  const { fullContext, display, config, gitCommands } = runtime;
+  const { display, gitCommands } = runtime;
   return new Command()
     .description("Git repository operations")
     .command(
@@ -29,26 +50,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
             .option("--repo <repo:string>", "Target a repository path (absolute or relative)")
             .action(async (options) => {
               try {
-                if (options.portal && options.repo) {
-                  throw new Error("Use either --portal or --repo (not both)");
-                }
-
-                let repoPath = config.system.root as string;
-
-                if (options.portal) {
-                  const portal = fullContext.config?.getPortal(options.portal);
-                  if (!portal) {
-                    throw new Error(`Portal not found in config: ${options.portal}`);
-                  }
-                  repoPath = portal.target_path;
-                } else if (options.repo) {
-                  repoPath = options.repo;
-                }
-
-                const effectiveGit = new GitService({
-                  config,
-                  repoPath,
-                });
+                const { repoPath, effectiveGit } = resolveWorktreeTarget(runtime, options.portal, options.repo);
 
                 const worktrees = await effectiveGit.listWorktrees();
                 display.info("git.worktrees.list", repoPath, { count: worktrees.length });
@@ -85,26 +87,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
             .option("--expire <expire:string>", "Prune entries older than <time> (e.g., 'now', '3.days.ago')")
             .action(async (options) => {
               try {
-                if (options.portal && options.repo) {
-                  throw new Error("Use either --portal or --repo (not both)");
-                }
-
-                let repoPath = config.system.root as string;
-
-                if (options.portal) {
-                  const portal = fullContext.config?.getPortal(options.portal);
-                  if (!portal) {
-                    throw new Error(`Portal not found in config: ${options.portal}`);
-                  }
-                  repoPath = portal.target_path;
-                } else if (options.repo) {
-                  repoPath = options.repo;
-                }
-
-                const effectiveGit = new GitService({
-                  config,
-                  repoPath,
-                });
+                const { repoPath, effectiveGit } = resolveWorktreeTarget(runtime, options.portal, options.repo);
 
                 const output = await effectiveGit.pruneWorktrees({
                   dryRun: Boolean(options.dryRun),

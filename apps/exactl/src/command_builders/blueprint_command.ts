@@ -8,6 +8,8 @@
 
 import { Command } from "@cliffy/command";
 import { type BlueprintStatus, DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
+import type { IBlueprintMetadata, IBlueprintValidationResult } from "@exaix/schemas/blueprint.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
   AGENT_ROLE_CLI_LABELS,
@@ -17,8 +19,23 @@ import {
   type IBlueprintCliLabels,
 } from "../exactl_constants.ts";
 
+function blueprintSummary(blueprint: IBlueprintMetadata) {
+  return {
+    model: blueprint.model,
+    capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+  };
+}
+
 function createBlueprintCommand(runtime: IExaCtlRuntime) {
   const { display, blueprintCommands } = runtime;
+  function reportValidation(label: string, result: IBlueprintValidationResult): void {
+    if (result.valid) {
+      display.info("blueprint.valid", label, { status: "Valid ✓", warnings: result.warnings?.length || 0 });
+    } else {
+      display.error("blueprint.invalid", label, { status: "Invalid ✗", errors: result.errors });
+      Deno.exit(1);
+    }
+  }
   function blueprintCreateCommand(labels: IBlueprintCliLabels) {
     return new Command()
       .description(labels.createDescription)
@@ -63,35 +80,38 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
       .description(labels.listDescription)
       .option("--capability <capability:string>", "Only show blueprints that declare this capability")
       .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
-      .action(async (options: { capability?: string; status?: string }) => {
-        try {
-          const blueprints = await blueprintCommands.list({
-            capability: options.capability,
-            status: options.status as BlueprintStatus | undefined,
-          });
-          if (blueprints.length === 0) {
-            display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
-              count: 0,
-              hint: labels.listHint,
+      .action(
+        async (
+          options: { capability?: Opt<string, Reason.OptionalInput>; status?: Opt<string, Reason.OptionalInput> },
+        ) => {
+          try {
+            const blueprints = await blueprintCommands.list({
+              capability: options.capability,
+              status: options.status as BlueprintStatus | undefined,
             });
-            return;
-          }
-          display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
-          for (const blueprint of blueprints) {
-            display.info(blueprint.agent_role, blueprint.name, {
-              model: blueprint.model,
-              capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-              status: blueprint.status,
-              created: blueprint.created,
+            if (blueprints.length === 0) {
+              display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
+                count: 0,
+                hint: labels.listHint,
+              });
+              return;
+            }
+            display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
+            for (const blueprint of blueprints) {
+              display.info(blueprint.agent_role, blueprint.name, {
+                ...blueprintSummary(blueprint),
+                status: blueprint.status,
+                created: blueprint.created,
+              });
+            }
+          } catch (error) {
+            display.error("cli.error", "blueprint list", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
             });
+            Deno.exit(1);
           }
-        } catch (error) {
-          display.error("cli.error", "blueprint list", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
-        }
-      });
+        },
+      );
   }
 
   function blueprintShowCommand(labels: IBlueprintCliLabels) {
@@ -179,41 +199,19 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
       new Command()
         .description("Validate blueprint format")
         .option("--file <path:string>", "Validate a blueprint file by path")
-        .action(async (options: { file?: string }, ...args: string[]) => {
+        .action(async (options: { file?: Opt<string, Reason.OptionalInput> }, ...args: string[]) => {
           try {
             if (options.file) {
               const result = await blueprintCommands.validateFile(options.file);
               const label = options.file;
-              if (result.valid) {
-                display.info("blueprint.valid", label, {
-                  status: "Valid ✓",
-                  warnings: result.warnings?.length || 0,
-                });
-              } else {
-                display.error("blueprint.invalid", label, {
-                  status: "Invalid ✗",
-                  errors: result.errors,
-                });
-                Deno.exit(1);
-              }
+              reportValidation(label, result);
             } else {
               const agentRole = args[0];
               if (!agentRole) {
                 throw new Error("Either <agent-id> or --file <path> is required");
               }
               const result = await blueprintCommands.validate(agentRole);
-              if (result.valid) {
-                display.info("blueprint.valid", agentRole, {
-                  status: "Valid ✓",
-                  warnings: result.warnings?.length || 0,
-                });
-              } else {
-                display.error("blueprint.invalid", agentRole, {
-                  status: "Invalid ✗",
-                  errors: result.errors,
-                });
-                Deno.exit(1);
-              }
+              reportValidation(agentRole, result);
             }
           } catch (error) {
             display.error("cli.error", "blueprint validate", {
@@ -236,10 +234,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
         }
         display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
         for (const blueprint of blueprints) {
-          display.info(blueprint.agent_role, blueprint.name, {
-            model: blueprint.model,
-            capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-          });
+          display.info(blueprint.agent_role, blueprint.name, blueprintSummary(blueprint));
         }
       }),
     )
@@ -269,18 +264,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
               const agentRole = args[0];
               try {
                 const result = await blueprintCommands.validate(agentRole);
-                if (result.valid) {
-                  display.info("blueprint.valid", agentRole, {
-                    status: "Valid ✓",
-                    warnings: result.warnings?.length || 0,
-                  });
-                } else {
-                  display.error("blueprint.invalid", agentRole, {
-                    status: "Invalid ✗",
-                    errors: result.errors,
-                  });
-                  Deno.exit(1);
-                }
+                reportValidation(agentRole, result);
               } catch (error) {
                 display.error("cli.error", "blueprint validate", {
                   message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
