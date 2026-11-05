@@ -220,15 +220,16 @@ Deno.test("default-comment-fixture-gates: activated rules report without an expl
   }
 });
 
-Deno.test("a parked parameter rule is silent by default and reports when selected", async () => {
+Deno.test("the activated parameter rule reports by default and when selected", async () => {
   const seeds: [string, string, string][] = [
     ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
   ];
   for (const [rule, source, path] of seeds) {
     await withSeed(
       async (file) => {
-        const silent = await runDeno(["lint", file]);
-        assertFalse(silent.output.includes(rule), silent.output);
+        const defaultRun = await runDeno(["lint", file]);
+        assertEquals(defaultRun.code, 1, defaultRun.output);
+        assertStringIncludes(defaultRun.output, rule);
         const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: rule });
         assertStringIncludes(selected.output, rule);
       },

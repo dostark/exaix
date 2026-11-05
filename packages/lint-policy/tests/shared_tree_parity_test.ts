@@ -10,6 +10,8 @@
 import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, globToRegExp, join } from "@std/path";
 import ts from "typescript";
+import { assertRuleEvidence, parseDenoLintOutput } from "../../../unslop-ts/src/cli/rule_report.ts";
+import { parseTraceStderr } from "../../../unslop-ts/src/engine/trace.ts";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { GIT_FILE_SOURCE } from "./helpers/port_migration.ts";
 import { loadPortTables } from "./helpers/port_tables.ts";
@@ -54,7 +56,7 @@ interface ISharedTree {
   readonly parked: ReadonlySet<string>;
   readonly baselineOutput: string;
   readonly parity: IProductionParity;
-  readonly diagnosticCount: number;
+  readonly observedFileCount: number;
 }
 
 const ignoreGlobs = ((catalogJson as { ignore?: readonly { glob: string }[] }).ignore ?? []).map((entry) =>
@@ -106,26 +108,30 @@ function parkedKeys(): Set<string> {
   );
 }
 
-interface ILintDiagnostic {
-  readonly code?: string;
-  readonly message?: string;
-  readonly filename?: string;
-  readonly range?: { readonly start?: { readonly line?: number } };
-}
-
 async function pluginFindings(
   moved: readonly IMovedRule[],
-): Promise<{ findings: IRuleFinding[]; diagnosticCount: number }> {
+): Promise<{ findings: IRuleFinding[]; observedFileCount: number }> {
   const keys = new Set(moved.map((rule) => rule.pluginKey));
   const selection = [...keys].map((key) => `${PLUGIN_PREFIX}${key}`).join(",");
+  const runId = crypto.randomUUID();
   const result = await new Deno.Command(Deno.execPath(), {
     args: ["lint", "--config", "deno.json", "--json", ...PLUGIN_ROOTS],
     cwd: REPO_ROOT,
-    env: { EXAIX_LINT_RULES: selection },
+    env: { EXAIX_LINT_RULES: selection, EXAIX_LINT_TRACE: runId },
     stdout: "piped",
     stderr: "piped",
   }).output();
-  const report = JSON.parse(new TextDecoder().decode(result.stdout)) as { diagnostics?: ILintDiagnostic[] };
+  const stderr = new TextDecoder().decode(result.stderr);
+  const report = parseDenoLintOutput(new TextDecoder().decode(result.stdout), result.code, stderr);
+  for (const key of keys) {
+    assertRuleEvidence({
+      rule: `${PLUGIN_PREFIX}${key}`,
+      runId,
+      stderr,
+      checkedFiles: report.checked_files,
+      cwd: REPO_ROOT,
+    });
+  }
   const toScript = new Map(moved.map((rule) => [rule.pluginKey, rule.scriptId]));
   const findings: IRuleFinding[] = [];
   for (const diagnostic of report.diagnostics ?? []) {
@@ -138,7 +144,8 @@ async function pluginFindings(
     const file = fromFileUrl(diagnostic.filename).replace(`${REPO_ROOT}`, "");
     findings.push({ rule, file, line: diagnostic.range?.start?.line ?? 0 });
   }
-  return { findings, diagnosticCount: (report.diagnostics ?? []).length };
+  const observed = parseTraceStderr(stderr, runId).records.filter((record) => record.kind === "observed");
+  return { findings, observedFileCount: new Set(observed.map((record) => record.file)).size };
 }
 
 /** True when the line shares text with a string, template, or comment, which AST rules do not read as code. */
@@ -161,6 +168,18 @@ function lineHoldsLiteralText(text: string, line: number): boolean {
   for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
     const comment = token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia;
     if (comment && scanner.getTokenPos() < end && scanner.getTextPos() > begin) return true;
+  }
+  return false;
+}
+
+/** Recognizes the erased type-export layout that the old line scanner mistook for a misplaced import. */
+function isTypeExportLayout(text: string, line: number): boolean {
+  const source = ts.createSourceFile("layout.ts", text, ts.ScriptTarget.Latest, true);
+  for (const statement of source.statements) {
+    const first = source.getLineAndCharacterOfPosition(statement.getStart(source)).line + 1;
+    const last = source.getLineAndCharacterOfPosition(statement.end).line + 1;
+    if (first <= line && line <= last) return ts.isExportDeclaration(statement) && statement.isTypeOnly;
+    if (!ts.isImportDeclaration(statement) && !ts.isExportDeclaration(statement)) return false;
   }
   return false;
 }
@@ -208,6 +227,9 @@ async function collect(): Promise<ISharedTree> {
       const lines = text.split("\n");
       const near = [lines[finding.line - 2] ?? "", lines[finding.line - 1] ?? ""].join("\n");
       if (near.includes(IGNORE_PREFIX)) return "suppressed by a migrated deno-lint-ignore comment";
+      if (finding.rule === "import-placement" && isTypeExportLayout(text, finding.line)) {
+        return "script matched export-type layout before executable code";
+      }
       if (lineHoldsLiteralText(text, finding.line)) return "script matched text inside a literal or a comment";
       return null;
     },
@@ -222,7 +244,7 @@ async function collect(): Promise<ISharedTree> {
     parked,
     baselineOutput: baseline.output,
     parity,
-    diagnosticCount: current.diagnosticCount,
+    observedFileCount: current.observedFileCount,
   };
 }
 
@@ -239,7 +261,9 @@ Deno.test("ported_rules_match_baseline_on_shared_production_files", async () => 
   const reasons = new Set(tree.parity.accepted.map((entry) => entry.reason));
   for (const reason of reasons) {
     assert(
-      /^(scope loss|suppressed by a migrated|script matched text|parked rule finding|burn-down)/.test(reason),
+      /^(scope loss|suppressed by a migrated|script matched (text|export-type)|parked rule finding|burn-down)/.test(
+        reason,
+      ),
       `unknown reason: ${reason}`,
     );
   }
@@ -254,7 +278,7 @@ Deno.test("shared_tree_inventory_is_nonempty_and_consumed", async () => {
   );
   assertNotEquals(tree.partition.scriptOnly.length, 0, "no dropped surface was found");
   assertStringIncludes(tree.baselineOutput, COMPLETION_LINE, "the base checker did not finish a scan");
-  assert(tree.diagnosticCount > 0, "the plugin run reported no diagnostic at all");
+  assert(tree.observedFileCount > 0, "the validated plugin trace must contain observed files");
   assert(tree.parity.compared > 0, "no finding was compared");
   assert(tree.moved.length > 0, "no moved rule was compared");
   const declared = new Set(tree.moved.flatMap((rule) => rule.dropped));
@@ -262,6 +286,15 @@ Deno.test("shared_tree_inventory_is_nonempty_and_consumed", async () => {
 });
 
 const SAMPLE: IRuleFinding = { rule: "dynamic-import", file: "packages/a/src/x.ts", line: 4 };
+
+Deno.test("shared-tree-export-layout: only an erased top-level type export explains the legacy scanner difference", () => {
+  assertEquals(
+    isTypeExportLayout('export { old } from "./x.ts";\nexport type {\n  IShape,\n} from "./shape.ts";', 2),
+    true,
+  );
+  assertEquals(isTypeExportLayout('const value = 1;\nimport { late } from "./x.ts";', 2), false);
+  assertEquals(isTypeExportLayout('const value = 1;\nexport type {\n  IShape,\n} from "./shape.ts";', 2), false);
+});
 
 Deno.test("shared_tree_parity_rejects_missing_extra_and_unlisted_drops", () => {
   const never = () => null;

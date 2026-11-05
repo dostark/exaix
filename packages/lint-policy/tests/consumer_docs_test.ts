@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/docs/style_guide.md, packages/lint-policy/docs/style_rules.md, packages/lint-policy/tests/style_guide_claims_test.ts]
  */
 
-import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
@@ -113,8 +113,11 @@ Deno.test("consumer-doc-state: the error input section matches the exported hand
   }
   assertStringIncludes(await read("packages/request/src/rejected_plan_handler.ts"), "handleError<TError>(");
   assertStringIncludes(await read("packages/request/src/mod.ts"), "type IRejectedPlanHandler");
-  assertStringIncludes(await read("packages/flow/src/flow_runner.ts"), "export interface IStepResult");
-  assertStringIncludes(await read("packages/flow/mod.ts"), "export type { IStepResult }");
+  assertStringIncludes(await read("packages/flow/src/flow_types.ts"), "export interface IStepResult");
+  assertMatch(
+    await read("packages/flow/mod.ts"),
+    /export type\s*\{[^}]*\bIStepResult\b[^}]*\}\s*from\s*"\.\/src\/flow_types\.ts"/,
+  );
 });
 
 /** The reference text without table padding, dash runs or blank lines, so the formatter's layout does not matter. */

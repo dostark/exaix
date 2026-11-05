@@ -73,8 +73,9 @@ Exaix gates god classes with `deno task check:god-objects`. It runs the `exaix/m
 strategy (WMC at least 47, TCC below one third and ATFD above 5) over `packages`, `apps`, `tests`, `scripts`, `exaix-team` and
 `exaix-enterprise`, and it fails on a count above the per-package ceiling in `packages/lint-policy/rule_ceilings.json`. The task
 is a manual gate. It is not part of CI or the hooks, and a ceiling only moves down. `deno task check:god-objects:compare` lists
-the classes that the God Class strategy and the earlier `legacy-score` flag separately. The `exaix/max-params` rule is a separate
-gate: it is an error in `deno task lint` for every lint root, and a function or constructor with more than 7 parameters fails.
+the classes that the God Class strategy and the earlier `legacy-score` flag separately. A custom `--config` must identify the
+same canonical file as the selected descriptor's `configUrl`; mismatches are rejected before writes, and comparison restores
+the original policy bytes after success or reporter failure. The `exaix/max-params` rule is a separate gate: it is an error in `deno task lint` for every lint root, and a function or constructor with more than 7 parameters fails.
 It has no ceiling. An options object counts as one parameter, but an options object does not prove a good class design, because
 it can hide unrelated dependencies, so do not use it to pass the gate. The God Class limits come from the literature and are
 second-hand, so the ceiling is a guard against growth and not a verdict. The definitions and sources are in

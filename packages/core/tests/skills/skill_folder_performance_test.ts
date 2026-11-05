@@ -20,16 +20,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { createSkillOperationContext, SkillsService } from "@exaix/core/skills";
 import { AgentRunner } from "@exaix/execution";
-import { initTestDbService, REPO_ROOT } from "@exaix/testing";
-
-/** The private match entry point the timeout guard lives in. */
-interface IMatchingRunner {
-  performDynamicSkillMatching(
-    request: { userPrompt: string },
-    role: string,
-    skills: { matchSkills: () => Promise<never> },
-  ): Promise<{ matches: never[] }>;
-}
+import { createMockProvider, initTestDbService, REPO_ROOT, StubSkillsService } from "@exaix/testing";
 
 const SAMPLES = 20;
 const MAX_ATTEMPTS = 3;
@@ -139,16 +130,14 @@ Deno.test("[performance] cold and warm resolution of the 27 plus 28 skill catalo
 Deno.test("[performance] a match that never settles is cancelled at the timeout and not before", async () => {
   const time = new FakeTime();
   try {
-    const hanging = {
-      initialize: () => Promise.resolve(),
-      matchSkills: () => new Promise<never>(() => {}),
-    };
-    const runner = new AgentRunner({ generate: () => Promise.reject(new Error("unused")) } as never, {
-      skillsService: hanging as never,
+    const hanging = new StubSkillsService();
+    hanging.matchSkills = () => new Promise<never>(() => {});
+    const runner = new AgentRunner(createMockProvider([]), {
+      skillsService: hanging,
       disableSkills: false,
-    } as never);
-    const matching = (runner as never as IMatchingRunner).performDynamicSkillMatching(
-      { userPrompt: "review the code" },
+    });
+    const matching = runner["skills"]["performDynamicSkillMatching"](
+      { userPrompt: "review the code", context: {} },
       "tester",
       hanging,
     );
