@@ -51,6 +51,7 @@ Do / Don't
 - ✅ Categorise every finding: 🔴 Critical / 🔒 Security / 🟡 Major / 🟠 Testing / 🔵 Minor.
 - ✅ Reviewing your own output: prioritise edge cases and error paths you may have
   under-specified.
+- ❌ Require a standing test to pin a phase's historical plan, status, or old file paths.
 - ❌ Report style nitpicks as Critical.
 - ❌ Approve a change with no tests for new logic.
 - ❌ Skip security checks, even for "small" changes.
@@ -227,6 +228,7 @@ For every new code path:
 - Correct helpers (`initTestDbService`, `createCliTestContext`, etc.)?
 - Descriptive names ("returns X when Y", not "test 1")?
 - A literal count of repo-defined state (registry size, corpus size, ceiling)? That is 🟠 Testing: derive it from its source.
+- A test that reads a planning doc, phase registry, or frozen phase inventory, or pins a phase status, phase number, historical commit, or old caller path? That is 🟠 Testing: test current behavior or a committed live baseline; historical phase state is not a contract.
 - Timer-based TUI tests: `sanitizeOps: false, sanitizeResources: false`?
 
 For changed tests, including test-only rewrites:

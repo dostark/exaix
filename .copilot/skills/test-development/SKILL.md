@@ -29,6 +29,9 @@ Key points
 - A literal count of something the code defines (registry size, corpus size, ceiling) breaks
   on every legitimate change and checks nothing. Derive it from its source of truth
   (§Assertion sensitivity, anti-pattern 9).
+- Do not pin historical phase state in a standing test. A plan doc, phase registry,
+  phase status, frozen inventory, or old caller path is evidence, not a live contract
+  (§Historical phase state).
 
 See also
   Test directory → [tests/README.md](../../../tests/README.md)
@@ -151,6 +154,18 @@ Assertion sensitivity — a test that cannot fail is worse than no test
        Keep a literal when it is a format (UUID 36, SHA 64) or data the test seeds itself.
        A count in a test name, title, or comment ("all 18 tools") goes stale the same way:
        leave it out.
+
+  HISTORICAL PHASE STATE — evidence, not a contract
+
+  A test must not read exaix-dev-docs/planning/phase-*.md, PHASE_REGISTRY.md, phase
+  evidence, or a frozen plan table as its source of truth. Do not pin phase statuses
+  (COMPLETED, SUPERSEDED, PLANNING), phase numbers, historical commit hashes, old caller
+  paths, or a plan's frozen inventory. A later refactor that moves a caller or renames a
+  file is not a regression. Test current behavior, stable symbols, or a committed live
+  baseline. If a historical fact is a live policy, store it as data (for example a
+  committed ceiling baseline), not as a parse of the plan doc. Use a phase-closure audit
+  for plan-doc consistency. When a test fails only because a phase doc is stale, delete
+  the historical assertion rather than editing the doc to satisfy it.
 
   SWEEPING AN EXISTING SUITE — run over a directory before trusting coverage. Every hit is
   a CANDIDATE, verify by reading (internal-assert helpers, generic type params like

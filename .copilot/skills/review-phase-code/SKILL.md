@@ -99,6 +99,7 @@ Do / Don't
   exhaustive observability coverage and reconcile it one-for-one against runtime evidence —
   one representative event per component is not enough.
 - ✅ Delegate Phase 7 (lint/fmt/TS/defensive/perf/deps) to #review-code — do not re-check.
+- ❌ Accept a test that pins a phase's historical plan, status, frozen inventory, or old caller path. Review live behavior or a committed baseline.
 - ❌ Mark a step gap-free without verifying its test files.
 - ❌ Skip Phase 5 on external-data/path steps.
 - ❌ Invent remediation steps for code that exists and passes.

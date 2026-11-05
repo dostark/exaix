@@ -133,3 +133,20 @@ Deno.test("Agent docs: self-improvement keeps an externally blocked phase open",
   );
   assertStringIncludes(md, "do not flatten the", "self-improvement should forbid a flat complete status");
 });
+
+Deno.test("Agent docs: test and review skills reject historical phase assertions", async () => {
+  requireAll(await skill("test-development"), "test-development", [
+    "HISTORICAL PHASE STATE",
+    "not a contract",
+    "committed live baseline",
+    "phase-closure audit",
+  ]);
+  requireAll(await skill("review-code"), "review-code", [
+    "historical phase state is not a contract",
+    "committed live baseline",
+  ]);
+  requireAll(await skill("review-phase-code"), "review-phase-code", [
+    "historical plan",
+    "committed baseline",
+  ]);
+});
