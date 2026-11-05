@@ -15,6 +15,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/tool-runtime/src/tool_registry.ts, packages/portal/src/path_resolver.ts]
  */
 
+import { fixedExecutorPlumbing } from "@exaix/execution/testing";
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -32,10 +33,10 @@ import {
   REACT_THOUGHT_PREFIX,
   SecurityMode,
 } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions } from "@exaix/schemas/agent_composer.ts";
 import type { IReActLoopExecutor } from "../../packages/execution/src/react_loop_adapter.ts";
 import { castAny } from "@exaix/testing";
-import { createReActPromptBuilder } from "../../packages/execution/tests/helpers/react_prompt_builder.ts";
+import { createReActPromptBuilder } from "@exaix/execution/testing";
 
 const PORTAL_ALIAS = "todo-app";
 
@@ -91,22 +92,7 @@ Deno.test({
       });
 
       const mockExecutor = {
-        promptBuilder: createReActPromptBuilder(),
-        logAgentOutput: async () => {
-          await Promise.resolve();
-        },
-        validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-        parseAgentResponse: (): IChangesetResult => ({
-          branch: "feat/test",
-          commit_sha: "0000000000000000000000000000000000000000",
-          files_changed: [],
-          description: "Task completed",
-          tool_calls: 0,
-          execution_time_ms: 0,
-        }),
-        logGeneration: async () => {
-          await Promise.resolve();
-        },
+        ...fixedExecutorPlumbing(createReActPromptBuilder()),
         toolRegistry,
       };
 

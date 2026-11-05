@@ -205,3 +205,5 @@ the `ReActLoopStrategy` path which reads `AgentComposer.currentPromptBudget` dir
 - [@exaix/tool-runtime](../../packages/tool-runtime/) — Internal tool registry
 - [@exaix/git](../../packages/git/) — Git service for atomic commits
 - [@exaix/flow](../../packages/flow/) — Flow orchestration (wraps plan execution)
+
+Shared prompt builders and executor fixture primitives are exported from `@exaix/execution/testing` for package and integration tests.

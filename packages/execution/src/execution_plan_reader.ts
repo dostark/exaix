@@ -6,6 +6,7 @@
  * @related-files [packages/execution/src/execution_loop.ts, packages/execution/tests/execution_loop_test.ts]
  */
 
+import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import type { IPlanAction } from "@exaix/schemas/plan_schema.ts";
@@ -29,6 +30,13 @@ import type { Opt, Reason } from "@exaix/core/types";
 interface IExecutionPlanReaderDependencies {
   readonly logger: Opt<IEventLogger, Reason.OptionalDependency>;
   readonly journal: (action: TDomainEventType, traceId: string, payload: Record<string, JSONValue>) => void;
+}
+
+/** Lists markdown plans in filesystem order under the validated plans directory. */
+export async function listPlanFiles(plansDir: string): Promise<string[]> {
+  const entries = await Array.fromAsync(Deno.readDir(plansDir));
+  return entries.filter((entry) => entry.isFile && entry.name.endsWith(".md"))
+    .map((entry) => join(plansDir, entry.name));
 }
 
 /** Reads a plan file: its frontmatter, executable actions and the model declarations it carries. */

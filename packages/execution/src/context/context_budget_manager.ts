@@ -41,7 +41,7 @@ import type { IContextCompactor } from "./context_compactor.ts";
 import type { ISnapshotStore } from "./snapshot_store.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
-import { tokenBoundedPrefix } from "./token_bounded_prefix.ts";
+import { lineBoundedPrefix } from "./token_bounded_prefix.ts";
 
 export interface IContextBudgetManagerInput {
   traceId: string;
@@ -368,17 +368,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
       await this._tokenizer?.countTokens(text, model) ??
         Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
-    const lines = segment.content.split("\n");
-    const kept: string[] = [];
-    for (const line of lines) {
-      const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
-      const candidateTokens = await estimate(candidate);
-      if (candidateTokens > remainingTokens) break;
-      kept.push(line);
-    }
-    const content = kept.length === 0
-      ? await tokenBoundedPrefix(segment.content, remainingTokens, estimate)
-      : kept.join("\n");
+    const content = await lineBoundedPrefix(segment.content, remainingTokens, estimate);
 
     return { segment: { ...segment, content, tokenEstimate: await estimate(content) } };
   }

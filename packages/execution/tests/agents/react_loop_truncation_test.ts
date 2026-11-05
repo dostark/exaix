@@ -25,9 +25,9 @@ import {
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { createStubExecutor } from "../helpers/react_loop_fixtures.ts";
 import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
-import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 /** Provider that captures per-call options and stamps a scripted stop_reason. */
 class OptionsCapturingProvider implements IModelProvider {
@@ -74,25 +74,7 @@ function buildWarnCapturingLogger(sink: ICapturedWarn[]): IEventLogger {
 }
 
 function buildExecutor(warnSink: ICapturedWarn[]): ReActExecutor {
-  return {
-    promptBuilder: createReActPromptBuilder(),
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (response: string, context: IExecutionContext, startTime: number): IChangesetResult => ({
-      branch: `feat/${context.portal || "test"}`,
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: response,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - startTime,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
-    budgetLogger: buildWarnCapturingLogger(warnSink),
-  } as ReActExecutor;
+  return createStubExecutor({ budgetLogger: buildWarnCapturingLogger(warnSink) });
 }
 
 const testBlueprint = {

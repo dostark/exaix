@@ -13,6 +13,7 @@
  * @related-files ["packages/execution/src/strategies/react_loop_strategy.ts", "packages/execution/src/react_loop_adapter.ts"]
  */
 
+import { mockExecutor as fixedExecutor } from "./helpers/react_loop_fixtures.ts";
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -20,7 +21,7 @@ import type { IReActLoopExecutor } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { ITool } from "@exaix/core/types";
 import { ToolSideEffectScope } from "@exaix/core";
 import type { AciDoc } from "@exaix/schemas";
@@ -106,6 +107,16 @@ function toolRegistryOf(tools: ITool[] = REGISTRY_TOOLS): { getTools(): ITool[] 
   return { getTools: () => tools };
 }
 
+function aciGenerateResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "mock-model",
+    provider: "mock",
+    cost_usd: 0,
+  };
+}
+
 Deno.test("[ReActLoopAci] enabled read_file injection reaches the exact prompt, in both prose and skipToolProse modes", async () => {
   for (const skipToolProse of [false, true]) {
     const prompt = await callBuildPrompt(
@@ -181,32 +192,12 @@ Deno.test("[ReActLoopAci] repeated iterations emit one agent.prompt_assembled ev
       const content = callCount === 1
         ? `THOUGHT: continue\n\`\`\`toml\n[[actions]]\ntool = "read_file"\n[actions.params]\npath = "a.ts"\n\`\`\``
         : `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`;
-      return {
-        content,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      };
+      return aciGenerateResult(content);
     },
   };
   const executor = {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+    ...fixedExecutor,
     promptBuilder: createReActPromptBuilder(),
-    parseAgentResponse: (): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: "Task completed",
-      tool_calls: 0,
-      execution_time_ms: 0,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
     toolRegistry: {
       execute: async () => {
         await Promise.resolve();
@@ -242,32 +233,12 @@ Deno.test("[ReActLoopAci] disabled mode emits no agent.prompt_assembled event", 
     async generate(): Promise<IGenerateResult> {
       await Promise.resolve();
       generateCalls++;
-      return {
-        content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      };
+      return aciGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`);
     },
   };
   const executor = {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+    ...fixedExecutor,
     promptBuilder: createReActPromptBuilder(),
-    parseAgentResponse: (): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: "Task completed",
-      tool_calls: 0,
-      execution_time_ms: 0,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
     toolRegistry: {
       execute: () => Promise.resolve({ success: true }),
       getTools: () => REGISTRY_TOOLS,

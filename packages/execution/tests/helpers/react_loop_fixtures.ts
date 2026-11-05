@@ -6,6 +6,7 @@
  * @related-files [packages/execution/tests/agents/react_loop_strategy_test.ts, packages/execution/tests/agents/react_loop_usage_cache_tokens_e2e_test.ts]
  */
 
+import { fixedExecutorPlumbing } from "@exaix/execution/testing";
 import type { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
@@ -45,23 +46,15 @@ export function createOptions(portal: string): IAgentExecutionOptions {
 }
 
 export const mockExecutor = {
-  promptBuilder: createReActPromptBuilder(),
-  logAgentOutput: async () => {
-    await Promise.resolve();
-  },
-  validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-  parseAgentResponse: (): IChangesetResult => ({
-    branch: "feat/test",
-    commit_sha: "0000000000000000000000000000000000000000",
-    files_changed: [],
-    description: "Task completed",
-    tool_calls: 0,
-    execution_time_ms: 0,
-  }),
-  logGeneration: async () => {
-    await Promise.resolve();
-  },
-  toolRegistry: {
+  ...fixedExecutorPlumbing(createReActPromptBuilder()),
+  toolRegistry: createWriteToolRegistry(),
+};
+
+type TStubToolRegistry = NonNullable<ReActExecutor["toolRegistry"]>;
+
+/** A fresh tool registry double with the fixture's write-file behavior. */
+export function createWriteToolRegistry(): Pick<TStubToolRegistry, "execute" | "getTools" | "getBaseDir"> {
+  return {
     execute: async (tool: string, params: TestToolParams) => {
       await Promise.resolve();
       if (tool === ToolName.WRITE_FILE) {
@@ -71,10 +64,8 @@ export const mockExecutor = {
     },
     getTools: () => [],
     getBaseDir: () => "/nonexistent-test-basedir",
-  },
-};
-
-type TStubToolRegistry = NonNullable<ReActExecutor["toolRegistry"]>;
+  };
+}
 
 /** A tool registry double that runs every tool with "ok" and lists no tools. */
 export function createStubToolRegistry(overrides: Partial<TStubToolRegistry> = {}): TStubToolRegistry {
@@ -111,4 +102,16 @@ export function createStubExecutor(overrides: Partial<ReActExecutor> = {}): ReAc
     toolRegistry: createStubToolRegistry(),
     ...overrides,
   } as ReActExecutor;
+}
+
+/** Parses a fixed test branch while retaining the plan text and elapsed execution time. */
+export function planChangeset(_response: string, context: IExecutionContext, startedAt: number): IChangesetResult {
+  return {
+    branch: "feat/test",
+    commit_sha: "0000000000000000000000000000000000000000",
+    files_changed: [],
+    description: context.plan,
+    tool_calls: 0,
+    execution_time_ms: Date.now() - startedAt,
+  };
 }

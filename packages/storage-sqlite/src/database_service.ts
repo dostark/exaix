@@ -6,6 +6,7 @@
  * @architectural-layer Storage
  * @related-files ["packages/core/src/logger/event_logger.ts", "packages/storage-sqlite/src/connection_pool.ts"]
  */
+import type { JSONObject } from "@exaix/core/types";
 import { z } from "zod";
 import { Database } from "@db/sqlite";
 import { join } from "@std/path";
@@ -210,7 +211,7 @@ export class DatabaseService implements IDatabaseService {
     actor: string,
     actionType: string,
     target: string | null,
-    payload: Record<string, JSONValue>,
+    payload: JSONObject,
     traceId?: Opt<string, Reason.TraceAbsent>,
     details?: Opt<ILogActivityDetails, Reason.OptionalInput>,
   ): void {

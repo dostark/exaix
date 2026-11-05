@@ -30,7 +30,24 @@ export interface ICompactedEntry {
   timestamp: number;
 }
 
-export const CritiqueSchema = z.object({
+export const CritiqueSchema: z.ZodObject<{
+  quality: z.ZodEnum<typeof CritiqueQuality>;
+  confidence: z.ZodNumber;
+  passed: z.ZodBoolean;
+  issues: z.ZodDefault<
+    z.ZodArray<
+      z.ZodObject<{
+        type: z.ZodEnum<typeof CritiqueIssueType>;
+        severity: z.ZodEnum<typeof CritiqueSeverity>;
+        description: z.ZodString;
+        suggestion: z.ZodOptional<z.ZodString>;
+      }>
+    >
+  >;
+  reasoning: z.ZodString;
+  improvements: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  requirementsFulfillment: z.ZodOptional<z.ZodArray<typeof RequirementFulfillmentSchema>>;
+}> = z.object({
   quality: z.nativeEnum(CritiqueQuality),
   confidence: z.number().min(0).max(100),
   passed: z.boolean(),

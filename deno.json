@@ -314,6 +314,7 @@
     "@exaix/routing/": "./packages/routing/src/",
     "@exaix/tool-runtime": "./packages/tool-runtime/mod.ts",
     "@exaix/execution": "./packages/execution/mod.ts",
+    "@exaix/execution/testing": "./packages/execution/testing/mod.ts",
     "@exaix/request": "./packages/request/mod.ts",
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",

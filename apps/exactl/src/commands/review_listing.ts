@@ -15,10 +15,29 @@ import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters } from "@exaix/schemas/artifact.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
+import { ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import { GIT_CMD_BRANCH } from "@exaix/git/constants.ts";
+import { artifactFromRow, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import type { IReviewMetadata, ReviewTypeFilter } from "./review_commands.ts";
+
+/** A stored code review row used by listing and metadata projection. */
+interface IDatabaseCodeReviewRow {
+  trace_id: string;
+  portal: string | null;
+  branch: string;
+  base_branch: string | null;
+  worktree_path: string | null;
+  files_changed: number | null;
+  created: string;
+  created_by: string;
+  status: string;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  rejection_reason: string | null;
+}
 
 /** Collects the artifact reviews and the code reviews of the database and the portal repositories into one list. */
 export class ReviewListing extends BaseCommand {
@@ -50,60 +69,8 @@ export class ReviewListing extends BaseCommand {
   }
 
   async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
-    let query =
-      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
-       FROM artifacts WHERE 1=1`;
-    const params: (string | null)[] = [];
-
-    if (filters?.status) {
-      query += ` AND status = ?`;
-      params.push(filters.status);
-    }
-
-    if (filters?.agent_role) {
-      query += ` AND agent_role = ?`;
-      params.push(filters.agent_role);
-    }
-
-    if (filters?.portal !== undefined) {
-      query += ` AND portal = ?`;
-      params.push(filters.portal);
-    }
-
-    if (filters?.type) {
-      query += ` AND type = ?`;
-      params.push(filters.type);
-    }
-
-    query += ` ORDER BY created DESC`;
-
-    const rows = await this.db.preparedAll<{
-      id: string;
-      status: string;
-      type: string;
-      agent_role: string;
-      portal: string | null;
-      target_branch: string | null;
-      created: string;
-      updated: string | null;
-      request_id: string;
-      file_path: string;
-      rejection_reason: string | null;
-    }>(query, params);
-
-    return rows.map((row) => ({
-      id: row.id,
-      status: isReviewStatus(row.status) ? row.status : ReviewStatus.PENDING,
-      type: row.type as ArtifactSubtype,
-      agent_role: row.agent_role,
-      portal: row.portal,
-      target_branch: row.target_branch,
-      created: row.created,
-      updated: row.updated,
-      request_id: row.request_id,
-      file_path: row.file_path,
-      rejection_reason: row.rejection_reason,
-    }));
+    const rows = await new DatabaseArtifactRepository(this.db).listArtifactRecords(filters);
+    return rows.map(artifactFromRow);
   }
 
   async appendArtifactReviews(
@@ -149,23 +116,7 @@ export class ReviewListing extends BaseCommand {
   ): Promise<void> {
     try {
       const query = this.getDbReviewQuery(normalizedStatus);
-      const rows = await this.db.preparedAll<{
-        trace_id: string;
-        portal: string | null;
-        branch: string;
-        repository: string;
-        base_branch: string | null;
-        worktree_path: string | null;
-        files_changed: number | null;
-        created: string;
-        created_by: string;
-        status: string;
-        approved_at: string | null;
-        approved_by: string | null;
-        rejected_at: string | null;
-        rejected_by: string | null;
-        rejection_reason: string | null;
-      }>(query.sql, query.args);
+      const rows = await this.db.preparedAll<IDatabaseCodeReviewRow>(query.sql, query.args);
 
       for (const row of rows) {
         const basic = this.rowToBasicCodeReview(row);
@@ -178,22 +129,7 @@ export class ReviewListing extends BaseCommand {
     }
   }
 
-  private rowToBasicCodeReview(row: {
-    trace_id: string;
-    portal: string | null;
-    branch: string;
-    base_branch: string | null;
-    worktree_path: string | null;
-    files_changed: number | null;
-    created: string;
-    created_by: string;
-    status: string;
-    approved_at: string | null;
-    approved_by: string | null;
-    rejected_at: string | null;
-    rejected_by: string | null;
-    rejection_reason: string | null;
-  }): IReviewMetadata | null {
+  private rowToBasicCodeReview(row: IDatabaseCodeReviewRow): IReviewMetadata | null {
     const branch = row.branch?.trim();
     if (!branch) return null;
 

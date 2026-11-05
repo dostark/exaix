@@ -46,7 +46,8 @@
     "zod": "npm:zod@^4.4.3"
   },
   "exports": {
-    ".": "./mod.ts"
+    ".": "./mod.ts",
+    "./testing": "./testing/mod.ts"
   },
   "compilerOptions": {
     "lib": ["deno.window", "deno.ns", "deno.unstable"]

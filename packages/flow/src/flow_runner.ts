@@ -40,6 +40,7 @@ import {
   StepExecutionDisposition,
   StepSideEffectClass,
 } from "@exaix/core";
+import type { IDynamicStepExecutorDependencies } from "./dynamic_step_executor.ts";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
 import { buildConfirmationInterceptor } from "@exaix/tool-runtime";
@@ -192,16 +193,7 @@ export class FlowRunner implements IFlowRunner {
       }),
     );
     this.initStepCollaborators();
-    const agentHandler = new AgentStepHandler({
-      agentExecutor: this.agentExecutor,
-      dynamicStepExecutor: this.dynamicStepExecutor,
-      dynamicExecutorFor: (step, request, stepRequest) => this.dynamicExecutorFor(step, request, stepRequest),
-      config: this.config,
-    });
-    this.stepHandlerRegistry.register(agentHandler);
-    // Consensus retains the agent handler until specialized registration.
-    this.stepHandlerRegistry.register(new BranchStepHandler(agentHandler, this.eventLogger));
-    this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
+    this.registerAgentStepHandlers();
     this.eventLogger.log("flow.deprecation.consensus", { step_type: FlowStepType.CONSENSUS });
 
     if (options.sessionDelegationCoordinator && options.planContextResolver) {
@@ -240,6 +232,49 @@ export class FlowRunner implements IFlowRunner {
   }
 
   /** Builds the collaborators that own step input, gates, recovery, token usage and completion. */
+  private makeDynamicExecutor(
+    llmClient: LlmClient,
+    activityJournal: ActivityJournal,
+    confirmationInterceptor: IDynamicStepExecutorDependencies["confirmationInterceptor"],
+    callOptions: IDynamicStepExecutorDependencies["callOptions"],
+  ): DynamicStepExecutor {
+    return new DynamicStepExecutor({
+      mcpClient: this.mcpClient!,
+      llmClient,
+      activityJournal,
+      confirmationInterceptor,
+      milestoneEmitter: this.options.milestoneEmitter,
+      hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
+      dynamicModeTools: this.options.dynamicModeTools,
+      dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
+      callOptions,
+    });
+  }
+
+  private llmClientFor(model: Opt<string, Reason.OptionalInput>): LlmClient {
+    return new LlmClient(
+      this.config,
+      undefined,
+      model,
+      undefined,
+      this.options.llmEventLogger,
+      this.options.tokenizer,
+      this.options.promptBudgetAllocator,
+    );
+  }
+
+  private registerAgentStepHandlers(): void {
+    const agentHandler = new AgentStepHandler({
+      agentExecutor: this.agentExecutor,
+      dynamicStepExecutor: this.dynamicStepExecutor,
+      dynamicExecutorFor: (step, request, stepRequest) => this.dynamicExecutorFor(step, request, stepRequest),
+      config: this.config,
+    });
+    this.stepHandlerRegistry.register(agentHandler);
+    this.stepHandlerRegistry.register(new BranchStepHandler(agentHandler, this.eventLogger));
+    this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
+  }
+
   private initStepCollaborators(): void {
     this.tokenUsage = new FlowTokenUsage({
       db: this.db,
@@ -327,27 +362,10 @@ export class FlowRunner implements IFlowRunner {
 
     if (this.modelResolver) return;
 
-    const llmClient = new LlmClient(
-      config,
-      undefined,
-      this.options.dynamicModel,
-      undefined,
-      this.options.llmEventLogger,
-      this.options.tokenizer,
-      this.options.promptBudgetAllocator,
-    );
+    const llmClient = this.llmClientFor(this.options.dynamicModel);
     const confirmationInterceptor = options.confirmationInterceptor ??
       (options.context ? buildConfirmationInterceptor(options.context, config, activityJournal) : undefined);
-    this.dynamicStepExecutor = new DynamicStepExecutor({
-      mcpClient: this.mcpClient!,
-      llmClient,
-      activityJournal,
-      confirmationInterceptor,
-      milestoneEmitter: this.options.milestoneEmitter,
-      hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
-      dynamicModeTools: this.options.dynamicModeTools,
-      dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
-    });
+    this.dynamicStepExecutor = this.makeDynamicExecutor(llmClient, activityJournal, confirmationInterceptor, undefined);
   }
 
   private buildFallbackContext(config: Config, db: Opt<IDatabaseService, Reason.OptionalDependency>): object {
@@ -394,39 +412,17 @@ export class FlowRunner implements IFlowRunner {
     const config = this.config;
     const db = this.db;
     const _context = (this.options.context || this.buildFallbackContext(config, db)) as IApplicationContext;
-    const llmClient = new LlmClient(
-      config,
-      undefined,
-      resolved.model,
-      undefined,
-      this.options.llmEventLogger,
-      this.options.tokenizer,
-      this.options.promptBudgetAllocator,
-    );
+    const llmClient = this.llmClientFor(resolved.model);
     const confirmationInterceptor = this.options.confirmationInterceptor;
-    this.dynamicStepExecutor = new DynamicStepExecutor({
-      mcpClient: this.mcpClient!,
+    this.dynamicStepExecutor = this.makeDynamicExecutor(
       llmClient,
       activityJournal,
       confirmationInterceptor,
-      milestoneEmitter: this.options.milestoneEmitter,
-      hitlPolicyEvaluator: this.options.hitlPolicyEvaluator,
-      dynamicModeTools: this.options.dynamicModeTools,
-      dynamicModeApprovalTools: this.options.dynamicModeApprovalTools,
-      // The resolver's per-call options (thinking/effort) reach every ReAct generate in dynamic steps.
-      callOptions: resolved.options,
-    });
+      resolved.options,
+    );
     // The agent step handler was registered during construction, before the lazy executor
     // existed, so it captured `dynamicStepExecutor: undefined`. Re-register it now.
-    const agentHandler = new AgentStepHandler({
-      agentExecutor: this.agentExecutor,
-      dynamicStepExecutor: this.dynamicStepExecutor,
-      dynamicExecutorFor: (step, request, stepRequest) => this.dynamicExecutorFor(step, request, stepRequest),
-      config: this.config,
-    });
-    this.stepHandlerRegistry.register(agentHandler);
-    this.stepHandlerRegistry.register(new BranchStepHandler(agentHandler, this.eventLogger));
-    this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
+    this.registerAgentStepHandlers();
   }
 
   /** Resolves the DYNAMIC executor for one step. A bound step gets a fingerprint-keyed executor whose LlmClient runs the bound provider

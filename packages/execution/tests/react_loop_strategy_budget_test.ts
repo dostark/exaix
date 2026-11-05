@@ -11,6 +11,7 @@
  * ]
  */
 
+import { planChangeset } from "./helpers/react_loop_fixtures.ts";
 import { assertArrayIncludes, assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -92,14 +93,7 @@ function makeTrackingExecutor(opts: {
     promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (r: IChangesetResult) => r,
-    parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: ctx.plan,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - t,
-    }),
+    parseAgentResponse: planChangeset,
     logGeneration: () => Promise.resolve(),
     toolRegistry: {
       execute: () => Promise.resolve({ success: true }),

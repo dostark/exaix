@@ -23,6 +23,7 @@ import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
 import { GIT_CMD_DIFF, GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
+import { artifactFromRow, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { ReviewListing } from "./review_listing.ts";
 import { ReviewDecisions } from "./review_decisions.ts";
 
@@ -368,44 +369,9 @@ export class ReviewCommands extends BaseCommand {
   }
 
   private async getArtifactRecord(artifactId: string): Promise<IArtifact> {
-    const rows = await this.db.preparedAll<{
-      id: string;
-      status: string;
-      type: string;
-      agent_role: string;
-      portal: string | null;
-      target_branch: string | null;
-      created: string;
-      updated: string | null;
-      request_id: string;
-      file_path: string;
-      rejection_reason: string | null;
-    }>(
-      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
-       FROM artifacts WHERE id = ?`,
-      [artifactId],
-    );
-
-    if (rows.length === 0) {
-      throw new Error(`Artifact not found: ${artifactId}`);
-    }
-
-    const row = rows[0];
-    const status = isReviewStatus(row.status) ? row.status : ReviewStatus.PENDING;
-
-    return {
-      id: row.id,
-      status,
-      type: row.type as ArtifactSubtype,
-      agent_role: row.agent_role,
-      portal: row.portal,
-      target_branch: row.target_branch,
-      created: row.created,
-      updated: row.updated,
-      request_id: row.request_id,
-      file_path: row.file_path,
-      rejection_reason: row.rejection_reason,
-    };
+    const row = await new DatabaseArtifactRepository(this.db).getArtifactRecord(artifactId);
+    if (row === undefined) throw new Error(`Artifact not found: ${artifactId}`);
+    return artifactFromRow(row);
   }
 
   private async getArtifact(artifactId: string): Promise<IArtifactWithContent> {

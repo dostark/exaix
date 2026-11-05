@@ -35,16 +35,18 @@ interface MockPriorTurn {
   toolResultIsError: boolean;
 }
 
+interface INativeOptionsView {
+  buildNativeGenerateOptions(
+    toolDefinitions?: MockToolDef[],
+    priorTurn?: MockPriorTurn,
+    nativeToolsUsed?: boolean,
+    preferredTool?: string,
+  ): MockGenerateOptions;
+}
+
 Deno.test("buildNativeGenerateOptions with preferredTool uses tool_choice type:tool on first iteration", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(
     [{ name: "patch_file", description: "Patch", inputSchema: { type: "object" } }],
@@ -60,14 +62,7 @@ Deno.test("buildNativeGenerateOptions with preferredTool uses tool_choice type:t
 
 Deno.test("buildNativeGenerateOptions uses auto after a prior native turn (GAP-155-17)", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(
     [{ name: "patch_file", description: "Patch", inputSchema: { type: "object" } }],
@@ -83,14 +78,7 @@ Deno.test("buildNativeGenerateOptions uses auto after a prior native turn (GAP-1
 
 Deno.test("buildNativeGenerateOptions records mode 'any' when no preferred tool is derived (exploration step)", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(
     [{ name: "read_file", description: "Read", inputSchema: { type: "object" } }],
@@ -105,14 +93,7 @@ Deno.test("buildNativeGenerateOptions records mode 'any' when no preferred tool 
 
 Deno.test("buildNativeGenerateOptions never forces a preferred tool that is not among the offered tools", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(
     [{ name: "read_file", description: "Read", inputSchema: { type: "object" } }],
@@ -128,14 +109,7 @@ Deno.test("buildNativeGenerateOptions never forces a preferred tool that is not 
 
 Deno.test("buildNativeGenerateOptions records no mode when native tools are inactive", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(undefined, undefined, false, "patch_file");
 
@@ -143,38 +117,9 @@ Deno.test("buildNativeGenerateOptions records no mode when native tools are inac
   assertEquals(options.nativeToolChoiceMode, undefined);
 });
 
-Deno.test("buildNativeGenerateOptions with preferredTool falls back to type:any when priorTurn exists", () => {
-  const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
-
-  const options = typed.buildNativeGenerateOptions(
-    [{ name: "patch_file", description: "Patch", inputSchema: { type: "object" } }],
-    { toolUseId: "call_1", toolName: "read_file", toolInput: {}, toolResultContent: "ok", toolResultIsError: false },
-    true,
-    "patch_file",
-  );
-
-  assertEquals(options.toolChoice?.type, "auto");
-  assertEquals(options.toolChoice?.name, undefined);
-});
-
 Deno.test("buildNativeGenerateOptions with preferredTool but no native tools active uses no tool_choice", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
-  const typed = strategy["native"] as never as {
-    buildNativeGenerateOptions(
-      toolDefinitions?: MockToolDef[],
-      priorTurn?: MockPriorTurn,
-      nativeToolsUsed?: boolean,
-      preferredTool?: string,
-    ): MockGenerateOptions;
-  };
+  const typed = strategy["native"] as never as INativeOptionsView;
 
   const options = typed.buildNativeGenerateOptions(
     undefined,

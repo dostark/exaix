@@ -5,16 +5,17 @@
  * @description Verifies DynamicStepExecutor ReAct-style dynamic tool selection for Phase 56.
  */
 
+import { createDynamicExecutor, dynamicAgentRole } from "./helpers/dynamic_executor.ts";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
+import { McpToolName } from "@exaix/mcp";
 import type { IMcpClient, IMcpToolCallContext } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
-import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
+import type { DynamicStepExecutor, IActivityJournal, JournalEntry } from "@exaix/flow";
 
 /**
  * Mock implementations for dependencies
@@ -122,26 +123,32 @@ class MockActivityJournal implements IActivityJournal {
   }
 }
 
-Deno.test("DynamicStepExecutor: successful execution with tool calls", async () => {
+interface IDynamicCase {
+  mcpClient: MockMcpClient;
+  llmClient: MockLlmClient;
+  journal: MockActivityJournal;
+  executor: DynamicStepExecutor;
+}
+function dynamicCase(): IDynamicCase {
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
+  return {
     mcpClient,
     llmClient,
-    activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+    journal,
+    executor: createDynamicExecutor({ mcpClient, llmClient, activityJournal: journal }),
+  };
+}
 
-  const agentRole = BlueprintFrontmatterSchema.parse({
-    agent_role: "senior-coder",
-    name: "Senior Coder",
-    model: "anthropic:claude-3-opus",
-    created: new Date().toISOString(),
-    created_by: "test",
-    permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
-  });
+Deno.test("DynamicStepExecutor: successful execution with tool calls", async () => {
+  const { mcpClient, llmClient, journal, executor } = dynamicCase();
+
+  const agentRole = dynamicAgentRole(
+    [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
+    "senior-coder",
+    "Senior Coder",
+  );
 
   const step = FlowStepSchema.parse({
     id: "step-1",
@@ -184,25 +191,9 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
 });
 
 Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
-  const mcpClient = new MockMcpClient();
-  const llmClient = new MockLlmClient();
-  const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
-    mcpClient,
-    llmClient,
-    activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { llmClient, journal, executor } = dynamicCase();
 
-  const agentRole = BlueprintFrontmatterSchema.parse({
-    agent_role: "senior-coder",
-    name: "Senior Coder",
-    model: "anthropic:claude-3-opus",
-    created: new Date().toISOString(),
-    created_by: "test",
-    permitted_tools: [McpToolName.READ_FILE],
-  });
+  const agentRole = dynamicAgentRole([McpToolName.READ_FILE], "senior-coder", "Senior Coder");
 
   const step = FlowStepSchema.parse({
     id: "step-1",
@@ -230,25 +221,9 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
 });
 
 Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", async () => {
-  const mcpClient = new MockMcpClient();
-  const llmClient = new MockLlmClient();
-  const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
-    mcpClient,
-    llmClient,
-    activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { llmClient, executor } = dynamicCase();
 
-  const agentRole = BlueprintFrontmatterSchema.parse({
-    agent_role: "senior-coder",
-    name: "Senior Coder",
-    model: "anthropic:claude-3-opus",
-    created: new Date().toISOString(),
-    created_by: "test",
-    permitted_tools: [McpToolName.READ_FILE],
-  });
+  const agentRole = dynamicAgentRole([McpToolName.READ_FILE], "senior-coder", "Senior Coder");
 
   const step = FlowStepSchema.parse({
     id: "step-1",
@@ -271,25 +246,9 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
 });
 
 Deno.test("DynamicStepExecutor: filters non-read-only tools from agent role", async () => {
-  const mcpClient = new MockMcpClient();
-  const llmClient = new MockLlmClient();
-  const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
-    mcpClient,
-    llmClient,
-    activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { llmClient, executor } = dynamicCase();
 
-  const agentRole = BlueprintFrontmatterSchema.parse({
-    agent_role: "senior-coder",
-    name: "Senior Coder",
-    model: "anthropic:claude-3-opus",
-    created: new Date().toISOString(),
-    created_by: "test",
-    permitted_tools: [McpToolName.READ_FILE, McpToolName.WRITE_FILE], // WRITE is not read-only
-  });
+  const agentRole = dynamicAgentRole([McpToolName.READ_FILE, McpToolName.WRITE_FILE], "senior-coder", "Senior Coder");
 
   const step = FlowStepSchema.parse({
     id: "step-1",
@@ -314,12 +273,10 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
   const mockMcp = new MockMcpClient();
   const mockLlm = new MockLlmClient();
   const mockJournal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient: mockMcp,
     llmClient: mockLlm,
     activityJournal: mockJournal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
   const step = FlowStepSchema.parse({
     id: "id",

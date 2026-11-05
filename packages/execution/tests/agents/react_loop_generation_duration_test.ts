@@ -11,17 +11,19 @@
  * duration_ms per turn.
  */
 
+import type { IGenerationUsage } from "../../src/generation_log.ts";
+import { fixedExecutorPlumbing } from "@exaix/execution/testing";
 import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX, ToolName } from "@exaix/core";
-import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
+import type { IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
   createOptions,
+  createWriteToolRegistry,
   type ReActExecutor,
   testBlueprint,
-  type TestToolParams,
 } from "../helpers/react_loop_fixtures.ts";
 import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
@@ -36,46 +38,18 @@ const testContext = {
 Deno.test("[ReActLoopGenerationDuration] each provider.generate() call in a multi-turn loop produces a real duration_ms on logGeneration", async () => {
   const capturedDurations: (number | undefined)[] = [];
   const mockExecutor = {
-    promptBuilder: createReActPromptBuilder(),
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: "Task completed",
-      tool_calls: 0,
-      execution_time_ms: 0,
-    }),
+    ...fixedExecutorPlumbing(createReActPromptBuilder()),
     logGeneration: async (
       _traceId: string,
       _agentRole: string,
       _model: string,
       _provider: string,
-      usage: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-        costUsd: number;
-        durationMs?: number;
-      },
+      usage: IGenerationUsage,
     ) => {
       await Promise.resolve();
       capturedDurations.push(usage.durationMs);
     },
-    toolRegistry: {
-      execute: async (tool: string, params: TestToolParams) => {
-        await Promise.resolve();
-        if (tool === ToolName.WRITE_FILE) {
-          return { success: true, data: `Wrote ${params.path}` };
-        }
-        return { success: false, error: "Unknown tool" };
-      },
-      getTools: () => [],
-      getBaseDir: () => "/nonexistent-test-basedir",
-    },
+    toolRegistry: createWriteToolRegistry(),
   };
 
   let callCount = 0;

@@ -27,6 +27,12 @@ import { isAbsolute, join, normalize, relative, SEPARATOR } from "@std/path";
 import { classifyRepoPath } from "@exaix/lint-policy";
 import { z } from "zod";
 
+interface IAssertionRewriteContext {
+  readonly bindings: IAssertBindings;
+  readonly context: IEmitContext;
+  readonly usedBefore: ReadonlySet<string>;
+}
+
 /** A site the codemod could not rewrite. */
 interface ISkippedSite {
   readonly line: number;
@@ -407,12 +413,24 @@ function rewriteImports(
   return rewritten.slice(0, start) + text + rewritten.slice(end);
 }
 
+/** The imported assertion names that had references before a rewrite. */
+function usedAssertionNames(sourceFile: ts.SourceFile, bindings: IAssertBindings): Set<string> {
+  const counts = referenceCounts(sourceFile, bindings.named.keys());
+  return new Set([...counts].filter(([, count]) => count > 0).map(([name]) => name));
+}
+
+function assertionRewriteContext(sourceFile: ts.SourceFile): IAssertionRewriteContext {
+  const bindings = readBindings(sourceFile);
+  return {
+    bindings,
+    context: { bindings, required: new Set(), usedIdentifiers: identifiersOf(sourceFile) },
+    usedBefore: usedAssertionNames(sourceFile, bindings),
+  };
+}
+
 /** Rewrites one parsed source file. */
 function fixSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text: string): IFixResult {
-  const bindings = readBindings(sourceFile);
-  const context: IEmitContext = { bindings, required: new Set(), usedIdentifiers: identifiersOf(sourceFile) };
-  const before = referenceCounts(sourceFile, bindings.named.keys());
-  const usedBefore = new Set([...before].filter(([, count]) => count > 0).map(([name]) => name));
+  const { bindings, context, usedBefore } = assertionRewriteContext(sourceFile);
   const replacements: IReplacement[] = [];
   const skipped: ISkippedSite[] = [];
   const lineOf = (node: ts.Node): number =>
@@ -652,10 +670,7 @@ function renameReplacements(context: IEmitContext, pair: INamedResultPair): IRep
 
 /** Names every numbered result of one parsed file and merges a primitive-array check into one assertion. */
 function nameResultsInFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text: string): IFixResult {
-  const bindings = readBindings(sourceFile);
-  const context: IEmitContext = { bindings, required: new Set(), usedIdentifiers: identifiersOf(sourceFile) };
-  const before = referenceCounts(sourceFile, bindings.named.keys());
-  const usedBefore = new Set([...before].filter(([, count]) => count > 0).map(([name]) => name));
+  const { bindings, context, usedBefore } = assertionRewriteContext(sourceFile);
   const replacements: IReplacement[] = [];
   let changed = 0;
   for (const pair of namedResultPairs(sourceFile, checker, bindings)) {

@@ -18,6 +18,7 @@ import type { IMemoryBankService } from "@exaix/core/types";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import type { ReviewRegistry } from "@exaix/core/artifact";
 import type { MemoryBankService } from "@exaix/memory";
+import type { ITraceData } from "@exaix/core/artifact";
 import { MissionReporter } from "@exaix/core/artifact";
 import { ExecutionStatus } from "@exaix/core";
 import { EXECUTION_REPORT_FILENAME } from "@exaix/core";
@@ -144,6 +145,27 @@ export class ExecutionReporting {
     }
   }
 
+  private traceDataFor(
+    traceId: string,
+    requestId: string,
+    frontmatter: Opt<PlanFrontmatter, Reason.OptionalInput>,
+    status: ExecutionStatus,
+    reasoning: string,
+    summary: string,
+  ): ITraceData {
+    return {
+      traceId,
+      requestId,
+      agentRole: this.agentRole,
+      status,
+      branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
+      completedAt: new Date(),
+      contextFiles: frontmatter?.portal ? [frontmatter.portal] : [],
+      reasoning,
+      summary,
+    };
+  }
+
   /**
    * Generate mission report for successful execution using Memory Banks
    */
@@ -156,23 +178,14 @@ export class ExecutionReporting {
     try {
       const reporter = this.createMissionReporter();
 
-      const contextFiles: string[] = [];
-      if (frontmatter?.portal) {
-        contextFiles.push(frontmatter.portal);
-      }
-
-      // Prepare trace data
-      const traceData = {
+      const traceData = this.traceDataFor(
         traceId,
         requestId,
-        agentRole: this.agentRole,
-        status: ExecutionStatus.COMPLETED,
-        branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
-        completedAt: new Date(),
-        contextFiles,
-        reasoning: completionSummary ?? "Plan execution completed successfully",
-        summary: completionSummary ?? `Successfully executed plan for request: ${requestId}`,
-      };
+        frontmatter,
+        ExecutionStatus.COMPLETED,
+        completionSummary ?? "Plan execution completed successfully",
+        completionSummary ?? `Successfully executed plan for request: ${requestId}`,
+      );
 
       await reporter.generate(traceData);
 
@@ -201,23 +214,14 @@ export class ExecutionReporting {
     try {
       const reporter = this.createMissionReporter();
 
-      const contextFiles: string[] = [];
-      if (frontmatter?.portal) {
-        contextFiles.push(frontmatter.portal);
-      }
-
-      // Prepare trace data for failure
-      const traceData = {
+      const traceData = this.traceDataFor(
         traceId,
         requestId,
-        agentRole: this.agentRole,
-        status: ExecutionStatus.FAILED,
-        branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
-        completedAt: new Date(),
-        contextFiles,
-        reasoning: `Plan execution failed: ${error}`,
-        summary: `Execution failed for request: ${requestId}`,
-      };
+        frontmatter,
+        ExecutionStatus.FAILED,
+        `Plan execution failed: ${error}`,
+        `Execution failed for request: ${requestId}`,
+      );
 
       await reporter.generate(traceData);
 

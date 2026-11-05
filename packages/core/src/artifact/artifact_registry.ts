@@ -29,26 +29,27 @@ function shortId(): string {
   return crypto.randomUUID().split("-")[0];
 }
 
+/** Maps a stored artifact row to the public artifact shape. */
+export function artifactFromRow(row: IArtifactRow): IArtifact {
+  return {
+    id: row.id,
+    status: coerceReviewStatus(row.status),
+    type: row.type as ArtifactType,
+    agent_role: row.agent_role,
+    portal: row.portal,
+    target_branch: row.target_branch,
+    created: row.created,
+    updated: row.updated,
+    request_id: row.request_id,
+    file_path: row.file_path,
+    rejection_reason: row.rejection_reason,
+  };
+}
+
 /**
  * Service for managing read-only agent artifacts
  */
 export class ArtifactRegistry {
-  private mapArtifactRow(row: IArtifactRow): IArtifact {
-    return {
-      id: row.id,
-      status: coerceReviewStatus(row.status),
-      type: row.type as ArtifactType,
-      agent_role: row.agent_role,
-      portal: row.portal,
-      target_branch: row.target_branch,
-      created: row.created,
-      updated: row.updated,
-      request_id: row.request_id,
-      file_path: row.file_path,
-      rejection_reason: row.rejection_reason,
-    };
-  }
-
   private rootDir: string;
 
   constructor(
@@ -171,7 +172,7 @@ export class ArtifactRegistry {
       throw new Error(`Artifact not found: ${artifactId}`);
     }
 
-    return this.mapArtifactRow(row);
+    return artifactFromRow(row);
   }
 
   /**
@@ -179,6 +180,6 @@ export class ArtifactRegistry {
    */
   async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
     const rows = await this.repo.listArtifactRecords(filters);
-    return rows.map((row) => this.mapArtifactRow(row));
+    return rows.map((row) => artifactFromRow(row));
   }
 }

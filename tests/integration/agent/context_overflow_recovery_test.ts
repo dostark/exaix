@@ -4,39 +4,15 @@
  * @description Integration-style regression for Phase 62 Step 62.4 overflow-safe prompt assembly.
  */
 
+import { buildExecutionPrompt } from "@exaix/execution/testing";
 import { assert, assertEquals } from "@std/assert";
 import { AgentComposer, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
-import type { IAgentFileBlueprint, IPinnedSkillPrompt } from "@exaix/execution";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IPinnedSkillPrompt } from "@exaix/execution";
+
 import { ExecutionStrategyName, SecurityMode, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { setupAgentExecutorFixture } from "../helpers/agent_composer_fixture.ts";
-
-/** Builds the execution prompt through the composer's prompt builder, with the model and tools it would pass. */
-function buildExecutionPrompt(
-  executor: AgentComposer,
-  blueprint: IAgentFileBlueprint,
-  context: IExecutionContext,
-  options: IAgentExecutionOptions,
-  pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
-): Promise<string> {
-  const permitted = options.permitted_tools;
-  const visibleTools = (executor["_toolRegistry"]?.getTools() ?? []).filter((tool) =>
-    permitted === undefined || permitted.includes(tool.name)
-  );
-  return executor["promptBuilder"].buildExecutionPrompt(
-    blueprint,
-    context,
-    options,
-    {
-      historyText: "",
-      skipToolProse: false,
-      visibleToolIds: visibleTools.map((tool) => tool.name),
-    },
-    pinnedSkills?.text,
-  );
-}
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {
   const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();

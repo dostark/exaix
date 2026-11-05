@@ -6,7 +6,8 @@
  * @related-files [packages/execution/src/execution_loop.ts, packages/execution/tests/execution_loop_amendment_worktree_test.ts]
  */
 
-import { join } from "@std/path";
+import { listPlanFiles } from "./execution_plan_reader.ts";
+
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IPlanAmendmentGate } from "@exaix/core/types";
@@ -123,10 +124,7 @@ export class ExecutionAmendments {
    */
   async checkExpiredAmendments(): Promise<void> {
     try {
-      const entries = await Array.fromAsync(Deno.readDir(this.plansDir));
-      const planFiles = entries
-        .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
-        .map((entry) => join(this.plansDir, entry.name));
+      const planFiles = await listPlanFiles(this.plansDir);
 
       const expiryMs = this.config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS;
       const now = Date.now();

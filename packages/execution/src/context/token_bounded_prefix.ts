@@ -34,3 +34,18 @@ export async function tokenBoundedPrefix(
   }
   return best;
 }
+
+/** Fits complete leading lines, falling back to a partial first line when necessary. */
+export async function lineBoundedPrefix(
+  content: string,
+  maxTokens: number,
+  estimate: (text: string) => Promise<number>,
+): Promise<string> {
+  const kept: string[] = [];
+  for (const line of content.split("\n")) {
+    const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
+    if (await estimate(candidate) > maxTokens) break;
+    kept.push(line);
+  }
+  return kept.length === 0 ? await tokenBoundedPrefix(content, maxTokens, estimate) : kept.join("\n");
+}

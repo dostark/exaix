@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/main.ts]
  */
 
+import { listPlanFiles } from "./execution_plan_reader.ts";
 import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 
@@ -494,10 +495,7 @@ export class ExecutionLoop {
     await this.amendments.checkExpiredAmendments();
 
     try {
-      const entries = await Array.fromAsync(Deno.readDir(this.plansDir));
-      const planFiles = entries
-        .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
-        .map((entry) => join(this.plansDir, entry.name));
+      const planFiles = await listPlanFiles(this.plansDir);
 
       for (const planPath of planFiles) {
         // Skip if already leased

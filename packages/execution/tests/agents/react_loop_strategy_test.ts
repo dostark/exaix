@@ -10,7 +10,7 @@ import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN, ToolName } from "@exaix/core";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
@@ -18,6 +18,7 @@ import { createCoreToolSchemas, ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
 import {
   createOptions,
+  createWriteToolRegistry,
   type ReActExecutor,
   testBlueprint,
   type TestToolParams,
@@ -92,17 +93,7 @@ const mockExecutor = {
   logGeneration: async () => {
     await Promise.resolve();
   },
-  toolRegistry: {
-    execute: async (tool: string, params: TestToolParams) => {
-      await Promise.resolve();
-      if (tool === ToolName.WRITE_FILE) {
-        return { success: true, data: `Wrote ${params.path}` };
-      }
-      return { success: false, error: "Unknown tool" };
-    },
-    getTools: () => [],
-    getBaseDir: () => "/nonexistent-test-basedir",
-  },
+  toolRegistry: createWriteToolRegistry(),
 };
 
 Deno.test("ReActLoopStrategy - Basic Execution", async () => {

@@ -5,6 +5,7 @@
  * security sandboxing, activity logging, and protection against prompt injection.
  */
 
+import { buildExecutionPrompt } from "@exaix/execution/testing";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import {
@@ -46,7 +47,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { ITokenizer } from "@exaix/core/func";
-import type { ITool, IToolRegistry, Opt, Reason } from "@exaix/core/types";
+import type { ITool, IToolRegistry } from "@exaix/core/types";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "@exaix/core/errors";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -61,31 +62,6 @@ import { StrategyRegistry } from "@exaix/execution";
 import type { IPinnedSkillPrompt } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { readFixtureTextSync } from "@exaix/testing";
-
-/** Builds the execution prompt through the composer's prompt builder, with the model and tools it would pass. */
-function buildExecutionPrompt(
-  executor: AgentComposer,
-  blueprint: IAgentFileBlueprint,
-  context: IExecutionContext,
-  options: IAgentExecutionOptions,
-  pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
-): Promise<string> {
-  const permitted = options.permitted_tools;
-  const visibleTools = (executor["_toolRegistry"]?.getTools() ?? []).filter((tool) =>
-    permitted === undefined || permitted.includes(tool.name)
-  );
-  return executor["promptBuilder"].buildExecutionPrompt(
-    blueprint,
-    context,
-    options,
-    {
-      historyText: "",
-      skipToolProse: false,
-      visibleToolIds: visibleTools.map((tool) => tool.name),
-    },
-    pinnedSkills?.text,
-  );
-}
 
 /** Payload for context.budget.compacted event. */
 interface IBudgetCompactedPayload {
@@ -2706,24 +2682,26 @@ orchestratorTest("AgentComposer: executeStep triggers compaction when loopHistor
   executor.dispose();
 });
 
+function promptBuildingRegistry(executor: () => AgentComposer, branch: string, description: string): StrategyRegistry {
+  return reactRegistry(async (blueprint, context, options) => {
+    await buildExecutionPrompt(executor(), blueprint, context, options);
+    return changesetResult(branch, [], description);
+  });
+}
+
+function recordContextEventNames(logged: Array<{ name: string }>): EventLogger["info"] {
+  return (name) => {
+    if (name.startsWith("context.budget.") || name.startsWith("context.section.")) logged.push({ name });
+    return Promise.resolve();
+  };
+}
+
 orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED per section", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
   const logged: Array<{ name: string }> = [];
-  logger.info = (name) => {
-    if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
-      logged.push({ name });
-    }
-    return Promise.resolve();
-  };
+  logger.info = recordContextEventNames(logged);
 
-  const strategyRegistry = reactRegistry(
-    async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
-      // buildExecutionPrompt is called within executeStep's strategy execution,
-      // so currentPromptBudget is set. We just need to trigger prompt building.
-      await buildExecutionPrompt(executor, _blueprint, ctx, opts);
-      return changesetResult("feat/budget-event-test", [], "Budget event test");
-    },
-  );
+  const strategyRegistry = promptBuildingRegistry(() => executor, "feat/budget-event-test", "Budget event test");
 
   const executor = new AgentComposer({
     config: testConfig,
@@ -2762,19 +2740,9 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED 
 orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATED on overflow", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
   const logged: Array<{ name: string }> = [];
-  logger.info = (name) => {
-    if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
-      logged.push({ name });
-    }
-    return Promise.resolve();
-  };
+  logger.info = recordContextEventNames(logged);
 
-  const strategyRegistry = reactRegistry(
-    async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
-      await buildExecutionPrompt(executor, _blueprint, ctx, opts);
-      return changesetResult("feat/trunc-event-test", [], "Truncation event test");
-    },
-  );
+  const strategyRegistry = promptBuildingRegistry(() => executor, "feat/trunc-event-test", "Truncation event test");
 
   const tinyMemoryAllocator = {
     allocate: (_modelId: string) =>

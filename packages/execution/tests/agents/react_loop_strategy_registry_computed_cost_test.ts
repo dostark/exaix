@@ -11,6 +11,8 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/registry_computed_cost.ts]
  */
 
+import type { IGenerationUsage } from "../../src/generation_log.ts";
+import { fixedExecutorPlumbing } from "@exaix/execution/testing";
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -19,7 +21,7 @@ import { castAny } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { createReActPromptBuilder } from "../helpers/react_prompt_builder.ts";
 
 const testBlueprint = {
@@ -62,25 +64,13 @@ interface IPricedTurn {
 async function loggedCostUsd(turn: IPricedTurn): Promise<number | undefined> {
   let capturedCostUsd: number | undefined;
   const mockExecutor = {
-    promptBuilder: createReActPromptBuilder(),
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: "Task completed",
-      tool_calls: 0,
-      execution_time_ms: 0,
-    }),
+    ...fixedExecutorPlumbing(createReActPromptBuilder()),
     logGeneration: async (
       _traceId: string,
       _agentRole: string,
       _model: string,
       _provider: string,
-      usage: { costUsd: number },
+      usage: IGenerationUsage,
     ) => {
       await Promise.resolve();
       capturedCostUsd = usage.costUsd;

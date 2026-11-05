@@ -6,6 +6,7 @@
  * and the defensive approval-required branch.
  */
 
+import { createDynamicExecutor } from "./helpers/dynamic_executor.ts";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S,
@@ -15,7 +16,7 @@ import {
   ToolErrorCode,
 } from "@exaix/core";
 import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
-import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
+import { McpToolName } from "@exaix/mcp";
 import type { IMcpClient } from "@exaix/mcp";
 import { BlueprintFrontmatterSchema, type IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepSchema, type IFlowStep } from "@exaix/schemas/flow.ts";
@@ -165,32 +166,40 @@ class ApprovalForcingExecutor extends DynamicStepExecutor {
   }
 }
 
-Deno.test("DynamicStepExecutor confirmation: approved approval-required tool executes", async () => {
+interface IApprovalCase {
+  mcpClient: MockMcpClient;
+  llmClient: MockLlmClient;
+  journal: MockActivityJournal;
+  interceptor: RecordingConfirmationInterceptor;
+  executor: DynamicStepExecutor;
+}
+
+function approvalCase(title: string, response: string | null): IApprovalCase {
   const mcpClient = new MockMcpClient();
   mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
-  mcpClient.setResponse(McpToolName.CREATE_REQUEST, "request created");
-
+  if (response !== null) mcpClient.setResponse(McpToolName.CREATE_REQUEST, response);
   const llmClient = new MockLlmClient();
   llmClient.setDecisions([
-    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title: "New request" } },
+    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title } },
     { done: true, output: "done" },
   ]);
-
   const journal = new MockActivityJournal();
   const interceptor = new RecordingConfirmationInterceptor((request) => ({
     id: request.id,
     approved: true,
     decidedAt: new Date().toISOString(),
   }));
-
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient,
     llmClient,
     activityJournal: journal,
     confirmationInterceptor: interceptor,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
+  return { mcpClient, llmClient, journal, interceptor, executor };
+}
+
+Deno.test("DynamicStepExecutor confirmation: approved approval-required tool executes", async () => {
+  const { mcpClient, journal, interceptor, executor } = approvalCase("New request", "request created");
 
   const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-approval" });
 
@@ -224,13 +233,11 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient,
     llmClient,
     activityJournal: journal,
     confirmationInterceptor: interceptor,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
 
   const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-denial" });
@@ -256,12 +263,10 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
   llmClient.setDecisions([{ done: true, output: "done" }]);
 
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient,
     llmClient,
     activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-no-interceptor" });
@@ -289,30 +294,7 @@ Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-requi
 });
 
 Deno.test("DynamicStepExecutor confirmation: approval request timeout window uses Phase 79 default", async () => {
-  const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
-
-  const llmClient = new MockLlmClient();
-  llmClient.setDecisions([
-    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title: "Needs approval" } },
-    { done: true, output: "done" },
-  ]);
-
-  const journal = new MockActivityJournal();
-  const interceptor = new RecordingConfirmationInterceptor((request) => ({
-    id: request.id,
-    approved: true,
-    decidedAt: new Date().toISOString(),
-  }));
-
-  const executor = new DynamicStepExecutor({
-    mcpClient,
-    llmClient,
-    activityJournal: journal,
-    confirmationInterceptor: interceptor,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { interceptor, executor } = approvalCase("Needs approval", null);
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-timeout-default" });
 
@@ -323,31 +305,7 @@ Deno.test("DynamicStepExecutor confirmation: approval request timeout window use
 });
 
 Deno.test("DynamicStepExecutor confirmation: config override changes approval request timeout window", async () => {
-  const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
-  mcpClient.setResponse(McpToolName.CREATE_REQUEST, "created");
-
-  const llmClient = new MockLlmClient();
-  llmClient.setDecisions([
-    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title: "Config timeout test" } },
-    { done: true, output: "done" },
-  ]);
-
-  const journal = new MockActivityJournal();
-  const interceptor = new RecordingConfirmationInterceptor((request) => ({
-    id: request.id,
-    approved: true,
-    decidedAt: new Date().toISOString(),
-  }));
-
-  const executor = new DynamicStepExecutor({
-    mcpClient,
-    llmClient,
-    activityJournal: journal,
-    confirmationInterceptor: interceptor,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { interceptor, executor } = approvalCase("Config timeout test", "created");
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", {
     traceId: "trace-config-timeout",

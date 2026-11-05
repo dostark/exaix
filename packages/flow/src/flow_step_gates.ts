@@ -21,7 +21,7 @@ import {
   FlowStepType,
   MILESTONE_FLOW_STEP_SKIPPED,
 } from "@exaix/core";
-import type { IGateResult, Opt, Reason } from "@exaix/core/types";
+import type { IGateResult } from "@exaix/core/types";
 import { gateEvaluationResult } from "./errors/flow_control_errors.ts";
 import { GateStepHandler } from "./step_handlers/gate_step_handler.ts";
 import { UnknownFlowStepError } from "./step_handlers/flow_step_error.ts";
@@ -29,6 +29,7 @@ import type { IStepExecutionContext } from "./step_handlers/step_handler.ts";
 import type { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
 import type { FlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
 import { DomainEventType } from "@exaix/core/events";
+import type { ExecuteFlowStep } from "./flow_types.ts";
 import type {
   EmitFlowMilestone,
   IFlowEventLogger,
@@ -52,14 +53,7 @@ export interface IFlowStepGatesDependencies {
   readonly retryBudgetService: RetryBudgetService;
   readonly stepHandlerRegistry: FlowStepHandlerRegistry;
   readonly emitMilestone: EmitFlowMilestone;
-  readonly executeStep: (
-    flowRunId: string,
-    stepId: string,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    stepResults: Map<string, IStepResult>,
-    repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
-  ) => Promise<IStepResult>;
+  readonly executeStep: ExecuteFlowStep;
   readonly prepareStepRequest: (
     flowRunId: string,
     step: IFlowStep,
@@ -79,21 +73,8 @@ export class FlowStepGates {
   private readonly retryBudgetService: RetryBudgetService;
   private readonly stepHandlerRegistry: FlowStepHandlerRegistry;
   private readonly emitMilestone: EmitFlowMilestone;
-  private readonly executeStep: (
-    flowRunId: string,
-    stepId: string,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    stepResults: Map<string, IStepResult>,
-    repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
-  ) => Promise<IStepResult>;
-  private readonly prepareStepRequest: (
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: IFlowOriginalRequest & { scenarioId?: string; stepId?: string },
-    stepResults: Map<string, IStepResult>,
-  ) => Promise<IFlowStepRequest>;
+  private readonly executeStep: ExecuteFlowStep;
+  private readonly prepareStepRequest: IFlowStepGatesDependencies["prepareStepRequest"];
 
   constructor(dependencies: IFlowStepGatesDependencies) {
     this.checkpointCoordinator = dependencies.checkpointCoordinator;

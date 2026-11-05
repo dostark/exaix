@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
+import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { RetryBudgetService } from "./retry_budget_service.ts";
 import type { CompensationService } from "./compensation_service.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
@@ -23,6 +23,7 @@ import {
 import type { Opt, Reason } from "@exaix/core/types";
 import { FlowControlError, FlowGateHaltedError } from "./errors/flow_control_errors.ts";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
+import type { ExecuteFlowStep } from "./flow_types.ts";
 import type {
   IFlowEventLogger,
   IFlowOriginalRequest,
@@ -39,14 +40,7 @@ export interface IFlowStepRecoveryDependencies {
   readonly eventLogger: IFlowEventLogger;
   readonly retryBudgetService: RetryBudgetService;
   readonly stepIo: FlowStepIo;
-  readonly executeStep: (
-    flowRunId: string,
-    stepId: string,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    stepResults: Map<string, IStepResult>,
-    repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
-  ) => Promise<IStepResult>;
+  readonly executeStep: ExecuteFlowStep;
   readonly runStepAttempt: (
     ctx: IStepContext,
     attemptClass?: Opt<StepAttemptClass, Reason.SensibleDefault>,
@@ -59,18 +53,8 @@ export class FlowStepRecovery {
   private readonly eventLogger: IFlowEventLogger;
   private readonly retryBudgetService: RetryBudgetService;
   private readonly stepIo: FlowStepIo;
-  private readonly executeStep: (
-    flowRunId: string,
-    stepId: string,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
-    stepResults: Map<string, IStepResult>,
-    repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
-  ) => Promise<IStepResult>;
-  private readonly runStepAttempt: (
-    ctx: IStepContext,
-    attemptClass?: Opt<StepAttemptClass, Reason.SensibleDefault>,
-  ) => Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }>;
+  private readonly executeStep: ExecuteFlowStep;
+  private readonly runStepAttempt: IFlowStepRecoveryDependencies["runStepAttempt"];
 
   constructor(dependencies: IFlowStepRecoveryDependencies) {
     this.compensationService = dependencies.compensationService;

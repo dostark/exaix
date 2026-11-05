@@ -270,6 +270,8 @@ package-level configuration and restart/failure semantics:
 
 ### 7. **Packages vs. Services — Placement Model**
 
+Package-owned test support shared with other test boundaries lives under `testing/`. The execution package exports prompt and executor fixtures through `@exaix/execution/testing`.
+
 **The placement test — one question:** _Can an external consumer use this module without knowing the Exaix daemon exists?_
 
 - **Yes** → it belongs in a package under `packages/`.

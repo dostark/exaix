@@ -32,7 +32,7 @@ import { ConfigSchema, type IResolvedBinding } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 import type { ITool } from "@exaix/core/types";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
-import { createReActPromptBuilder } from "../../packages/execution/tests/helpers/react_prompt_builder.ts";
+import { createReActPromptBuilder } from "@exaix/execution/testing";
 
 const MODEL = "llama3.1:8b";
 const AGENT_ROLE = "self-hosted-native-tools-agent";

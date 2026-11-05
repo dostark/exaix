@@ -5,9 +5,10 @@
  * @architectural-layer Flows
  * @related-files [packages/flow/src/dynamic_step_executor.ts, packages/ai/src/types.ts]
  */
+import { createDynamicExecutor } from "./helpers/dynamic_executor.ts";
 import { assertEquals } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
+import { McpToolName } from "@exaix/mcp";
 import type { IMcpClient, IMcpToolCallContext } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
@@ -16,7 +17,7 @@ import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import type { ILlmClient, IProviderAssistantReplay, ToolArgs } from "@exaix/ai";
 import type { INativeConversationSnapshot } from "@exaix/ai";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
+import type { DynamicStepExecutor, IActivityJournal, JournalEntry } from "@exaix/flow";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 
 class ReplayMcpClient implements IMcpClient, IToolManifestResolver {
@@ -90,16 +91,24 @@ function replayOf(id: string, name: string, args: string): IProviderAssistantRep
   };
 }
 
-Deno.test("DynamicStepExecutor forwards native controls and replays exact successful call id", async () => {
+interface IReplayCase {
+  mcp: ReplayMcpClient;
+  llm: ReplayLlmClient;
+  executor: DynamicStepExecutor;
+}
+
+function replayCase(): IReplayCase {
   const mcp = new ReplayMcpClient();
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor({
-    mcpClient: mcp,
-    llmClient: llm,
-    activityJournal: new ReplayJournal(),
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  return {
+    mcp,
+    llm,
+    executor: createDynamicExecutor({ mcpClient: mcp, llmClient: llm, activityJournal: new ReplayJournal() }),
+  };
+}
+
+Deno.test("DynamicStepExecutor forwards native controls and replays exact successful call id", async () => {
+  const { mcp, llm, executor } = replayCase();
   llm.decisions = [
     {
       done: false,
@@ -132,15 +141,7 @@ Deno.test("DynamicStepExecutor forwards native controls and replays exact succes
 });
 
 Deno.test("DynamicStepExecutor appends each completed native call as its own singleton round, in order", async () => {
-  const mcp = new ReplayMcpClient();
-  const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor({
-    mcpClient: mcp,
-    llmClient: llm,
-    activityJournal: new ReplayJournal(),
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { llm, executor } = replayCase();
   llm.decisions = [
     {
       done: false,
@@ -185,13 +186,11 @@ Deno.test("DynamicStepExecutor replays denied native call as an error without ex
     },
   };
   const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient: mcp,
     llmClient: llm,
     activityJournal: new ReplayJournal(),
     confirmationInterceptor: interceptor,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
   llm.decisions = [
     {
@@ -231,12 +230,10 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
   mcp.failure = new Error("portal access denied");
   const llm = new ReplayLlmClient();
   const journal = new ReplayJournal();
-  const executor = new DynamicStepExecutor({
+  const executor = createDynamicExecutor({
     mcpClient: mcp,
     llmClient: llm,
     activityJournal: journal,
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
   });
   llm.decisions = [{
     done: false,
@@ -260,15 +257,7 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
 });
 
 Deno.test("DynamicStepExecutor starts each invocation with an empty native replay", async () => {
-  const mcp = new ReplayMcpClient();
-  const llm = new ReplayLlmClient();
-  const executor = new DynamicStepExecutor({
-    mcpClient: mcp,
-    llmClient: llm,
-    activityJournal: new ReplayJournal(),
-    dynamicModeTools: DYNAMIC_MODE_TOOLS,
-    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-  });
+  const { mcp, llm, executor } = replayCase();
   const config = { execution: { native_tools_enabled: true } };
   for (const traceId of ["trace-isolated-1", "trace-isolated-2"]) {
     llm.decisions.push(

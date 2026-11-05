@@ -86,7 +86,23 @@ interface IConfidenceMetrics {
 /**
  * Schema for confidence assessment output
  */
-export const ConfidenceSchema = z.object({
+export const ConfidenceSchema: z.ZodObject<{
+  score: z.ZodNumber;
+  level: z.ZodEnum<typeof ConfidenceAssessmentLevel>;
+  reasoning: z.ZodString;
+  factors: z.ZodDefault<
+    z.ZodArray<
+      z.ZodObject<{
+        name: z.ZodString;
+        impact: z.ZodEnum<typeof FactorImpact>;
+        weight: z.ZodNumber;
+        description: z.ZodString;
+      }>
+    >
+  >;
+  uncertainty_areas: z.ZodDefault<z.ZodArray<z.ZodString>>;
+  requires_review: z.ZodBoolean;
+}> = z.object({
   score: z.number().min(0).max(100),
   level: z.nativeEnum(ConfidenceAssessmentLevel),
   reasoning: z.string(),

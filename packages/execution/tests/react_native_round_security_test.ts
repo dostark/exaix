@@ -11,6 +11,7 @@
  * ]
  */
 
+import { createStubExecutor } from "./helpers/react_loop_fixtures.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -31,7 +32,6 @@ import {
 import { makeGenerateResult } from "@exaix/testing";
 import type { ITool, JSONValue } from "@exaix/core/types";
 import type { IToolsRoundPolicy } from "@exaix/schemas";
-import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -127,19 +127,12 @@ function registerNativeProvider(): void {
 }
 
 function executorFor(getPolicy: () => IToolsRoundPolicy, executed: string[]): ReActExecutor {
-  return {
-    promptBuilder: createReActPromptBuilder(),
-    logAgentOutput: () => Promise.resolve(),
-    validateReviewResult: (result: IChangesetResult) => result,
-    parseAgentResponse: (_response: string, ctx: IExecutionContext, startTime: number): IChangesetResult => ({
+  return createStubExecutor({
+    parseAgentResponse: (_response, ctx, startTime): IChangesetResult => ({
+      ...createStubExecutor().parseAgentResponse(_response, ctx, startTime),
       branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
       description: ctx.plan,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - startTime,
     }),
-    logGeneration: () => Promise.resolve(),
     getToolsRoundPolicy: getPolicy,
     toolRegistry: {
       execute: (_name: string, params: Record<string, JSONValue>) => {
@@ -149,7 +142,7 @@ function executorFor(getPolicy: () => IToolsRoundPolicy, executed: string[]): Re
       getTools: () => [READ_TOOL],
       getBaseDir: () => "/nonexistent-test-basedir",
     },
-  };
+  });
 }
 
 /** Runs ReAct against scripted responses. The policy reader sees each model turn in order. */

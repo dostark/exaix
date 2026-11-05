@@ -55,6 +55,12 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/max-params",
 ];
 
+async function removeFixturePlugin(dir: string): Promise<void> {
+  const config = JSON.parse(await Deno.readTextFile(join(dir, "deno.json")));
+  config.lint.plugins = [];
+  await Deno.writeTextFile(join(dir, "deno.json"), JSON.stringify(config));
+}
+
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
   const actual = Object.entries(POLICY_CATALOG.rules)
     .filter(([, entry]) => entry.engine === "plugin" && entry.severity === "error")
@@ -148,9 +154,7 @@ Deno.test("default-import-placement: missing plugin and inactive policy invalida
       Error,
       "did not evaluate",
     );
-    const config = JSON.parse(await Deno.readTextFile(join(dir, "deno.json")));
-    config.lint.plugins = [];
-    await Deno.writeTextFile(join(dir, "deno.json"), JSON.stringify(config));
+    await removeFixturePlugin(dir);
     const missing = await runPass(dir, "main");
     assertThrows(
       () =>
@@ -526,9 +530,7 @@ Deno.test("default-boolean-gate: inactive policy and missing plugin cannot certi
       Error,
       "did not evaluate",
     );
-    const config = JSON.parse(await Deno.readTextFile(join(dir, "deno.json")));
-    config.lint.plugins = [];
-    await Deno.writeTextFile(join(dir, "deno.json"), JSON.stringify(config));
+    await removeFixturePlugin(dir);
     const missing = await runPass(dir, "main");
     assertThrows(
       () => assertRuleEvidence({ rule, runId: missing.runId, stderr: missing.stderr, checkedFiles: [path], cwd: dir }),

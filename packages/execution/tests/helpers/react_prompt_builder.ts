@@ -6,13 +6,4 @@
  * @related-files [packages/execution/src/prompt_builder.ts, packages/execution/src/react_loop_adapter.ts]
  */
 
-import { createNoopEventLogger } from "@exaix/core/logger";
-import { createMockConfig } from "@exaix/testing";
-import { ExecutionContextService } from "../../src/execution_context_service.ts";
-import { PromptBuilder } from "../../src/prompt_builder.ts";
-
-/** A PromptBuilder over a no-op logger and an empty execution context, with no budget and no portal root. */
-export function createReActPromptBuilder(): PromptBuilder {
-  const logger = createNoopEventLogger();
-  return new PromptBuilder(logger, new ExecutionContextService(createMockConfig("/tmp"), logger, {}));
-}
+export { createReActPromptBuilder } from "@exaix/execution/testing";

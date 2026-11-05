@@ -685,3 +685,13 @@ export type EmitFlowMilestone = (
   requiresAttention?: boolean,
   attentionReason?: Opt<string, Reason.OptionalContext>,
 ) => Promise<void>;
+
+/** Executes one named flow step with its current result map. */
+export type ExecuteFlowStep = (
+  flowRunId: string,
+  stepId: string,
+  flow: IFlow,
+  request: IFlowOriginalRequest,
+  stepResults: Map<string, IStepResult>,
+  repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
+) => Promise<IStepResult>;

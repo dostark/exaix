@@ -571,12 +571,11 @@ export class AgentRunner implements IAgentRunner {
     const callSite = this.callSites.resolve(request);
     const skillFloors = this.skills.skillFloorsOf(skillsContext);
     const resolution = await this.effort.resolve(blueprint, request, agentRole, skillFloors);
-    const projection = projectResolvedCallOptions(resolution, {
-      binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
-      role: { effort: blueprint.effort, thinking: blueprint.thinking },
-      request: { effort: request.effort, thinking: request.thinking },
-      flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
-    }, this.modelProvider.callCapabilities);
+    const projection = projectResolvedCallOptions(
+      resolution,
+      this.effort.declarationsOf(blueprint, request),
+      this.modelProvider.callCapabilities,
+    );
     this.effort.journalResolution(blueprint, request, agentRole, resolution, { traceId, requestId }, projection);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     return {

@@ -11,21 +11,23 @@ import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
 import { createReActPromptBuilder } from "./helpers/react_prompt_builder.ts";
 
+interface IBuildPromptView {
+  buildPrompt(
+    blueprint: { name: string; capabilities: string[]; model: string; provider: string },
+    context: { trace_id: string; request: string; plan: string; portal: string },
+    options: { agent_role: string; portal: string; permitted_tools?: string[] },
+    history: Array<{ role: string; content: string }>,
+    skipToolProse?: boolean,
+  ): Promise<string>;
+}
+
 function dummyExecutor(): IReActLoopExecutor {
   return { promptBuilder: createReActPromptBuilder() } as never as IReActLoopExecutor;
 }
 
 Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILABLE TOOLS and guidelines", async () => {
   const strategy = new ReActLoopStrategy(dummyExecutor());
-  const typed = strategy as never as {
-    buildPrompt(
-      blueprint: { name: string; capabilities: string[]; model: string; provider: string },
-      context: { trace_id: string; request: string; plan: string; portal: string },
-      options: { agent_role: string; portal: string; permitted_tools?: string[] },
-      history: Array<{ role: string; content: string }>,
-      skipToolProse?: boolean,
-    ): Promise<string>;
-  };
+  const typed = strategy as never as IBuildPromptView;
 
   const promptWithoutProse = await typed.buildPrompt(
     { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },
@@ -60,15 +62,7 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
 
 Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finished tool call", async () => {
   const strategy = new ReActLoopStrategy(dummyExecutor());
-  const typed = strategy as never as {
-    buildPrompt(
-      blueprint: { name: string; capabilities: string[]; model: string; provider: string },
-      context: { trace_id: string; request: string; plan: string; portal: string },
-      options: { agent_role: string; portal: string; permitted_tools?: string[] },
-      history: Array<{ role: string; content: string }>,
-      skipToolProse?: boolean,
-    ): Promise<string>;
-  };
+  const typed = strategy as never as IBuildPromptView;
 
   const prompt = await typed.buildPrompt(
     { name: "test", capabilities: ["write"], model: "mock-model", provider: "mock" },

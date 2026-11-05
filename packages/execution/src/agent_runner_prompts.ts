@@ -34,7 +34,7 @@ import {
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
-import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
+import { lineBoundedPrefix } from "./context/token_bounded_prefix.ts";
 import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION } from "@exaix/core";
 import type { IParsedRequest } from "./agent_runner.ts";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -382,18 +382,7 @@ export class AgentRunnerPrompts {
 
     if (await estimate(content) <= maxTokens) return content;
 
-    const lines = content.split("\n");
-    const kept: string[] = [];
-    for (const line of lines) {
-      const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
-      const candidateTokens = await estimate(candidate);
-      if (candidateTokens > maxTokens) break;
-      kept.push(line);
-    }
-    if (kept.length === 0) {
-      return await tokenBoundedPrefix(content, maxTokens, estimate);
-    }
-    return kept.join("\n");
+    return await lineBoundedPrefix(content, maxTokens, estimate);
   }
 
   /** Non-mutating preview of `constructPrompt`'s assembly — a per-segment breakdown, not

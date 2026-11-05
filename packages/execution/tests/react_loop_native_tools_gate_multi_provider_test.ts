@@ -17,6 +17,7 @@
  * ]
  */
 
+import { planChangeset } from "./helpers/react_loop_fixtures.ts";
 import { assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -84,14 +85,7 @@ function makeTrackingExecutor(
     promptBuilder: createReActPromptBuilder(),
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (r: IChangesetResult) => r,
-    parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: ctx.plan,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - t,
-    }),
+    parseAgentResponse: planChangeset,
     logGeneration: (_traceId, _role, _model, _provider, usage) => {
       generationRecords?.push({ costUsd: usage.costUsd, costSource: usage.costSource });
       return Promise.resolve();

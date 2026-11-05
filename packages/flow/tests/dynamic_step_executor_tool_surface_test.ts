@@ -6,14 +6,15 @@
  * ensuring domain tools with requires_human_approval are correctly excluded.
  */
 
+import { createDynamicExecutor, dynamicAgentRole } from "./helpers/dynamic_executor.ts";
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import type { IToolManifestResolver } from "@exaix/core/types";
-import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
+import { DYNAMIC_MODE_TOOLS, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
 import type { IMcpClient } from "@exaix/mcp";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
+
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
-import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
+import type { DynamicStepExecutor, IActivityJournal, JournalEntry } from "@exaix/flow";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
@@ -72,6 +73,24 @@ const allToolNames = Object.values(McpToolName) as McpToolName[];
 
 // Constant tests
 
+interface IDynamicCase {
+  mcpClient: CapturingMcpClient;
+  llmClient: ImmediateDoneLlmClient;
+  journal: NoopJournal;
+  executor: DynamicStepExecutor;
+}
+function dynamicCase(): IDynamicCase {
+  const mcpClient = new CapturingMcpClient();
+  const llmClient = new ImmediateDoneLlmClient();
+  const journal = new NoopJournal();
+  return {
+    mcpClient,
+    llmClient,
+    journal,
+    executor: createDynamicExecutor({ mcpClient, llmClient, activityJournal: journal }),
+  };
+}
+
 Deno.test("DYNAMIC_MODE_TOOLS derives exactly from manifest dynamic_mode_allowed entries", () => {
   const manifestDerivedDynamic = new Set(
     TOOL_MANIFEST
@@ -107,25 +126,9 @@ Deno.test("DYNAMIC_MODE_TOOLS excludes write and git mutation tools", () => {
 Deno.test(
   "DynamicStepExecutor resolves permitted tools from canonical manifest set, not arbitrary agent-role list",
   async () => {
-    const mcpClient = new CapturingMcpClient();
-    const llmClient = new ImmediateDoneLlmClient();
-    const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor({
-      mcpClient,
-      llmClient,
-      activityJournal: journal,
-      dynamicModeTools: DYNAMIC_MODE_TOOLS,
-      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-    });
+    const { mcpClient, executor } = dynamicCase();
 
-    const agentRole = BlueprintFrontmatterSchema.parse({
-      agent_role: "test-agent",
-      name: "Test Agent",
-      model: "anthropic:claude-3-opus",
-      created: new Date().toISOString(),
-      created_by: "test",
-      permitted_tools: allToolNames, // give agent role ALL tools
-    });
+    const agentRole = dynamicAgentRole(allToolNames, "test-agent", "Test Agent");
 
     const step = FlowStepSchema.parse({
       id: "step-1",
@@ -159,30 +162,18 @@ Deno.test(
 Deno.test(
   "DynamicStepExecutor filters requires_human_approval domain tools even when agent role permits them",
   async () => {
-    const mcpClient = new CapturingMcpClient();
-    const llmClient = new ImmediateDoneLlmClient();
-    const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor({
-      mcpClient,
-      llmClient,
-      activityJournal: journal,
-      dynamicModeTools: DYNAMIC_MODE_TOOLS,
-      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-    });
+    const { mcpClient, executor } = dynamicCase();
 
-    const agentRole = BlueprintFrontmatterSchema.parse({
-      agent_role: "test-agent",
-      name: "Test Agent",
-      model: "anthropic:claude-3-opus",
-      created: new Date().toISOString(),
-      created_by: "test",
-      permitted_tools: [
+    const agentRole = dynamicAgentRole(
+      [
         McpToolName.READ_FILE,
         McpToolName.CREATE_REQUEST, // requires_human_approval: true
         McpToolName.APPROVE_PLAN, // requires_human_approval: true
         McpToolName.LIST_PLANS, // requires_human_approval: false — should be included
       ],
-    });
+      "test-agent",
+      "Test Agent",
+    );
 
     const step = FlowStepSchema.parse({
       id: "step-2",

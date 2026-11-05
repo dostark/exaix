@@ -9,7 +9,7 @@
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IBlueprint } from "@exaix/core/blueprint";
 import { COMPLEXITY_SOURCE_DEFAULT, ProviderRegistry, readProviderModelInfo, resolveProviderType } from "@exaix/ai";
-import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver } from "@exaix/ai";
+import type { IEffortDeclarations, IEffortResolution, IEffortResolutionSignals, IEffortResolver } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import type { IProjectedCallOptions } from "@exaix/ai";
 import type { EffortTier } from "@exaix/schemas";
@@ -60,6 +60,15 @@ export class AgentRunnerEffort {
     this.journal = dependencies.journal;
   }
 
+  declarationsOf(blueprint: IBlueprint, request: IParsedRequest): IEffortDeclarations {
+    return {
+      binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
+      role: { effort: blueprint.effort, thinking: blueprint.thinking },
+      request: { effort: request.effort, thinking: request.thinking },
+      flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
+    };
+  }
+
   async resolve(
     blueprint: IBlueprint,
     request: IParsedRequest,
@@ -85,12 +94,7 @@ export class AgentRunnerEffort {
       agentRole,
     };
     return this.effortResolver.resolve(
-      {
-        binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
-        role: { effort: blueprint.effort, thinking: blueprint.thinking },
-        request: { effort: request.effort, thinking: request.thinking },
-        flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
-      },
+      this.declarationsOf(blueprint, request),
       signals,
     );
   }
