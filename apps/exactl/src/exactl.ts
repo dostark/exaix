@@ -283,20 +283,6 @@ baseCommand
   .command(ExaCtlCommandName.WATCH, buildWatchCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 
-// models subcommand (Solo model registry display)
-
-// version subcommand
-
-// migrate subcommand
-
-// tool subcommand (Tool Confirmation CLI)
-
-// skills subcommand alias (wires the Skills Service)
-
-// watch subcommand (live execution streaming)
-
-// eval subcommand (evaluation framework)
-
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
 
 /** Returns the single initialized CLI command tree, applying edition contributions before parsing. */
