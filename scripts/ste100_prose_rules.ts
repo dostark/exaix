@@ -64,7 +64,7 @@ function decodeProseEntities(text: string): string {
 export function stripProseMarkers(text: string): string {
   return text
     .replace(/[*_~]{1,3}/g, "")
-    .replace(/^\s*(?:[-*+]|\d+\.)\s+/gm, "")
+    .replace(/^[\t ]*(?:[-*+]|\d+\.)[\t ]+/gm, "")
     .replace(/^>\s*/gm, "");
 }
 

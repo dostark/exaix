@@ -19,6 +19,7 @@
  */
 
 import { dirname, isAbsolute, join, relative, resolve, SEPARATOR } from "@std/path";
+import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import {
   type FindingSeverity,
@@ -357,6 +358,35 @@ interface ISelectorProse {
   text: string;
 }
 
+const ProseYamlSchema = z.json();
+type ProseYaml = z.infer<typeof ProseYamlSchema>;
+
+async function extractSidecarProse(content: string): Promise<ISelectorProse[]> {
+  const values: ISelectorProse[] = [];
+  async function visit(value: ProseYaml, path: string): Promise<void> {
+    if (typeof value === "string") {
+      if (value.trim().split(/\s+/).length < 2) return;
+      values.push({
+        span: {
+          selector: `yaml:${path}`,
+          contentHash: await sha256(value),
+          kind: "instruction",
+          mode: modeOf(value),
+          reason: "sidecar prose value",
+          sentenceModes: [],
+        },
+        text: value,
+      });
+    } else if (Array.isArray(value)) {
+      for (const [index, item] of value.entries()) await visit(item, `${path}[${index}]`);
+    } else if (value !== null && typeof value === "object") {
+      for (const [key, item] of Object.entries(value)) await visit(item, path ? `${path}.${key}` : key);
+    }
+  }
+  await visit(ProseYamlSchema.parse(parseYaml(content)), "");
+  return values;
+}
+
 /** Extracts prose spans and their raw text (YAML values, heading sections, fenced
  *  literals) so deterministic checks run on the actual prose, not hash summaries. */
 export async function extractProse(
@@ -366,6 +396,12 @@ export async function extractProse(
   const results = new Map<string, ISelectorProse>();
 
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (
+    sourceKind !== "documentation" && !fmMatch &&
+    /^(?:title|triggers|constraints|output_requirements|quality_criteria|applies_to):/.test(content.trim())
+  ) {
+    return await extractSidecarProse(content);
+  }
   const fmBody = fmMatch?.[1];
   if (fmBody) {
     for (const line of fmBody.split("\n")) {
@@ -432,14 +468,22 @@ export async function extractProse(
       continue;
     }
     const trimmed = line.trim();
-    if (trimmed.length === 0 || trimmed.startsWith("---") || /^#{1,6}\s+/.test(trimmed)) continue;
+    if (trimmed.startsWith("---") || /^#{1,6}\s+/.test(trimmed)) continue;
 
     const inDocSection = currentHeading !== null && DOCUMENTATION_HEADING.test(currentHeading);
     const kind = inDocSection || sourceKind === "documentation" ? "documentation" : "instruction";
     const selector = currentHeading ? `heading:${currentHeading}` : "body";
     const existing = results.get(selector);
+    if (trimmed.length === 0) {
+      if (existing) {
+        existing.text += "\n";
+        existing.span.contentHash = await sha256(existing.text);
+      }
+      continue;
+    }
     if (existing) {
-      existing.text = `${existing.text}\n${trimmed}`;
+      const separator = /^(?:[-*+] |\d+\. )/.test(trimmed) ? "\n\n" : "\n";
+      existing.text = `${existing.text}${separator}${trimmed}`;
       existing.span.contentHash = await sha256(existing.text);
     } else {
       results.set(selector, {
@@ -507,10 +551,12 @@ export async function runAgentProseCheck(options: IAgentProseCheckOptions): Prom
   const findings: IAgentProseFinding[] = [];
   const unclassified: string[] = [];
   const inventory: IProseSource[] = [];
+  let focusedReal: string | null = null;
 
   if (options.focused) {
     const focusedAbs = resolve(options.focused);
-    const inside = uniqueRoots.some((root) => focusedAbs === root || relativeSafe(root, focusedAbs) !== null);
+    focusedReal = await Deno.realPath(focusedAbs).catch(() => focusedAbs);
+    const inside = uniqueRoots.some((root) => focusedReal === root || relativeSafe(root, focusedReal!) !== null);
     if (!inside) {
       return {
         exitCode: 2,
@@ -532,12 +578,25 @@ export async function runAgentProseCheck(options: IAgentProseCheckOptions): Prom
   const discoveredFiles = new Map<string, ICandidateFile>();
   for (const candidate of candidates) {
     const real = await Deno.realPath(candidate.absPath).catch(() => candidate.absPath);
+    if (focusedReal !== null && real !== focusedReal) continue;
     const rel = relativeSafe(candidate.rootReal, real) ?? candidate.relPath;
     if (!discoveredFiles.has(rel)) discoveredFiles.set(rel, candidate);
   }
 
+  if (focusedReal !== null && discoveredFiles.size === 0) {
+    return {
+      exitCode: 2,
+      policyPath,
+      errors: ["Focused path is not a discovered source"],
+      findings,
+      unclassified,
+      sources: [],
+    };
+  }
+
   for (const entry of policy.sources) {
     const candidate = discoveredFiles.get(entry.path);
+    if (focusedReal !== null && !candidate) continue;
     if (!candidate && !options.focused) {
       errors.push(`Policy source missing from discovery: ${entry.path}`);
       continue;

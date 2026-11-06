@@ -1,0 +1,481 @@
+[
+  {
+    "case_id": "p234-s5-c1",
+    "answer": false,
+    "good": {
+      "case_id": "p234-s5-c1",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-0",
+          "status": "RESOLVED",
+          "precondition": "count=0",
+          "expected": "0 items",
+          "input": 0
+        },
+        {
+          "id": "AC-1",
+          "status": "RESOLVED",
+          "precondition": "count=1",
+          "expected": "1 item",
+          "input": 1
+        },
+        {
+          "id": "AC-2",
+          "status": "RESOLVED",
+          "precondition": "count=2",
+          "expected": "2 items",
+          "input": 2
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-zero",
+              "text": "What should zero display?"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "expected"
+          ],
+          "value": "1 items"
+        }
+      ],
+      [
+        {
+          "path": [
+            "status"
+          ],
+          "value": "PENDING USER DECISION"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s5-c2",
+    "answer": false,
+    "good": {
+      "case_id": "p234-s5-c2",
+      "status": "PENDING USER DECISION",
+      "questions": [
+        {
+          "id": "Q-retention",
+          "text": "Which retention period and time basis should apply?"
+        }
+      ],
+      "decisions": [],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-delete",
+          "status": "PENDING",
+          "precondition": "completed event",
+          "expected": "Deletion requires Q-retention",
+          "depends_on": [
+            "Q-retention"
+          ]
+        },
+        {
+          "id": "AC-active",
+          "status": "RESOLVED",
+          "precondition": "active event",
+          "expected": "Never delete active events"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "decisions"
+          ],
+          "value": [
+            {
+              "id": "D-retention",
+              "value": "30 days from created_at"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s5-c2",
+    "answer": true,
+    "good": {
+      "case_id": "p234-s5-c2",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-retention",
+          "value": "45 days from completed_at"
+        }
+      ],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-delete",
+          "status": "RESOLVED",
+          "precondition": "completed event",
+          "expected": "Delete when completed_at <= now - 45 days"
+        },
+        {
+          "id": "AC-active",
+          "status": "RESOLVED",
+          "precondition": "active event",
+          "expected": "Never delete active events"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": [],
+      "supersedes": "p234-s5-c2"
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "decisions",
+            0,
+            "value"
+          ],
+          "value": "30 days from completed_at"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "expected"
+          ],
+          "value": "Delete when created_at <= now - 45 days"
+        }
+      ],
+      [
+        {
+          "path": [
+            "automatic_resume"
+          ],
+          "value": true
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s5-c3",
+    "answer": false,
+    "good": {
+      "case_id": "p234-s5-c3",
+      "status": "PENDING USER DECISION",
+      "questions": [
+        {
+          "id": "Q-expiry",
+          "text": "Can logical expiry replace physical deletion?"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "D-storage",
+          "value": "external immutable archive",
+          "adr": "ADR-007"
+        }
+      ],
+      "assumptions": [
+        {
+          "id": "A-local-delete",
+          "status": "INVALIDATED",
+          "depends_on": [
+            "D-storage"
+          ]
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-local-purge",
+          "status": "STALE",
+          "precondition": "local archive",
+          "expected": "Physically delete local audit files after 30 days",
+          "depends_on": [
+            "D-storage"
+          ]
+        },
+        {
+          "id": "AC-expiry",
+          "status": "PENDING",
+          "precondition": "external immutable archive",
+          "expected": "Resolve logical expiry versus physical deletion"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "assumptions",
+            0,
+            "status"
+          ],
+          "value": "VALID"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "adr_proposals"
+          ],
+          "value": [
+            {
+              "id": "ADR-new",
+              "decision": "D-storage"
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s5-c4",
+    "answer": false,
+    "good": {
+      "case_id": "p234-s5-c4",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-agent",
+          "value": "reviewer Agent Role blueprint"
+        }
+      ],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-select",
+          "status": "RESOLVED",
+          "precondition": "req-42",
+          "expected": "Store agent_role=\"reviewer\"; do not select a running instance ID"
+        }
+      ],
+      "terms": [
+        {
+          "term": "agent",
+          "meaning": "Agent Role",
+          "scenario": "req-42 selects reviewer role blueprint"
+        }
+      ],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "expected"
+          ],
+          "value": "Store running instance run-29 instead of agent_role=\"reviewer\""
+        }
+      ],
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-agent",
+              "text": "Does agent mean role or instance?"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "terms",
+            0,
+            "meaning"
+          ],
+          "value": "running instance"
+        },
+        {
+          "path": [
+            "terms",
+            0,
+            "scenario"
+          ],
+          "value": "req-42"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s5-c5",
+    "answer": false,
+    "good": {
+      "case_id": "p234-s5-c5",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-label",
+          "value": "Runs; no data or identifier migration"
+        },
+        {
+          "id": "D-storage",
+          "value": "immutable append-only ledger"
+        }
+      ],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-label",
+          "status": "RESOLVED",
+          "precondition": "navigation label",
+          "expected": "Runs"
+        },
+        {
+          "id": "AC-audit",
+          "status": "RESOLVED",
+          "precondition": "independent verifier",
+          "expected": "Reconstruct accepted event history"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": [
+        {
+          "id": "ADR-storage",
+          "decision": "D-storage",
+          "alternatives": [
+            "embedded transactional database",
+            "immutable append-only ledger"
+          ],
+          "rationale": "Independent verification must reconstruct accepted event history without trusting the mutable database (R-audit-independent).",
+          "costs": [
+            "historical-data migration",
+            "derived read-model rebuild"
+          ],
+          "action": "proposal only"
+        }
+      ]
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "adr_proposals"
+          ],
+          "value": [
+            {
+              "id": "ADR-storage",
+              "decision": "D-storage",
+              "alternatives": [
+                "embedded transactional database",
+                "immutable append-only ledger"
+              ],
+              "rationale": "Independent verification must reconstruct accepted event history without trusting the mutable database (R-audit-independent).",
+              "costs": [
+                "historical-data migration",
+                "derived read-model rebuild"
+              ],
+              "action": "proposal only"
+            },
+            {
+              "id": "ADR-label",
+              "decision": "D-label"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "adr_proposals",
+            0,
+            "alternatives"
+          ],
+          "value": []
+        }
+      ],
+      [
+        {
+          "path": [
+            "adr_proposals",
+            0,
+            "rationale"
+          ],
+          "value": "A consequential decision is hard to reverse."
+        }
+      ],
+      [
+        {
+          "path": [
+            "decisions",
+            1,
+            "value"
+          ],
+          "value": "embedded transactional database"
+        }
+      ]
+    ]
+  }
+]

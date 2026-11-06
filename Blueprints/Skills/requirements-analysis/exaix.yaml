@@ -10,12 +10,23 @@ constraints:
   - 'Every requirement must be testable — if you cannot write a pass/fail check for it, it is not a requirement'
   - Separate functional requirements from non-functional constraints explicitly
   - Identify assumptions and risks alongside every requirement
+  - Inspect existing project terminology, configuration, and accepted decisions before asking questions
+  - Ask only about material choices that available evidence cannot resolve
+  - Resolve overloaded terms through concrete scenarios before defining their acceptance criteria
+  - Keep unanswered material choices and dependent criteria pending rather than inventing a decision
+  - Recheck dependent assumptions and criteria after a decision changes
+  - Propose ADRs only for consequential tradeoffs that are hard to reverse and surprising without their rationale
+  - Follow existing artifact approval rules and do not create ADRs or glossary hierarchies automatically
 output_requirements:
   - User stories in standard As a / I want / So that format
   - Acceptance criteria in Given / When / Then format
   - Success metrics with measurable targets
   - Technical requirements with rationale
   - Constraints and assumptions
+  - Agreed terms, concrete scenarios, decisions, rationale, dependencies, exclusions, and testable acceptance criteria
+  - "For an unanswered material choice: one question, affected assumptions, unresolved criteria, and PENDING USER DECISION"
+  - "After a later answer: an updated artifact that identifies the earlier record and revises dependent criteria"
+  - ADR proposal with alternatives and rationale only when the tradeoff qualifies
 quality_criteria:
   - name: Testability
     description: Every acceptance criterion is a pass/fail check

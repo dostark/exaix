@@ -11,6 +11,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { evaluatePlan, RUNTIME_VERIFICATION_CASES } from "../../runner/runtime_verification_oracle.ts";
 
+import { registerOracleControls } from "../helpers/oracle_controls.ts";
+
 interface ICaseSample {
   id: string;
   good: string;
@@ -50,17 +52,7 @@ Deno.test("every announced runtime verification case has a sample", () => {
   assertEquals(SAMPLES.map((sample) => sample.id), [...RUNTIME_VERIFICATION_CASES]);
 });
 
-for (const sample of SAMPLES) {
-  Deno.test(`${sample.id}: accepts the selected method`, () => {
-    const result = evaluatePlan(sample.id, sample.good);
-    assertEquals(result.ok, true, result.reasons.join("; "));
-  });
-
-  Deno.test(`${sample.id}: rejects the known-bad control`, () => {
-    const result = evaluatePlan(sample.id, sample.bad);
-    assertEquals(result.ok, false);
-  });
-}
+registerOracleControls(SAMPLES, evaluatePlan, "accepts the selected method");
 
 Deno.test("an unknown runtime verification case id is rejected", () => {
   let message = "";

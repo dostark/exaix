@@ -39,6 +39,59 @@ import { normalizeSteProse, runDeterministicSteChecks, summarizeSteCount } from 
 const CHECKER_SCRIPT = join(import.meta.dirname!, "../../scripts/check_agent_prose.ts");
 const FIXTURES_DIR = join(import.meta.dirname!, "fixtures/agent_prose/owned");
 
+Deno.test("Prose extraction preserves paragraph and list-item boundaries", async () => {
+  const raw = await Deno.readTextFile(join(FIXTURES_DIR, "../paragraphs.md"));
+  const parts = await extractProse(raw, "instruction");
+  const findings = parts.flatMap((part) => runDeterministicSteChecks(normalizeSteProse(part.text)));
+  assertEquals(findings, []);
+});
+
+Deno.test("Standalone sidecar values are checked separately and long values still fail", async () => {
+  const raw = await Deno.readTextFile(join(FIXTURES_DIR, "../sidecar.yaml"));
+  const parts = await extractProse(raw, "mixed");
+  assertEquals(parts.some((part) => part.span.selector === "yaml:constraints[0]"), true);
+  assertEquals(parts.flatMap((part) => runDeterministicSteChecks(normalizeSteProse(part.text))), []);
+  const documentation = await extractProse(raw, "documentation");
+  assertEquals(documentation.every((part) => part.span.kind === "documentation"), true);
+  const invalid = await extractProse(`constraints:\n  - ${"word ".repeat(25)}\n`, "mixed");
+  assertEquals(invalid.flatMap((part) => runDeterministicSteChecks(normalizeSteProse(part.text))).length, 1);
+});
+
+Deno.test("Focused prose check excludes unrelated inventory debt while the full scan rejects it", async () => {
+  const fixture = await makeFixture({
+    mutate: async ({ ownedDir }) => {
+      await writeFileAt(ownedDir, "misc/unknown.txt", "An unrelated unclassified source.");
+    },
+  });
+  const focused = join(fixture.ownedDir, ".copilot/skills/demo/SKILL.md");
+  const selected = await runAgentProseCheck({ policyPath: fixture.policyPath, focused });
+  assertEquals(selected.exitCode, 0, JSON.stringify(selected.errors));
+  assertEquals(selected.sources.map((source) => source.path), [".copilot/skills/demo/SKILL.md"]);
+  const full = await runAgentProseCheck({ policyPath: fixture.policyPath });
+  assertEquals(full.exitCode, 1);
+  assertStringIncludes(full.unclassified.join("\n"), "misc/unknown.txt");
+});
+
+Deno.test("Focused prose check rejects an unclassified target and a missing target", async () => {
+  const fixture = await makeFixture({
+    mutate: async ({ ownedDir }) => {
+      await writeFileAt(ownedDir, "misc/unknown.txt", "An unclassified selected source.");
+    },
+  });
+  const unclassified = await runAgentProseCheck({
+    policyPath: fixture.policyPath,
+    focused: join(fixture.ownedDir, "misc/unknown.txt"),
+  });
+  assertEquals(unclassified.exitCode, 1);
+  assertEquals(unclassified.unclassified, ["misc/unknown.txt:unclassified"]);
+  const missing = await runAgentProseCheck({
+    policyPath: fixture.policyPath,
+    focused: join(fixture.ownedDir, "missing.md"),
+  });
+  assertEquals(missing.exitCode, 2);
+  assertStringIncludes(missing.errors.join("\n"), "Focused path is not a discovered source");
+});
+
 async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");

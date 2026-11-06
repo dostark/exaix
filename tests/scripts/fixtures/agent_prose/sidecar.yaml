@@ -1,0 +1,6 @@
+title: Requirements discovery
+constraints:
+  - Read the existing project terminology before asking questions
+  - Ask only for unresolved material choices
+output_requirements:
+  - Record the decision and its acceptance criteria

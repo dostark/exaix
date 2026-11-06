@@ -11,6 +11,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { BUG_DIAGNOSIS_CASES, evaluatePlan } from "../../fixtures/skill_eval/phase234/bug_diagnosis_oracle.ts";
 
+import { registerOracleControls } from "../helpers/oracle_controls.ts";
+
 interface ICaseSample {
   id: string;
   good: string;
@@ -50,17 +52,7 @@ Deno.test("every announced bug-diagnosis case has a sample", () => {
   assertEquals(SAMPLES.map((sample) => sample.id), [...BUG_DIAGNOSIS_CASES]);
 });
 
-for (const sample of SAMPLES) {
-  Deno.test(`${sample.id}: accepts the symptom-specific diagnosis`, () => {
-    const result = evaluatePlan(sample.id, sample.good);
-    assertEquals(result.ok, true, result.reasons.join("; "));
-  });
-
-  Deno.test(`${sample.id}: rejects the known-bad control`, () => {
-    const result = evaluatePlan(sample.id, sample.bad);
-    assertEquals(result.ok, false);
-  });
-}
+registerOracleControls(SAMPLES, evaluatePlan, "accepts the symptom-specific diagnosis");
 
 Deno.test("an unknown case id is rejected", () => {
   let message = "";

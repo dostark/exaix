@@ -11,6 +11,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { BUG_DIAGNOSIS_RUNTIME_CASES, evaluatePlan } from "../../runner/bug_diagnosis_runtime_oracle.ts";
 
+import { registerOracleControls } from "../helpers/oracle_controls.ts";
+
 interface ICaseSample {
   id: string;
   good: string;
@@ -50,17 +52,7 @@ Deno.test("every announced runtime case has a sample", () => {
   assertEquals(SAMPLES.map((sample) => sample.id), [...BUG_DIAGNOSIS_RUNTIME_CASES]);
 });
 
-for (const sample of SAMPLES) {
-  Deno.test(`${sample.id}: accepts the project-appropriate diagnosis`, () => {
-    const result = evaluatePlan(sample.id, sample.good);
-    assertEquals(result.ok, true, result.reasons.join("; "));
-  });
-
-  Deno.test(`${sample.id}: rejects the known-bad control`, () => {
-    const result = evaluatePlan(sample.id, sample.bad);
-    assertEquals(result.ok, false);
-  });
-}
+registerOracleControls(SAMPLES, evaluatePlan, "accepts the project-appropriate diagnosis");
 
 Deno.test("an unknown runtime case id is rejected", () => {
   let message = "";

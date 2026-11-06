@@ -1,0 +1,42 @@
+[
+  {
+    "name": "fix-bug",
+    "source_commit": "8194b4443",
+    "instructions_prefix": "```text\nKey points\n\n- NEVER fix before a failing regression test. RED must come first.\n- Fix only the root cause, not the symptom. Diff the fix to confirm scope.\n- Hard or intermittent bug? Record one",
+    "constraints_after": "Write regression test first that reproduces the bug (RED phase)",
+    "constraint_additions": [
+      "Reproduce the reported symptom with one bounded command and observed failure",
+      "Rank plausible causes and test one falsifiable prediction at a time"
+    ],
+    "output_requirements": [
+      "Reproduction: command, observed symptom, controls, and bounds",
+      "Ranked hypotheses, rejected causes, and the confirmed cause",
+      "RED evidence: failing regression at the real failing boundary",
+      "GREEN evidence: regression and original reproduction pass after fix",
+      "Performance evidence on identical workloads when the defect is performance-related",
+      "CI gates clean before commit",
+      "Structured commit message referencing the bug"
+    ]
+  },
+  {
+    "name": "test-development",
+    "source_commit": "275edc770",
+    "instructions_prefix": "```text\nKey points\n\n- A test that cannot fail is worse than no test — it certifies the subsystem as covered\n  and stops anyone looking again. Canary every test: break what it names, confirm red,\n  res",
+    "constraints_after": "Canary every new or edited test — break what it names, confirm red, restore",
+    "constraint_additions": [
+      "Choose a verification method only for a named defect; example-based tests remain the default",
+      "Record behavior, production entry point, independent oracle, substitutes, and what the test cannot establish",
+      "Use deterministic seeds and bounded runs for property, fuzz, and mutation checks",
+      "Keep interaction checks when retry, ordering, or authorization is the contract"
+    ],
+    "output_requirements": [
+      "Target test files created or modified",
+      "Helpers and patterns used",
+      "Test command and coverage check results",
+      "Canary evidence for each new assertion — what was broken and that it went red",
+      "Verification method and the defect it detects",
+      "Independent oracle or contract and what the test cannot establish",
+      "For a slow test fixed: before/after per-test duration and pass counts"
+    ]
+  }
+]

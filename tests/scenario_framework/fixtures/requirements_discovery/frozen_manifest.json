@@ -1,0 +1,29 @@
+{
+  "baseline_parent": "03c3cecd6859c219b45a7951b2d4d5bd47e01030",
+  "baseline_docs": "16689b42ac1ccd7641c1f2c18c8fa0a71157ce41",
+  "before_skill_hashes": {
+    "Blueprints/Skills/requirements-analysis/SKILL.md": "8d3eb6fc796657ba94b7c9f77ebfa6b7ce24867ed84482d15b5b5989186658f0",
+    "Blueprints/Skills/requirements-analysis/exaix.yaml": "6cb19cb6864386f043070b0eb96686ed0a29c75cc1fca231d80083d6feef397e"
+  },
+  "approved_proposal_revision": 1,
+  "approved_diff_sha256": "7937c3ec971ccdeb0af35041baba46420c3274bd41a53753bb0bce11cdce0332",
+  "input_files": {
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c1.md": "8795f03567dd818113b60b123dede69e0dc7e57d172757599ff8ebcd0e5305e7",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c2.md": "604a100c7dd07ac49ca21761edba0d9fc9e055b30bef4cc12380c108e8da12f7",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c2-answer.md": "96eac8d8fba3400d83afe8879899e51c111c7bbfdfc85da666a74d858d3b53a6",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c3.md": "16daa7f16942403da811efe34c5d0465a17e451cbd0cb5bb04178f3da9f31e52",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c4.md": "e3d11fdb8cfa0641c2021b7aeb3b80f339f10dd863b159a18185fdf775176a06",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s5-c5.md": "100e6980e4832fa0c748b5d1de251486a9c6fc44122694bfc892a3cf24d96f4d",
+    "tests/scenario_framework/fixtures/portals/p234_s5_c1/README.md": "9422d3decc72b954da60c5eca9ad971b478ab727270c296fd715e1fd01bc8992",
+    "tests/scenario_framework/fixtures/portals/p234_s5_c2/README.md": "051cce6fbb48ff727c4bb118ee2b9699185fd74514d6069bf39b6d914e05d029",
+    "tests/scenario_framework/fixtures/portals/p234_s5_c3/README.md": "e6280aca673cd8cedbf1f1599e491b92fb50bd072f6b903718ec844d3f1aa4fd",
+    "tests/scenario_framework/fixtures/portals/p234_s5_c4/README.md": "dbedb16de1d2206761758b97faa2205f4992347a936c23df5886c2fd447fbe07",
+    "tests/scenario_framework/fixtures/portals/p234_s5_c5/README.md": "6908b02d0144698f7f0b0a97865672b2ba1978debe63b987bb9c2dde1f0fbecb"
+  },
+  "notes": [
+    "Raw payloads were frozen before the approved skill edit.",
+    "Later Markdown headings and list spacing preserve the approved words and order.",
+    "Counterexample mutations materialize the original twenty incorrect records.",
+    "Live delivery and behavior remain pending Step 8; no value result is claimed."
+  ]
+}

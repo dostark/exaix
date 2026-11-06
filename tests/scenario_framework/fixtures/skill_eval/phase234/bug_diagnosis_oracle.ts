@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/tests/unit/bug_diagnosis_oracle_test.ts]
  */
 
-import { join } from "@std/path";
+import { normalizeOracleText, requireAll, runTextOracle } from "../../../runner/skill_oracle_helpers.ts";
 
 /** One oracle decision and the reasons behind it. */
 export interface IOracleResult {
@@ -25,17 +25,12 @@ export const BUG_DIAGNOSIS_CASES = [
   "p234-s1-c5",
 ] as const;
 
-/** Normalizes plan text for stable matching. */
-function normalize(text: string): string {
-  return text.replace(/\s+/g, " ").trim().toLowerCase();
-}
-
 /** Scores one case against the plan text. */
 export function evaluatePlan(caseId: string, text: string): IOracleResult {
   if (!BUG_DIAGNOSIS_CASES.includes(caseId as (typeof BUG_DIAGNOSIS_CASES)[number])) {
     throw new Error(`Unknown bug-diagnosis case: ${caseId}`);
   }
-  const plan = normalize(text);
+  const plan = normalizeOracleText(text);
   switch (caseId) {
     case "p234-s1-c1":
       return requireAll(plan, [
@@ -90,44 +85,4 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
   }
 }
 
-/** Applies each assertion and collects the failures. */
-function requireAll(plan: string, checks: Array<[RegExp, string]>): IOracleResult {
-  const reasons: string[] = [];
-  for (const [pattern, reason] of checks) {
-    if (!pattern.test(plan)) reasons.push(`missing: ${reason}`);
-  }
-  return { ok: reasons.length === 0, reasons };
-}
-
-/** Finds the newest plan file under the workspace. */
-async function newestPlan(workspaceRoot: string): Promise<string> {
-  const plansDir = join(workspaceRoot, "Workspace", "Plans");
-  let newest: { path: string; mtime: number } | undefined;
-  for await (const entry of Deno.readDir(plansDir)) {
-    if (!entry.isFile || !entry.name.endsWith("_plan.md")) continue;
-    const path = join(plansDir, entry.name);
-    const info = await Deno.stat(path);
-    const mtime = info.mtime?.getTime() ?? 0;
-    if (!newest || mtime > newest.mtime) newest = { path, mtime };
-  }
-  if (!newest) throw new Error(`No plan file found under ${plansDir}`);
-  return newest.path;
-}
-
-if (import.meta.main) {
-  const [caseId, workspaceRoot] = Deno.args;
-  if (!caseId || !workspaceRoot) {
-    console.error("Usage: bug_diagnosis_oracle.ts <case-id> <workspace-root>");
-    Deno.exit(2);
-  }
-  try {
-    const planPath = await newestPlan(workspaceRoot);
-    const text = await Deno.readTextFile(planPath);
-    const result = evaluatePlan(caseId, text);
-    console.log(JSON.stringify({ caseId, planPath, ...result }));
-    Deno.exit(result.ok ? 0 : 1);
-  } catch (error: unknown) {
-    console.error(error instanceof Error ? error.message : String(error));
-    Deno.exit(2);
-  }
-}
+if (import.meta.main) await runTextOracle(evaluatePlan, "bug_diagnosis_oracle.ts");

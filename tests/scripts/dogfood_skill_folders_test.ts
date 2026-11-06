@@ -2,13 +2,13 @@
  * @module DogfoodSkillFoldersTest
  * @path tests/scripts/dogfood_skill_folders_test.ts
  * @description The `.copilot/skills` folders load directly through the folder loader as a dogfood root.
- *   Every folder reproduces the independent baseline captured from the removed generator, field for field,
+ *   Every folder preserves independent baseline fields and recorded approved sidecar revisions.
  *   and the three runtime ids that differed from their folder names are pinned by an explicit alias table.
  * @architectural-layer Test
  * @related-files [tests/fixtures/skills/dogfood_baseline.json, packages/core/src/skills/skill_folder_loader.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertGreaterOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { SkillRootKind } from "@exaix/core";
 import { SkillFolderLoader } from "@exaix/core/skills";
@@ -17,6 +17,7 @@ import { EventRegistry } from "@exaix/core/events";
 import { createPathSecurity } from "@exaix/tool-runtime";
 import { REPO_ROOT, testSkillContext } from "@exaix/testing";
 import { countSkillFolders } from "../helpers/skill_sources.ts";
+import approvedRevisions from "../fixtures/skills/approved_skill_revisions.json" with { type: "json" };
 
 interface IBaselineCriterion {
   name: string;
@@ -102,7 +103,7 @@ Deno.test("[dogfood] every folder loads as an active skill with no diagnostics",
   assertEquals(loaded.length, await countSkillFolders(join(REPO_ROOT, ".copilot", "skills")));
 });
 
-Deno.test("[dogfood] every folder reproduces the generator baseline field for field", async () => {
+Deno.test("[dogfood] every folder preserves baseline fields and approved sidecar revisions", async () => {
   const baseline: IBaselineSkill[] = JSON.parse(
     await Deno.readTextFile(join(REPO_ROOT, "tests", "fixtures", "skills", "dogfood_baseline.json")),
   );
@@ -113,14 +114,29 @@ Deno.test("[dogfood] every folder reproduces the generator baseline field for fi
     if (!skill) throw new Error(`missing dogfood skill ${expected.name}`);
     assertEquals(skill.description, expected.description, expected.name);
     assertEquals(skill.triggers, expected.triggers, expected.name);
-    assertEquals(skill.constraints, expected.constraints, expected.name);
-    assertEquals(skill.output_requirements, expected.output_requirements, expected.name);
+    const approved = approvedRevisions.find((entry) => entry.name === expected.name);
+    let constraints = expected.constraints;
+    if (approved) {
+      const anchor = constraints.indexOf(approved.constraints_after);
+      assertGreaterOrEqual(anchor, 0, `Missing approved insertion anchor for ${expected.name}`);
+      constraints = [
+        ...constraints.slice(0, anchor + 1),
+        ...approved.constraint_additions,
+        ...constraints.slice(anchor + 1),
+      ];
+    }
+    assertEquals(skill.constraints, constraints, expected.name);
+    assertEquals(
+      skill.output_requirements,
+      approved?.output_requirements ?? expected.output_requirements,
+      expected.name,
+    );
     assertEquals(skill.quality_criteria, expected.quality_criteria, expected.name);
     assertEquals(skill.compatible_with, expected.compatible_with, expected.name);
     if (EDITED_SINCE_BASELINE.has(expected.name)) {
       assertEquals(
         skill.instructions.slice(0, EDITED_PREFIX_CHARS),
-        expected.instructions.slice(0, EDITED_PREFIX_CHARS),
+        approved?.instructions_prefix ?? expected.instructions.slice(0, EDITED_PREFIX_CHARS),
         expected.name,
       );
     } else {
