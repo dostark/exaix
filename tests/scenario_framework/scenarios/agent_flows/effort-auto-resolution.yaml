@@ -35,8 +35,9 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "Refactor the authentication module: replace the session store in src/auth/session_store.ts, update the storage layer in src/auth/storage_layer.ts, change the API boundary in src/api/contract.ts, migrate the schema in src/db/migrations.ts, adjust the client SDK in src/sdk/client.ts, update the documentation in docs/auth.md, run the migration, add regression tests in tests/auth_test.ts, and coordinate the deployment across ten modules in src/deploy/orchestrator.ts",
-      "--agent-role",
+      "--agent",
       "senior-coder",
       "--effort",
       "auto",
@@ -101,8 +102,9 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "Refactor the authentication module: replace the session store in src/auth/session_store.ts, update the storage layer in src/auth/storage_layer.ts, change the API boundary in src/api/contract.ts, migrate the schema in src/db/migrations.ts, adjust the client SDK in src/sdk/client.ts, update the documentation in docs/auth.md, run the migration, add regression tests in tests/auth_test.ts, and coordinate the deployment across ten modules in src/deploy/orchestrator.ts",
-      "--agent-role",
+      "--agent",
       "senior-coder",
       "--thinking",
       "auto",
@@ -215,7 +217,7 @@ steps:
   - id: "request-flow"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     input_criteria: []
     output_criteria:
       - id: "flow-request-exit"
@@ -276,8 +278,9 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "Fix the login handling on the endpoint.",
-      "--agent-role",
+      "--agent",
       "senior-coder",
       "--effort",
       "auto",

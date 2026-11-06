@@ -332,9 +332,10 @@ Deno.test({
         await Deno.writeTextFile(file, request.text);
         const submitted = await exactl(run, [
           "request",
+          "create",
           "--file",
           file,
-          "--agent-role",
+          "--agent",
           request.agentRole,
           "--portal",
           request.portal,

@@ -190,7 +190,7 @@ Deno.test("[agent_role_merge] the mock cell keeps the smoke criteria and the liv
     // keeps the portal the validation mounted. The mock cell never needed one.
     const mockSubmit = mockSteps.find((step) => step.command === "request");
     const liveSubmit = liveSteps.find((step) => step.command === "request");
-    assert(mockSubmit?.args?.includes("--agent-role") && mockSubmit.args.includes(role), `${role} mock request`);
+    assert(mockSubmit?.args?.includes("--agent") && mockSubmit.args.includes(role), `${role} mock request`);
     assert(liveSubmit?.args?.includes("--portal") && liveSubmit.args.includes("portal-exaix"), `${role} live portal`);
   }
 });

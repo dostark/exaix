@@ -73,7 +73,7 @@ for the authoritative field reference.
 ## Using an agent role
 
 ```bash
-exactl request "Task description" --agent-role senior-coder
+exactl request create "Task description" --agent senior-coder
 ```
 
 ## Creating a new agent role

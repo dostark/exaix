@@ -78,11 +78,12 @@ steps:
     type: exactl
     command: request
     args:
+      - create
       - --file
       - $REQUEST_FIXTURE
       - --portal
       - todo-app
-      - --agent-role
+      - --agent
       - senior-coder
     output_criteria:
       - id: request-submitted

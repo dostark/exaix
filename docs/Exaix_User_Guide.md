@@ -69,16 +69,16 @@ Submit requests via the CLI to get started quickly:
 
 ```bash
 # 1. Simple task
-exactl request "Refactor src/utils.ts to use async/await"
+exactl request create "Refactor src/utils.ts to use async/await"
 
 # 2. High priority task with specific agent
-exactl request "Audit security in src/api/" --agent security-auditor --priority high
+exactl request create "Audit security in src/api/" --agent security-auditor --priority high
 
 # 3. Task targeting a specific portal
-exactl request "Update README in the MyProject portal" --portal MyProject
+exactl request create "Update README in the MyProject portal" --portal MyProject
 
 # 4. Use a specific model configuration
-exactl request "Generate unit tests for src/math.ts" --model fast
+exactl request create "Generate unit tests for src/math.ts" --model fast
 
 # 5. Analyze a request without executing it
 exactl request analyze "Implement a new authentication flow" --mode hybrid
@@ -1190,23 +1190,23 @@ Exaix CLI is organized into ten main command groups:
 
 #### **Request Commands** - Primary Interface for Creating Requests
 
-> **⚠️ RECOMMENDED:** Use `exactl request` to create requests. Do NOT manually create files in `/Workspace/Requests/` — this is error-prone and bypasses validation.
+> **⚠️ RECOMMENDED:** Use `exactl request create` to create requests. Do NOT manually create files in `/Workspace/Requests/` — this is error-prone and bypasses validation.
 
-The `exactl request` command is the **primary interface** for submitting work to Exaix agents:
+The `exactl request create` command is the **primary interface** for submitting work to Exaix agents:
 
 ```bash
 # Basic usage - just describe what you want
-exactl request "Implement user authentication for the API"
+exactl request create "Implement user authentication for the API"
 
 # With options
-exactl request "Add rate limiting" --agent senior_coder --priority high
-exactl request "Fix security bug" --priority critical --portal MyProject
-exactl request "Patch release branch" --portal MyProject --target-branch release_1.2
-exactl request "Build a web app" --flow web-development
+exactl request create "Add rate limiting" --agent senior_coder --priority high
+exactl request create "Fix security bug" --priority critical --portal MyProject
+exactl request create "Patch release branch" --portal MyProject --target-branch release_1.2
+exactl request create "Build a web app" --flow web-development
 
 # From file (for complex/long requests)
-exactl request --file ~/requirements.md
-exactl request -f ./feature-spec.md --agent architect
+exactl request create --file ~/requirements.md
+exactl request create -f ./feature-spec.md --agent architect
 
 # List pending requests
 exactl request list
@@ -1217,17 +1217,17 @@ exactl request show <trace-id>
 exactl request show a1b2c3d4
 
 # Dry run (see what would be created)
-exactl request "Test" --dry-run
+exactl request create "Test" --dry-run
 
 # JSON output (for scripting)
-exactl request "Test" --json
+exactl request create "Test" --json
 
 # Inject skills to override agent limitations
-exactl request "Audit and write report" --agent security-expert --skills documentation-driven
+exactl request create "Audit and write report" --agent security-expert --skills documentation-driven
 
 # Trigger immediate intent analysis
-exactl request "Implement a new authentication flow" --analyze --engine llm
-exactl request "Update documentation" --analyze --engine heuristic
+exactl request create "Implement a new authentication flow" --analyze --engine llm
+exactl request create "Update documentation" --analyze --engine heuristic
 
 # Analyze an existing request
 exactl request analyze a1b2c3d4
@@ -1263,7 +1263,7 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 ```bash
 # 1. Create a request with one command
-$ exactl request "Add input validation to all API endpoints"
+$ exactl request create "Add input validation to all API endpoints"
 ✓ Request created: request-a1b2c3d4.md
   Trace ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890
   Priority: normal
@@ -1292,7 +1292,7 @@ $ exactl request list
 **Structured criteria example:**
 
 ```bash
-exactl request "Implement file upload validation" \
+exactl request create "Implement file upload validation" \
   --agent senior-coder \
   --acceptance-criteria "All existing tests pass" \
   --acceptance-criteria "Payloads over 1MB are rejected" \
@@ -1305,19 +1305,19 @@ Explicit criteria improve request quality in three ways: they raise the analyzer
 
 ```bash
 # Large model with extended reasoning for complex tasks
-exactl request "Design authentication architecture" --model-size L --thinking --effort high
+exactl request create "Design authentication architecture" --model-size L --thinking --effort high
 
 # Let the system decide the effort tier from task complexity (auto resolution)
-exactl request "Design authentication architecture" --effort auto
+exactl request create "Design authentication architecture" --effort auto
 
 # Quick, cheap task — small model, no thinking
-exactl request "Format all files" --model-size S --characteristic cheapest
+exactl request create "Format all files" --model-size S --characteristic cheapest
 
 # Balanced: medium model, some reasoning, speed priority
-exactl request "Refactor utils module" --model-size M --thinking --effort low --characteristic fastest
+exactl request create "Refactor utils module" --model-size M --thinking --effort low --characteristic fastest
 
 # Pin to a specific provider but let ModelResolver pick the model
-exactl request "Audit dependencies" --model-size XL --preferred-provider anthropic
+exactl request create "Audit dependencies" --model-size XL --preferred-provider anthropic
 ```
 
 **Resolution precedence (Solo, the curated model registry).** For a `--model-size` request the resolver tries, in order:
@@ -1448,7 +1448,7 @@ this fits into the overall Solo / Team / Enterprise split.
 
 **Why CLI instead of manual files?**
 
-| Aspect         | Manual File Creation     | `exactl request`           |
+| Aspect         | Manual File Creation     | `exactl request create`    |
 | -------------- | ------------------------ | -------------------------- |
 | Frontmatter    | Must write YAML manually | Auto-generated             |
 | Trace ID       | Must generate UUID       | Auto-generated             |
@@ -1490,7 +1490,7 @@ exactl request clarify <trace-id> --cancel
 **Clarification workflow:**
 
 ```text
-exactl request "fix something"          # vague → quality gate detects low score
+exactl request create "fix something"          # vague → quality gate detects low score
 → status: REFINING                       # gate saves session + questions
 → exactl request clarify <id>            # see the questions
 → exactl request clarify <id> -i        # answer interactively
@@ -1865,7 +1865,7 @@ exactl portal refresh MyWebsite
 
 **Portal base branch and execution strategy:**
 
-- `exactl request --portal <alias> --target-branch <branch>` stores `target_branch` in request/plan frontmatter and uses it as the review's merge target (`base_branch`) for portal code reviews.
+- `exactl request create --portal <alias> --target-branch <branch>` stores `target_branch` in request/plan frontmatter and uses it as the review's merge target (`base_branch`) for portal code reviews.
 - If `target_branch` is not provided, Exaix falls back to the portal's configured `default_branch` (if set), and otherwise auto-detects the repository's default branch.
 - `--execution-strategy` controls how Exaix runs write-capable portal work:
   - `branch` (default): create a feature branch in the portal repo checkout.
@@ -2624,7 +2624,7 @@ and `capability_unavailable` all end the run. None of them is retried by a gener
 
 **Shipped blueprints.** Each blueprint lives in `Blueprints/Flows/` and ships a companion overlay.
 A blueprint marks step weight with `effort` and `thinking` and never hard-codes a service, so it runs on any
-configured provider. Pass an overlay with `exactl request --flow <id> --overlay <file>` to bind strong and light
+configured provider. Pass an overlay with `exactl request create --flow <id> --overlay <file>` to bind strong and light
 steps to concrete services. The files below are TOML. `--overlay` reads them directly, and the daemon overlay
 directory accepts them too.
 
@@ -2830,7 +2830,7 @@ security-auditor (openai:gpt-4o-mini)
 my-agent (anthropic:claude-sonnet)
 
 # 3. Use in requests
-$ exactl request "Review code" --agent security-auditor
+$ exactl request create "Review code" --agent security-auditor
 ```
 
 **Common errors and solutions:**
@@ -2991,7 +2991,7 @@ Revision: 3c0e...
 $ exactl skill approve release-notes --revision 3c0e...
 
 # 3. Use it in a request.
-$ exactl request "Write the release notes" --skills release-notes
+$ exactl request create "Write the release notes" --skills release-notes
 ```
 
 #### **Log & Journal Commands** - Inspect the Activity Journal and cost reports
@@ -3511,8 +3511,8 @@ If these mismatch, run `exactl migrate check` for details.
 
 ```bash
 # Create requests quickly (instead of manual file creation)
-exactl request "Add user authentication"    # Quick request
-exactl request "Fix bug" --priority high    # With priority
+exactl request create "Add user authentication"    # Quick request
+exactl request create "Fix bug" --priority high    # With priority
 exactl request -i                           # Interactive mode
 
 # Human review workflow
@@ -3640,12 +3640,12 @@ Implement user authentication for the API...
 
 #### Why YAML Frontmatter
 
-| Benefit                 | Description                                               |
-| ----------------------- | --------------------------------------------------------- |
-| **Memory Banks search** | Structured metadata enables powerful search and filtering |
-| **CLI commands work**   | CLI can filter/sort by status, priority, agent_role       |
-| **Standard format**     | Most markdown tools expect YAML (`---` delimiters)        |
-| **Auto-generated**      | `exactl request` creates proper frontmatter automatically |
+| Benefit                 | Description                                                      |
+| ----------------------- | ---------------------------------------------------------------- |
+| **Memory Banks search** | Structured metadata enables powerful search and filtering        |
+| **CLI commands work**   | CLI can filter/sort by status, priority, agent_role              |
+| **Standard format**     | Most markdown tools expect YAML (`---` delimiters)               |
+| **Auto-generated**      | `exactl request create` creates proper frontmatter automatically |
 
 #### Frontmatter Fields Reference
 
@@ -3750,7 +3750,7 @@ scope:
 approved: true
 ```
 
-> **💡 TIP:** Use `exactl request` to create requests with proper frontmatter automatically. Manual file creation is error-prone.
+> **💡 TIP:** Use `exactl request create` to create requests with proper frontmatter automatically. Manual file creation is error-prone.
 
 ### 4.7 Bootstrap (Reference Implementation)
 
@@ -3779,7 +3779,7 @@ exactl daemon status
 
 ```bash
 # 1. Create a request (quick method - recommended)
-exactl request "Implement user authentication for the API"
+exactl request create "Implement user authentication for the API"
 # Output: ✓ Request created: request-a1b2c3d4.md
 
 # Alternative: Manual file creation (if you need custom frontmatter)
@@ -4099,7 +4099,7 @@ Read-only agents (like `code-analyst`) execute in portal workspace but don't cre
 exactl portal add ~/git/MyProject my-project
 
 # Submit analysis request (read-only agent)
-exactl request --portal my-project "Analyze src/ architecture"
+exactl request create --portal my-project "Analyze src/ architecture"
 
 # Review results (artifact, not git review)
 exactl review list
@@ -4122,7 +4122,7 @@ Write-capable agents (like `feature-developer`) create feature branches in the p
 
 ```bash
 # Submit feature request (write-capable agent)
-exactl request --portal my-project --agent feature-developer "Add user authentication"
+exactl request create --portal my-project --agent feature-developer "Add user authentication"
 
 # Review changes in portal repository
 cd ~/git/MyProject
@@ -4187,7 +4187,7 @@ exactl review show <id> | grep repository
 ```bash
 # This indicates portal execution didn't work
 # Verify request used --portal flag
-exactl request --portal my-project "..."
+exactl request create --portal my-project "..."
 
 # Check that portal path is correct
 exactl portal show my-project
@@ -4198,14 +4198,14 @@ exactl portal show my-project
 **Before (workspace execution):**
 
 ```bash
-exactl request "Analyze code"
+exactl request create "Analyze code"
 # Result: Operates in ~/Exaix
 ```
 
 **After (portal execution - recommended):**
 
 ```bash
-exactl request --portal my-project "Analyze code"
+exactl request create --portal my-project "Analyze code"
 # Result: Operates in ~/git/MyProject
 ```
 
@@ -4530,7 +4530,7 @@ Every resolution emits a `model_resolved` trace event visible via
 
 #### CLI Flags
 
-Available on `exactl request`:
+Available on `exactl request create`:
 
 | Flag                   | Values                  | Description                    |
 | ---------------------- | ----------------------- | ------------------------------ |
@@ -4753,7 +4753,7 @@ directory). To create a new agent role, clone an existing one as a prototype wit
 # Clone a prototype, then validate and use
 exactl blueprint create my-agent --name "My Agent" --from senior-coder
 exactl blueprint validate my-agent
-exactl request "Task" --agent-role my-agent
+exactl request create "Task" --agent my-agent
 ```
 
 The behavioural patterns that used to be templates are now **skills** in
@@ -4914,7 +4914,7 @@ Four environment variables override the default AI provider and model. Restart t
 
 ```bash
 # Temporarily use local Ollama for a single request
-EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl request "Explain the codebase"
+EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl request create "Explain the codebase"
 
 # Set for the current session
 export EXA_LLM_PROVIDER=anthropic
@@ -5087,14 +5087,14 @@ later runs. Daemon overlays load in lexical filename order. A JSON overlay looks
 }
 ```
 
-For one run, pass a JSON or TOML overlay to `exactl request --flow research --overlay
+For one run, pass a JSON or TOML overlay to `exactl request create --flow research --overlay
 <overlay-file> "Explore the issue"`; `--overlay` is repeatable. The CLI parses a file
 as TOML when its name ends in `.toml` and as JSON otherwise. Add `--bind
 'flow:research/step:explore-1=model=deepseek/deepseek-v4-pro,service=openai-chat'` for an
 inline, repeatable override. `--bind` takes `selector=field=value[,field=value]`; choose
 strings for its fields. `exactl flow bindings research --overlay <overlay-file> --json`
 previews the effective fields, sources, and validation issues without running the flow.
-`exactl request --file <request.md>` accepts the same flags. The CLI writes a per-run
+`exactl request create --file <request.md>` accepts the same flags. The CLI writes a per-run
 operator file under `.exa/run-bindings/` before writing the request; the daemon claims it
 only when trace ID, request path, and request SHA-256 match. Request frontmatter cannot
 supply a binding. A repeated claim for the same request is allowed for resume.
@@ -5111,14 +5111,14 @@ with `host_not_allowed`. Local endpoints must pass the private/loopback check.
 Changing an environment variable in a running daemon still requires a restart.
 
 A binding run resolves and validates all LLM-calling steps before the first LLM call and
-writes a snapshot lock under `.exa/bindings/` (`<trace-id>.lock.json`). Use `exactl request
+writes a snapshot lock under `.exa/bindings/` (`<trace-id>.lock.json`). Use `exactl request create
 --flow research --locked <lock-file> "Repeat the run"` to replay it. The lock records
 resolved identities, source layers, catalog/config/overlay checksums, and whether
 `EXA_LLM_PROVIDER` or `EXA_LLM_MODEL` was ignored. These boot-time variables never
 override a bound step. `--locked` compares the lock's flow content, step pins, catalog and
 every resolved binding (service, adapter, model, effort and sources) with the current
 resolution. Any difference fails the run with `lock_mismatch` before the first LLM call.
-`exactl request` also records a SHA-256 of the lock's parsed content, so whitespace and a trailing newline do not matter, and the daemon refuses a lock whose content no longer matches it. A trace ID has one lock: a second run with the same trace reuses
+`exactl request create` also records a SHA-256 of the lock's parsed content, so whitespace and a trailing newline do not matter, and the daemon refuses a lock whose content no longer matches it. A trace ID has one lock: a second run with the same trace reuses
 it only when the resolution is equal, and a different resolution fails with `lock_mismatch`.
 The `binding.snapshot.created` event carries the lock path and hash, `hosts` (the endpoint
 `host:port` of each bound service), `env_ignored`, the config and overlay checksums, the
@@ -5279,7 +5279,7 @@ as a catalog service in a per-run overlay, for example for a vLLM server:
 }
 ```
 
-Run it with `exactl request --flow research --overlay <overlay-file> "..."`. LiteLLM uses the same
+Run it with `exactl request create --flow research --overlay <overlay-file> "..."`. LiteLLM uses the same
 shape with its `model_name` alias in `serves` and an HTTPS endpoint. Ollama ships as the built-in
 `ollama-chat` service on `http://127.0.0.1:11434`, with the loopback opt-in already declared: select
 it by an explicit `service = "ollama-chat"` binding, because no `meta` or `qwen` preference route

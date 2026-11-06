@@ -29,7 +29,7 @@ steps:
     type: "exactl"
     name: "Submit the request whose frontmatter names the ReAct flow"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     checkpoint: true
     output_criteria:
       - id: "request-submitted"

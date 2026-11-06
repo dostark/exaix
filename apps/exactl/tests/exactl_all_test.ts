@@ -357,7 +357,7 @@ Deno.test("request --file outputs JSON when --json specified", async () => {
         status: MemoryStatus.PENDING,
       });
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "--file", "/tmp/some.md", "--json"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "--file", "/tmp/some.md", "--json"]);
     });
     assert(out.includes("{") && out.includes('"trace_id"') && out.includes("trace-1234"));
   });
@@ -378,7 +378,7 @@ Deno.test("request --file prints human output when no --json", async () => {
         status: MemoryStatus.PENDING,
       });
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "--file", "/tmp/some.md"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "--file", "/tmp/some.md"]);
     });
     assert(out.includes("request.created") || out.includes("trace-5678"));
   });
@@ -391,7 +391,7 @@ Deno.test("request inline create handles create errors and exits", async () => {
     };
 
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "Do something"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do something"]);
     });
     assert(errors.some((e: string) => e.includes("create failed")));
   });
@@ -504,7 +504,7 @@ Deno.test("request inline --dry-run logs dry_run and creates file", async () => 
       });
     };
     const { logs, warns, errs } = await captureAllOutputs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "Inline-dry", "--dry-run"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Inline-dry", "--dry-run"]);
     });
     const joined = logs.concat(warns, errs).join("\n");
     assert(created);
@@ -586,7 +586,7 @@ if (Deno.env.get("RUN_EXACTL_TEST")) {
 Deno.test("request without description exits with error", async () => {
   await withTestMod(async (mod, _ctx) => {
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create"]);
     });
     assert(errors.some((e: string) => e.includes("Description required")));
   });
@@ -701,7 +701,7 @@ Deno.test("request inline --json prints JSON output", async () => {
       });
     };
     const outs = await captureAllOutputs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "make json", "--json"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "make json", "--json"]);
     });
     assert(outs.logs.some((l) => l.includes('"trace_id"') || l.includes("cli.output")));
   });
@@ -812,7 +812,7 @@ Deno.test("request --file --dry-run prints human output", async () => {
         status: MemoryStatus.PENDING,
       });
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "--file", "/tmp/some.md", "--dry-run"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "--file", "/tmp/some.md", "--dry-run"]);
     });
     assert(out.includes("request.created") || out.includes("trace-file-1"));
   });
@@ -835,6 +835,7 @@ Deno.test("request --file --json --dry-run prints JSON output", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([
         FlowInputSource.REQUEST,
+        "create",
         "--file",
         "/tmp/some.md",
         "--json",
@@ -851,7 +852,7 @@ Deno.test("request --file errors exit with message", async () => {
       throw new Error("file missing");
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "--file", "/tmp/missing.md"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "--file", "/tmp/missing.md"]);
     });
     assert(errors.some((e: string) => e.includes("file missing")));
   });
@@ -872,7 +873,7 @@ Deno.test("request inline --dry-run with --json prefers dry-run", async () => {
         status: MemoryStatus.PENDING,
       });
     const outs = await captureAllOutputs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "Do something", "--dry-run", "--json"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do something", "--dry-run", "--json"]);
     });
     const joined = [...outs.logs, ...outs.warns, ...outs.errs].join("\n");
     assert(joined.includes("cli.dry_run") && !joined.includes('"trace_id"'));

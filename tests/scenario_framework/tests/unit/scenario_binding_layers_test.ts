@@ -4,7 +4,7 @@
  * @description Phase 203 Step 1 — `planScenarioBindings` writes the scenario layer and the
  *   operator layers as real `BindingOverlaySchema` documents into a runner-owned directory
  *   outside the sandbox, normalizes each operator overlay to JSON (the only form
- *   `exactl request --overlay` parses), substitutes the fixture-port sentinel, and records a
+ *   `exactl request create --overlay` parses), substitutes the fixture-port sentinel, and records a
  *   sha256 per file. Phase 203 Step 2 adds the cell layer, which sits between the scenario
  *   and operator layers so a preset's bindings win over the scenario's.
  * @architectural-layer Test

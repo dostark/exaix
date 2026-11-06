@@ -2,7 +2,7 @@
  * @module RunnerCliBindingsTest
  * @path tests/scenario_framework/tests/unit/runner_cli_bindings_test.ts
  * @description Phase 203 Step 1 — the scenario runner's `--overlay` and `--bind` flags. `--bind`
- *   accepts the same grammar as `exactl request --bind` and rejects a malformed spec before any
+ *   accepts the same grammar as `exactl request create --bind` and rejects a malformed spec before any
  *   run starts. Both flags are repeatable, which the runner CLI expresses with cliffy's
  *   `collect: true`; the source assertion below pins that, since the CLI action cannot be invoked
  *   in-process.

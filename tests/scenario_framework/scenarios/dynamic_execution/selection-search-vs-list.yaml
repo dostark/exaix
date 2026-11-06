@@ -28,7 +28,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "request-submitted"
         score_weight: 0.3

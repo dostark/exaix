@@ -75,7 +75,7 @@ Deno.test("[exactl request create --dry-run-context] prints a real per-segment b
     try {
       await handleRequestCreate(
         context,
-        { agentRole: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
+        { agent: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
         "Add a hello world function.",
       );
     } finally {
@@ -116,7 +116,7 @@ Deno.test("[exactl request create --dry-run-context] does not invoke a real LLM 
     try {
       await handleRequestCreate(
         context,
-        { agentRole: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
+        { agent: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
         "Add a hello world function.",
       );
     } finally {
@@ -133,7 +133,7 @@ Deno.test("[exactl request create --dry-run] (existing flag) behavior is complet
     try {
       await handleRequestCreate(
         context,
-        { agentRole: "mock-agent", dryRun: true } as IRequestCreateOptions,
+        { agent: "mock-agent", dryRun: true } as IRequestCreateOptions,
         "Add a hello world function.",
       );
     } finally {
@@ -214,7 +214,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
     try {
       await handleRequestCreate(
         { requestCommands, display: context.display, appContext: context },
-        { agentRole: "mock-agent", dryRunContext: true, portal: "mock-portal" } as IRequestCreateOptions,
+        { agent: "mock-agent", dryRunContext: true, portal: "mock-portal" } as IRequestCreateOptions,
         "Add a Greeter to the mock portal's services.",
       );
     } finally {
@@ -267,7 +267,7 @@ Deno.test("[exactl request create --dry-run-context] a cold portal never trigger
     try {
       await handleRequestCreate(
         { requestCommands, display: context.display, appContext: context },
-        { agentRole: "mock-agent", dryRunContext: true, portal: "cold-portal" },
+        { agent: "mock-agent", dryRunContext: true, portal: "cold-portal" },
         "Inspect the cold portal.",
       );
     } finally {
@@ -317,7 +317,7 @@ async function runDryRunContextPreview(
   try {
     await handleRequestCreate(
       context,
-      { agentRole: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
+      { agent: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
       description,
     );
   } finally {

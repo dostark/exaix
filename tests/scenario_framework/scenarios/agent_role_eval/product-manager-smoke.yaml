@@ -45,7 +45,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--agent-role", "product-manager", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--agent", "product-manager", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     cells: ["exactl"]
     output_criteria:
       - id: "request-submitted"
@@ -103,7 +103,16 @@ steps:
   - id: "create-plan-request"
     type: "exactl"
     command: "request"
-    args: ["--agent-role", "product-manager", "--portal", "portal-exaix", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: [
+      "create",
+      "--agent",
+      "product-manager",
+      "--portal",
+      "portal-exaix",
+      "--plan-only",
+      "--file",
+      "$REQUEST_FIXTURE",
+    ]
     cells: ["live"]
 
   - id: "wait-for-live-plan"

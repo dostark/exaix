@@ -67,7 +67,7 @@ export interface IRequestActionContext {
 
 export interface IRequestCreateOptions {
   file?: string;
-  agentRole?: string;
+  agent?: string;
   priority?: string | RequestPriority;
   portal?: string;
   targetBranch?: string;
@@ -281,11 +281,11 @@ async function handleRequestCreateDryRunContext(
       throw new Error("--dry-run-context requires the full application context (appContext)");
     }
     if (!description && !options.file) {
-      throw new Error('Description required. Usage: exactl request "<description>" --dry-run-context');
+      throw new Error('Description required. Usage: exactl request create "<description>" --dry-run-context');
     }
 
     const userPrompt = description ?? (options.file ? await Deno.readTextFile(options.file) : "");
-    const agentRole = options.agentRole ?? "default";
+    const agentRole = options.agent ?? "default";
 
     const config = appContext.config.getAll();
     const effectiveBudgetPolicy = resolveEffectiveBudgetPolicy(config, appContext.configAdapter);
@@ -387,7 +387,7 @@ export async function handleRequestCreate(
   }
 
   try {
-    const agentRole = options.agentRole;
+    const agentRole = options.agent;
 
     // Normalize the declared thinking/effort from whatever the CLI produced (bare --thinking
     // is a boolean; --thinking true|false|auto arrives as a string) into the declaration
@@ -428,7 +428,7 @@ export async function handleRequestCreate(
     // Require description for inline mode
     if (!description) {
       display.error("cli.error", FlowInputSource.REQUEST, {
-        message: 'Description required. Usage: exactl request "<description>" or use --file',
+        message: 'Description required. Usage: exactl request create "<description>" or use --file',
       });
       Deno.exit(1);
     }

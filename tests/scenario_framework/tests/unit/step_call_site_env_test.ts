@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkStepCallSiteEnvTest
  * @path tests/scenario_framework/tests/unit/step_call_site_env_test.ts
  * @description Phase 157 Step 1 — the runner exports EXA_SCENARIO_ID/EXA_STEP_ID per step so a
- *   `submit-request` step's `exactl request --file` subprocess can stamp them into the created
+ *   `submit-request` step's `exactl request create --file` subprocess can stamp them into the created
  *   request's frontmatter. This is the transport's runner end: buildStepBaseEnv is the pure
  *   function executeSyntheticStep uses to compose the spawned process's env; extracted so this
  *   can be asserted directly without spawning a real daemon or exactl process.

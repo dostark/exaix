@@ -40,7 +40,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--agent-role", "senior-coder"]
+    args: ["create", "--file", "$REQUEST_FIXTURE", "--agent", "senior-coder"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"

@@ -19,6 +19,14 @@ export interface IExaCtlRename {
   readonly unlessNextIn?: Opt<readonly string[], Reason.OptionalInput>;
 }
 
+/** One removed option of a command path and the option that replaces it. */
+interface IExaCtlOptionRename {
+  /** Command words after `exactl`, such as `["request", "create"]`. */
+  readonly path: readonly string[];
+  readonly legacyOption: string;
+  readonly canonicalOption: string;
+}
+
 /** Longest typed text that a hint echoes back. */
 export const MAX_HINT_ECHO_CHARS = 200;
 
@@ -31,6 +39,12 @@ const LEGACY_CONFIG = "config";
 const LEGACY_PLAN = "plan";
 const LEGACY_PORTAL = "portal";
 const USAGE_TEMPLATE_MARKER = "<";
+export const REQUEST_NOUN = "request";
+const CREATE_VERB = "create";
+const OPTION_PREFIX = "-";
+const OPTION_TERMINATOR = "--";
+const OPTION_VALUE_SEPARATOR = "=";
+const AGENT_OPTION = "--agent";
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
@@ -83,6 +97,17 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   },
 ];
 
+const EXACTL_OPTION_RENAMES: readonly IExaCtlOptionRename[] = [
+  { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "--agent-role", canonicalOption: AGENT_OPTION },
+  { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "-a", canonicalOption: AGENT_OPTION },
+];
+
+/** The typed words up to the first option token. */
+export function leadingWords(argv: readonly string[]): readonly string[] {
+  const optionIndex = argv.findIndex((word) => word.startsWith(OPTION_PREFIX));
+  return optionIndex === -1 ? argv : argv.slice(0, optionIndex);
+}
+
 /** False when the word after the legacy words is a valid subcommand of the new noun. */
 function isLegacyUse(row: IExaCtlRename, typed: readonly string[]): boolean {
   if (row.unlessNextIn === undefined) return true;
@@ -114,4 +139,29 @@ export function renameHint(rename: IExaCtlRename, typed: readonly string[]): str
     .map((word) => PLAIN_WORD.test(word) ? word : quoteForShell(word));
   const replacement = [rename.canonical, ...rest].join(" ");
   return `'exactl ${rename.legacy.join(" ")}' was renamed: use '${replacement}'`;
+}
+
+/** The option rename whose command path leads `argv` and whose legacy option appears before any `--`. */
+export function findOptionRename(argv: readonly string[]): IExaCtlOptionRename | null {
+  const words = leadingWords(argv);
+  const terminator = argv.indexOf(OPTION_TERMINATOR);
+  const options = (terminator === -1 ? argv : argv.slice(0, terminator))
+    .slice(words.length)
+    .map((token) => token.split(OPTION_VALUE_SEPARATOR)[0]);
+  return EXACTL_OPTION_RENAMES.find((row) =>
+    row.path.length <= words.length && row.path.every((word, index) => words[index] === word) &&
+    options.includes(row.legacyOption)
+  ) ?? null;
+}
+
+/** The one-line stderr hint for an option rename. */
+export function optionRenameHint(rename: IExaCtlOptionRename): string {
+  return `'exactl ${rename.path.join(" ")} ${rename.legacyOption}' was renamed: use '${rename.canonicalOption}'`;
+}
+
+/** The one-line stderr hint for free text typed straight after `exactl request`. */
+export function requestCreateHint(typedWords: readonly string[]): string {
+  return `'exactl ${REQUEST_NOUN} <text>' was removed: use 'exactl ${REQUEST_NOUN} ${CREATE_VERB} ${
+    quoteForShell(typedWords.join(" "))
+  }'`;
 }

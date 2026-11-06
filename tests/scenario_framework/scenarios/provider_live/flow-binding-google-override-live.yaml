@@ -36,7 +36,7 @@ steps:
   - id: submit-google-override
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/google.json"]
+    args: [create, --file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/google.json"]
     output_criteria:
       - id: request-created
         kind: command-output-contains

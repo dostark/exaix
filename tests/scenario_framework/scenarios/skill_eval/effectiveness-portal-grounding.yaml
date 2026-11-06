@@ -29,7 +29,7 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: ["--agent-role", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE", "--portal", "Exaix"]
+    args: ["create", "--agent", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE", "--portal", "Exaix"]
   - id: verify-pinned-skill
     type: exactl
     command: log

@@ -38,7 +38,7 @@ sequenceDiagram
     participant PA as Plan Adapter
     participant P as Workspace/Plans
 
-    U->>CLI: exactl request "Fix bug"
+    U->>CLI: exactl request create "Fix bug"
     CLI->>I: Create request-{uuid}.md
     W->>I: Detect new file
     W->>RP: Trigger processing

@@ -275,7 +275,7 @@ deno run -A tests/scenario_framework/runner/main.ts --scenario research-split \
 
 `--overlay` is repeatable. The file must be a regular JSON file within the operator overlay byte
 ceiling, never a symlink. `--bind` uses the `selector=field=value[,field=value]` grammar, and two
-`--bind` flags on one selector merge per field, the later flag winning, as `exactl request --bind`
+`--bind` flags on one selector merge per field, the later flag winning, as `exactl request create --bind`
 does.
 
 **Selecting Ollama.** Select the built-in Ollama service by an explicit binding and declare the
@@ -296,7 +296,7 @@ In a TOML preset the same selection reads `service = "ollama-chat"` under
 **Trust boundary.** The runner writes overlay files to a per-invocation directory under the run's
 output directory (`<output>/bindings/<run-id>/`), outside the sandbox, so an agent cannot edit the
 layers that route its own steps. The runner resolves that directory's physical location and refuses
-an output or `bindings` symlink that points into the sandbox before it writes. `exactl request
+an output or `bindings` symlink that points into the sandbox before it writes. `exactl request create
 --overlay` rejects a symlink, a non-regular file and a file above `BINDING_OVERLAY_MAX_BYTES` before
 parsing (`loadOverlays`). The residual risk is a CLI delegate started with `--no-sandbox`, which can
 still write outside the sandbox by absolute path and so can reach those files.
@@ -398,7 +398,7 @@ The most common step type. Runs `exactl <command> <args>` against the workspace 
       contains: ["daemon.started"]
 ```
 
-Examples: `exactl request --agent-role <id> --plan-only --file $REQUEST_FIXTURE`,
+Examples: `exactl request create --agent <id> --plan-only --file $REQUEST_FIXTURE`,
 `exactl review approve $REQUEST_ID`, `exactl log wait --event daemon.ready --since-rowid $JOURNAL_BASELINE`,
 `exactl flow validate <flow-id>`.
 
@@ -781,7 +781,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--agent-role", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--agent", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"

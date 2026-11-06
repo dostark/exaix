@@ -9,14 +9,25 @@
 
 import { ValidationError } from "@cliffy/command";
 import { ExaCtlError, ExaCtlExitCode } from "./exactl_errors.ts";
-import { findRename, renameHint } from "./exactl_renames.ts";
+import {
+  findOptionRename,
+  findRename,
+  leadingWords,
+  optionRenameHint,
+  renameHint,
+  REQUEST_NOUN,
+  requestCreateHint,
+} from "./exactl_renames.ts";
 
-const OPTION_PREFIX = "-";
+/** The part of the root command the handler reads to tell a subcommand from free text. */
+interface ICommandLookup {
+  getCommand(name: string): { hasCommand(name: string): boolean } | undefined;
+}
 
-/** The typed words up to the first option token. */
-function leadingWords(argv: readonly string[]): readonly string[] {
-  const optionIndex = argv.findIndex((word) => word.startsWith(OPTION_PREFIX));
-  return optionIndex === -1 ? argv : argv.slice(0, optionIndex);
+/** True when the words are `request` followed by a word that is not a request subcommand. */
+function isRequestFreeText(typed: readonly string[], root: ICommandLookup): boolean {
+  return typed[0] === REQUEST_NOUN && typed.length > 1 &&
+    root.getCommand(REQUEST_NOUN)?.hasCommand(typed[1]) === false;
 }
 
 /** Handles a parser or action failure. It calls `exit` for every error it handles and returns for any other. */
@@ -24,6 +35,7 @@ export function handleExaCtlError(
   error: Error,
   argv: readonly string[],
   exit: (code: number) => never,
+  root: ICommandLookup,
 ): void {
   if (error instanceof ExaCtlError) {
     console.error(error.message);
@@ -34,6 +46,15 @@ export function handleExaCtlError(
     const rename = findRename(typed);
     if (rename !== null) {
       console.error(renameHint(rename, typed));
+      exit(ExaCtlExitCode.USAGE);
+    }
+    const optionRename = findOptionRename(argv);
+    if (optionRename !== null) {
+      console.error(optionRenameHint(optionRename));
+      exit(ExaCtlExitCode.USAGE);
+    }
+    if (isRequestFreeText(typed, root)) {
+      console.error(requestCreateHint(typed.slice(1)));
       exit(ExaCtlExitCode.USAGE);
     }
   }

@@ -87,6 +87,7 @@ steps:
     cells: ["stock-claude", "stock-opencode"]
     command: "request"
     args: [
+      "create",
       "--file",
       "$FRAMEWORK_HOME/fixtures/requests/provider_live/dogfood_context_stock_code_change.md",
       "--portal",
@@ -149,7 +150,7 @@ steps:
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
     command: "request"
     # The context supplement activates only for trusted agent roles; the default role is not one.
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "test-project", "--agent-role", "dogfood-coder"]
+    args: ["create", "--file", "$REQUEST_FIXTURE", "--portal", "test-project", "--agent", "dogfood-coder"]
     output_criteria:
       - id: "cycle-request-submitted"
         score_weight: 0.5

@@ -2,7 +2,7 @@
  * @module ScenarioTemplateTest
  * @path tests/scenario_framework/tests/unit/scenario_template_test.ts
  * @description Keeps the starter scenario template usable: with its placeholders filled it parses
- * through ScenarioSchema, submits through the real `exactl request --file` form, and starts and
+ * through ScenarioSchema, submits through the real `exactl request create --file` form, and starts and
  * stops the daemon it depends on.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/templates/scenario_template.yaml, tests/scenario_framework/SCENARIO_DSL.md]
@@ -41,7 +41,7 @@ Deno.test("[scenario_template] the template submits with request --file and brac
   const scenario = ScenarioSchema.parse(parseYaml(renderTemplate()));
   const submit = scenario.steps.find((s) => s.id === "submit-request");
   assertEquals(submit?.command, "request");
-  assertEquals(submit?.args, ["--file", "$REQUEST_FIXTURE"]);
+  assertEquals(submit?.args, ["create", "--file", "$REQUEST_FIXTURE"]);
   assertEquals(scenario.steps[0].args, ["start"]);
   assertEquals(scenario.steps.at(-1)?.args, ["stop"]);
 });

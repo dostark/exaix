@@ -400,8 +400,8 @@ export function renderSweTaskTemplate(
     `    type: "exactl"`,
     `    command: "request"`,
     hasCliDelegate
-      ? `    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent-role", "senior-coder"]`
-      : `    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]`,
+      ? `    args: ["create", "--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent", "senior-coder"]`
+      : `    args: ["create", "--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]`,
     `    output_criteria:`,
     `      - id: "request-submitted"`,
     `        kind: "command-output-contains"`,

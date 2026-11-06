@@ -26,7 +26,7 @@ exactl daemon status
 4. Create your first request:
 
 ```bash
-exactl request "Add a hello world function"
+exactl request create "Add a hello world function"
 ```
 
 ## Daemon Management

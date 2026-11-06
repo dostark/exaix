@@ -39,7 +39,7 @@ steps:
   - id: request-scenario-layer
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE"]
+    args: [create, --file, "$REQUEST_FIXTURE"]
   # The daemon journals this event, so the wait is the sanctioned barrier. It is not fatal:
   # an environment whose CLI cannot load a provider credential still runs the requests.
   - id: await-scenario-layer
@@ -52,7 +52,7 @@ steps:
   - id: request-step-binding
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE"]
+    args: [create, --file, "$REQUEST_FIXTURE"]
     bindings:
       "flow:scenario-binding-split/step:explore-one":
         service: svc-b

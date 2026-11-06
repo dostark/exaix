@@ -180,6 +180,7 @@ Deno.test("[context_scenario] stock cells assert flow.step.completed(review) and
   assertEquals(
     submitStep.args,
     [
+      "create",
       "--file",
       "$FRAMEWORK_HOME/fixtures/requests/provider_live/dogfood_context_stock_code_change.md",
       "--portal",
@@ -227,7 +228,7 @@ Deno.test("[context_scenario] cycle cells submit as a trusted dogfood agent role
   const submitStep = scenario.steps.find((s) => s.id === "submit-request-cycle");
   assert(submitStep, "submit-request-cycle step must exist");
   const args = submitStep.args ?? [];
-  const roleIndex = args.indexOf("--agent-role");
+  const roleIndex = args.indexOf("--agent");
   assert(roleIndex >= 0, "the cycle request must name its agent role; the default role is not trusted");
   const role = args[roleIndex + 1];
   assert(

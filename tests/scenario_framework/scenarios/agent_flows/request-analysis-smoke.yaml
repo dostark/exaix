@@ -16,7 +16,7 @@ steps:
   - id: "create-request-analysis"
     type: "exactl"
     command: "request"
-    args: ["--analyze", "--engine", "llm", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--analyze", "--engine", "llm", "--file", "$REQUEST_FIXTURE"]
     input_criteria: []
     output_criteria:
       - id: "request-command-succeeded"

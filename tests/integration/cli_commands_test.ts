@@ -278,6 +278,7 @@ cliTest("[regression] CLI: request --target-branch writes target_branch frontmat
 
     const create = await runExactl([
       "request",
+      "create",
       description,
       "--target-branch",
       targetBranch,
@@ -412,7 +413,7 @@ cliTest("CLI: dashboard launches without error (smoke test)", async () => {
 cliTest("CLI: request create with missing description fails", async () => {
   const env = await TestEnvironment.create();
   try {
-    const result = await runExactl([FlowInputSource.REQUEST], env.tempDir);
+    const result = await runExactl([FlowInputSource.REQUEST, "create"], env.tempDir);
     // Should fail with exit code 1 and error message
     assert(result.code === 1);
     assertStringIncludes(result.stderr, "Description required");

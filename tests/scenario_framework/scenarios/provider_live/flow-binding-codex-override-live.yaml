@@ -27,6 +27,7 @@ steps:
     type: exactl
     command: request
     args: [
+      create,
       --file,
       "$REQUEST_FIXTURE",
       --bind,

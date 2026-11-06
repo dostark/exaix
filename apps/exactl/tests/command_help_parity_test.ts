@@ -12,7 +12,7 @@ import { readFixtureTextSync } from "@exaix/testing";
 import { createExaCtlCommand } from "../src/exactl.ts";
 import { walkCommandTree } from "../src/docs/command_tree_walk.ts";
 
-/** The old option sets, captured from the tree before the plan, memory, git, portal, config and mcp leaves moved. */
+/** The old option sets, captured from the tree before the leaves moved. */
 const oldOptionSets = JSON.parse(
   readFixtureTextSync(import.meta.url, "cli", "command_help_parity_test", "old_option_sets.json"),
 ) as Record<string, string[]>;
@@ -51,6 +51,7 @@ const MOVES: readonly Move[] = [
   ["config list-profiles", "config profile list", NO_FLAGS, NO_FLAGS],
   ["mcp start", "mcp serve", NO_FLAGS, NO_FLAGS],
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
+  ["request", "request create", ["--agent-role", "-a"], ["--agent"]],
 ];
 
 const nodes = walkCommandTree(createExaCtlCommand());

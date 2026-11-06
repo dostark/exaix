@@ -46,7 +46,7 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE"]
+    args: [create, --file, "$REQUEST_FIXTURE"]
 
   - id: wait-for-plan
     type: wait-for-file

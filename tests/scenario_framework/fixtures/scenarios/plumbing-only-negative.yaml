@@ -10,7 +10,7 @@ steps:
   - id: "submit"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "created"
         kind: "command-output-contains"

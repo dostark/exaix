@@ -34,7 +34,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     env:
       EXA_LLM_PROVIDER: "mock"
     input_criteria:

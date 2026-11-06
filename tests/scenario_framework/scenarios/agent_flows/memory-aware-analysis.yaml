@@ -16,7 +16,7 @@ steps:
   - id: "create-memory-aware-request"
     type: "exactl"
     command: "request"
-    args: ["--analyze", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--analyze", "--file", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "request-fixture-exists"
         score_weight: 0.4

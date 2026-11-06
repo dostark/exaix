@@ -79,11 +79,12 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "--file",
       "$FRAMEWORK_HOME/fixtures/requests/provider_live/meta_workflow_queue_pregap.md",
       "--portal",
       "test-project",
-      "--agent-role",
+      "--agent",
       "code-analyst",
     ]
     output_criteria:
@@ -145,11 +146,12 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "--file",
       "$FRAMEWORK_HOME/fixtures/requests/provider_live/session_delegate_code_change.md",
       "--portal",
       "test-project",
-      "--agent-role",
+      "--agent",
       "dogfood-coder",
     ]
     output_criteria:
@@ -272,11 +274,12 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "--file",
       "$FRAMEWORK_HOME/fixtures/requests/provider_live/meta_workflow_queue_postgap.md",
       "--portal",
       "test-project",
-      "--agent-role",
+      "--agent",
       "code-reviewer",
     ]
     output_criteria:

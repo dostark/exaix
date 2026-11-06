@@ -31,7 +31,7 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios explicitly request th
     const source = await Deno.readTextFile(join(FRAMEWORK_ROOT, "scenarios", "swe_tasks", filename));
     const scenario = parseYaml(source) as { steps: Array<{ args?: string[]; blueprint?: string }> };
     const submittedRole = scenario.steps
-      .find((step) => step.args?.includes("--agent-role"))
+      .find((step) => step.args?.includes("--agent"))
       ?.args?.at(-1);
     assertEquals(submittedRole, expectedRole, scenarioId);
     assertEquals(scenario.steps.find((step) => step.blueprint)?.blueprint, expectedRole, scenarioId);

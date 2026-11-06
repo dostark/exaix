@@ -369,7 +369,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] a from_catalog matrix resolves its
           id: "submit-request",
           type: ScenarioStepType.EXACTL,
           command: "request",
-          args: ["--file", "$REQUEST_FIXTURE"],
+          args: ["create", "--file", "$REQUEST_FIXTURE"],
           outputCriteriaLines: ['    - id: "submitted"', '      kind: "command-exit-code"', "      equals: 0"],
         },
         {
@@ -534,7 +534,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] two requests resolve their own jud
           id: "request-one",
           type: ScenarioStepType.EXACTL,
           command: "request",
-          args: ["--file", "$REQUEST_FIXTURE"],
+          args: ["create", "--file", "$REQUEST_FIXTURE"],
           // Both requests use the same broad judge selector. Pooling the overlays would
           // let the later request's model win.
           bindings: { "judge": { service: "mock", model: "mock/mock-model" } },
@@ -552,7 +552,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] two requests resolve their own jud
           id: "request-two",
           type: ScenarioStepType.EXACTL,
           command: "request",
-          args: ["--file", "$REQUEST_FIXTURE"],
+          args: ["create", "--file", "$REQUEST_FIXTURE"],
           bindings: { "judge": { service: "mock", model: "mock/alt-model" } },
           outputCriteriaLines: [
             '    - id: "two-exit"',

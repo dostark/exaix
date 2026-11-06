@@ -72,7 +72,7 @@ export interface IScenarioBindingPlan {
   pins: IPinKeptRecord[];
 }
 
-/** One validated overlay document: the shape `exactl request --overlay` reads. */
+/** One validated overlay document: the shape `exactl request create --overlay` reads. */
 export interface IBindingOverlayDocument {
   schema: 1;
   bindings?: Record<string, IBindingSpec>;
@@ -261,7 +261,7 @@ async function writeOverlay<TDocument extends object>(path: string, document: TD
   return await hashText(text);
 }
 
-/** Parse `--bind selector=field=value[,field=value]` specs, the grammar `exactl request --bind` accepts. */
+/** Parse `--bind selector=field=value[,field=value]` specs, the grammar `exactl request create --bind` accepts. */
 export function parseScenarioBindSpecs(raw: readonly string[]): ReturnType<typeof BindOneOffSchema.parse> {
   const entries = raw.map((spec) => {
     const separatorIndex = spec.indexOf("=");
@@ -504,7 +504,7 @@ export async function planScenarioBindings(
 
   const bindSpecs = parseScenarioBindSpecs(input.operatorBinds);
   const bindings: Record<string, IBindingSpec> = {};
-  // Same-selector entries merge per field, later winning, as `exactl request --bind` does.
+  // Same-selector entries merge per field, later winning, as `exactl request create --bind` does.
   for (const entry of bindSpecs) bindings[entry.selector] = { ...bindings[entry.selector], ...entry.spec };
   // Parse first, then read the entries out of the parsed document. Parsing returns fresh
   // spec objects. A spec taken from the input would not be the one written.

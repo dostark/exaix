@@ -45,7 +45,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--agent-role", "performance-engineer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--agent", "performance-engineer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     cells: ["exactl"]
     output_criteria:
       - id: "request-submitted"
@@ -104,7 +104,8 @@ steps:
     type: "exactl"
     command: "request"
     args: [
-      "--agent-role",
+      "create",
+      "--agent",
       "performance-engineer",
       "--portal",
       "portal-exaix",

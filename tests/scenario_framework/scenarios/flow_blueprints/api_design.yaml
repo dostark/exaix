@@ -25,7 +25,7 @@ steps:
   - id: "submit-flow-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:

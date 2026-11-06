@@ -15,7 +15,16 @@ import {
   assertStrictEquals,
   assertStringIncludes,
 } from "@std/assert";
-import { EXACTL_RENAMES, findRename, MAX_HINT_ECHO_CHARS, quoteForShell, renameHint } from "../src/exactl_renames.ts";
+import {
+  EXACTL_RENAMES,
+  findOptionRename,
+  findRename,
+  MAX_HINT_ECHO_CHARS,
+  optionRenameHint,
+  quoteForShell,
+  renameHint,
+  requestCreateHint,
+} from "../src/exactl_renames.ts";
 
 function rowFor(legacy: readonly string[]) {
   const row = findRename(legacy);
@@ -250,4 +259,37 @@ Deno.test("the grouped git, config and mcp paths are not renames", () => {
     "list",
   ]];
   for (const typed of grouped) assertEquals(findRename(typed), null, typed.join(" "));
+});
+
+Deno.test("the request create option renames map --agent-role and -a to --agent", () => {
+  for (const legacy of ["--agent-role", "-a"]) {
+    const row = findOptionRename(["request", "create", "Fix bug", legacy, "qa"]);
+    assertEquals(row?.canonicalOption, "--agent", legacy);
+  }
+  assertEquals(findOptionRename(["request", "create", "Fix bug", "--agent-role=qa"])?.canonicalOption, "--agent");
+});
+
+Deno.test("an option rename needs its command path and stops at the option terminator", () => {
+  assertEquals(findOptionRename(["request", "list", "-a"]), null);
+  assertEquals(findOptionRename(["request", "create", "--agent", "qa"]), null);
+  assertEquals(findOptionRename(["request", "create", "--", "--agent-role"]), null);
+  assertEquals(findOptionRename(["blueprint", "create", "-a"]), null);
+});
+
+Deno.test("optionRenameHint names the legacy option and the replacement", () => {
+  const row = findOptionRename(["request", "create", "--agent-role", "qa"]);
+  assert(row !== null);
+  assertEquals(
+    optionRenameHint(row),
+    "'exactl request create --agent-role' was renamed: use '--agent'",
+  );
+});
+
+Deno.test("requestCreateHint quotes the typed description", () => {
+  assertEquals(
+    requestCreateHint(["Fix", "bug"]),
+    "'exactl request <text>' was removed: use 'exactl request create 'Fix bug''",
+  );
+  assertStringIncludes(requestCreateHint(["$(rm -rf ~)"]), "exactl request create '$(rm -rf ~)'");
+  assertStringIncludes(requestCreateHint(["it's"]), `'it'\\''s'`);
 });

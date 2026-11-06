@@ -85,3 +85,32 @@ Deno.test("the removed git, portal, config and mcp paths name their grouped repl
     "exactl mcp tool list --server <url>, or exactl mcp tool call <tool> --server <url>",
   );
 });
+
+Deno.test("`exactl request \"Fix bug\"` prints `exactl request create 'Fix bug'` and exits 2", async () => {
+  const run = await runExactlInTempWorkspace(["request", "Fix bug"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "exactl request create 'Fix bug'");
+});
+
+Deno.test("a request description with shell syntax is quoted in the hint and never run", async () => {
+  const run = await runExactlInTempWorkspace(["request", "$(touch pwned)", "--priority", "high"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "exactl request create '$(touch pwned)'");
+});
+
+Deno.test("`request create --agent-role x` names `--agent`", async () => {
+  const run = await runExactlInTempWorkspace(["request", "create", "Fix bug", "--agent-role", "x"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "use '--agent'");
+});
+
+Deno.test("`request create -a x` names `--agent`", async () => {
+  const run = await runExactlInTempWorkspace(["request", "create", "Fix bug", "-a", "x"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "use '--agent'");
+});
+
+Deno.test("`request list -a` is still the --all option and prints no hint", async () => {
+  const run = await runExactlInTempWorkspace(["request", "list", "-a"]);
+  assertEquals(run.code, 0, run.stderr);
+});

@@ -77,9 +77,10 @@ steps:
     type: "exactl"
     command: "request"
     args: [
+      "create",
       "--file",
       "$REQUEST_FIXTURE",
-      "--agent-role",
+      "--agent",
       "stub-best",
       "--subject",
       "Model registry Team cutover scenario",

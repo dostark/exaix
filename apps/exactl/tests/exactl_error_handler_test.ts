@@ -25,6 +25,8 @@ interface IHandlerRun {
   stderr: string;
 }
 
+const root = createExaCtlCommand();
+
 function runHandler(error: Error, argv: string[]): IHandlerRun {
   const lines: string[] = [];
   const consoleError = stub(console, "error", (...parts: string[]) => {
@@ -34,7 +36,7 @@ function runHandler(error: Error, argv: string[]): IHandlerRun {
   try {
     handleExaCtlError(error, argv, (code: number): never => {
       throw new ExitCalled(code);
-    });
+    }, root);
   } catch (thrown) {
     if (!(thrown instanceof ExitCalled)) throw thrown;
     exitCode = thrown.code;
@@ -45,7 +47,6 @@ function runHandler(error: Error, argv: string[]): IHandlerRun {
 }
 
 Deno.test("a ValidationError under every root command reaches the handler", () => {
-  const root = createExaCtlCommand();
   const handler = root["getErrorHandler"]();
   assert(handler !== undefined, "the root command has no error handler");
   const roots = root.getCommands(true).filter((command) => command.getName() !== "help");
@@ -85,4 +86,28 @@ Deno.test("a miss returns without calling exit", () => {
 Deno.test("only the words before the first option select the rename row", () => {
   const run = runHandler(new ValidationError('Unknown option "-n"'), ["blueprint", "list", "-n", "ls"]);
   assertEquals(run.exitCode, null);
+});
+
+Deno.test("free text after request yields the request create hint", () => {
+  const run = runHandler(new ValidationError('Unknown command "Fix"'), ["request", "Fix", "bug", "--priority", "high"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "exactl request create 'Fix bug'");
+});
+
+Deno.test("a request subcommand that fails is not mistaken for free text", () => {
+  const run = runHandler(new ValidationError('Unknown option "--bogus"'), ["request", "list", "--bogus"]);
+  assertEquals(run.exitCode, null);
+  assertEquals(run.stderr, "");
+});
+
+Deno.test("a legacy option on request create yields the option hint", () => {
+  const run = runHandler(new ValidationError('Unknown option "--agent-role"'), [
+    "request",
+    "create",
+    "Fix bug",
+    "--agent-role",
+    "qa",
+  ]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "use '--agent'");
 });

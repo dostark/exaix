@@ -10,7 +10,7 @@ steps:
   - id: "create-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/agent_flows/quality_gate_clarification.md"]
+    args: ["create", "--file", "$FRAMEWORK_HOME/fixtures/requests/agent_flows/quality_gate_clarification.md"]
     input_criteria:
       - id: "request-fixture-exists"
         score_weight: 0.4

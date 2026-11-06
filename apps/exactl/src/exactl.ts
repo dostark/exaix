@@ -269,7 +269,7 @@ baseCommand
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 
 // cliffy attaches .error() to the last registered command unless reset() runs first.
-baseCommand.reset().error((error) => handleExaCtlError(error, Deno.args, Deno.exit));
+baseCommand.reset().error((error) => handleExaCtlError(error, Deno.args, Deno.exit, baseCommand));
 
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
 

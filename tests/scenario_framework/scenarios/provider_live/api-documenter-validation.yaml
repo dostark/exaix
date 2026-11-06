@@ -13,7 +13,8 @@ steps:
     type: "exactl"
     command: "request"
     args:
-      - "--agent-role"
+      - "create"
+      - "--agent"
       - "examples/api-documenter"
       - "--portal"
       - "portal-exaix"

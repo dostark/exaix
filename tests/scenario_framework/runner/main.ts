@@ -94,7 +94,7 @@ await new Command()
   .option(
     "--bind <spec:string>",
     "Per-run operator binding entry, e.g. flow:research/step:compose=service=openai " +
-      "(repeatable). Same grammar as 'exactl request --bind'; applied after every --overlay.",
+      "(repeatable). Same grammar as 'exactl request create --bind'; applied after every --overlay.",
     { collect: true },
   )
   .option(

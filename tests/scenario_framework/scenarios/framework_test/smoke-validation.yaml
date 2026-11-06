@@ -25,7 +25,7 @@ steps:
     type: exactl
     name: "Run request analysis"
     command: "request"
-    args: ["--analyze", "--engine", "llm", "--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix"]
+    args: ["create", "--analyze", "--engine", "llm", "--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix"]
     input_criteria: []
     output_criteria:
       - id: request-created

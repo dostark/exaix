@@ -39,7 +39,7 @@ function stubCreate(ctx: ExaCtlTestContext) {
 Deno.test("request --effort auto writes effort auto into create options", async () => {
   await withTestMod(async (mod, ctx) => {
     const received = stubCreate(ctx);
-    await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--effort", "auto"]);
+    await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--effort", "auto"]);
     assertEquals(received.length, 1);
     assertEquals(received[0].opts.effort, "auto");
   });
@@ -48,11 +48,11 @@ Deno.test("request --effort auto writes effort auto into create options", async 
 Deno.test("request --thinking writes thinking true; --thinking auto keeps auto; --thinking false writes false", async () => {
   await withTestMod(async (mod, ctx) => {
     const received = stubCreate(ctx);
-    await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--thinking"]);
+    await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--thinking"]);
     assertEquals(received[0].opts.thinking, true);
-    await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--thinking", "auto"]);
+    await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--thinking", "auto"]);
     assertEquals(received[1].opts.thinking, "auto");
-    await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--thinking", "false"]);
+    await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--thinking", "false"]);
     assertEquals(received[2].opts.thinking, false);
   });
 });
@@ -61,7 +61,7 @@ Deno.test("request --effort bogus is rejected with an actionable error", async (
   await withTestMod(async (mod, ctx) => {
     stubCreate(ctx);
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--effort", "bogus"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--effort", "bogus"]);
     });
     assert(
       errors.some((e) => e.includes("effort") && e.includes("low, medium, high or auto")),
@@ -74,7 +74,7 @@ Deno.test("request --thinking maybe is rejected with an actionable error", async
   await withTestMod(async (mod, ctx) => {
     stubCreate(ctx);
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([FlowInputSource.REQUEST, "Do it", "--thinking", "maybe"]);
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do it", "--thinking", "maybe"]);
     });
     assert(
       errors.some((e) => e.includes("thinking") && e.includes("true, false or auto")),

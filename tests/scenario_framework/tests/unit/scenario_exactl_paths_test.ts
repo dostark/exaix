@@ -21,6 +21,10 @@ const EXACTL_STEP_TYPE = "exactl";
 const OPTION_PREFIX = "-";
 const LONG_OPTION_PREFIX = "--";
 const OPTION_TERMINATOR = "--";
+const REQUEST_COMMAND = "request";
+const CREATE_SUBCOMMAND = "create";
+const RENAMED_AGENT_OPTION = "--agent-role";
+const DROPPED_AGENT_ALIAS = "-a";
 const ALWAYS_VALID_OPTIONS: ReadonlySet<string> = new Set(["--help", "--version"]);
 
 interface IExaCtlStep {
@@ -128,4 +132,26 @@ Deno.test("an unknown long option is reported and a known one is not", () => {
     "--bogus-option",
   ]);
   assertEquals(resolveStep(liveNodes, "log", ["wait", "--event=x", "--timeout", "1"]).unknownOptions, []);
+});
+
+Deno.test("every request step names a subcommand and none uses a removed agent option", async () => {
+  const subcommands = new Set(
+    liveNodes.filter((node) => node.path.length === 2 && node.path[0] === REQUEST_COMMAND).map((node) => node.path[1]),
+  );
+  assert(subcommands.has(CREATE_SUBCOMMAND), "the live tree has no request create");
+  const problems: string[] = [];
+  for (const step of await loadExaCtlSteps()) {
+    const [root, ...commandWords] = step.command.trim().split(/\s+/);
+    if (root !== REQUEST_COMMAND) continue;
+    const words = [...commandWords, ...step.args];
+    const where = `${step.file.replace(FRAMEWORK_HOME, "")}#${step.id}`;
+    if (!subcommands.has(words[0])) problems.push(`${where}: first word "${words[0]}" is not a request subcommand`);
+    if (words.some((word) => word.split("=")[0] === RENAMED_AGENT_OPTION)) {
+      problems.push(`${where}: ${RENAMED_AGENT_OPTION}`);
+    }
+    if (words[0] === CREATE_SUBCOMMAND && words.includes(DROPPED_AGENT_ALIAS)) {
+      problems.push(`${where}: ${DROPPED_AGENT_ALIAS}`);
+    }
+  }
+  assertEquals(problems, []);
 });

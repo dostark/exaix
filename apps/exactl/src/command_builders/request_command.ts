@@ -33,12 +33,12 @@ import {
   CLI_PORTAL_LONG_OPTION,
 } from "../exactl_constants.ts";
 
-function createRequestCommand(runtime: IExaCtlRuntime) {
+function createRequestCreateCommand(runtime: IExaCtlRuntime) {
   const { context, display, requestCommands } = runtime;
-  const command = new Command()
-    .description("Create requests for Exaix agents or multi-agent flows (PRIMARY INTERFACE)")
+  return new Command()
+    .description("Create a request for an Exaix agent or multi-agent flow (PRIMARY INTERFACE)")
     .arguments("[description:string]")
-    .option("-a, --agent-role <agent-role:string>", "Target agent role blueprint", { default: CLI_DEFAULTS.AGENT })
+    .option("--agent <agent:string>", "Target agent role blueprint", { default: CLI_DEFAULTS.AGENT })
     .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
       default: CLI_DEFAULTS.PRIORITY,
     })
@@ -63,7 +63,7 @@ function createRequestCommand(runtime: IExaCtlRuntime) {
       "--preferred-provider <provider:string>",
       "Narrow candidates to specific provider (skips cross-provider scoring)",
     )
-    .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --agent-role)")
+    .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --agent)")
     .option("--skills <skills:string>", "Comma-separated list of skills to inject")
     .option("-s, --subject <subject:string>", "Human-readable subject for the request")
     .option(
@@ -107,13 +107,21 @@ function createRequestCommand(runtime: IExaCtlRuntime) {
     })
     .example(
       "Create a request for a specific agent role",
-      'exactl request "Analyze this code" --agent-role code-reviewer',
+      'exactl request create "Analyze this code" --agent code-reviewer',
     )
-    .example("Create a request for a multi-agent flow", 'exactl request "Build a web app" --flow web-development')
+    .example(
+      "Create a request for a multi-agent flow",
+      'exactl request create "Build a web app" --flow web-development',
+    )
     .example(
       "Create a high-priority request",
-      'exactl request "Fix critical bug" --priority critical --agent-role debugger',
+      'exactl request create "Fix critical bug" --priority critical --agent debugger',
     );
+}
+
+function createRequestCommand(runtime: IExaCtlRuntime) {
+  const command = new Command().description("Create and manage requests for Exaix agents or multi-agent flows");
+  command.command(RequestOperation.CREATE, createRequestCreateCommand(runtime));
   for (const [name, child] of [...addRequestCommands1(runtime)]) command.command(name, child);
   return command;
 }

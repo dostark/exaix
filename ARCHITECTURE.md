@@ -839,14 +839,14 @@ wrapper. Each run holds its keys until `releaseRun`, which `FlowRunner.execute` 
 and closed. `FlowRunner` keeps one DYNAMIC executor per pooled provider instance, so a rotated credential or an evicted provider never leaves a stale executor. The `ICostTracker` reservation API and
 `RateLimitedProvider` use service and transport identity; `IRateLimitConfig` supplies
 the per-service cap and global budget callback when operator binding layers are active.
-`exactl request` creates per-run overlays under `.exa/run-bindings/`, and `exactl flow
+`exactl request create` creates per-run overlays under `.exa/run-bindings/`, and `exactl flow
 bindings` previews the same resolver path before execution.
 
 The request and judge contracts keep context in memory: `IFlowStepRequest` carries the
 flow ID and binding snapshot; `IGateConfig.bindingContext` and
 `IJudgeInvoker.evaluate` pass the gate reference and snapshot to the judge runner.
 `DomainEventType` includes the three binding events above. `IRequestOptions` carries
-`exactl request`'s repeatable overlay and bind fields plus its replay lock path.
+`exactl request create`'s repeatable overlay and bind fields plus its replay lock path.
 
 The scenario runner resolves each judge through the same ordered overlay list as the request
 it grades, records that request's step in the judge evidence row, and writes binding evidence

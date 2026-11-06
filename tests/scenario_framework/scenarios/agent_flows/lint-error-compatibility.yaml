@@ -22,7 +22,7 @@ steps:
   - id: submit-retry-failure
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE"]
+    args: [create, --file, "$REQUEST_FIXTURE"]
     env: { EXA_RECORDING_LANES: "1" }
     output_criteria:
       - { id: retry-submitted, kind: command-exit-code, equals: 0 }
@@ -56,7 +56,7 @@ steps:
   - id: submit-malformed
     type: exactl
     command: request
-    args: [--file, "$REQUEST_FIXTURE"]
+    args: [create, --file, "$REQUEST_FIXTURE"]
     env: { EXA_RECORDING_LANES: "1" }
     output_criteria:
       - { id: malformed-submitted, kind: command-exit-code, equals: 0 }

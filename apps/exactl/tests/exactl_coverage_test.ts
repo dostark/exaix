@@ -983,8 +983,9 @@ Deno.test("request create with all options", async () => {
     await captureConsoleOutput(async () => {
       await mod.__test_command.parse([
         FlowInputSource.REQUEST,
+        "create",
         "Do task",
-        "--agent-role",
+        "--agent",
         "custom-agent",
         "-p",
         "high",
@@ -1023,6 +1024,7 @@ Deno.test("request create with flow option", async () => {
     await captureConsoleOutput(async () => {
       await mod.__test_command.parse([
         FlowInputSource.REQUEST,
+        "create",
         "Code review task",
         "--flow",
         "code-review",
@@ -1169,6 +1171,7 @@ Deno.test("end-to-end flow request workflow", async () => {
     const createOutput = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([
         FlowInputSource.REQUEST,
+        "create",
         "Build a web application",
         "--flow",
         "web-dev-flow",

@@ -10,7 +10,7 @@ steps:
   - id: "create-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--file", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "request-fixture-exists"
         score_weight: 0.4

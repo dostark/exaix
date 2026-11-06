@@ -102,7 +102,7 @@ const result = await new Deno.Command(${
 if (result.success && Deno.args[0] === "request" && ${JSON.stringify(Boolean(options.mutateOverlay))}) {
   await Deno.writeTextFile(${JSON.stringify(options.mutateOverlay ?? "")}, '{"schema":1,"bindings":{}}');
 }
-if (result.success && ${JSON.stringify(phaseStep === 8)} && Deno.args[0] === "journal" && Deno.args[1] === "wait") {
+if (result.success && ${JSON.stringify(phaseStep === 8)} && Deno.args[0] === "log" && Deno.args[1] === "wait") {
   const { captureGuardedDelegation } = await import(${
       JSON.stringify(new URL("../helpers/guarded_change_fixture.ts", import.meta.url).href)
     });
