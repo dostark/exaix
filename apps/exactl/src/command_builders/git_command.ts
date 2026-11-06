@@ -12,7 +12,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { CLI_PORTAL_LONG_OPTION } from "../exactl_constants.ts";
+import { CLI_PORTAL_LONG_OPTION, ExaCtlSubNoun, ExaCtlVerb } from "../exactl_constants.ts";
 
 function resolveWorktreeTarget(
   runtime: IExaCtlRuntime,
@@ -39,7 +39,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
   return new Command()
     .description("Git repository operations")
     .command(
-      "worktrees",
+      ExaCtlSubNoun.WORKTREE,
       new Command()
         .description("Git worktree maintenance")
         .command(
@@ -69,7 +69,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
                   });
                 }
               } catch (error) {
-                display.error("cli.error", "git worktrees list", {
+                display.error("cli.error", "git worktree list", {
                   message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                 });
                 Deno.exit(1);
@@ -77,7 +77,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
             }),
         )
         .command(
-          "prune",
+          ExaCtlVerb.PRUNE,
           new Command()
             .description("Prune stale git worktree metadata")
             .option(CLI_PORTAL_LONG_OPTION, "Target a configured portal repository")
@@ -102,7 +102,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
                   output: output.trim().length > 0 ? output.trim() : null,
                 });
               } catch (error) {
-                display.error("cli.error", "git worktrees prune", {
+                display.error("cli.error", "git worktree prune", {
                   message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                 });
                 Deno.exit(1);
@@ -111,28 +111,33 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         ),
     )
     .command(
-      "branches",
+      ExaCtlSubNoun.BRANCH,
       new Command()
-        .description("List all branches")
-        .option("-p, --pattern <pattern:string>", "Filter by pattern (e.g., 'feat/*')")
-        .action(async (options) => {
-          try {
-            const branches = await gitCommands.listBranches(options.pattern);
-            display.info("git.branches", "repository", { count: branches.length });
-            for (const branch of branches) {
-              const current = branch.is_current ? "* " : "  ";
-              display.info(`${current}${branch.name}`, branch.name, {
-                last_commit: `${branch.last_commit} (${new Date(branch.last_commit_date).toLocaleDateString()})`,
-                trace: branch.trace_id ? `${branch.trace_id.substring(0, 8)}...` : null,
-              });
-            }
-          } catch (error) {
-            display.error("cli.error", "git branches", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+        .description("Git branch operations")
+        .command(
+          RequestOperation.LIST,
+          new Command()
+            .description("List all branches")
+            .option("-p, --pattern <pattern:string>", "Filter by pattern (e.g., 'feat/*')")
+            .action(async (options) => {
+              try {
+                const branches = await gitCommands.listBranches(options.pattern);
+                display.info("git.branches", "repository", { count: branches.length });
+                for (const branch of branches) {
+                  const current = branch.is_current ? "* " : "  ";
+                  display.info(`${current}${branch.name}`, branch.name, {
+                    last_commit: `${branch.last_commit} (${new Date(branch.last_commit_date).toLocaleDateString()})`,
+                    trace: branch.trace_id ? `${branch.trace_id.substring(0, 8)}...` : null,
+                  });
+                }
+              } catch (error) {
+                display.error("cli.error", "git branch list", {
+                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                });
+                Deno.exit(1);
+              }
+            }),
+        ),
     )
     .command(
       GIT_CMD_STATUS,

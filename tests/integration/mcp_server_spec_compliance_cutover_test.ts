@@ -4,7 +4,7 @@
  * @description Phase 163 Step 7 (mandatory, non-deferrable cutover) — proves BOTH halves
  *   of the phase from their real entry points, not simulated:
  *
- *   1. The redesigned `exactl mcp start` server speaks real Streamable HTTP to a real
+ *   1. The redesigned `exactl mcp serve` server speaks real Streamable HTTP to a real
  *      official-SDK client, matching Step 1's golden fixture exactly.
  *   2. The stdio transport is proven independently over a real subprocess pipe.
  *   3. A real `EXAIX_EDITION=team` daemon boot executes `analyze-codebase.flow.yaml`'s
@@ -266,7 +266,7 @@ async function readLastEvent(configPath: string, actionType: string): Promise<bo
 
 Deno.test({
   name:
-    "[cutover] exactl mcp start --sse serves real Streamable HTTP; a real client lists/calls tools matching the golden fixture",
+    "[cutover] exactl mcp serve --sse serves real Streamable HTTP; a real client lists/calls tools matching the golden fixture",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -290,7 +290,7 @@ Deno.test({
 // Test 2: real stdio over a subprocess pipe
 
 Deno.test({
-  name: "[cutover] exactl mcp start (stdio) serves a real client over stdio matching the golden fixture",
+  name: "[cutover] exactl mcp serve (stdio) serves a real client over stdio matching the golden fixture",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -382,7 +382,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "[cutover] exactl mcp start --sse with mcp.require_auth=true (real config + MCP_AUTH_TOKEN env) rejects unauthenticated requests and accepts a valid bearer token",
+    "[cutover] exactl mcp serve --sse with mcp.require_auth=true (real config + MCP_AUTH_TOKEN env) rejects unauthenticated requests and accepts a valid bearer token",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,

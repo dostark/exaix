@@ -31,7 +31,7 @@ matrix:
 steps:
   - id: "analyze-portal"
     type: "exactl"
-    command: "portal analyze todo-app --mode standard --force"
+    command: "portal knowledge analyze todo-app --mode standard --force"
     timeout_sec: 120
     output_criteria:
       - id: "symbol-cache-populated"

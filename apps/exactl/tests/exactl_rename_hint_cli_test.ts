@@ -67,3 +67,21 @@ Deno.test("the removed plan and memory compound paths name their grouped replace
   await assertHint(["memory", "delete-learning", "l-1"], "exactl memory learning remove l-1");
   await assertHint(["memory", "rebuild-index", "--include-embeddings"], "exactl memory index rebuild");
 });
+
+Deno.test("the removed git, portal, config and mcp paths name their grouped replacements", async () => {
+  await assertHint(["git", "branches"], "exactl git branch list");
+  await assertHint(["git", "worktrees", "list"], "exactl git worktree list");
+  await assertHint(["portal", "analyze", "p", "--force"], "exactl portal knowledge analyze p");
+  await assertHint(["portal", "knowledge", "p"], "exactl portal knowledge show p");
+  await assertHint(["config", "lock-list"], "exactl config lock list");
+  await assertHint(["config", "lock", "ai.timeout_ms"], "exactl config lock add ai.timeout_ms");
+  await assertHint(["config", "unlock", "ai.timeout_ms"], "exactl config lock remove ai.timeout_ms");
+  await assertHint(["config", "use-profile", "dev"], "exactl config profile use dev");
+  await assertHint(["config", "list-profiles"], "exactl config profile list");
+  await assertHint(["config", "set-path", "workspace", "/tmp/w"], "exactl config set paths.<key> <dir>");
+  await assertHint(["mcp", "start"], "exactl mcp serve");
+  await assertHint(
+    ["mcp", "connect", "http://localhost:3000/mcp", "--list-tools"],
+    "exactl mcp tool list --server <url>, or exactl mcp tool call <tool> --server <url>",
+  );
+});

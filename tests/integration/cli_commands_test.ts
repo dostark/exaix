@@ -250,19 +250,19 @@ cliTest("CLI: portal add/remove/refresh works", async () => {
   }
 });
 
-cliTest("[regression] CLI: portal analyze and knowledge commands are recognized", async () => {
+cliTest("[regression] CLI: portal knowledge analyze and show commands are recognized", async () => {
   const env = await TestEnvironment.create();
   try {
     // These should not return "Unknown command" (exit code 2)
     // Even if they fail due to missing portal, they should return exit code 1 or 0
 
     // Analyze help
-    const analyzeHelp = await runExactl(["portal", "analyze", "--help"], env.tempDir);
+    const analyzeHelp = await runExactl(["portal", "knowledge", "analyze", "--help"], env.tempDir);
     assertEquals(analyzeHelp.code, 0);
     assertStringIncludes(analyzeHelp.stdout, "Trigger codebase knowledge analysis");
 
     // Knowledge help
-    const knowledgeHelp = await runExactl(["portal", "knowledge", "--help"], env.tempDir);
+    const knowledgeHelp = await runExactl(["portal", "knowledge", "show", "--help"], env.tempDir);
     assertEquals(knowledgeHelp.code, 0);
     assertStringIncludes(knowledgeHelp.stdout, "Display gathered knowledge for a portal");
   } finally {

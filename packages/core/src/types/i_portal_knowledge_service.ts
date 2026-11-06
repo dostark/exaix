@@ -110,7 +110,7 @@ export interface IPortalKnowledgeService {
    *  {@link IPortalKnowledgeConfig.staleness} threshold. */
   isStale(portalAlias: string): Promise<boolean>;
 
-  /** Currently a CLI-only operation (`exactl portal analyze [--force]`); `changedFiles`
+  /** Currently a CLI-only operation (`exactl portal knowledge analyze [--force]`); `changedFiles`
    *  is reserved for future automatic integration and may be ignored by implementations. */
   updateKnowledge(
     portalAlias: string,

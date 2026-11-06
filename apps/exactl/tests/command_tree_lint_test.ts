@@ -77,3 +77,7 @@ Deno.test("no allow-listed compound-leaf entry remains for a plan or memory leaf
   const remaining = allowlist["compound-leaf"].filter((path) => path.startsWith("plan ") || path.startsWith("memory "));
   assertEquals(remaining, []);
 });
+
+Deno.test("the compound-leaf allow-list is empty", () => {
+  assertEquals(allowlist["compound-leaf"], []);
+});

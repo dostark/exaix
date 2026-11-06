@@ -1,5 +1,5 @@
 schema_version: "1.0.0"
-# Asserts query_relationships and find_dependents end to end. A real `portal analyze` populates a layer_contains_file edge (derived on demand) and a file_imports_file_internal edge (persisted),
+# Asserts query_relationships and find_dependents end to end. A real `portal knowledge analyze` populates a layer_contains_file edge (derived on demand) and a file_imports_file_internal edge (persisted),
 # then a real ToolRegistry serves both directions of the query. That registry is the Solo in-process ReAct catalog, separate from TOOL_MANIFEST in packages/mcp/src/manifest.ts.
 # It calls ToolRegistry.execute() directly (call_tool_registry_tool.ts), because neither Solo-only tool has an MCP handler.
 id: "tools-relationship-query"
@@ -15,7 +15,7 @@ steps:
   - id: "portal-analyzed"
     type: "exactl"
     command: "portal"
-    args: ["analyze", "rel-fixture"]
+    args: ["knowledge", "analyze", "rel-fixture"]
     input_criteria:
       - id: "portal-available"
         score_weight: 0.2

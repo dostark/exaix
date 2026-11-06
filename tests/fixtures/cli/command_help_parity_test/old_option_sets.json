@@ -31,5 +31,46 @@
   "memory rebuild-index": [
     "--include-embeddings",
     "-e"
+  ],
+  "git branches": [
+    "--pattern",
+    "-p"
+  ],
+  "git worktrees": [],
+  "git worktrees list": [
+    "--portal",
+    "--repo"
+  ],
+  "git worktrees prune": [
+    "--dry-run",
+    "--expire",
+    "--portal",
+    "--repo",
+    "--verbose"
+  ],
+  "portal analyze": [
+    "--force",
+    "--mode",
+    "-f",
+    "-m"
+  ],
+  "portal knowledge": [
+    "--json"
+  ],
+  "config lock": [
+    "--reason"
+  ],
+  "config unlock": [],
+  "config lock-list": [],
+  "config use-profile": [],
+  "config list-profiles": [],
+  "mcp start": [
+    "--port",
+    "--sse"
+  ],
+  "mcp connect": [
+    "--args",
+    "--call-tool",
+    "--list-tools"
   ]
 }

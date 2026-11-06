@@ -994,7 +994,7 @@ export class ToolRegistry implements IToolRegistry {
     }
     const knowledge = await portalKnowledgeService.loadCachedKnowledge(portal.alias);
     if (!knowledge) {
-      return { error: `${toolLabel}: no cached knowledge for this portal — run 'portal analyze' first` };
+      return { error: `${toolLabel}: no cached knowledge for this portal — run 'portal knowledge analyze' first` };
     }
     if (knowledge.portal !== portal.alias) {
       return { error: `${toolLabel}: cached knowledge portal mismatch` };

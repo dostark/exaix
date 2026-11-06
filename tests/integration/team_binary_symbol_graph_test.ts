@@ -82,7 +82,7 @@ async function analyzeWithCompiledBinary(
       "--mode",
       "standard",
     ]);
-    assertEquals(analyzeCode, 0, `${edition}: portal analyze must succeed`);
+    assertEquals(analyzeCode, 0, `${edition}: portal knowledge analyze must succeed`);
 
     const knowledgePath = pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json");
     const knowledge = JSON.parse(await Deno.readTextFile(knowledgePath)) as {
@@ -161,7 +161,7 @@ Deno.test({
     // The enterprise one must not expose the analysis command.
     assert(TEAM_BINARY !== ENTERPRISE_BINARY);
     const probe = new Deno.Command(ENTERPRISE_BINARY, {
-      args: ["portal", "analyze", "anything"],
+      args: ["portal", "knowledge", "analyze", "anything"],
       stdout: "piped",
       stderr: "piped",
       env: { ...Deno.env.toObject(), EXAIX_EDITION: EDITION_ENTERPRISE },
@@ -223,7 +223,14 @@ Deno.test({
       );
       assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
       assertEquals(
-        await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
+        await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, [
+          "portal",
+          "knowledge",
+          "analyze",
+          alias,
+          "--mode",
+          "standard",
+        ]),
         0,
       );
 
@@ -332,7 +339,14 @@ for (const fixture of SCRIPTED_FIXTURES) {
         );
         assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
         assertEquals(
-          await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
+          await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, [
+            "portal",
+            "knowledge",
+            "analyze",
+            alias,
+            "--mode",
+            "standard",
+          ]),
           0,
         );
 
@@ -357,7 +371,14 @@ for (const fixture of SCRIPTED_FIXTURES) {
           );
           assertEquals(await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "add", portalRoot, teamAlias]), 0);
           assertEquals(
-            await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "analyze", teamAlias, "--mode", "standard"]),
+            await runTeamBinary(workspaceRoot, EDITION_TEAM, [
+              "portal",
+              "knowledge",
+              "analyze",
+              teamAlias,
+              "--mode",
+              "standard",
+            ]),
             0,
           );
           const teamKnowledge = JSON.parse(

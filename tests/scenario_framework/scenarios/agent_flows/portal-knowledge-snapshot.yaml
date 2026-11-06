@@ -14,7 +14,7 @@ portals:
 steps:
   - id: "portal-mounted"
     type: "exactl"
-    command: "portal analyze portal-sample-app"
+    command: "portal knowledge analyze portal-sample-app"
     input_criteria:
       - id: "portal-available"
         score_weight: 0.4

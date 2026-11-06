@@ -544,7 +544,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 /** Renders an IPortalKnowledge record into detail-pane display lines ("no analysis" message when null). */
 export function renderKnowledgeSection(knowledge: IPortalKnowledge | null): string[] {
   if (!knowledge) {
-    return ["No analysis available — run `exactl portal analyze`"];
+    return ["No analysis available — run `exactl portal knowledge analyze`"];
   }
   return formatKnowledge(knowledge);
 }

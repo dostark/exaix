@@ -2,7 +2,7 @@
  * @module ExternalMcpClientLiveTest
  * @path tests/integration/external_mcp_client_live_test.ts
  * @description Phase 162 Step 7 (mandatory, non-deferrable live cutover) —
- * proves `exactl mcp connect` is reachable end to end, via a REAL subprocess
+ * proves `exactl mcp tool list` is reachable end to end, via a REAL subprocess
  * invocation (mirroring `external_mcp_client_cutover_test.ts`'s pattern
  * exactly), against two genuine third-party MCP servers outside Exaix's
  * control: DeepWiki's public, unauthenticated server, and GitHub's official,
@@ -85,7 +85,7 @@ async function runExactl(
 
 Deno.test({
   name:
-    "[live] exactl mcp connect --list-tools reaches a real, unauthenticated third-party MCP server (DeepWiki) and lists its real tools",
+    "[live] exactl mcp tool list reaches a real, unauthenticated third-party MCP server (DeepWiki) and lists its real tools",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -96,7 +96,7 @@ Deno.test({
       await runMigrationsIn(tempDir);
       writeCliConfig(configPath, tempDir);
 
-      const result = await runExactl(configPath, ["mcp", "connect", DEEPWIKI_MCP_ENDPOINT, "--list-tools"]);
+      const result = await runExactl(configPath, ["mcp", "tool", "list", "--server", DEEPWIKI_MCP_ENDPOINT]);
 
       if (result.code !== 0) {
         throw new Error(`exactl exited ${result.code}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
@@ -117,7 +117,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "[live] exactl mcp connect --list-tools reaches GitHub's real, bearer-token-authenticated MCP server and lists its real tools",
+    "[live] exactl mcp tool list reaches GitHub's real, bearer-token-authenticated MCP server and lists its real tools",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -134,7 +134,7 @@ Deno.test({
       await runMigrationsIn(tempDir);
       writeCliConfig(configPath, tempDir);
 
-      const result = await runExactl(configPath, ["mcp", "connect", GITHUB_MCP_ENDPOINT, "--list-tools"], {
+      const result = await runExactl(configPath, ["mcp", "tool", "list", "--server", GITHUB_MCP_ENDPOINT], {
         EXA_MCP_BEARER_TOKEN: token,
       });
 
@@ -177,7 +177,7 @@ Deno.test({
         () =>
           runExactl(
             configPath,
-            ["mcp", "connect", `http://127.0.0.1:${port}/mcp`, "--list-tools"],
+            ["mcp", "tool", "list", "--server", `http://127.0.0.1:${port}/mcp`],
             {},
             HANG_TEST_TIMEOUT_MS,
           ),

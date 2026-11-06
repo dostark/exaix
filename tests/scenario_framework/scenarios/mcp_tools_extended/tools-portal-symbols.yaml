@@ -55,7 +55,7 @@ steps:
         contains: ["has not been analyzed", "\"isError\": true", "\"success\": false"]
         score_weight: 0.8
 
-  # A small hand-written symbolMap stands in for a real `portal analyze --mode standard` run, which populates this file in production.
+  # A small hand-written symbolMap stands in for a real `portal knowledge analyze --mode standard` run, which populates this file in production.
   # Writing it directly keeps the scenario fast and focused on the tool's read, filter and rank contract. scenarios/portal_knowledge/portal-knowledge-strategies.yaml covers the extraction path.
   - id: "write-knowledge-fixture"
     type: "write-file"

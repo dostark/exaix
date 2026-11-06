@@ -131,9 +131,9 @@ async function writeKnowledge(
   await Deno.writeTextFile(join(dir, "knowledge.json"), JSON.stringify(knowledge));
 }
 
-// Tests: `portal analyze`
+// Tests: `portal knowledge analyze`
 
-Deno.test("[portal analyze] triggers analysis and displays summary", async () => {
+Deno.test("[portal knowledge analyze] triggers analysis and displays summary", async () => {
   const alias = "analyze-portal";
   const knowledge = makeKnowledge(alias);
   const mockService = makeMockKnowledgeService(knowledge);
@@ -157,7 +157,7 @@ Deno.test("[portal analyze] triggers analysis and displays summary", async () =>
   }
 });
 
-Deno.test("[portal analyze] uses specified mode", async () => {
+Deno.test("[portal knowledge analyze] uses specified mode", async () => {
   const alias = "mode-portal";
   const knowledge = makeKnowledge(alias);
   const mockService = makeMockKnowledgeService(knowledge);
@@ -183,7 +183,7 @@ Deno.test("[portal analyze] uses specified mode", async () => {
   }
 });
 
-Deno.test("[portal analyze] force re-analyzes fresh knowledge", async () => {
+Deno.test("[portal knowledge analyze] force re-analyzes fresh knowledge", async () => {
   const alias = "force-portal";
   const knowledge = makeKnowledge(alias);
   const mockService = makeMockKnowledgeService(knowledge);
@@ -274,7 +274,7 @@ Deno.test("[portal knowledge] handles unanalyzed portal gracefully", async () =>
     const output = await commands.knowledge(alias);
 
     assertStringIncludes(output, "No knowledge");
-    assertStringIncludes(output, "exactl portal analyze");
+    assertStringIncludes(output, "exactl portal knowledge analyze");
   } finally {
     await cleanup();
   }

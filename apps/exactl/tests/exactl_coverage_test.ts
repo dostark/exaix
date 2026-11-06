@@ -143,13 +143,13 @@ Deno.test("review reject error exits with message", async () => {
 
 // Git Command Error Handlers
 
-Deno.test("git branches error exits with message", async () => {
+Deno.test("git branch list error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.gitCommands.listBranches = () => {
       return Promise.reject(new Error("git error"));
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([PortalOperation.GIT, "branches"]);
+      await mod.__test_command.parse([PortalOperation.GIT, "branch", "list"]);
     });
     assert(errors.some((e: string) => e.includes("git error")));
   });
@@ -257,12 +257,12 @@ Deno.test("portal add error exits with message", async () => {
 
 // Git Worktree Commands
 
-Deno.test("git worktrees list rejects --portal and --repo together", async () => {
+Deno.test("git worktree list rejects --portal and --repo together", async () => {
   await withTestMod(async (mod, _ctx) => {
     const { errors } = await expectExitWithLogs(async () => {
       await mod.__test_command.parse([
         PortalOperation.GIT,
-        "worktrees",
+        "worktree",
         "list",
         "--portal",
         "portal-a",
@@ -274,7 +274,7 @@ Deno.test("git worktrees list rejects --portal and --repo together", async () =>
   });
 });
 
-Deno.test("git worktrees list uses repo option and prints entries", async () => {
+Deno.test("git worktree list uses repo option and prints entries", async () => {
   const originalList = GitService.prototype.listWorktrees;
   let capturedRepo = "";
   let called = false;
@@ -302,7 +302,7 @@ Deno.test("git worktrees list uses repo option and prints entries", async () => 
   try {
     await withTestMod(async (mod, _ctx) => {
       const output = await captureConsoleOutput(async () => {
-        await mod.__test_command.parse([PortalOperation.GIT, "worktrees", "list", "--repo", "/tmp/repo"]);
+        await mod.__test_command.parse([PortalOperation.GIT, "worktree", "list", "--repo", "/tmp/repo"]);
       });
       assert(called);
       assertEquals(capturedRepo, "/tmp/repo");
@@ -313,7 +313,7 @@ Deno.test("git worktrees list uses repo option and prints entries", async () => 
   }
 });
 
-Deno.test("git worktrees prune passes options to GitService", async () => {
+Deno.test("git worktree prune passes options to GitService", async () => {
   const originalPrune = GitService.prototype.pruneWorktrees;
   let received: IPruneWorktreesOptions | null = null;
 
@@ -327,7 +327,7 @@ Deno.test("git worktrees prune passes options to GitService", async () => {
       const output = await captureConsoleOutput(async () => {
         await mod.__test_command.parse([
           PortalOperation.GIT,
-          "worktrees",
+          "worktree",
           "prune",
           "--repo",
           "/tmp/repo",

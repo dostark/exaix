@@ -33,7 +33,7 @@ steps:
   # ── Step 3: trigger analysis ────────────────────────────────────────────
   - id: "trigger-analysis"
     type: "exactl"
-    command: "portal analyze portal-exaix --mode standard"
+    command: "portal knowledge analyze portal-exaix --mode standard"
     input_criteria:
       - id: "portal-mounted-check"
         score_weight: 0.05
@@ -302,7 +302,7 @@ steps:
   # ── Step 8: deep mode works ─────────────────────────────────────────────
   - id: "analyze-deep-mode"
     type: "exactl"
-    command: "portal analyze portal-exaix --mode deep --force"
+    command: "portal knowledge analyze portal-exaix --mode deep --force"
     output_criteria:
       - id: "deep-analyze-exit-code"
         score_weight: 0.1

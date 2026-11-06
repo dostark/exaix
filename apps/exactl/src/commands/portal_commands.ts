@@ -82,7 +82,7 @@ export class PortalCommands extends BaseCommand {
     const data = await this.portals.getKnowledge(alias);
 
     if (!data) {
-      return `No knowledge available for '${alias}'.\nRun \`exactl portal analyze ${alias}\` to gather it.`;
+      return `No knowledge available for '${alias}'.\nRun \`exactl portal knowledge analyze ${alias}\` to gather it.`;
     }
 
     if (options?.json) {

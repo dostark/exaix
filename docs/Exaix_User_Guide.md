@@ -1774,8 +1774,8 @@ Query git history and track changes by trace_id:
 
 ```bash
 # List all branches with trace metadata
-exactl git branches
-exactl git branches --pattern "feat/*"     # Filter pattern
+exactl git branch list
+exactl git branch list --pattern "feat/*"     # Filter pattern
 
 # Show repository status
 exactl git status
@@ -1788,7 +1788,7 @@ exactl git log --trace <trace-id>
 
 ```bash
 # Find all branches created by agents
-$ exactl git branches --pattern "feat/*"
+$ exactl git branch list --pattern "feat/*"
 🌳 Branches (3):
 
   feat/implement-auth-550e8400
@@ -1875,8 +1875,8 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 
 **Worktree maintenance:**
 
-- `exactl git worktrees list [--portal <alias>] [--repo <path>]` shows all Git worktrees for a repository (useful to locate the active execution worktree).
-- `exactl git worktrees prune [--portal <alias>] [--repo <path>]` prunes stale worktree metadata (useful after manual deletion or crashes).
+- `exactl git worktree list [--portal <alias>] [--repo <path>]` shows all Git worktrees for a repository (useful to locate the active execution worktree).
+- `exactl git worktree prune [--portal <alias>] [--repo <path>]` prunes stale worktree metadata (useful after manual deletion or crashes).
 
 **What happens when adding a portal:**
 
@@ -3008,10 +3008,10 @@ The Model Context Protocol (MCP) allows external AI clients to interact with you
 
 ```bash
 # Start the MCP server
-exactl mcp start
+exactl mcp serve
 
 # Start with debug logging
-exactl mcp start --log-level debug
+exactl mcp serve --log-level debug
 
 # Check MCP server status
 exactl mcp status
@@ -3059,7 +3059,7 @@ exactl mcp status
 
 ```bash
 # Start MCP server
-$ exactl mcp start
+$ exactl mcp serve
 🚀 MCP Server started on stdio
   Tools: exaix_create_request, exaix_list_plans, exaix_approve_plan, exaix_query_journal
   File system access: scoped to workspace
@@ -3252,13 +3252,13 @@ Prevents any further writes to a compromised key through every surface (CLI, MCP
 
 ```bash
 # Lock a key — no surface can modify it until unlocked
-exactl config lock ai.provider --reason "compromised"
+exactl config lock add ai.provider --reason "compromised"
 
 # Unlock
-exactl config unlock ai.provider
+exactl config lock remove ai.provider
 
 # List all locked keys
-exactl config lock-list
+exactl config lock list
 ```
 
 **Integrity checksum:**
@@ -3300,8 +3300,8 @@ Group overrides into named profiles and switch between them.
 
 ```bash
 exactl config set --profile workstation ai.timeout_ms 60000
-exactl config use-profile workstation
-exactl config list-profiles
+exactl config profile use workstation
+exactl config profile list
 exactl config get --profile workstation ai.timeout_ms
 ```
 
@@ -3527,7 +3527,7 @@ exactl config get ai.provider           # Show effective config value
 exactl config set ai.timeout_ms 45000   # Set override (validated)
 exactl config history ai.provider       # View audit trail
 exactl config rollback ai.provider 3    # Revert to historical value
-exactl config lock ai.provider          # Protect a key from writes
+exactl config lock add ai.provider          # Protect a key from writes
 exactl config edit                      # Bulk edit in $EDITOR
 
 # Code review workflow
@@ -3543,8 +3543,8 @@ exactl portal show MyProject                 # Portal details
 exactl portal remove MyProject               # Unmount portal
 exactl portal verify                         # Check portal integrity
 exactl portal refresh MyProject              # Update context card
-exactl portal analyze MyProject              # Analyze codebase knowledge
-exactl portal knowledge MyProject            # Show gathered knowledge
+exactl portal knowledge analyze MyProject              # Analyze codebase knowledge
+exactl portal knowledge show MyProject            # Show gathered knowledge
 
 # Daemon management
 exactl daemon start                        # Start background process
@@ -3553,7 +3553,7 @@ exactl daemon status                       # Check health
 exactl daemon logs --follow                # Watch logs
 
 # Git operations
-exactl git branches                        # List all branches
+exactl git branch list                        # List all branches
 exactl git status                          # Working tree status
 exactl git log --trace <id>                # Find commits by trace
 
@@ -3563,7 +3563,7 @@ exactl skill match "API design"           # Find relevant skills
 exactl skill list                          # List all skills
 
 # MCP server
-exactl mcp start                          # Start MCP server for external clients
+exactl mcp serve                          # Start MCP server for external clients
 exactl mcp status                          # Check MCP server status
 
 # Activity Journal
@@ -3909,7 +3909,7 @@ exactl daemon status
 exactl daemon logs --lines 50
 
 # Check active git branches
-exactl git branches --pattern "feat/*"
+exactl git branch list --pattern "feat/*"
 
 # View agent activity
 exactl review list
@@ -3947,7 +3947,7 @@ exactl review show <id>
 exactl git status
 
 # View branches
-exactl git branches
+exactl git branch list
 ```
 
 **Database Corruption:**
@@ -4028,7 +4028,7 @@ exactl plan list
 exactl review list
 
 # View all branches
-exactl git branches
+exactl git branch list
 ```
 
 ### 5.7 Common Workflows
@@ -4062,7 +4062,7 @@ exactl daemon stop
 tar -czf exaix-backup-$(date +%Y%m%d).tar.gz ~/Exaix
 
 # Clean up old branches
-exactl git branches | grep -v main | xargs git branch -d
+exactl git branch list | grep -v main | xargs git branch -d
 
 # Restart daemon
 exactl daemon start
@@ -4235,7 +4235,7 @@ context about the project without reading every file on each request.
   files triggers a cheaper incremental re-analysis; a large number triggers a full one.
   `staleness_hours` (below) is a time-based fallback used only when the portal isn't a git repo
   or its `HEAD` can't be resolved.
-- Manually on demand with `exactl portal analyze <alias>`.
+- Manually on demand with `exactl portal knowledge analyze <alias>`.
 
 **Modes:**
 
@@ -4249,16 +4249,16 @@ context about the project without reading every file on each request.
 
 ```bash
 # Run analysis manually (default: quick mode)
-exactl portal analyze MyProject
+exactl portal knowledge analyze MyProject
 
 # Force deep analysis, ignore staleness
-exactl portal analyze MyProject --mode deep --force
+exactl portal knowledge analyze MyProject --mode deep --force
 
 # Display gathered knowledge (human-readable)
-exactl portal knowledge MyProject
+exactl portal knowledge show MyProject
 
 # Display as machine-readable JSON
-exactl portal knowledge MyProject --json
+exactl portal knowledge show MyProject --json
 ```
 
 **Configuration (`[portal_knowledge]` in `exa.config.toml`):**
@@ -4278,7 +4278,7 @@ enable_symbol_level_dependency_graph = false  # Enterprise only: symbol-level re
 **Where is it stored?**
 
 Knowledge snapshots are saved at `Memory/Projects/{alias}/knowledge.json`. You can
-inspect them directly or via `exactl portal knowledge <alias> --json`.
+inspect them directly or via `exactl portal knowledge show <alias> --json`.
 
 **Supported languages for symbol extraction:**
 
@@ -5602,13 +5602,13 @@ The standard way to run the MCP server is via the `exactl` CLI:
 
 ```bash
 # Start in stdio mode (default, for local clients)
-exactl mcp start
+exactl mcp serve
 
 # Start over Streamable HTTP on a local port (for remote/HTTP clients)
-exactl mcp start --sse --port 3000
+exactl mcp serve --sse --port 3000
 ```
 
-The server is built on the official `@modelcontextprotocol/server` SDK and negotiates the current spec protocol version (2025-11-25) — not the legacy `2024-11-05` revision. The default `exactl mcp start` serves **stdio**; `--sse --port <N>` serves **Streamable HTTP** (the current spec's primary HTTP transport).
+The server is built on the official `@modelcontextprotocol/server` SDK and negotiates the current spec protocol version (2025-11-25) — not the legacy `2024-11-05` revision. The default `exactl mcp serve` serves **stdio**; `--sse --port <N>` serves **Streamable HTTP** (the current spec's primary HTTP transport).
 
 **Authentication (opt-in).** By default the server is unauthenticated. To require a bearer token from every client, enable `mcp.require_auth` and put the secret in an environment variable (never in plaintext config):
 
@@ -5621,7 +5621,7 @@ require_auth = true
 
 ```bash
 export MCP_AUTH_TOKEN="your-secret-token"
-exactl mcp start --sse --port 3000
+exactl mcp serve --sse --port 3000
 ```
 
 A client without (or with the wrong) bearer token is rejected with `401`; a client supplying `Authorization: Bearer $MCP_AUTH_TOKEN` is accepted. When `require_auth` is enabled but the token env var is unset, the server fails fast at startup rather than silently rejecting every request.
@@ -5756,16 +5756,16 @@ Add the following to your `claude_desktop_config.json` (the command mirrors the 
 
 See `templates/mcp/` for more client configuration examples.
 
-### 8.4 Connecting Outbound (`exactl mcp connect`)
+### 8.4 Connecting Outbound (`exactl mcp tool`)
 
-Section 8.1–8.3 cover Exaix acting as an MCP _server_. `exactl mcp connect` is the reverse direction: Exaix acting as an MCP _client_, reaching out to a real external MCP server (a documentation server, a code-hosting platform's MCP endpoint, or any spec-compliant server you point it at).
+Section 8.1–8.3 cover Exaix acting as an MCP _server_. `exactl mcp tool` is the reverse direction: Exaix acting as an MCP _client_, reaching out to a real external MCP server (a documentation server, a code-hosting platform's MCP endpoint, or any spec-compliant server you point it at).
 
 ```bash
 # List every tool a server exposes
-exactl mcp connect <url> --list-tools
+exactl mcp tool list --server <url>
 
 # Call a named tool with JSON arguments
-exactl mcp connect <url> --call-tool <name> --args '{"key":"value"}'
+exactl mcp tool call <name> --server <url> --args '{"key":"value"}'
 ```
 
 Connection is automatic dual-transport: Streamable HTTP is tried first (the current MCP spec's primary transport), falling back to legacy SSE if the server only supports the older protocol — no flag needed either way.
@@ -5773,7 +5773,7 @@ Connection is automatic dual-transport: Streamable HTTP is tried first (the curr
 **Authentication.** Some servers require a bearer token (a Personal Access Token or similar). Set it via an environment variable — never a CLI flag, so it never appears in `ps`-visible process arguments:
 
 ```bash
-EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp connect <url> --list-tools
+EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp tool list --server <url>
 ```
 
 `EXA_MCP_BEARER_TOKEN` is forwarded as an `Authorization: Bearer <token>` header on every request to the target server. Only this bearer-token mode is supported — interactive OAuth login flows and `client_credentials`/JWT-assertion grants are not.
@@ -5781,7 +5781,7 @@ EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp connect <url> --list-tools
 **Example — GitHub's official remote MCP server:**
 
 ```bash
-EXA_MCP_BEARER_TOKEN=$(gh auth token) exactl mcp connect https://api.githubcopilot.com/mcp/ --list-tools
+EXA_MCP_BEARER_TOKEN=$(gh auth token) exactl mcp tool list --server https://api.githubcopilot.com/mcp/
 ```
 
 ## 9. Security

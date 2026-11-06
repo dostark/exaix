@@ -16,7 +16,7 @@ import {
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { CLI_OPTION_JSON_HELP } from "../exactl_constants.ts";
+import { CLI_OPTION_JSON_HELP, ExaCtlSubNoun } from "../exactl_constants.ts";
 
 function createPortalCommand(runtime: IExaCtlRuntime) {
   const { display, portalCommands } = runtime;
@@ -180,46 +180,51 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
         }),
     )
     .command(
-      "analyze <alias>",
+      ExaCtlSubNoun.KNOWLEDGE,
       new Command()
-        .description("Trigger codebase knowledge analysis for a portal")
-        .option("-m, --mode <mode:string>", "Analysis mode: quick, standard, deep")
-        .option("-f, --force", "Force re-analysis even if fresh knowledge exists")
-        .action(async (options, ...args: string[]) => {
-          const alias = args[0];
-          try {
-            const summary = await portalCommands.analyze(alias, {
-              mode: options.mode as PortalAnalysisMode,
-              force: options.force,
-            });
-            console.log(summary);
-          } catch (error) {
-            display.error("cli.error", "portal analyze", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      "knowledge <alias>",
-      new Command()
-        .description("Display gathered knowledge for a portal")
-        .option("--json", CLI_OPTION_JSON_HELP)
-        .action(async (options, ...args: string[]) => {
-          const alias = args[0];
-          try {
-            const output = await portalCommands.knowledge(alias, {
-              json: options.json,
-            });
-            console.log(output);
-          } catch (error) {
-            display.error("cli.error", "portal knowledge", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+        .description("Analyze and display the codebase knowledge of a portal")
+        .command(
+          "analyze <alias>",
+          new Command()
+            .description("Trigger codebase knowledge analysis for a portal")
+            .option("-m, --mode <mode:string>", "Analysis mode: quick, standard, deep")
+            .option("-f, --force", "Force re-analysis even if fresh knowledge exists")
+            .action(async (options, ...args: string[]) => {
+              const alias = args[0];
+              try {
+                const summary = await portalCommands.analyze(alias, {
+                  mode: options.mode as PortalAnalysisMode,
+                  force: options.force,
+                });
+                console.log(summary);
+              } catch (error) {
+                display.error("cli.error", "portal knowledge analyze", {
+                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                });
+                Deno.exit(1);
+              }
+            }),
+        )
+        .command(
+          "show <alias>",
+          new Command()
+            .description("Display gathered knowledge for a portal")
+            .option("--json", CLI_OPTION_JSON_HELP)
+            .action(async (options, ...args: string[]) => {
+              const alias = args[0];
+              try {
+                const output = await portalCommands.knowledge(alias, {
+                  json: options.json,
+                });
+                console.log(output);
+              } catch (error) {
+                display.error("cli.error", "portal knowledge show", {
+                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                });
+                Deno.exit(1);
+              }
+            }),
+        ),
     );
 }
 

@@ -256,7 +256,7 @@ async function main() {
     let knowledgeReady = false;
     while (Date.now() < deadline) {
       const knResult = await runCommand(
-        [...EXACTL_CMD, "portal", "knowledge", "exaix-self", "--json"],
+        [...EXACTL_CMD, "portal", "knowledge", "show", "exaix-self", "--json"],
       );
       if (knResult.code === 0 && knResult.stdout.trim().length > 0 && knResult.stdout.trim() !== "{}") {
         knowledgeReady = true;
@@ -268,7 +268,7 @@ async function main() {
       console.log("  ✅ Portal knowledge ready");
     } else {
       console.error(
-        "  ⚠️  Portal knowledge not generated within timeout (you can run: exactl portal analyze exaix-self)",
+        "  ⚠️  Portal knowledge not generated within timeout (you can run: exactl portal knowledge analyze exaix-self)",
       );
     }
   }

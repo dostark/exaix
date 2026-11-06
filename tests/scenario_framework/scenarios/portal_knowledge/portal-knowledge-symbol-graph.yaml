@@ -52,7 +52,7 @@ steps:
   - id: "analyze-portal"
     type: "exactl"
     command: "portal"
-    args: ["analyze", "go-symbol-ref", "--mode", "standard"]
+    args: ["knowledge", "analyze", "go-symbol-ref", "--mode", "standard"]
     timeout_sec: 180
     output_criteria:
       - id: "analyze-exit-code"
@@ -108,7 +108,7 @@ steps:
   - id: "analyze-flag-off"
     type: "exactl"
     command: "portal"
-    args: ["analyze", "go-symbol-off", "--mode", "standard"]
+    args: ["knowledge", "analyze", "go-symbol-off", "--mode", "standard"]
     timeout_sec: 180
     env:
       EXAIX_STEP_CONFIG_OVERRIDES: '{"portal_knowledge.enable_symbol_level_dependency_graph": false}'

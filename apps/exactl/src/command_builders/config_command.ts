@@ -16,6 +16,8 @@ import {
   CONFIG_DIFF_LABEL,
   CONFIG_LABEL,
   CONFIG_VALIDATE_ACTION,
+  ExaCtlSubNoun,
+  ExaCtlVerb,
 } from "../exactl_constants.ts";
 
 function createConfigCommand(runtime: IExaCtlRuntime) {
@@ -29,9 +31,10 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       ...addConfigCommands4(runtime),
       ...addConfigCommands5(runtime),
       ...addConfigCommands6(runtime),
-      ...addConfigCommands7(runtime),
     ]
   ) command.command(name, child);
+  command.command(ExaCtlSubNoun.LOCK, createLockCommand(runtime));
+  command.command(ExaCtlSubNoun.PROFILE, createProfileCommand(runtime));
   return command;
 }
 
@@ -135,64 +138,12 @@ function addConfigCommands2(runtime: IExaCtlRuntime) {
           }
         }),
     ],
-    [
-      "lock <path>",
-      new Command()
-        .description("Lock a config key against all writes (CLI/MCP/daemon)")
-        .option("--reason <text:string>", "Optional note for the lock")
-        .action(async (options, ...args: string[]) => {
-          try {
-            await configCommands.lock(args[0], options.reason);
-            display.info("config.lock", args[0], { reason: options.reason });
-          } catch (error) {
-            display.error("cli.error", "config lock", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
   ] as const;
 }
 
 function addConfigCommands3(runtime: IExaCtlRuntime) {
   const { display, configCommands } = runtime;
   return [
-    [
-      "unlock <path>",
-      new Command()
-        .description("Unlock a previously locked config key")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            await configCommands.unlock(args[0]);
-            display.info("config.unlock", args[0], {});
-          } catch (error) {
-            display.error("cli.error", "config unlock", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "lock-list",
-      new Command()
-        .description("List all locked config keys")
-        .action(async () => {
-          try {
-            const locks = await configCommands.listLocks();
-            for (const l of locks) {
-              display.info("config.lock.entry", l.key, { locked_by: l.locked_by, reason: l.reason });
-            }
-            display.info("config.lock.list", CONFIG_LABEL, { count: locks.length });
-          } catch (error) {
-            display.error("cli.error", "config lock-list", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
     [
       "edit",
       new Command()
@@ -357,48 +308,89 @@ function addConfigCommands6(runtime: IExaCtlRuntime) {
           }
         }),
     ],
-    [
-      "set-path",
+  ] as const;
+}
+
+function createLockCommand(runtime: IExaCtlRuntime) {
+  const { display, configCommands } = runtime;
+  return new Command()
+    .description("Lock config keys against all writes (CLI, MCP and daemon)")
+    .command(
+      `${ExaCtlVerb.ADD} <path>`,
       new Command()
-        .description("Set a path configuration")
-        .arguments("<key:string> <dir:string>")
-        .action(async (_options, ...args) => {
+        .description("Lock a config key against all writes (CLI/MCP/daemon)")
+        .option("--reason <text:string>", "Optional note for the lock")
+        .action(async (options, ...args: string[]) => {
           try {
-            await configCommands.setPath(args[0], args[1]);
-            display.info("config.set-path", args[0], { dir: args[1] });
+            await configCommands.lock(args[0], options.reason);
+            display.info("config.lock", args[0], { reason: options.reason });
           } catch (error) {
-            display.error("cli.error", "config set-path", {
+            display.error("cli.error", "config lock add", {
               message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
             });
             Deno.exit(1);
           }
         }),
-    ],
-  ] as const;
+    )
+    .command(
+      `${ExaCtlVerb.REMOVE} <path>`,
+      new Command()
+        .description("Unlock a previously locked config key")
+        .action(async (_options, ...args: string[]) => {
+          try {
+            await configCommands.unlock(args[0]);
+            display.info("config.unlock", args[0], {});
+          } catch (error) {
+            display.error("cli.error", "config lock remove", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
+        }),
+    )
+    .command(
+      ExaCtlVerb.LIST,
+      new Command()
+        .description("List all locked config keys")
+        .action(async () => {
+          try {
+            const locks = await configCommands.listLocks();
+            for (const l of locks) {
+              display.info("config.lock.entry", l.key, { locked_by: l.locked_by, reason: l.reason });
+            }
+            display.info("config.lock.list", CONFIG_LABEL, { count: locks.length });
+          } catch (error) {
+            display.error("cli.error", "config lock list", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
+        }),
+    );
 }
 
-function addConfigCommands7(runtime: IExaCtlRuntime) {
+function createProfileCommand(runtime: IExaCtlRuntime) {
   const { display, configCommands } = runtime;
-  return [
-    [
-      "use-profile",
+  return new Command()
+    .description("Manage configuration profiles")
+    .command(
+      `${ExaCtlVerb.USE} <name:string>`,
       new Command()
         .description("Set active profile")
-        .arguments("<name:string>")
-        .action(async (_options, ...args) => {
+        .action(async (_options, ...args: string[]) => {
           try {
             await configCommands.useProfile(args[0]);
             display.info("config.use-profile", args[0], {});
           } catch (error) {
-            display.error("cli.error", "config use-profile", {
+            display.error("cli.error", "config profile use", {
               message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
             });
             Deno.exit(1);
           }
         }),
-    ],
-    [
-      "list-profiles",
+    )
+    .command(
+      ExaCtlVerb.LIST,
       new Command()
         .description("List all profiles")
         .action(async () => {
@@ -411,14 +403,13 @@ function addConfigCommands7(runtime: IExaCtlRuntime) {
               console.log("  No profiles configured.");
             }
           } catch (error) {
-            display.error("cli.error", "config list-profiles", {
+            display.error("cli.error", "config profile list", {
               message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
             });
             Deno.exit(1);
           }
         }),
-    ],
-  ] as const;
+    );
 }
 
 export function buildConfigCommand(runtime: IExaCtlRuntime): ReturnType<typeof createConfigCommand> {

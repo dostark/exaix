@@ -98,7 +98,7 @@ Deno.test("portal add invokes portalCommands.add", async () => {
   });
 });
 
-Deno.test("git branches prints list (calls gitCommands.listBranches)", async () => {
+Deno.test("git branch list prints list (calls gitCommands.listBranches)", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.gitCommands.listBranches = (_pattern?: string) =>
       Promise.resolve([
@@ -111,7 +111,7 @@ Deno.test("git branches prints list (calls gitCommands.listBranches)", async () 
         },
       ]);
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([PortalOperation.GIT, "branches"]);
+      await mod.__test_command.parse([PortalOperation.GIT, "branch", "list"]);
     });
     assertStringIncludes(out, "main");
   });
@@ -717,13 +717,13 @@ Deno.test("plan list empty prints hint", async () => {
   });
 });
 
-Deno.test("git branches passes pattern option to listBranches", async () => {
+Deno.test("git branch list passes pattern option to listBranches", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.gitCommands.listBranches = (pattern?: string) => {
       assertEquals(pattern, "feat/*");
       return Promise.resolve([]);
     };
-    await mod.__test_command.parse([PortalOperation.GIT, "branches", "--pattern", "feat/*"]);
+    await mod.__test_command.parse([PortalOperation.GIT, "branch", "list", "--pattern", "feat/*"]);
   });
 });
 

@@ -899,14 +899,14 @@ final sign-off.
 
 ## 9. Troubleshooting
 
-| Symptom                    | Likely Cause                | Fix                                  |
-| -------------------------- | --------------------------- | ------------------------------------ |
-| Daemon exits immediately   | Config validation error     | Run `deno task dogfood:log`          |
-| Request not processed      | FileWatcher debounce        | Wait 2–3 seconds after writing       |
-| Plan not generated         | Provider not available      | Check Ollama or API key              |
-| Portal knowledge empty     | Empty or new repo           | `exactl portal analyze exaix-self`   |
-| Permission errors on start | Missing `--allow-*` flags   | Use `deno task dogfood` (sets flags) |
-| Worktree creation fails    | Dirty index / branch exists | Manual `git worktree prune`          |
+| Symptom                    | Likely Cause                | Fix                                          |
+| -------------------------- | --------------------------- | -------------------------------------------- |
+| Daemon exits immediately   | Config validation error     | Run `deno task dogfood:log`                  |
+| Request not processed      | FileWatcher debounce        | Wait 2–3 seconds after writing               |
+| Plan not generated         | Provider not available      | Check Ollama or API key                      |
+| Portal knowledge empty     | Empty or new repo           | `exactl portal knowledge analyze exaix-self` |
+| Permission errors on start | Missing `--allow-*` flags   | Use `deno task dogfood` (sets flags)         |
+| Worktree creation fails    | Dirty index / branch exists | Manual `git worktree prune`                  |
 
 ---
 

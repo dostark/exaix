@@ -107,9 +107,10 @@ export function findStaleAllowlistEntries(
   return stale;
 }
 
-/** Tree paths that equal or extend a legacy path of the rename table. */
+/** Tree paths that equal or extend a removed path. Guarded rows name a noun that still exists, so they are skipped. */
 export function findLegacyPaths(nodes: readonly ICommandTreeNode[], renames: readonly IExaCtlRename[]): string[] {
+  const removed = renames.filter((rename) => rename.unlessNextIn === undefined);
   return nodes
-    .filter((node) => renames.some((rename) => rename.legacy.every((word, index) => node.path[index] === word)))
+    .filter((node) => removed.some((rename) => rename.legacy.every((word, index) => node.path[index] === word)))
     .map(pathKey);
 }

@@ -138,8 +138,8 @@ exactl portal list
 exactl portal show <alias>
 exactl portal remove <alias>
 exactl portal refresh <alias>
-exactl portal analyze <alias> [--mode quick|standard|deep] [--force]
-exactl portal knowledge <alias> [--json]
+exactl portal knowledge analyze <alias> [--mode quick|standard|deep] [--force]
+exactl portal knowledge show <alias> [--json]
 exactl portal verify <alias>
 ```
 

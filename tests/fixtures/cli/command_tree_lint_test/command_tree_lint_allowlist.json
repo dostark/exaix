@@ -1,27 +1,11 @@
 {
   "root-name": [],
-  "sub-noun": [
-    "git worktrees"
-  ],
+  "sub-noun": [],
   "leaf-verb": [
-    "config list-profiles",
-    "config lock",
-    "config lock-list",
-    "config set-path",
-    "config unlock",
-    "config use-profile",
-    "git branches",
-    "mcp connect",
-    "portal knowledge",
     "tool confirm",
     "tool deny",
     "tool pending"
   ],
-  "compound-leaf": [
-    "config list-profiles",
-    "config lock-list",
-    "config set-path",
-    "config use-profile"
-  ],
+  "compound-leaf": [],
   "duplicate-handler": []
 }

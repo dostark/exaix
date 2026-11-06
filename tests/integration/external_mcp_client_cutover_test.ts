@@ -2,8 +2,8 @@
  * @module ExternalMcpClientCutoverTest
  * @path tests/integration/external_mcp_client_cutover_test.ts
  * @description Phase 162 Step 5 (mandatory, non-deferrable cutover) — proves
- * `exactl mcp connect` is reachable from a REAL subprocess invocation
- * (`deno run -A apps/exactl/main.ts mcp connect <url> --list-tools|--call-tool`),
+ * `exactl mcp tool list` and `exactl mcp tool call` are reachable from a REAL subprocess invocation
+ * (`deno run -A apps/exactl/main.ts mcp tool list|call --server <url>`),
  * against a real, separately-running reference MCP server (Step 4's fixture,
  * built with the official `@modelcontextprotocol/server` SDK) — not an
  * in-process command-class call (`apps/exactl/tests/mcp_commands_test.ts`
@@ -48,8 +48,7 @@ async function runExactl(
 }
 
 Deno.test({
-  name:
-    "[ExternalMcpClientCutover] exactl mcp connect --list-tools reaches a real server process and lists its real tools",
+  name: "[ExternalMcpClientCutover] exactl mcp tool list reaches a real server process and lists its real tools",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -60,7 +59,7 @@ Deno.test({
       await runMigrationsIn(tempDir);
       writeCliConfig(configPath, tempDir);
 
-      const result = await runExactl(configPath, ["mcp", "connect", reference.url.href, "--list-tools"]);
+      const result = await runExactl(configPath, ["mcp", "tool", "list", "--server", reference.url.href]);
 
       if (result.code !== 0) {
         throw new Error(`exactl exited ${result.code}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
@@ -76,8 +75,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[ExternalMcpClientCutover] exactl mcp connect --call-tool round-trips a real tool call through the real CLI entry point",
+  name: "[ExternalMcpClientCutover] exactl mcp tool call round-trips a real tool call through the real CLI entry point",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -90,10 +88,11 @@ Deno.test({
 
       const result = await runExactl(configPath, [
         "mcp",
-        "connect",
-        reference.url.href,
-        "--call-tool",
+        "tool",
+        "call",
         "echo",
+        "--server",
+        reference.url.href,
         "--args",
         '{"text":"hello"}',
       ]);

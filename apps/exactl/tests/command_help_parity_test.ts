@@ -1,7 +1,7 @@
 /**
  * @module CommandHelpParityTest
  * @path apps/exactl/tests/command_help_parity_test.ts
- * @description Verifies each moved plan and memory leaf keeps the option set of its old path and adds only --all.
+ * @description Verifies each moved leaf keeps the option set of its old path and adds only the options its move allows.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing, apps/exactl/src/docs/command_tree_walk.ts]
  * @related-files [tests/fixtures/cli/command_help_parity_test/old_option_sets.json, apps/exactl/src/command_builders/plan_command.ts]
@@ -12,29 +12,45 @@ import { readFixtureTextSync } from "@exaix/testing";
 import { createExaCtlCommand } from "../src/exactl.ts";
 import { walkCommandTree } from "../src/docs/command_tree_walk.ts";
 
-const ALLOWED_ADDITIONS: readonly string[] = ["--all"];
-
-/** The old option sets, captured from the tree before the plan and memory leaves moved. */
+/** The old option sets, captured from the tree before the plan, memory, git, portal, config and mcp leaves moved. */
 const oldOptionSets = JSON.parse(
   readFixtureTextSync(import.meta.url, "cli", "command_help_parity_test", "old_option_sets.json"),
 ) as Record<string, string[]>;
 
-/** Each old path and the path that replaces it. */
-const MOVES: ReadonlyArray<readonly [string, string]> = [
-  ["plan approve", "plan approve"],
-  ["plan approve-all", "plan approve"],
-  ["plan amendment show", "plan amendment show"],
-  ["plan amendment show-all", "plan amendment show"],
-  ["plan amendment approve", "plan amendment approve"],
-  ["plan amendment approve-all", "plan amendment approve"],
-  ["memory pending", "memory proposal"],
-  ["memory pending list", "memory proposal list"],
-  ["memory pending show", "memory proposal show"],
-  ["memory pending approve", "memory proposal approve"],
-  ["memory pending reject", "memory proposal reject"],
-  ["memory pending approve-all", "memory proposal approve"],
-  ["memory delete-learning", "memory learning remove"],
-  ["memory rebuild-index", "memory index rebuild"],
+const BULK_ADDITIONS: readonly string[] = ["--all"];
+const NO_FLAGS: readonly string[] = [];
+
+/** An old path, the path that replaces it, the flags the move removes and the flags it may add. */
+type Move = readonly [oldPath: string, newPath: string, removed: readonly string[], added: readonly string[]];
+
+const MOVES: readonly Move[] = [
+  ["plan approve", "plan approve", NO_FLAGS, BULK_ADDITIONS],
+  ["plan approve-all", "plan approve", NO_FLAGS, BULK_ADDITIONS],
+  ["plan amendment show", "plan amendment show", NO_FLAGS, BULK_ADDITIONS],
+  ["plan amendment show-all", "plan amendment show", NO_FLAGS, BULK_ADDITIONS],
+  ["plan amendment approve", "plan amendment approve", NO_FLAGS, BULK_ADDITIONS],
+  ["plan amendment approve-all", "plan amendment approve", NO_FLAGS, BULK_ADDITIONS],
+  ["memory pending", "memory proposal", NO_FLAGS, NO_FLAGS],
+  ["memory pending list", "memory proposal list", NO_FLAGS, NO_FLAGS],
+  ["memory pending show", "memory proposal show", NO_FLAGS, NO_FLAGS],
+  ["memory pending approve", "memory proposal approve", NO_FLAGS, BULK_ADDITIONS],
+  ["memory pending reject", "memory proposal reject", NO_FLAGS, NO_FLAGS],
+  ["memory pending approve-all", "memory proposal approve", NO_FLAGS, BULK_ADDITIONS],
+  ["memory delete-learning", "memory learning remove", NO_FLAGS, NO_FLAGS],
+  ["memory rebuild-index", "memory index rebuild", NO_FLAGS, NO_FLAGS],
+  ["git branches", "git branch list", NO_FLAGS, NO_FLAGS],
+  ["git worktrees", "git worktree", NO_FLAGS, NO_FLAGS],
+  ["git worktrees list", "git worktree list", NO_FLAGS, NO_FLAGS],
+  ["git worktrees prune", "git worktree prune", NO_FLAGS, NO_FLAGS],
+  ["portal analyze", "portal knowledge analyze", NO_FLAGS, NO_FLAGS],
+  ["portal knowledge", "portal knowledge show", NO_FLAGS, NO_FLAGS],
+  ["config lock", "config lock add", NO_FLAGS, NO_FLAGS],
+  ["config unlock", "config lock remove", NO_FLAGS, NO_FLAGS],
+  ["config lock-list", "config lock list", NO_FLAGS, NO_FLAGS],
+  ["config use-profile", "config profile use", NO_FLAGS, NO_FLAGS],
+  ["config list-profiles", "config profile list", NO_FLAGS, NO_FLAGS],
+  ["mcp start", "mcp serve", NO_FLAGS, NO_FLAGS],
+  ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
 ];
 
 const nodes = walkCommandTree(createExaCtlCommand());
@@ -46,17 +62,22 @@ function flagsOf(path: string): string[] {
 }
 
 Deno.test("each moved leaf lists the same options as its old path", () => {
-  assertEquals(Object.keys(oldOptionSets).sort(), MOVES.map(([oldPath]) => oldPath).sort());
-  const keptByNewPath = new Map<string, Set<string>>();
-  for (const [oldPath, newPath] of MOVES) {
-    assertArrayIncludes(flagsOf(newPath), oldOptionSets[oldPath], `${newPath} keeps the options of ${oldPath}`);
-    const kept = keptByNewPath.get(newPath) ?? new Set<string>();
-    oldOptionSets[oldPath].forEach((flag) => kept.add(flag));
-    keptByNewPath.set(newPath, kept);
+  assertEquals(Object.keys(oldOptionSets).sort(), [...new Set(MOVES.map(([oldPath]) => oldPath))].sort());
+  const allowedAdded = new Map<string, Set<string>>();
+  const kept = new Map<string, Set<string>>();
+  for (const [oldPath, newPath, removed, added] of MOVES) {
+    const expectedKept = oldOptionSets[oldPath].filter((flag) => !removed.includes(flag));
+    assertArrayIncludes(flagsOf(newPath), expectedKept, `${newPath} keeps the options of ${oldPath}`);
+    const keptFlags = kept.get(newPath) ?? new Set<string>();
+    expectedKept.forEach((flag) => keptFlags.add(flag));
+    kept.set(newPath, keptFlags);
+    const allowed = allowedAdded.get(newPath) ?? new Set<string>();
+    added.forEach((flag) => allowed.add(flag));
+    allowedAdded.set(newPath, allowed);
   }
-  for (const [newPath, kept] of keptByNewPath) {
-    const added = flagsOf(newPath).filter((flag) => !kept.has(flag));
-    assertEquals(added.filter((flag) => !ALLOWED_ADDITIONS.includes(flag)), [], `${newPath} adds only --all`);
+  for (const [newPath, keptFlags] of kept) {
+    const extra = flagsOf(newPath).filter((flag) => !keptFlags.has(flag) && !allowedAdded.get(newPath)?.has(flag));
+    assertEquals(extra, [], `${newPath} adds only the allowed options`);
   }
 });
 

@@ -26,7 +26,8 @@ function rowFor(legacy: readonly string[]) {
 Deno.test("findRename returns the row for every table entry", () => {
   assertNotEquals(EXACTL_RENAMES.length, 0);
   for (const row of EXACTL_RENAMES) {
-    assertStrictEquals(findRename(row.legacy), row, row.legacy.join(" "));
+    const typed = row.unlessNextIn === undefined ? row.legacy : [...row.legacy, "typed-argument"];
+    assertStrictEquals(findRename(typed), row, typed.join(" "));
   }
 });
 
@@ -184,4 +185,69 @@ Deno.test("the grouped plan and memory paths are not renames", () => {
   for (const typed of [...grouped, ["memory", "learning", "remove"], ["memory", "index", "rebuild"]]) {
     assertEquals(findRename(typed), null, typed.join(" "));
   }
+});
+
+Deno.test("the git, portal, config and mcp paths map to their grouped paths", () => {
+  const expected: Array<[string[], string]> = [
+    [["git", "branches"], "exactl git branch list"],
+    [["git", "worktrees"], "exactl git worktree"],
+    [["portal", "analyze"], "exactl portal knowledge analyze"],
+    [["portal", "knowledge", "my-portal"], "exactl portal knowledge show"],
+    [["config", "lock", "ai.timeout_ms"], "exactl config lock add"],
+    [["config", "unlock"], "exactl config lock remove"],
+    [["config", "lock-list"], "exactl config lock list"],
+    [["config", "use-profile"], "exactl config profile use"],
+    [["config", "list-profiles"], "exactl config profile list"],
+    [["config", "set-path"], "exactl config set paths.<key> <dir>"],
+    [["mcp", "start"], "exactl mcp serve"],
+    [["mcp", "connect"], "exactl mcp tool list --server <url>, or exactl mcp tool call <tool> --server <url>"],
+  ];
+  for (const [typed, canonical] of expected) {
+    assertEquals(findRename(typed)?.canonical, canonical, typed.join(" "));
+  }
+});
+
+Deno.test("a legacy leaf that became a noun matches only when its argument follows", () => {
+  for (
+    const typed of [["portal", "knowledge"], ["portal", "knowledge", "show", "p"], [
+      "portal",
+      "knowledge",
+      "analyze",
+      "p",
+    ]]
+  ) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+  for (
+    const typed of [["config", "lock"], ["config", "lock", "list"], ["config", "lock", "add", "k"], [
+      "config",
+      "lock",
+      "remove",
+      "k",
+    ]]
+  ) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});
+
+Deno.test("hints for the grouped paths keep the typed arguments or show a usage template", () => {
+  const knowledge = ["portal", "knowledge", "my-portal"];
+  assertStringIncludes(renameHint(rowFor(knowledge), knowledge), "use 'exactl portal knowledge show my-portal'");
+  const lock = ["config", "lock", "ai.timeout_ms"];
+  assertStringIncludes(renameHint(rowFor(lock), lock), "use 'exactl config lock add ai.timeout_ms'");
+  const setPath = ["config", "set-path", "workspace", "/tmp/w"];
+  const pathHint = renameHint(rowFor(setPath), setPath);
+  assertStringIncludes(pathHint, "use 'exactl config set paths.<key> <dir>'");
+  assertNotMatch(pathHint, /\/tmp\/w/);
+  const connect = ["mcp", "connect", "http://localhost:3000/mcp"];
+  assertStringIncludes(renameHint(rowFor(connect), connect), "exactl mcp tool call <tool> --server <url>");
+});
+
+Deno.test("the grouped git, config and mcp paths are not renames", () => {
+  const grouped = [["git", "branch", "list"], ["git", "worktree", "prune"], ["config", "profile", "use"], [
+    "mcp",
+    "tool",
+    "list",
+  ]];
+  for (const typed of grouped) assertEquals(findRename(typed), null, typed.join(" "));
 });
