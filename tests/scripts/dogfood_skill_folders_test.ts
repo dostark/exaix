@@ -8,7 +8,7 @@
  * @related-files [tests/fixtures/skills/dogfood_baseline.json, packages/core/src/skills/skill_folder_loader.ts]
  */
 
-import { assertEquals, assertGreaterOrEqual } from "@std/assert";
+import { assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { SkillRootKind } from "@exaix/core";
 import { SkillFolderLoader } from "@exaix/core/skills";
@@ -116,7 +116,11 @@ Deno.test("[dogfood] every folder preserves baseline fields and approved sidecar
     assertEquals(skill.triggers, expected.triggers, expected.name);
     const approved = approvedRevisions.find((entry) => entry.name === expected.name);
     let constraints = expected.constraints;
-    if (approved) {
+    if (approved?.constraints !== undefined) {
+      constraints = approved.constraints;
+    } else if (approved) {
+      assertExists(approved.constraints_after);
+      assertExists(approved.constraint_additions);
       const anchor = constraints.indexOf(approved.constraints_after);
       assertGreaterOrEqual(anchor, 0, `Missing approved insertion anchor for ${expected.name}`);
       constraints = [

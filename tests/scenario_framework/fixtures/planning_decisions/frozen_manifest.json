@@ -1,0 +1,26 @@
+{
+  "baseline_parent": "5490fca13e1bd6efec3189aaa02e676688c17981",
+  "baseline_docs": "a206c7e0594043aab136d614406835e462060ec2",
+  "approved_proposal_revision": 1,
+  "approved_diff_sha256": "58d4b787c92fe2bca423ac8e2edc9f1b3fe49fc3c23d1a8ac068cbfc87712b08",
+  "before_skill_hashes": {
+    ".copilot/skills/plan/SKILL.md": "1584d0d7488f5efe1acb87cdbbaeb5c48325a9b893e266efd9ace49f00b1e016",
+    ".copilot/skills/plan/exaix.yaml": "089302cbdee2efacfc6700c8580c577eb564a89f991c9b0e328792463af4e15f"
+  },
+  "input_files": {
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s6-c1.md": "b94b087f332a36325554994419f3b11949a706aad52a81bb5f50b880a27a9c78",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s6-c2.md": "22e911c256c71c46a8cf2f9016961c8fda432035004458e9e52d58b9996e871a",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s6-c3.md": "a38e508bac8fd097284c6576e959129edc0256fa2c46e5d9e1f9bbd9f339153a",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s6-c4.md": "7e7beb860bb62c1e79de0d7a67d43a46b13b61b4a9c6c4da0bae682375986e4f",
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s6-c5.md": "315aa62671bbc48ee447eaa024912573504fbb97a43fdd0539b4bb1858b98165",
+    "tests/scenario_framework/fixtures/portals/p234_s6_c1/README.md": "174b22a6b4ae80f7ca51d1a35a90ba8db3c34507333766791d0b010e52e5b5ac",
+    "tests/scenario_framework/fixtures/portals/p234_s6_c2/README.md": "f415e7bdd3b4d9987a0ddff217d7b17de5083c39e2e990897756268bbc7e28d9",
+    "tests/scenario_framework/fixtures/portals/p234_s6_c3/README.md": "3e691ef55a139b9d099bb50633c07119205fe578352a9b22757ca6ebd916fe31",
+    "tests/scenario_framework/fixtures/portals/p234_s6_c4/README.md": "e72a7015124106cf0f207dc248102b847799361bfbf18381adc36cdc6b11526f",
+    "tests/scenario_framework/fixtures/portals/p234_s6_c5/README.md": "9cac9260bbacaec18717aec450b9974a6600c761a8dd412bc32104fe367d5432"
+  },
+  "notes": [
+    "Inputs frozen before the approved skill edit.",
+    "Live development-root delivery and behavior remain Step 8 work; value remains Step 9 work."
+  ]
+}

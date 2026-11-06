@@ -39,6 +39,15 @@ import { normalizeSteProse, runDeterministicSteChecks, summarizeSteCount } from 
 const CHECKER_SCRIPT = join(import.meta.dirname!, "../../scripts/check_agent_prose.ts");
 const FIXTURES_DIR = join(import.meta.dirname!, "fixtures/agent_prose/owned");
 
+Deno.test("Structured YAML and JSON examples are literal while scalar prose still fails", async () => {
+  const raw = await Deno.readTextFile(join(FIXTURES_DIR, "../structured_literals.md"));
+  const parts = await extractProse(raw, "instruction");
+  assertEquals(parts.map((part) => part.span.kind), ["literal", "literal", "instruction", "instruction"]);
+  const findings = parts.filter((part) => part.span.kind === "instruction")
+    .flatMap((part) => runDeterministicSteChecks(normalizeSteProse(part.text)));
+  assertEquals(findings.length, 2);
+});
+
 Deno.test("Prose extraction preserves paragraph and list-item boundaries", async () => {
   const raw = await Deno.readTextFile(join(FIXTURES_DIR, "../paragraphs.md"));
   const parts = await extractProse(raw, "instruction");

@@ -1230,6 +1230,574 @@
         "advisoryDecisions": [],
         "unresolvedRuleIds": []
       }
+    },
+    {
+      "path": "skills/plan/SKILL.md",
+      "contentHash": "3cf6c8ffd749003b6a8ef4b3439f645ba2997e7d3d9738902bfa63ce7ea1eca7",
+      "kind": "instruction",
+      "spans": [
+        {
+          "selector": "yaml:title",
+          "contentHash": "a276d023c8b357c9eb9e3ca42f4176d4ecf13c2c818a3a1538dae3aff336716f",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "frontmatter prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:short_summary",
+          "contentHash": "e09bdc371d82d30dccdb1034afa0d9f20a82143663b0edc55460020d8935833b",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "frontmatter prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "fence:1",
+          "contentHash": "0032fc9cfd8daf88d1dfcffd52c88fd124b795eaacc3417c4615469f1b366ebe",
+          "kind": "literal",
+          "mode": "descriptive",
+          "reason": "fenced code or example: preserved, not counted",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:See also",
+          "contentHash": "a88ed175dc8e192113b62bf0ed170904ff3cd4170b228ac182ddefc992cdc051",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Instructions for Agent",
+          "contentHash": "1d554d0493d63602fe1f0651b894030072480cc1de4f8fdfd36fefd6f46c8d43",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:0. Resolve decisions before drafting",
+          "contentHash": "6c32b073ef350ccb71a529078837401d927f0aeca238d9bc81054c9e97d9292b",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:1. Structure (mandatory — follow `exaix-dev-docs/planning/README.md`)",
+          "contentHash": "3cde2bb48a82408e71efaf15099b35507f7806200a7d0e537db8191266153735",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "fence:2",
+          "contentHash": "a56a6aa97b612e84bacb30972999e9eea22e935fb13058bfffabb4900e60b30e",
+          "kind": "literal",
+          "mode": "descriptive",
+          "reason": "fenced code or example: preserved, not counted",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:A. Security (Phase 3b)",
+          "contentHash": "b3a3f62ba4a6bd3f4d1948343443cf4a7ba19ef99bfd2e27d111e3d776e6714c",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:B. Traceability & configurability",
+          "contentHash": "ea9e68e3dd3ae3085efbafdd437f9a1f2a8c1c97a967ddc99b85db7dd2e78a88",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:C. Durability & atomic changes",
+          "contentHash": "76c7bd6d39d75232d6e1a27ecc9d8d84f468b1391030217b69f61349caf92faf",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:D. Field specification & consumer tracing",
+          "contentHash": "6a4c396fbec353452b3e7070e964eec76e46cc5c2cf87a651233b656b0a33281",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:E. Reachability & integration anchoring (the production-dead guard)",
+          "contentHash": "187ecf7af4bd35a9e341c6e1ba98139975f0253818fd94a4d57e75b63534c1c9",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:F. Third-party integration research (capability grounding)",
+          "contentHash": "8a4a53c582640448bda8771c231c01dc919d7ba9d1d5470fa75366d0ea73f78b",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:G. Codebase grounding — pre-draft (§2G)",
+          "contentHash": "9d5e750dff40f12efa53a3d59f784c86e25639a1b5e2570de34824bf3bf67de7",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:H. Event coverage verification (§2H)",
+          "contentHash": "99f60c468cfd0761a98c7aaa45533b33d4d161d5f69835248289ffab4fb48a48",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:I. Step scope & workload balance (§2I)",
+          "contentHash": "0766e07b7ed8e90604ca314a398f5509fe19b1aa96af726d492ce36a65d43f5f",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:J. Requirement cost and the configuration-only alternative (§2J)",
+          "contentHash": "eb5771240519ea1b5974fc1206cdfa809cb832d89ca38a7b9cb4376cfdbbd965",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:3. Documentation update protocol (§3D)",
+          "contentHash": "60e6a95003418c7c05afb739a5d1d8638209d5116d959d235f315e81f90f1c68",
+          "kind": "documentation",
+          "mode": "descriptive",
+          "reason": "documentation section",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:3E. Scenario framework coverage",
+          "contentHash": "e5d7e067cb513e6a2ca9c283465a21ffe0c11b7874843e34199b9fa2897545e8",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:4. Derived best practices",
+          "contentHash": "97a90c9049947848fd797144a4f3ac2a643f828a0c0968db1d5c0cfe425b6759",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Related",
+          "contentHash": "c294c24a51876d49947eccf93ec47726557c93a5ce7a6726fea85c5489fef519",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Output format",
+          "contentHash": "1830771d9992f8bce74ba67aab38c61f8cc4632e84b37196c742ea723ce0ddf5",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Editing an existing plan doc safely",
+          "contentHash": "4e816d1d9969ff88cf030c5c2c5d1bf6f63a4ee69b131be9834fe097b976131f",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "fence:3",
+          "contentHash": "fde5732fe319457be4970e28ff23744622ae010cfb639df782d3a39d7cb53651",
+          "kind": "literal",
+          "mode": "descriptive",
+          "reason": "fenced code or example: preserved, not counted",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Examples",
+          "contentHash": "2407f322e24324e6cdcefea3142e226217fa8579088a6d59668425802c91f76d",
+          "kind": "documentation",
+          "mode": "descriptive",
+          "reason": "documentation section",
+          "sentenceModes": []
+        }
+      ],
+      "review": {
+        "reviewer": "Codex, approved Step 6 planning prose correction review",
+        "reviewedHash": "3cf6c8ffd749003b6a8ef4b3439f645ba2997e7d3d9738902bfa63ce7ea1eca7",
+        "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
+        "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
+        "classificationHash": "182bc7f34d0358a867d141dc539503afee51116aed257a4dd12a1c0b9cef6a1b",
+        "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ruleDecisions": [
+          {
+            "ruleId": "STE-5.1",
+            "outcome": "pass",
+            "reason": "Reviewed the procedural sentences and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.3",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive explanations and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.6",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive paragraphs against the six-sentence limit."
+          },
+          {
+            "ruleId": "STE-8.1",
+            "outcome": "pass",
+            "reason": "Eligible instructions contain no semicolons. Literal examples retain their source text."
+          },
+          {
+            "ruleId": "STE-8.4",
+            "outcome": "pass",
+            "reason": "Lists, identifiers and quotations use the shared normalization and counting rules."
+          },
+          {
+            "ruleId": "STE-8.5",
+            "outcome": "pass",
+            "reason": "Reviewed the planning procedure, decision record, migration exception, and bounded sentence lengths."
+          },
+          {
+            "ruleId": "STE-8.6",
+            "outcome": "pass",
+            "reason": "Descriptions state current requirements or the limits of the proposed method."
+          },
+          {
+            "ruleId": "STE-8.7",
+            "outcome": "pass",
+            "reason": "Reviewed lists and paragraphs with the shared normalization rules."
+          },
+          {
+            "ruleId": "EXAIX-01",
+            "outcome": "pass",
+            "reason": "The guide leads with phase planning and its new decision section begins with available evidence."
+          },
+          {
+            "ruleId": "EXAIX-02",
+            "outcome": "pass",
+            "reason": "The guide covers phase planning, retained safety gates, material decisions, and the bounded migration exception."
+          },
+          {
+            "ruleId": "EXAIX-03",
+            "outcome": "pass",
+            "reason": "The instructions contain no agent self-reflection or work narration."
+          },
+          {
+            "ruleId": "EXAIX-04",
+            "outcome": "pass",
+            "reason": "The body explains the method and the sidecar supplies its constraints and output obligations."
+          },
+          {
+            "ruleId": "EXAIX-05",
+            "outcome": "pass",
+            "reason": "Numbered decisions and short output lists make the required actions explicit."
+          }
+        ],
+        "advisoryDecisions": [],
+        "unresolvedRuleIds": []
+      }
+    },
+    {
+      "path": "skills/plan/exaix.yaml",
+      "contentHash": "f39cc93041e8b7a5821f87a357d0fde2276970b861c0367cafe4fe4a85d36cd1",
+      "kind": "mixed",
+      "spans": [
+        {
+          "selector": "yaml:constraints[0]",
+          "contentHash": "cec805e80faa24677aa5c2560e8b170285d60ead3486255677bc095f1e7d938d",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[1]",
+          "contentHash": "d3acf4020ebdcde49b6b7fb527d2f9cd53591e7aa690109a8c12c9f0e262a8f1",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[2]",
+          "contentHash": "aea0db49d0f3b970bcf86f28ccf999e09b60ee98f5143db3e2c6a32b35db7716",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[3]",
+          "contentHash": "4ae5b2432e0b6d713153efc3dd0a783da43432389b304e18c471cb873952121e",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[4]",
+          "contentHash": "9093f20dd7c76be12bb5645e41db22296d61ad878b88604edd7020ce9ff715c9",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[5]",
+          "contentHash": "d96176993bb68fd74ded60dbe68714ce709a2222e9278db1d742d7c4e9d3ae87",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[6]",
+          "contentHash": "c06e7a53ee9d9036b043f8d060c4cb1b85f731bbacfd1dbc5324d1a913560e28",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[7]",
+          "contentHash": "24f4b52911fda91cdff9fcbc95a252a84083c6a1bcebb12d4971f8db00d54cf0",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[8]",
+          "contentHash": "6b146ca7c1255414242a073352abc41074f15daa8ef38fbac975e03d262a9216",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[9]",
+          "contentHash": "6657e34c3b5700b75ef07e609783c96b541bbaacaf46825d4336a913dd229c13",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[10]",
+          "contentHash": "65f8dcb9bd92be2e7562f0baca00715d389701f21368e02203c7602de90ba5d1",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[11]",
+          "contentHash": "71436ec22779200e391df316d01616ad3b51c908c7656c6525f02a6b16604087",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[0]",
+          "contentHash": "5a58d9d6363ce91e7ab98c26ce87adf5430d753e54f8a71ea3c19abc1a169f46",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[1]",
+          "contentHash": "10e21aa214767f9dc60b4599c8cb2d28349759fefc08bd67aeb68f7e804fbdc1",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[2]",
+          "contentHash": "a7cae725d1983237a93dbaec57e2b05b8902f27aa44c1e4d9aa200c70a06ea87",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[3]",
+          "contentHash": "e09f4ccd48fb721be86386372375da582475b10e0b4fe3981826d1da2fc98719",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[4]",
+          "contentHash": "7403231e5266707194433c491d8a0bd261f110dbd2cd35c412564b0669b376d2",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[5]",
+          "contentHash": "d811c28d7f2443fecaa118e4fa3d09db0c32eef9cc1e85fa78d2815df161e4bc",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[6]",
+          "contentHash": "c20eab1c19f531c3c16e92af4abd8bd7792756a28b98bf6045af65fe199354db",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[7]",
+          "contentHash": "3047af090f3a8521790b28decd1fe4cf55eba7d41226ae8c6695da2d75376acb",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[8]",
+          "contentHash": "9699cdbc9ba7cb0b4e47194af04d43efd33ba2c496df4c753165bc9259153745",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[0].description",
+          "contentHash": "98761b7f1dcd9fcdf26ccb74528a02d343065be5e13f40f72e26404a203ef0bd",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[1].description",
+          "contentHash": "c42ad38c1d9014720c211bb6f08bda88be832b31ea16adec8c2fe490f92508f0",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[2].description",
+          "contentHash": "1a59f8523bad2e6a0209f30d488d2cd5b3b7d5ae8211bb6a1c2479677fe9bb8b",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        }
+      ],
+      "review": {
+        "reviewer": "Codex, approved Step 6 planning prose correction review",
+        "reviewedHash": "f39cc93041e8b7a5821f87a357d0fde2276970b861c0367cafe4fe4a85d36cd1",
+        "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
+        "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
+        "classificationHash": "b67929815c74037c89f652efaddc687a5a66fa49c64ab6b9eedbc0b78c69456b",
+        "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ruleDecisions": [
+          {
+            "ruleId": "STE-5.1",
+            "outcome": "pass",
+            "reason": "Reviewed the procedural sentences and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.3",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive explanations and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.6",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive paragraphs against the six-sentence limit."
+          },
+          {
+            "ruleId": "STE-8.1",
+            "outcome": "pass",
+            "reason": "Eligible instructions contain no semicolons. Literal examples retain their source text."
+          },
+          {
+            "ruleId": "STE-8.4",
+            "outcome": "pass",
+            "reason": "Lists, identifiers and quotations use the shared normalization and counting rules."
+          },
+          {
+            "ruleId": "STE-8.5",
+            "outcome": "pass",
+            "reason": "Reviewed the planning procedure, decision record, migration exception, and bounded sentence lengths."
+          },
+          {
+            "ruleId": "STE-8.6",
+            "outcome": "pass",
+            "reason": "Descriptions state current requirements or the limits of the proposed method."
+          },
+          {
+            "ruleId": "STE-8.7",
+            "outcome": "pass",
+            "reason": "Reviewed lists and paragraphs with the shared normalization rules."
+          },
+          {
+            "ruleId": "EXAIX-01",
+            "outcome": "pass",
+            "reason": "The guide leads with phase planning and its new decision section begins with available evidence."
+          },
+          {
+            "ruleId": "EXAIX-02",
+            "outcome": "pass",
+            "reason": "The guide covers phase planning, retained safety gates, material decisions, and the bounded migration exception."
+          },
+          {
+            "ruleId": "EXAIX-03",
+            "outcome": "pass",
+            "reason": "The instructions contain no agent self-reflection or work narration."
+          },
+          {
+            "ruleId": "EXAIX-04",
+            "outcome": "pass",
+            "reason": "The body explains the method and the sidecar supplies its constraints and output obligations."
+          },
+          {
+            "ruleId": "EXAIX-05",
+            "outcome": "pass",
+            "reason": "Numbered decisions and short output lists make the required actions explicit."
+          }
+        ],
+        "advisoryDecisions": [],
+        "unresolvedRuleIds": []
+      }
     }
   ],
   "technicalTerms": []

@@ -387,6 +387,16 @@ async function extractSidecarProse(content: string): Promise<ISelectorProse[]> {
   return values;
 }
 
+function isStructuredLiteral(language: string, text: string): boolean {
+  if (!["yaml", "yml", "json"].includes(language)) return false;
+  try {
+    const value = language === "json" ? JSON.parse(text) : parseYaml(text);
+    return value !== null && typeof value === "object";
+  } catch {
+    return false;
+  }
+}
+
 /** Extracts prose spans and their raw text (YAML values, heading sections, fenced
  *  literals) so deterministic checks run on the actual prose, not hash summaries. */
 export async function extractProse(
@@ -436,7 +446,7 @@ export async function extractProse(
       currentHeading = heading[1].trim();
       continue;
     }
-    const fence = line.match(/^\s*(`{3,}|~{3,})/);
+    const fence = line.match(/^\s*(`{3,}|~{3,})(\w*)/);
     if (fence) {
       fenceOrdinal += 1;
       const open = fence[1];
@@ -450,7 +460,8 @@ export async function extractProse(
       i = j;
       const fenceText = fenceLines.join("\n").trim();
       if (fenceText.length > 0) {
-        const literal = DOCUMENTATION_HEADING.test(currentHeading ?? "") ||
+        const literal = isStructuredLiteral(fence[2].toLowerCase(), fenceText) ||
+          DOCUMENTATION_HEADING.test(currentHeading ?? "") ||
           /(^|\s)(const|function|import|export|if|for|class|def|fn)\s|```/i.test(fenceText);
         const selector = `fence:${fenceOrdinal}`;
         results.set(selector, {

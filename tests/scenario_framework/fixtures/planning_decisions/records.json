@@ -1,0 +1,657 @@
+[
+  {
+    "case_id": "p234-s6-c1",
+    "good": {
+      "case_id": "p234-s6-c1",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [],
+      "acceptance": [
+        {
+          "id": "AC-empty",
+          "status": "RESOLVED",
+          "outcome": {
+            "pending": 0,
+            "completed": 0,
+            "stdout": "0"
+          }
+        },
+        {
+          "id": "AC-filter",
+          "status": "RESOLVED",
+          "outcome": {
+            "pending": 2,
+            "completed": 1,
+            "stdout": "2"
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "count",
+          "depends_on": [],
+          "api": [
+            "countByStatus"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "countByStatus"
+            }
+          ],
+          "tests": [
+            "AC-empty",
+            "AC-filter"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countByStatus"
+            ],
+            "restore_callers": []
+          },
+          "entrypoint": "exactl request count --status pending",
+          "registered": true,
+          "store": "RequestStore",
+          "new_services": [],
+          "new_schemas": []
+        }
+      ],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "registered"
+          ],
+          "value": false
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "callers"
+          ],
+          "value": []
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "outcome",
+            "stdout"
+          ],
+          "value": "3"
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "entrypoint"
+          ],
+          "value": "unit-only"
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "new_services"
+          ],
+          "value": [
+            "CountService"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s6-c2",
+    "good": {
+      "case_id": "p234-s6-c2",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [],
+      "acceptance": [
+        {
+          "id": "AC-equivalence",
+          "status": "RESOLVED",
+          "outcome": {
+            "countPending": 2,
+            "countByStatus_pending": 2
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "expand",
+          "depends_on": [],
+          "api": [
+            "countPending",
+            "countByStatus"
+          ],
+          "callers": [],
+          "tests": [
+            "pending-equivalence"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countPending"
+            ],
+            "restore_callers": []
+          }
+        },
+        {
+          "id": "cli",
+          "depends_on": [
+            "expand"
+          ],
+          "api": [
+            "countPending",
+            "countByStatus"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "countByStatus"
+            }
+          ],
+          "tests": [
+            "cli-pending-count"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countPending"
+            ],
+            "restore_callers": [
+              "CLI"
+            ]
+          }
+        },
+        {
+          "id": "reports",
+          "depends_on": [
+            "expand"
+          ],
+          "api": [
+            "countPending",
+            "countByStatus"
+          ],
+          "callers": [
+            {
+              "consumer": "daemon reports",
+              "method": "countByStatus"
+            }
+          ],
+          "tests": [
+            "reports-pending-count"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countPending"
+            ],
+            "restore_callers": [
+              "daemon reports"
+            ]
+          }
+        },
+        {
+          "id": "integration",
+          "depends_on": [
+            "cli",
+            "reports"
+          ],
+          "api": [
+            "countPending",
+            "countByStatus"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "countByStatus"
+            },
+            {
+              "consumer": "daemon reports",
+              "method": "countByStatus"
+            }
+          ],
+          "tests": [
+            "cli-and-reports-production"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countPending"
+            ],
+            "restore_callers": [
+              "CLI",
+              "daemon reports"
+            ]
+          }
+        },
+        {
+          "id": "contract",
+          "depends_on": [
+            "integration"
+          ],
+          "api": [
+            "countByStatus"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "countByStatus"
+            },
+            {
+              "consumer": "daemon reports",
+              "method": "countByStatus"
+            }
+          ],
+          "tests": [
+            "zero-countPending-consumers",
+            "pending-equivalence"
+          ],
+          "rollback": {
+            "requires_api": [
+              "countPending",
+              "countByStatus"
+            ],
+            "restore_callers": [
+              "CLI",
+              "daemon reports"
+            ],
+            "restore_compatible_api_first": true
+          },
+          "old_consumers": []
+        }
+      ],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": [],
+      "migration_reason": "Caller versions cannot deploy atomically"
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "stages",
+            1,
+            "api"
+          ],
+          "value": [
+            "countByStatus"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "migration_reason"
+          ],
+          "value": "I prefer horizontal layers"
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            4,
+            "depends_on"
+          ],
+          "value": [
+            "cli"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            4,
+            "rollback",
+            "restore_compatible_api_first"
+          ],
+          "value": false
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            4,
+            "old_consumers"
+          ],
+          "value": [
+            "daemon reports"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            2,
+            "depends_on"
+          ],
+          "value": [
+            "expand",
+            "cli"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "depends_on"
+          ],
+          "value": [
+            "contract"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "outcome",
+            "countByStatus_pending"
+          ],
+          "value": 3
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s6-c3",
+    "good": {
+      "case_id": "p234-s6-c3",
+      "status": "PENDING USER DECISION",
+      "questions": [
+        {
+          "id": "Q-destination",
+          "topic": "destination directory"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "U-17",
+          "choice": "local JSONL",
+          "source": "U-17",
+          "acceptance_ids": [
+            "AC-export"
+          ],
+          "cost_row": "U-17"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-export",
+          "status": "RESOLVED",
+          "outcome": {
+            "format": "JSONL",
+            "hosting": "local"
+          }
+        },
+        {
+          "id": "AC-destination",
+          "status": "PENDING",
+          "outcome": {
+            "depends_on": "Q-destination"
+          }
+        }
+      ],
+      "stages": [],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-hosting",
+              "topic": "hosted or local"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "outcome"
+          ],
+          "value": {
+            "directory": "/tmp/exports"
+          }
+        }
+      ],
+      [
+        {
+          "path": [
+            "decisions",
+            0,
+            "source"
+          ],
+          "value": "model guess"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s6-c4",
+    "good": {
+      "case_id": "p234-s6-c4",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-role",
+          "choice": "reviewer role blueprint",
+          "source": "project glossary and accepted role decision",
+          "acceptance_ids": [
+            "AC-role"
+          ],
+          "cost_row": "D-role"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-role",
+          "status": "RESOLVED",
+          "outcome": {
+            "request": "req-42",
+            "agent_role": "reviewer"
+          }
+        }
+      ],
+      "stages": [],
+      "terms": {
+        "Agent Role": "configured persona selected by agent_role"
+      },
+      "adr_proposals": [],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "outcome"
+          ],
+          "value": {
+            "request": "req-42",
+            "instance_id": "run-17"
+          }
+        }
+      ],
+      [
+        {
+          "path": [
+            "terms",
+            "Agent Role"
+          ],
+          "value": "RunnerKind"
+        }
+      ],
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-role",
+              "topic": "role or instance"
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-s6-c5",
+    "good": {
+      "case_id": "p234-s6-c5",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-label",
+          "choice": "Runs",
+          "source": "accepted label choice",
+          "acceptance_ids": [
+            "AC-label"
+          ],
+          "cost_row": "D-label"
+        },
+        {
+          "id": "D-ledger",
+          "choice": "immutable signed ledger",
+          "source": "accepted independent-verification choice",
+          "acceptance_ids": [
+            "AC-correction"
+          ],
+          "cost_row": "D-ledger"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-label",
+          "status": "RESOLVED",
+          "outcome": {
+            "label": "Runs"
+          }
+        },
+        {
+          "id": "AC-correction",
+          "status": "RESOLVED",
+          "outcome": {
+            "original_signed_rows": "preserved",
+            "corrections": "new entries"
+          }
+        }
+      ],
+      "stages": [],
+      "terms": {},
+      "adr_proposals": [
+        {
+          "decision": "D-ledger",
+          "alternatives": [
+            "mutable rows",
+            "immutable ledger"
+          ],
+          "rationale": "Original signed bytes are required for independent verification; rewriting breaks verification",
+          "consequences": [
+            "read-model cost",
+            "migration cost"
+          ],
+          "hard_to_reverse": "Signed history cannot be reconstructed after destructive rewriting"
+        }
+      ],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "adr_proposals",
+            0,
+            "decision"
+          ],
+          "value": "D-label"
+        }
+      ],
+      [
+        {
+          "path": [
+            "adr_proposals",
+            0,
+            "alternatives"
+          ],
+          "value": []
+        }
+      ],
+      [
+        {
+          "path": [
+            "adr_proposals",
+            0,
+            "rationale"
+          ],
+          "value": "Simpler code"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "outcome",
+            "original_signed_rows"
+          ],
+          "value": "rewritten"
+        }
+      ],
+      [
+        {
+          "path": [
+            "created_files"
+          ],
+          "value": [
+            "docs/adr/ledger.md"
+          ]
+        }
+      ]
+    ]
+  }
+]

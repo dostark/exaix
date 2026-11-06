@@ -38,5 +38,36 @@
       "Independent oracle or contract and what the test cannot establish",
       "For a slow test fixed: before/after per-test duration and pass counts"
     ]
+  },
+  {
+    "name": "plan",
+    "baseline_commit": "f5afe4d77",
+    "approval_reference": "Phase 234 Step 6 revision 1 and separately approved prose correction",
+    "instructions_prefix": "```text\nKey points\n\n- Entry point for EVERY significant feature or refactor.\n\n- Test-Driven Design: specify Planned Tests BEFORE implementation steps.\n\n- Exaix Core Principles:\n\n  1. Traceability: emi",
+    "constraints": [
+      "Follow Exaix TDD, security, and traceability standards",
+      "Each step includes a step-manifest YAML block",
+      "Ground third-party integrations in deep web research",
+      "Include a Reachability Ledger section",
+      "Vertical end-to-end slice before breadth. Exception: justified broad mechanical migration with compatible expand, bounded caller batches, and contract after all consumers move",
+      "Reuse established terminology and settled user decisions in acceptance criteria",
+      "Keep affected criteria pending when a material user decision is unresolved",
+      "Give migration stages real blocking dependencies, compatibility checks, focused tests, rollback conditions, and a named integration checkpoint",
+      "Preserve runtime integration anchors, the Reachability Ledger, and terminal cutover during migrations",
+      "Propose an ADR only for a consequential, hard-to-reverse tradeoff with non-obvious rationale",
+      "Balance implementation workload and split overloaded steps before plan handoff",
+      "Documentation update step as final step"
+    ],
+    "output_requirements": [
+      "Phase planning document with numbered steps",
+      "Step Workload Assessment with independently testable steps and bounded acceptance criteria",
+      "Step-manifest blocks for dogfood compatibility",
+      "Reachability Ledger table",
+      "Pre-Gap Analysis recommended",
+      "Decision record linked to acceptance criteria and Requirement Cost rows",
+      "Sources for settled choices and any material unanswered decisions",
+      "Migration justification and stage dependencies, compatibility evidence, tests, rollback conditions, and integration checkpoint when applicable",
+      "Alternatives, consequences, and rationale for a qualifying ADR proposal when applicable"
+    ]
   }
 ]
