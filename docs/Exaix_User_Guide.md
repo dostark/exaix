@@ -1354,8 +1354,12 @@ Curated lists are written back to `exa.config.toml` (`model_presets.<SIZE>.candi
 surface the resolver reads — so there is no separate database.
 
 ```bash
-# Inspect the Solo model floor: provider:model, pricing provenance, staleness and per-Mtok prices
+# Inspect the Solo model floor: one row per service that serves a model, with its author, route,
+# price source, source URL, verified date, stale flag and per-Mtok prices
 exactl model list
+
+# Only the services that serve one model, as <author>/<model>
+exactl model list --model anthropic/claude-sonnet-4
 
 # Curate the preferred providers for size M (order matters — first healthy provider wins)
 exactl model candidates --size M anthropic ollama
@@ -1369,6 +1373,12 @@ exactl model candidates --list
 # Clear a size's curated list (falls back to scoring)
 exactl model candidates --size M --clear
 ```
+
+Prices in `model list` are what Exaix assumes, not facts. The `Provenance` column says where a price came
+from, `Source URL` and `Verified` say when it was last checked, and `Stale` reads `yes` when the price is older
+than `model_registry.price_staleness_max_days` (default 90). The `Route` column is derived from the service
+adapter: `*-cli` is `subscription`, `ollama`, `llamacpp` and `self-hosted` are `local`, `openrouter` is
+`aggregator`, and every other service is `native`.
 
 Notes:
 

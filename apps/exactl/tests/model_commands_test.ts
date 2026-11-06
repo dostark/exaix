@@ -11,7 +11,7 @@
  *   Phase 134 Step 6 — model list + model candidates curation, provenance/staleness display.
  */
 
-import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { parse } from "@std/toml";
 import type {
   ICapabilityProfile,
@@ -22,6 +22,7 @@ import type {
 } from "@exaix/core/types";
 import { HealthStatus } from "@exaix/core/types";
 import { ModelCommands } from "../src/commands/model_commands.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 /** A minimal in-memory registry stub covering the methods ModelCommands reads. */
@@ -182,6 +183,138 @@ Deno.test("model list shows the models list columns and the models pricing colum
   assertStringIncludes(out, "$3"); // inputPerMtok for anthropic
   assertStringIncludes(out, "static");
   assertStringIncludes(out, "unknown");
+});
+
+const MS_PER_DAY = 86_400_000;
+
+interface IPricedModel {
+  provider: string;
+  model: string;
+  daysSinceVerified?: number;
+  sourceUrl?: string;
+}
+
+/** Registry whose rows are priced and verified the given number of days before now. */
+function createPricedRegistry(rows: IPricedModel[]): IModelRegistry {
+  const key = (provider: string, model: string) => `${provider}:${model}`;
+  const byKey = new Map(rows.map((row) => [key(row.provider, row.model), row]));
+  return createStubRegistry({
+    getAllProviders: () => Promise.resolve([...new Set(rows.map((row) => row.provider))]),
+    getProviderModels: (provider: string) =>
+      Promise.resolve(
+        rows.filter((row) => row.provider === provider).map((row): IModelEntry => ({
+          provider: row.provider,
+          model: row.model,
+          capabilities: {},
+          contextWindow: 1,
+          costPer1kTokens: 0,
+        })),
+      ),
+    getModelPricing: (provider: string, model: string) => {
+      const row = byKey.get(key(provider, model));
+      const daysSinceVerified = row?.daysSinceVerified;
+      return Promise.resolve({
+        provider,
+        model,
+        inputPerMtok: 1.5,
+        outputPerMtok: 7.5,
+        provenance: "static",
+        verifiedAt: daysSinceVerified === undefined ? undefined : Date.now() - daysSinceVerified * MS_PER_DAY,
+        sourceUrl: row?.sourceUrl,
+      });
+    },
+  });
+}
+
+async function renderList(cmd: ModelCommands, options?: { model?: string; benchmark?: string }): Promise<string[]> {
+  const cap = captureLog();
+  try {
+    await cmd.listModels(options);
+  } finally {
+    cap.restore();
+  }
+  return cap.lines.join("\n").split("\n");
+}
+
+function lineOf(lines: string[], text: string): string {
+  const line = lines.find((candidate) => candidate.includes(text));
+  if (line === undefined) throw new Error(`no line contains ${text}`);
+  return line;
+}
+
+Deno.test("model list shows each model's author, service, route, input and output price, source, source URL, verified date and stale flag", async () => {
+  const registry = createPricedRegistry([
+    { provider: "anthropic", model: "claude-sonnet-4", daysSinceVerified: 1, sourceUrl: "https://example.test/prices" },
+  ]);
+  const lines = await renderList(new ModelCommands(registry));
+  const header = lineOf(lines, "Provenance");
+  for (const column of ["Model", "Author", "Service", "Route", "Provenance", "Source URL", "Verified", "Stale"]) {
+    assertStringIncludes(header, column);
+  }
+  assertStringIncludes(header, "Input $/Mtok");
+  assertStringIncludes(header, "Output $/Mtok");
+  const row = lineOf(lines, "anthropic:claude-sonnet-4");
+  for (const value of ["anthropic", "native", "static", "https://example.test/prices", "$1.5", "$7.5", "no"]) {
+    assertStringIncludes(row, value);
+  }
+  assertStringIncludes(row, new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10));
+});
+
+Deno.test("model list marks an entry older than the staleness threshold as stale", async () => {
+  const registry = createPricedRegistry([
+    { provider: "anthropic", model: "claude-old", daysSinceVerified: 100 },
+    { provider: "anthropic", model: "claude-new", daysSinceVerified: 10 },
+  ]);
+  const lines = await renderList(new ModelCommands(registry));
+  assertMatch(lineOf(lines, "claude-old"), /\byes\b/);
+  assertMatch(lineOf(lines, "claude-new"), /\bno\b/);
+});
+
+Deno.test("model list reads model_registry.price_staleness_max_days", async () => {
+  const registry = createPricedRegistry([{ provider: "anthropic", model: "claude-two-days", daysSinceVerified: 2 }]);
+  const defaultLines = await renderList(new ModelCommands(registry));
+  assertMatch(lineOf(defaultLines, "claude-two-days"), /\bno\b/);
+  const oneDayLines = await renderList(new ModelCommands(registry, undefined, undefined, 1));
+  assertMatch(lineOf(oneDayLines, "claude-two-days"), /\byes\b/);
+});
+
+Deno.test("model list derives the route column from the service adapter", async () => {
+  const registry = createPricedRegistry([
+    { provider: "anthropic", model: "m-native", daysSinceVerified: 1 },
+    { provider: "claude-cli", model: "m-subscription", daysSinceVerified: 1 },
+    { provider: "ollama", model: "m-local", daysSinceVerified: 1 },
+    { provider: "openrouter", model: "m-aggregator", daysSinceVerified: 1 },
+  ]);
+  const lines = await renderList(new ModelCommands(registry));
+  assertMatch(lineOf(lines, "m-native"), /\bnative\b/);
+  assertMatch(lineOf(lines, "m-subscription"), /\bsubscription\b/);
+  assertMatch(lineOf(lines, "m-local"), /\blocal\b/);
+  assertMatch(lineOf(lines, "m-aggregator"), /\baggregator\b/);
+});
+
+Deno.test("model list --model <author/model> lists every serving edge of that model", async () => {
+  const registry = createPricedRegistry([
+    { provider: "anthropic", model: "claude-sonnet-4", daysSinceVerified: 1 },
+    { provider: "openrouter", model: "anthropic/claude-sonnet-4", daysSinceVerified: 1 },
+    { provider: "ollama", model: "llama3.2", daysSinceVerified: 1 },
+  ]);
+  const lines = await renderList(new ModelCommands(registry), { model: "anthropic/claude-sonnet-4" });
+  const out = lines.join("\n");
+  assertStringIncludes(out, "anthropic:claude-sonnet-4");
+  assertStringIncludes(out, "openrouter:anthropic/claude-sonnet-4");
+  assertFalse(out.includes("ollama:llama3.2"));
+});
+
+Deno.test("model list --model says so when no service serves the model", async () => {
+  const registry = createPricedRegistry([{ provider: "ollama", model: "llama3.2", daysSinceVerified: 1 }]);
+  const out = (await renderList(new ModelCommands(registry), { model: "anthropic/none" })).join("\n");
+  assertStringIncludes(out, "No service serves anthropic/none");
+});
+
+Deno.test("model list --model without an author is a usage error", async () => {
+  const registry = createPricedRegistry([{ provider: "ollama", model: "llama3.2", daysSinceVerified: 1 }]);
+  const error = await assertRejects(() => renderList(new ModelCommands(registry), { model: "llama3.2" }), ExaCtlError);
+  assertEquals(error.code, ExaCtlExitCode.USAGE);
 });
 
 Deno.test("[model-cli] model candidates --size M writes candidates; --list round-trips; --clear resets", async () => {

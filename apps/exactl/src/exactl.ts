@@ -102,6 +102,7 @@ const modelCommands = new ModelCommands(
     new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) }),
   fullContext.config.getConfigPath(),
   fullContext.benchmarkReader,
+  config.model_registry?.price_staleness_max_days,
 );
 
 const runtime: IExaCtlRuntime = {

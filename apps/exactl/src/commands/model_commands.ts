@@ -16,7 +16,8 @@ import { parse, stringify } from "@std/toml";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
 import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
-import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas/config.ts";
+import { DEFAULT_MODEL_PRESETS, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
 interface ICuratedEntryStatus {
@@ -35,9 +36,16 @@ interface ICharacteristicMap {
   [characteristic: string]: string[];
 }
 
-/** Options for `model list`. `--benchmark` adds an optional advisory score column. */
+/** Options for `model list`. `--benchmark` adds an advisory score column and `--model` filters by author/model. */
 interface IListModelsOptions {
   benchmark?: string;
+  model?: string;
+}
+
+/** The author and model name that `--model` selects. */
+interface IWantedModel {
+  author: string;
+  name: string;
 }
 
 /** The subset of a preset entry this command reads/writes. */
@@ -66,8 +74,40 @@ interface IConfigToml {
 /** Valid capability tiers for curated lists (mirrors ModelSize / DEFAULT_MODEL_PRESETS keys). */
 const VALID_SIZES: readonly string[] = ["S", "M", "L", "XL"];
 
-/** Age (ms) beyond which an overlay `verified_at` is rendered as stale in `model list`. */
-const STALENESS_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+/** The configured default of `model_registry.price_staleness_max_days`, read from the schema. */
+const DEFAULT_PRICE_STALENESS_MAX_DAYS = ModelRegistryConfigSchema.unwrap().shape.price_staleness_max_days.parse(
+  undefined,
+);
+
+const MODEL_ID_SEPARATOR = "/";
+const PROVIDER_NAME_SEPARATOR = "-";
+const SUBSCRIPTION_SUFFIX = "-cli";
+const LOCAL_SERVICES: ReadonlySet<string> = new Set(["ollama", "llamacpp", "self-hosted"]);
+const AGGREGATOR_SERVICES: ReadonlySet<string> = new Set(["openrouter"]);
+const NO_VALUE = "-";
+
+/** How a service reaches the model. Until prices belong to an access route, the adapter name decides. */
+type AccessRoute = "native" | "subscription" | "local" | "aggregator";
+
+function deriveRoute(service: string): AccessRoute {
+  if (service.endsWith(SUBSCRIPTION_SUFFIX)) return "subscription";
+  if (LOCAL_SERVICES.has(service)) return "local";
+  if (AGGREGATOR_SERVICES.has(service)) return "aggregator";
+  return "native";
+}
+
+/** The model id without its author prefix, such as `gpt-4o-mini` for `openai/gpt-4o-mini`. */
+function modelName(model: string): string {
+  const separator = model.indexOf(MODEL_ID_SEPARATOR);
+  return separator === -1 ? model : model.slice(separator + 1);
+}
+
+/** The author is the id prefix when there is one, otherwise the native service's own name. */
+function deriveAuthor(service: string, model: string): string {
+  const separator = model.indexOf(MODEL_ID_SEPARATOR);
+  if (separator !== -1) return model.slice(0, separator);
+  return deriveRoute(service) === "native" ? service.split(PROVIDER_NAME_SEPARATOR)[0] : NO_VALUE;
+}
 
 /** Display commands read the injected `IModelRegistry` floor; `model candidates` writes
  *  curated lists to exa.config.toml via TOML write-back. */
@@ -76,46 +116,77 @@ export class ModelCommands {
     private readonly registry: IModelRegistry,
     private readonly configPath?: Opt<string, Reason.OptionalInput>,
     private readonly benchmarkReader?: Opt<IBenchmarkReader, Reason.OptionalDependency>,
+    private readonly priceStalenessMaxDays: number = DEFAULT_PRICE_STALENESS_MAX_DAYS,
   ) {}
 
   // Display: model list
 
-  /** `model list` shows provider:model, provenance, staleness and per-Mtok prices.
-   *  `--benchmark` adds an advisory score column that shows "-" when unscored. */
+  /** Prints one row per serving edge. `--model` keeps one model and `--benchmark` adds a score. */
   async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
-    const providers = await this.registry.getAllProviders();
+    const wanted = options?.model === undefined ? undefined : this.parseWantedModel(options.model);
+    const rows = await this.collectRows(wanted, options?.benchmark);
+    if (wanted !== undefined && rows.length === 0) {
+      console.log(`No service serves ${wanted.author}${MODEL_ID_SEPARATOR}${wanted.name}.`);
+      return;
+    }
+    this.renderTable(rows, options?.benchmark);
+  }
+
+  private async collectRows(
+    wanted: Opt<IWantedModel, Reason.OptionalInput>,
+    benchmark: Opt<string, Reason.OptionalInput>,
+  ): Promise<string[][]> {
     const rows: string[][] = [];
-    for (const provider of providers) {
-      const models = await this.registry.getProviderModels(provider);
-      for (const m of models) {
+    for (const provider of await this.registry.getAllProviders()) {
+      for (const m of await this.registry.getProviderModels(provider)) {
+        const author = deriveAuthor(m.provider, m.model);
+        if (wanted !== undefined && (author !== wanted.author || modelName(m.model) !== wanted.name)) continue;
         const pricing = await this.registry.getModelPricing(m.provider, m.model);
         const row = [
           `${m.provider}:${m.model}`,
+          author,
+          m.provider,
+          deriveRoute(m.provider),
           pricing.provenance,
+          pricing.sourceUrl ?? NO_VALUE,
           this.renderVerifiedAt(pricing.verifiedAt),
+          this.renderStale(pricing.verifiedAt),
           this.renderPrice(pricing.inputPerMtok),
           this.renderPrice(pricing.outputPerMtok),
         ];
-        if (options?.benchmark) {
-          row.push(await this.renderBenchmarkScore(m.provider, m.model, options.benchmark));
-        }
+        if (benchmark) row.push(await this.renderBenchmarkScore(m.provider, m.model, benchmark));
         rows.push(row);
       }
     }
+    return rows;
+  }
+
+  private renderTable(rows: string[][], benchmark: Opt<string, Reason.OptionalInput>): void {
     const headers = [
-      colors.bold("Model"),
-      colors.bold("Provenance"),
-      colors.bold("Verified"),
-      colors.bold("Input $/Mtok"),
-      colors.bold("Output $/Mtok"),
+      "Model",
+      "Author",
+      "Service",
+      "Route",
+      "Provenance",
+      "Source URL",
+      "Verified",
+      "Stale",
+      "Input $/Mtok",
+      "Output $/Mtok",
     ];
-    if (options?.benchmark) {
-      headers.push(colors.bold(`Benchmark (${options.benchmark})`));
-    }
-    const table = new Table().header(headers).body(rows);
+    if (benchmark) headers.push(`Benchmark (${benchmark}, advisory)`);
+    const table = new Table().header(headers.map((header) => colors.bold(header))).body(rows);
     console.log(colors.cyan(colors.bold("\nModel Registry (Solo floor)")));
     table.render();
     console.log("");
+  }
+
+  private parseWantedModel(value: string): IWantedModel {
+    const separator = value.indexOf(MODEL_ID_SEPARATOR);
+    if (separator <= 0 || separator === value.length - 1) {
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, `Expected <author>/<model>, got '${value}'.`);
+    }
+    return { author: value.slice(0, separator), name: value.slice(separator + 1) };
   }
 
   // Team: model refresh
@@ -287,14 +358,18 @@ export class ModelCommands {
   // Rendering helpers
 
   private renderVerifiedAt(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
-    if (verifiedAt === undefined) return "-";
-    const age = Date.now() - verifiedAt;
-    const date = new Date(verifiedAt).toISOString().slice(0, 10);
-    return age > STALENESS_THRESHOLD_MS ? `${date} (stale)` : date;
+    return verifiedAt === undefined ? NO_VALUE : new Date(verifiedAt).toISOString().slice(0, 10);
+  }
+
+  /** "yes" when the price is older than the configured limit, "-" when it has no verification date. */
+  private renderStale(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
+    if (verifiedAt === undefined) return NO_VALUE;
+    const limitMs = this.priceStalenessMaxDays * 24 * 60 * 60 * 1000;
+    return Date.now() - verifiedAt > limitMs ? "yes" : "no";
   }
 
   private renderPrice(price?: Opt<number, Reason.OptionalInput>): string {
-    return price === undefined ? "-" : `$${price}`;
+    return price === undefined ? NO_VALUE : `$${price}`;
   }
 
   /** "-" when no reader is wired (Solo) or the model is unscored on `benchmark`. */

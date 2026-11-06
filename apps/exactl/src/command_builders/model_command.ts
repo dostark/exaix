@@ -32,11 +32,13 @@ function createListCommand(runtime: IExaCtlRuntime) {
   const { display, modelCommands } = runtime;
   return new Command()
     .description("List registry models with provenance, verified date and per-Mtok prices")
+    .option("--model <model:string>", "Only the services that serve this model, as <author>/<model>")
     .option("--benchmark <benchmark:string>", "Show the advisory score column for a tracked benchmark (Team)")
     .action(async (options) => {
       try {
         await modelCommands.listModels(options);
       } catch (error) {
+        if (error instanceof ExaCtlError) throw error;
         display.error("cli.error", "model list", {
           message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
         });

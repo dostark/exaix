@@ -10,7 +10,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { readFixtureTextSync } from "@exaix/testing";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { runExactlSeededWorkspace, runExactlSequenceInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
@@ -109,4 +109,29 @@ Deno.test("model use with an empty provider or an empty model exits 2 with the e
     assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
     assertStringIncludes(run.stderr, "Expected <provider> or <provider>:<model>");
   }
+});
+
+const STALE_ROW_MARKER = "google:gemini-3.8-flash";
+
+function appendConfig(text: string): (root: string) => void {
+  return (root) => Deno.writeTextFileSync(join(root, "exa.config.toml"), text, { append: true });
+}
+
+Deno.test("model list reads model_registry.price_staleness_max_days through the real config", async () => {
+  const oneDay = await runExactlSeededWorkspace(appendConfig("\n[model_registry]\nprice_staleness_max_days = 1\n"), [
+    ["model", "list"],
+  ]);
+  const longLived = await runExactlSeededWorkspace(
+    appendConfig("\n[model_registry]\nprice_staleness_max_days = 36500\n"),
+    [["model", "list"]],
+  );
+  const staleRow = (run: { stdout: string }) => run.stdout.split("\n").find((line) => line.includes(STALE_ROW_MARKER));
+  assertMatch(staleRow(oneDay[0]) ?? "", /\byes\b/);
+  assertMatch(staleRow(longLived[0]) ?? "", /\bno\b/);
+});
+
+Deno.test("model list --model without an author exits 2", async () => {
+  const [run] = await runExactlSequenceInTempWorkspace([["model", "list", "--model", "gemini"]]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "Expected <author>/<model>");
 });
