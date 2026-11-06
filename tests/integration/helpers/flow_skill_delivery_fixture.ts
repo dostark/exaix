@@ -55,7 +55,6 @@ export async function flowSkillDeliveryFixture(): Promise<IFlowSkillDeliveryFixt
     default_branch: "main",
   }];
   config.cli_delegate = CliDelegateConfigSchema.parse({ enabled: true, tool: "claude-code" });
-  config.skills.context_budget_chars = 32_000;
   const logger = new EventLogger({ db: env.db });
   const skills = new SkillsService(
     { memoryDir: join(env.tempDir, "Memory"), blueprintSkillsDir: join(env.tempDir, "Blueprints", "Skills") },

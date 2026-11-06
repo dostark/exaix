@@ -1349,7 +1349,7 @@ export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT: number = configurable({
 /** Default maximum character budget for formatted skills context. */
 export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET: number = configurable({
   key: "budget.skills_context_char_budget",
-  default: 2_000,
+  default: 32_000,
   type: ConfigValueType.NUMBER,
   description: "Maximum characters for formatted skills context in prompt",
   min: 100,

@@ -69,9 +69,9 @@ launch. Optional defaults can be omitted by the budget; omitted bodies have no
 submission usage row.
 
 The existing `skills.context_budget_chars` setting must fit the selected bodies.
-The deterministic delivery fixtures use 32,000 characters. A 2,000-character
-budget cannot fit the critical `response-contract` body. Configure a suitable
-budget before using these flows; the global default is unchanged.
+The default is 32,000 characters, and the deterministic delivery fixtures use
+that default. A 2,000-character override cannot fit the critical
+`response-contract` body. Existing explicit overrides remain effective.
 
 The planning and authoring delivery scenarios exercise a captured CLI boundary
 and durable usage without a model call. They prove transport and contract

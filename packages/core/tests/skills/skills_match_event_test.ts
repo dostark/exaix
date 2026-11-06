@@ -93,8 +93,7 @@ async function writeActiveSkill(
   );
 }
 
-/** A block longer than the default skill context budget, so `formatSkillForPrompt` cannot
- *  fit it. 2500 > DEFAULT_SKILL_CONTEXT_CHAR_BUDGET (2000). */
+/** A block longer than this test's explicit 2,000-character skill context budget. */
 const OVERSIZED_INSTRUCTIONS = "x".repeat(2_500);
 
 Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a higher-confidence match overflows the budget", async () => {

@@ -1,7 +1,7 @@
 /**
  * @module SkillFolderPerformanceTest
  * @path packages/core/tests/skills/skill_folder_performance_test.ts
- * @description Latency of resolving the representative catalog of 27 shipped and 28 dogfood skill folders against
+ * @description Latency of resolving the representative authored skill catalog against
  *   the dynamic match timeout. Twenty cold and twenty warm samples are taken and the p95 of each must stay below
  *   the timeout. A fake clock proves, without sleeping, that a match that never settles is cancelled at the
  *   timeout and not before.
@@ -99,10 +99,25 @@ async function measureOnce(provider: StaticConfig, env: Awaited<ReturnType<typeo
   return { cold: p95(cold), warm: p95(warm), skills } satisfies IPercentiles;
 }
 
-Deno.test("[performance] cold and warm resolution of the 27 plus 28 skill catalog stay under the match timeout at p95", async () => {
+/** Counts authored names once when a dogfood folder shadows a shipped folder. */
+async function authoredSkillCount(provider: StaticConfig): Promise<number> {
+  const names = new Set<string>();
+  for (const configured of provider.get().skills.roots ?? []) {
+    const root = configured.kind === SkillRootKind.PROJECT ? join(configured.path, PORTAL) : configured.path;
+    for await (const entry of Deno.readDir(root)) {
+      if (!entry.isDirectory) continue;
+      await Deno.stat(join(root, entry.name, "SKILL.md"));
+      names.add(entry.name);
+    }
+  }
+  return names.size;
+}
+
+Deno.test("[performance] cold and warm resolution of the authored skill catalog stay under the match timeout at p95", async () => {
   const env = await initTestDbService();
   try {
     const provider = new StaticConfig(env.tempDir);
+    const expectedSkills = await authoredSkillCount(provider);
     // A parallel suite run shares the CPU, so one noisy window can inflate a p95. A real regression
     // is slow in every window, so the check passes when any attempt stays under the limit.
     const attempts: IPercentiles[] = [];
@@ -111,8 +126,8 @@ Deno.test("[performance] cold and warm resolution of the 27 plus 28 skill catalo
       attempts.push(measured);
       assertEquals(
         measured.skills,
-        27 + 28 - 1,
-        "the tracked corpus, where the dogfood fix-bug shadows the shipped one",
+        expectedSkills,
+        "the authored corpus after same-name folder shadowing",
       );
       console.log(
         `[performance] attempt ${attempt + 1}: p95 cold ${measured.cold.toFixed(1)} ms, warm ${

@@ -841,17 +841,19 @@ insufficient space for an explicit or critical skill stop the launch.
 The role's critical `response-contract` requires `<thought>` and raw JSON inside
 `<content>`; the planning skill uses that contract.
 
-Set the existing character budget to fit the selected skills, for example:
+The skill context budget defaults to 32,000 characters. To set it explicitly:
 
 ```toml
 [skills]
 context_budget_chars = 32000
 ```
 
-The global default is unchanged. A 2,000-character budget cannot fit the response
-contract alone. With `skills.inject_in_prompt = false`, skill injection remains
+Existing explicit overrides remain effective. A 2,000-character override cannot
+fit the response contract alone. With `skills.inject_in_prompt = false`, skill injection remains
 disabled. Skill-authoring requests can explicitly select `blueprint-best-practices`
 with the `default` role; ordinary implementation planning selects `implementation-plan`.
+To restore the previous budget, set `skills.context_budget_chars = 2000`;
+flows that require the larger response contract will reject that budget.
 
 Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
 
@@ -912,7 +914,7 @@ You can tune skill matching in your `exa.config.toml`:
 [skills]
 max_per_request = 5        # Max skills to inject per request
 match_threshold = 0.3      # Minimum confidence score (0.0 to 1.0)
-context_budget_chars = 4000 # Max characters for skills context
+context_budget_chars = 32000 # Max characters for skills context (default)
 render_mode = "trimmed"    # "full" (default) includes each ordinary skill's examples and references; "trimmed" omits them
 keyword_match_saturation = 2 # Matched keywords that earn the full keyword score
 

@@ -17,8 +17,7 @@ their original approval snapshots; current role and flow selection are checked b
 
 `blueprint_skill_delivery_test.ts` exercises real SkillsService storage, the flow
 adapter, composer, and CLI transport with a captured process boundary. The helper
-sets the existing context budget to 32,000 characters; no production default is
-changed. Optional budget omissions produce neither prompt bodies nor submitted
+uses the production default of 32,000 characters without a fixture override. Optional budget omissions produce neither prompt bodies nor submitted
 usage. Separate controls prove that an explicit or critical body cannot silently
 vanish.
 
