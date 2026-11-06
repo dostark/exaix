@@ -121,6 +121,17 @@ Deno.test("Skill duplication: policy schema is current and every entry documents
   }
 });
 
+Deno.test("Skill duplication: the shared migration guard leaves unrelated repeated prose blocking", () => {
+  const findings = runSkillDuplicationCheck({
+    skillsDir: join(FIXTURES_DIR, "migration_guard"),
+    policyPath: REAL_POLICY,
+  });
+  assertEquals(findings.map((finding) => finding.text), [
+    "use the same independent expected result for each boundary test",
+  ]);
+  assertEquals(findings[0].files.length, 2);
+});
+
 Deno.test("Skill duplication: discovery walks both corpora and returns repo-relative paths", () => {
   const files = discoverSkillFiles(REPO_ROOT);
   const listing: string = files.join("\n");

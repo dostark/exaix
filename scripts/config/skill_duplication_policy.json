@@ -32,6 +32,10 @@
     {
       "text": "1 bump the frontmatter version",
       "reason": "Shared version-bump step of the review/gap workflow, intentionally repeated so each skill is self-contained; documented shared transition."
+    },
+    {
+      "text": "do not use this exception to postpone new feature wiring",
+      "reason": "Shared migration safety constraint in the separately approved development and portable Blueprint planning skills. Each stays self-contained and must forbid delaying new-feature wiring; only this exact restriction is intentionally repeated."
     }
   ]
 }
