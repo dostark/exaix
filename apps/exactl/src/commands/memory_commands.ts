@@ -447,7 +447,7 @@ export class MemoryCommands extends BaseCommand {
   ): Promise<string> {
     if (dryRun) {
       if (proposalId) {
-        return "Error: --dry-run is only supported without a proposal ID. Use `exactl memory pending approve --dry-run`.";
+        return "Error: --dry-run is only supported without a proposal ID. Use `exactl memory proposal approve --dry-run`.";
       }
       return this.pendingApproveDryRun();
     }

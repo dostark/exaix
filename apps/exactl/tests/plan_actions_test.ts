@@ -7,7 +7,7 @@
  * diff colorization, and status truncation for terminal display.
  */
 
-import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import {
   handlePlanAmendmentApprove,
@@ -147,8 +147,92 @@ Deno.test("handlePlanApprove: delegates to approve with the plan id only", async
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanApprove(context, "p1");
+  await handlePlanApprove(context, ["p1"]);
   assertEquals(calls, [["p1"]]);
+});
+
+Deno.test("handlePlanApprove: approves several ids in order", async () => {
+  const { display } = createDisplay();
+  const calls: string[] = [];
+  const planCommands = {
+    approve: (id: string) => {
+      calls.push(id);
+      return Promise.resolve();
+    },
+  };
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanApprove(context, ["p1", "p2", "p3"]);
+  assertEquals(calls, ["p1", "p2", "p3"]);
+});
+
+Deno.test("handlePlanApprove: stops at the first failure and reports the decided ids", async () => {
+  const { display, calls } = createDisplay();
+  const approved: string[] = [];
+  const planCommands = {
+    approve: (id: string) => {
+      if (id === "p2") return Promise.reject(new Error("plan p2 is not in review"));
+      approved.push(id);
+      return Promise.resolve();
+    },
+  };
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  const exit = stub(Deno, "exit", (code?: number) => {
+    throw new Error(`exit ${code}`);
+  });
+  try {
+    await assertRejects(() => handlePlanApprove(context, ["p1", "p2", "p3"]), Error, "exit 1");
+  } finally {
+    exit.restore();
+  }
+  assertEquals(approved, ["p1"]);
+  const failure = calls.find((call) => call.level === LogLevel.ERROR);
+  assertStringIncludes(String(failure?.c.message), "plan p2 is not in review");
+  assertEquals(failure?.c.decided, "p1");
+});
+
+Deno.test("handlePlanAmendmentApprove: approves several ids in order", async () => {
+  const { display } = createDisplay();
+  const calls: string[] = [];
+  const planCommands = {
+    approveAmendment: (id: string) => {
+      calls.push(id);
+      return Promise.resolve();
+    },
+  };
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentApprove(context, ["a1", "a2"]);
+  assertEquals(calls, ["a1", "a2"]);
+});
+
+Deno.test("handlePlanAmendmentShow: shows several ids in order", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    getAmendment: (id: string) =>
+      Promise.resolve({
+        amendmentId: `am-${id}`,
+        summary: "s",
+        affectedRemainingStepIds: [],
+        createdAt: "now",
+        adds: [],
+        updates: [],
+        removes: [],
+      }),
+  };
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentShow(context, ["a1", "a2"]);
+  assertEquals(calls.filter((call) => call.a === "plan.amendment.show").map((call) => call.b), ["a1", "a2"]);
 });
 
 Deno.test("handlePlanReject/Revise: delegates", async () => {
@@ -249,7 +333,7 @@ Deno.test("handlePlanAmendmentShow: displays patch details", async () => {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanAmendmentShow(context, "a1");
+  await handlePlanAmendmentShow(context, ["a1"]);
 
   assertEquals(calls.some((c) => c.a === "Adds"), true);
   assertEquals(calls.some((c) => c.a === "Updates"), true);
@@ -274,7 +358,7 @@ Deno.test("handlePlanAmendmentApprove/Reject: delegates", async () => {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanAmendmentApprove(context, "a1");
+  await handlePlanAmendmentApprove(context, ["a1"]);
   await handlePlanAmendmentReject(context, "a1", "reason");
 
   assertEquals(cmdCalls, ["approve", "reject"]);

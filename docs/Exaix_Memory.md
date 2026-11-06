@@ -110,13 +110,13 @@ durable banks without review:
 
 ```bash
 # See what's waiting
-exactl memory pending list
+exactl memory proposal list
 
 # Approve a proposal
-exactl memory pending approve <proposal-id>
+exactl memory proposal approve <proposal-id>
 
 # Reject it, with a reason
-exactl memory pending reject <proposal-id> --reason "Duplicate of an existing learning"
+exactl memory proposal reject <proposal-id> --reason "Duplicate of an existing learning"
 ```
 
 **Opt-in auto-approval.** If you want the loop to close without a human, enable:
@@ -188,7 +188,7 @@ Retirement is reversible-by-audit, not amnesia:
   (`exactl memory execution list` shows the runs; the journal shows the memory
   events).
 - Learnings can also be removed explicitly:
-  `exactl memory delete-learning <learningId>`.
+  `exactl memory learning remove <learningId>`.
 
 > **Operator note (one-time sweep):** installations that ran earlier builds may hold
 > orphaned pending entries in the global learnings store, left behind by the old

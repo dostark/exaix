@@ -423,7 +423,7 @@ export function renderSweTaskTemplate(
     `  - id: "approve-plan"`,
     `    type: "exactl"`,
     `    command: "plan"`,
-    `    args: ["approve-all"]`,
+    `    args: ["approve", "--all"]`,
     `    output_criteria:`,
     `      - id: "plan-approved"`,
     `        kind: "command-output-contains"`,

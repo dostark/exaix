@@ -1,0 +1,35 @@
+{
+  "plan approve": [],
+  "plan approve-all": [],
+  "plan amendment show": [],
+  "plan amendment show-all": [],
+  "plan amendment approve": [],
+  "plan amendment approve-all": [],
+  "memory pending": [
+    "--eligible",
+    "--format"
+  ],
+  "memory pending list": [
+    "--eligible",
+    "--format"
+  ],
+  "memory pending show": [
+    "--format"
+  ],
+  "memory pending approve": [
+    "--dry-run"
+  ],
+  "memory pending reject": [
+    "--reason",
+    "-r"
+  ],
+  "memory pending approve-all": [],
+  "memory delete-learning": [
+    "--reason",
+    "-r"
+  ],
+  "memory rebuild-index": [
+    "--include-embeddings",
+    "-e"
+  ]
+}

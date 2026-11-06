@@ -23,6 +23,7 @@ import {
   handlePlanShow,
   type IPlanListOptions,
 } from "./plan_actions.ts";
+import { selectBulkTargets } from "./bulk_targets.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { CLI_CMD_LIST, CLI_CMD_SHOW_ID, CLI_OPTION_REASON } from "../exactl_constants.ts";
 
@@ -56,19 +57,17 @@ function addPlanCommands1(runtime: IExaCtlRuntime) {
         }),
     ],
     [
-      "approve <id>",
+      "approve [ids...:string]",
       new Command()
-        .description("Approve a plan and move it to Workspace/Active")
-        .action(async (_options, ...args: string[]) => {
-          await handlePlanApprove({ planCommands, display }, args[0] as string);
-        }),
-    ],
-    [
-      "approve-all",
-      new Command()
-        .description("Approve all plans awaiting review")
-        .action(async () => {
-          await handlePlanApproveAll({ planCommands, display });
+        .description("Approve plans and move them to Workspace/Active")
+        .option("--all", "Approve every plan awaiting review")
+        .action(async (options, ...ids: string[]) => {
+          const targets = selectBulkTargets(ids, options.all === true, "plan");
+          if (targets.all) {
+            await handlePlanApproveAll({ planCommands, display });
+          } else {
+            await handlePlanApprove({ planCommands, display }, targets.ids);
+          }
         }),
     ],
     [
@@ -111,35 +110,31 @@ function addPlanCommands2(runtime: IExaCtlRuntime) {
             }),
         )
         .command(
-          CLI_CMD_SHOW_ID,
+          "show [ids...:string]",
           new Command()
-            .description("Show details of a proposed amendment")
-            .action(async (_options, ...args: string[]) => {
-              await handlePlanAmendmentShow({ planCommands, display }, args[0] as string);
+            .description("Show details of proposed amendments")
+            .option("--all", "Show every proposed amendment")
+            .action(async (options, ...ids: string[]) => {
+              const targets = selectBulkTargets(ids, options.all === true, "amendment");
+              if (targets.all) {
+                await handlePlanAmendmentShowAll({ planCommands, display });
+              } else {
+                await handlePlanAmendmentShow({ planCommands, display }, targets.ids);
+              }
             }),
         )
         .command(
-          "show-all",
+          "approve [ids...:string]",
           new Command()
-            .description("Show details of all proposed amendments")
-            .action(async () => {
-              await handlePlanAmendmentShowAll({ planCommands, display });
-            }),
-        )
-        .command(
-          "approve <id>",
-          new Command()
-            .description("Approve amendment and resume execution")
-            .action(async (_options, ...args: string[]) => {
-              await handlePlanAmendmentApprove({ planCommands, display }, args[0] as string);
-            }),
-        )
-        .command(
-          "approve-all",
-          new Command()
-            .description("Approve all pending amendments and resume execution")
-            .action(async () => {
-              await handlePlanAmendmentApproveAll({ planCommands, display });
+            .description("Approve amendments and resume execution")
+            .option("--all", "Approve every pending amendment")
+            .action(async (options, ...ids: string[]) => {
+              const targets = selectBulkTargets(ids, options.all === true, "amendment");
+              if (targets.all) {
+                await handlePlanAmendmentApproveAll({ planCommands, display });
+              } else {
+                await handlePlanAmendmentApprove({ planCommands, display }, targets.ids);
+              }
             }),
         )
         .command(

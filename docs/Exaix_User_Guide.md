@@ -755,18 +755,18 @@ exactl memory search --tags "error-handling,async"
 exactl memory execution list --limit 10
 
 # View pending memory updates
-exactl memory pending list
+exactl memory proposal list
 
 # Approve a pending update
-exactl memory pending approve <proposal-id>
+exactl memory proposal approve <proposal-id>
 
 # Reject with reason
-exactl memory pending reject <proposal-id> --reason "Duplicate"
+exactl memory proposal reject <proposal-id> --reason "Duplicate"
 
 > Note: If `memory.auto_approve.enabled` is enabled in configuration, the daemon can automatically promote eligible pending proposals, and it may emit a daily pending digest notification when proposals are waiting for review.
 
 # Rebuild search indices
-exactl memory rebuild-index
+exactl memory index rebuild
 ```
 
 #### Features
@@ -3519,6 +3519,7 @@ exactl request -i                           # Interactive mode
 exactl plan list                           # See pending plans
 exactl plan show <id>                      # Review plan details
 exactl plan approve <id>                   # Approve for execution
+exactl plan approve --all                  # Approve every plan in review
 exactl plan reject <id> --reason "..."     # Reject with feedback
 
 # Configuration management
@@ -4809,7 +4810,7 @@ If agents fail after max retries:
 If relevant memories aren't being injected:
 
 1. **Check threshold**: Lower `threshold` value (e.g., 0.1)
-1. **Rebuild index**: `exactl memory rebuild-index`
+1. **Rebuild index**: `exactl memory index rebuild`
 1. **Add learnings**: Approve pending learnings
 1. **Check scope**: Ensure learnings are in correct project/global scope
 

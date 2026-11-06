@@ -118,7 +118,7 @@ steps:
   - id: "approve-pregap-plan"
     type: "exactl"
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "pregap-plan-approved"
         score_weight: 0.5
@@ -182,7 +182,7 @@ steps:
   - id: "approve-nextsteps-plan"
     type: "exactl"
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "nextsteps-plan-approved"
         score_weight: 0.5
@@ -309,7 +309,7 @@ steps:
   - id: "approve-postgap-plan"
     type: "exactl"
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "postgap-plan-approved"
         score_weight: 0.5

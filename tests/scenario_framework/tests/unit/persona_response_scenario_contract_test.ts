@@ -44,7 +44,10 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
       assert(criterion.rubric?.includes("Do not require file writes or executed fixes"));
       assert(criterion.rubric?.includes("Missing substantive analysis"));
     }
-    assertEquals(scenario.steps.some((step) => step.args?.includes("approve-all")), false);
+    assertEquals(
+      scenario.steps.some((step) => step.args?.includes("approve") && step.args?.includes("--all")),
+      false,
+    );
   }
   assertEquals(Object.fromEntries(counts), { "senior-coder": 2, "code-analyst": 2, "security-expert": 2 });
 });

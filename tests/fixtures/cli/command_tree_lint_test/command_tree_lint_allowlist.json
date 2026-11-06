@@ -1,8 +1,7 @@
 {
   "root-name": [],
   "sub-noun": [
-    "git worktrees",
-    "memory pending"
+    "git worktrees"
   ],
   "leaf-verb": [
     "config list-profiles",
@@ -13,12 +12,6 @@
     "config use-profile",
     "git branches",
     "mcp connect",
-    "memory delete-learning",
-    "memory pending approve-all",
-    "memory rebuild-index",
-    "plan amendment approve-all",
-    "plan amendment show-all",
-    "plan approve-all",
     "portal knowledge",
     "tool confirm",
     "tool deny",
@@ -28,13 +21,7 @@
     "config list-profiles",
     "config lock-list",
     "config set-path",
-    "config use-profile",
-    "memory delete-learning",
-    "memory pending approve-all",
-    "memory rebuild-index",
-    "plan amendment approve-all",
-    "plan amendment show-all",
-    "plan approve-all"
+    "config use-profile"
   ],
   "duplicate-handler": []
 }

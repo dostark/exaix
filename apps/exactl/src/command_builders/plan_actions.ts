@@ -26,6 +26,11 @@ export interface IPlanListOptions {
 }
 
 /** Prints the added, updated, and removed steps of an amendment patch. */
+/** The ids decided before a failure, for the error line. */
+function decidedField(decided: readonly string[]): Record<string, string> {
+  return decided.length === 0 ? {} : { decided: decided.join(", ") };
+}
+
 function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendmentPatch): void {
   if (patch.adds.length > 0) {
     display.info("Adds", "", {});
@@ -143,19 +148,24 @@ export async function handlePlanShow(
 }
 
 /**
- * Handle plan approve action
+ * Handle plan approve action. The ids are approved in order and the first failure stops the run.
  */
 export async function handlePlanApprove(
   context: IPlanActionContext,
-  id: string,
+  ids: readonly string[],
 ): Promise<void> {
   const { planCommands, display } = context;
+  const decided: string[] = [];
 
   try {
-    await planCommands.approve(id);
+    for (const id of ids) {
+      await planCommands.approve(id);
+      decided.push(id);
+    }
   } catch (error) {
     display.error("cli.error", "plan approve", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+      ...decidedField(decided),
     });
     Deno.exit(1);
   }
@@ -170,7 +180,7 @@ export async function handlePlanApproveAll(context: IPlanActionContext): Promise
   try {
     await planCommands.approveAll();
   } catch (error) {
-    display.error("cli.error", "plan approve-all", {
+    display.error("cli.error", "plan approve --all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
@@ -246,49 +256,59 @@ export async function handlePlanAmendmentList(
 }
 
 /**
- * Handle plan amendment show action
+ * Handle plan amendment show action. The ids are shown in order and the first failure stops the run.
  */
 export async function handlePlanAmendmentShow(
   context: IPlanActionContext,
-  id: string,
+  ids: readonly string[],
 ): Promise<void> {
   const { planCommands, display } = context;
+  const decided: string[] = [];
 
   try {
-    const patch = await planCommands.getAmendment(id);
-    display.info("plan.amendment.show", id, {
-      amendment_id: patch.amendmentId,
-      summary: patch.summary,
-      affected_steps: patch.affectedRemainingStepIds.length,
-      created_at: patch.createdAt,
-    });
+    for (const id of ids) {
+      const patch = await planCommands.getAmendment(id);
+      display.info("plan.amendment.show", id, {
+        amendment_id: patch.amendmentId,
+        summary: patch.summary,
+        affected_steps: patch.affectedRemainingStepIds.length,
+        created_at: patch.createdAt,
+      });
 
-    displayAmendmentChanges(display, patch);
+      displayAmendmentChanges(display, patch);
+      decided.push(id);
+    }
   } catch (error) {
     display.error("cli.error", "plan amendment show", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+      ...decidedField(decided),
     });
     Deno.exit(1);
   }
 }
 
 /**
- * Handle plan amendment approve action
+ * Handle plan amendment approve action. The ids are approved in order and the first failure stops the run.
  */
 export async function handlePlanAmendmentApprove(
   context: IPlanActionContext,
-  id: string,
+  ids: readonly string[],
 ): Promise<void> {
   const { planCommands, display } = context;
+  const decided: string[] = [];
 
   try {
-    await planCommands.approveAmendment(id);
-    display.info("plan.amendment.approved", id, {
-      message: "Amendment approved and applied. Plan status updated to 'approved'.",
-    });
+    for (const id of ids) {
+      await planCommands.approveAmendment(id);
+      display.info("plan.amendment.approved", id, {
+        message: "Amendment approved and applied. Plan status updated to 'approved'.",
+      });
+      decided.push(id);
+    }
   } catch (error) {
     display.error("cli.error", "plan amendment approve", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+      ...decidedField(decided),
     });
     Deno.exit(1);
   }
@@ -326,7 +346,7 @@ export async function handlePlanAmendmentApproveAll(
   try {
     await planCommands.approveAllAmendments();
   } catch (error) {
-    display.error("cli.error", "plan amendment approve-all", {
+    display.error("cli.error", "plan amendment approve --all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
@@ -359,7 +379,7 @@ export async function handlePlanAmendmentShowAll(
       displayAmendmentChanges(display, patch);
     }
   } catch (error) {
-    display.error("cli.error", "plan amendment show-all", {
+    display.error("cli.error", "plan amendment show --all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);

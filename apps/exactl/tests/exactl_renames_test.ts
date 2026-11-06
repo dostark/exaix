@@ -154,3 +154,34 @@ Deno.test("other config paths are not renames", () => {
     assertEquals(findRename(typed), null, typed.join(" "));
   }
 });
+
+Deno.test("the plan and memory compound paths map to their grouped paths", () => {
+  const expected: Array<[string[], string]> = [
+    [["plan", "approve-all"], "exactl plan approve --all"],
+    [["plan", "amendment", "show-all"], "exactl plan amendment show --all"],
+    [["plan", "amendment", "approve-all"], "exactl plan amendment approve --all"],
+    [["memory", "pending"], "exactl memory proposal"],
+    [["memory", "pending", "approve-all"], "exactl memory proposal approve --all"],
+    [["memory", "delete-learning"], "exactl memory learning remove"],
+    [["memory", "rebuild-index"], "exactl memory index rebuild"],
+  ];
+  for (const [legacy, canonical] of expected) {
+    assertEquals(findRename(legacy)?.canonical, canonical, legacy.join(" "));
+  }
+});
+
+Deno.test("a memory pending hint keeps the typed verb and arguments", () => {
+  const list = ["memory", "pending", "list"];
+  assertStringIncludes(renameHint(rowFor(list), list), "use 'exactl memory proposal list'");
+  const reject = ["memory", "pending", "reject", "p-1"];
+  assertStringIncludes(renameHint(rowFor(reject), reject), "use 'exactl memory proposal reject p-1'");
+  const remove = ["memory", "delete-learning", "l-1"];
+  assertStringIncludes(renameHint(rowFor(remove), remove), "use 'exactl memory learning remove l-1'");
+});
+
+Deno.test("the grouped plan and memory paths are not renames", () => {
+  const grouped = [["plan", "approve"], ["plan", "amendment", "show"], ["memory", "proposal", "approve"]];
+  for (const typed of [...grouped, ["memory", "learning", "remove"], ["memory", "index", "rebuild"]]) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});

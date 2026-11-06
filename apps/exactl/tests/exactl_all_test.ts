@@ -512,6 +512,36 @@ Deno.test("request inline --dry-run logs dry_run and creates file", async () => 
   });
 });
 
+Deno.test("plan approve --all approves every plan in review", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let approvedAll = false;
+    ctx.planCommands.approveAll = () => {
+      approvedAll = true;
+      return Promise.resolve();
+    };
+    ctx.planCommands.approve = () => Promise.reject(new Error("approve must not run for --all"));
+    await mod.__test_command.parse(["plan", "approve", "--all"]);
+    assert(approvedAll);
+  });
+});
+
+Deno.test("plan amendment approve --all and show --all use the all-amendments handlers", async () => {
+  await withTestMod(async (mod, ctx) => {
+    const calls: string[] = [];
+    ctx.planCommands.approveAllAmendments = () => {
+      calls.push("approve-all");
+      return Promise.resolve();
+    };
+    ctx.planCommands.getAmendments = () => {
+      calls.push("show-all");
+      return Promise.resolve([]);
+    };
+    await mod.__test_command.parse(["plan", "amendment", "approve", "--all"]);
+    await mod.__test_command.parse(["plan", "amendment", "show", "--all"]);
+    assertEquals(calls, ["approve-all", "show-all"]);
+  });
+});
+
 Deno.test("flow list calls flowCommands.listFlows", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;

@@ -36,6 +36,7 @@ import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
@@ -763,7 +764,7 @@ Deno.test("memory execution default action lists executions", async () => {
   });
 });
 
-Deno.test("memory pending default action lists pending", async () => {
+Deno.test("memory proposal default action lists proposals", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingList = (_eligible?: boolean, _format?: OutputFormat) => {
@@ -771,14 +772,14 @@ Deno.test("memory pending default action lists pending", async () => {
       return Promise.resolve("Pending proposals");
     };
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL]);
     });
     assert(called);
     assertStringIncludes(out, "Pending proposals");
   });
 });
 
-Deno.test("memory pending approve-all calls pendingApproveAll", async () => {
+Deno.test("memory proposal approve --all calls pendingApproveAll", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingApproveAll = () => {
@@ -786,14 +787,14 @@ Deno.test("memory pending approve-all calls pendingApproveAll", async () => {
       return Promise.resolve("All approved");
     };
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve-all"]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--all"]);
     });
     assert(called);
     assertStringIncludes(out, "All approved");
   });
 });
 
-Deno.test("memory pending list --eligible filters eligible proposals", async () => {
+Deno.test("memory proposal list --eligible filters eligible proposals", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingList = (eligible?: boolean, _format?: OutputFormat) => {
@@ -801,14 +802,14 @@ Deno.test("memory pending list --eligible filters eligible proposals", async () 
       return Promise.resolve("Eligible proposals");
     };
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "list", "--eligible"]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "list", "--eligible"]);
     });
     assert(called);
     assertStringIncludes(out, "Eligible proposals");
   });
 });
 
-Deno.test("memory pending approve --dry-run previews auto-approvals", async () => {
+Deno.test("memory proposal approve --dry-run previews auto-approvals", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingApprove = (proposalId?: string, dryRun?: boolean) => {
@@ -816,10 +817,71 @@ Deno.test("memory pending approve --dry-run previews auto-approvals", async () =
       return Promise.resolve("Dry run preview");
     };
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve", "--dry-run"]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--dry-run"]);
     });
     assert(called);
     assertStringIncludes(out, "Dry run preview");
+  });
+});
+
+Deno.test("memory proposal approve with ids approves each id in order", async () => {
+  await withTestMod(async (mod, ctx) => {
+    const seen: string[] = [];
+    ctx.memoryCommands.pendingApprove = (proposalId?: string, _dryRun?: boolean) => {
+      seen.push(String(proposalId));
+      return Promise.resolve(`Proposal approved successfully. ID: ${proposalId}`);
+    };
+    await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "p-1", "p-2"]);
+    });
+    assertEquals(seen, ["p-1", "p-2"]);
+  });
+});
+
+Deno.test("memory proposal approve stops at the first failed id", async () => {
+  await withTestMod(async (mod, ctx) => {
+    const seen: string[] = [];
+    ctx.memoryCommands.pendingApprove = (proposalId?: string, _dryRun?: boolean) => {
+      seen.push(String(proposalId));
+      return Promise.resolve(
+        proposalId === "p-2" ? `Proposal not found: ${proposalId}` : "Proposal approved successfully.",
+      );
+    };
+    const out = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "p-1", "p-2", "p-3"]);
+    });
+    assertEquals(seen, ["p-1", "p-2"]);
+    assertStringIncludes(out, "Proposal not found: p-2");
+  });
+});
+
+Deno.test("memory learning remove calls deleteLearning with the id and reason", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let received: [string, string | undefined] | undefined;
+    ctx.memoryCommands.deleteLearning = (learningId: string, reason?: string) => {
+      received = [learningId, reason];
+      return Promise.resolve("Learning deleted");
+    };
+    const out = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.LEARNING, "remove", "l-1", "--reason", "duplicate"]);
+    });
+    assertEquals(received, ["l-1", "duplicate"]);
+    assertStringIncludes(out, "Learning deleted");
+  });
+});
+
+Deno.test("memory index rebuild calls rebuildIndex with the embeddings option", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let includeEmbeddings: boolean | undefined;
+    ctx.memoryCommands.rebuildIndex = (options?: { includeEmbeddings?: boolean }) => {
+      includeEmbeddings = options?.includeEmbeddings;
+      return Promise.resolve("Index rebuilt");
+    };
+    const out = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.INDEX, "rebuild", "--include-embeddings"]);
+    });
+    assertEquals(includeEmbeddings, true);
+    assertStringIncludes(out, "Index rebuilt");
   });
 });
 

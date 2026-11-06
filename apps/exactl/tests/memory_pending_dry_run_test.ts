@@ -3,15 +3,15 @@
  * @path apps/exactl/tests/memory_pending_dry_run_test.ts
  * @related-files []
  * @architectural-layer CLI
- * @description Tests memory pending dry-run behavior for the CLI pending approve flow.
+ * @description Tests memory proposal dry-run behavior for the CLI proposal approve flow.
  */
 import "./helpers/set_test_mode.ts";
 import { assert, assertStringIncludes } from "@std/assert";
-import { MemoryStatus } from "@exaix/core/status";
+import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import { captureConsoleOutput, withTestMod } from "./helpers/test_utils.ts";
 
-Deno.test("memory pending list --eligible routes to pendingList with eligible flag", async () => {
+Deno.test("memory proposal list --eligible routes to pendingList with eligible flag", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingList = (eligible?: boolean, _format?: OutputFormat) => {
@@ -20,7 +20,7 @@ Deno.test("memory pending list --eligible routes to pendingList with eligible fl
     };
 
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "list", "--eligible"]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "list", "--eligible"]);
     });
 
     assert(called);
@@ -28,7 +28,7 @@ Deno.test("memory pending list --eligible routes to pendingList with eligible fl
   });
 });
 
-Deno.test("memory pending approve --dry-run routes to pendingApprove with dryRun true", async () => {
+Deno.test("memory proposal approve --dry-run routes to pendingApprove with dryRun true", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
     ctx.memoryCommands.pendingApprove = (proposalId?: string, dryRun?: boolean) => {
@@ -37,7 +37,7 @@ Deno.test("memory pending approve --dry-run routes to pendingApprove with dryRun
     };
 
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve", "--dry-run"]);
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--dry-run"]);
     });
 
     assert(called);

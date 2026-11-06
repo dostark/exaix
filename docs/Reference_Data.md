@@ -105,7 +105,7 @@ sequenceDiagram
         MB->>P: Write proposal.md
         MB-->>U: "Memory update pending"
 
-        U->>MB: exactl memory pending approve
+        U->>MB: exactl memory proposal approve
         MB->>G: mergeLearning(learning)
         MB->>P: archiveProposal()
     end
@@ -120,9 +120,9 @@ exactl memory
 ├── project list|show       # Project memory ops
 ├── execution list|show     # Execution history
 ├── global show|stats       # Global memory
-├── pending list|approve    # Pending updates
+├── proposal list|approve   # Pending updates
 ├── promote|demote          # Move learnings
-└── rebuild-index           # Regenerate indices
+└── index rebuild           # Regenerate indices
 ```
 
 ### Key Components

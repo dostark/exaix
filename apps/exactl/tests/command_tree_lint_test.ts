@@ -72,3 +72,8 @@ Deno.test("a seeded legacy path is reported", () => {
   );
   assertEquals(findLegacyPaths(walkCommandTree(seeded), EXACTL_RENAMES), ["blueprint ls"]);
 });
+
+Deno.test("no allow-listed compound-leaf entry remains for a plan or memory leaf", () => {
+  const remaining = allowlist["compound-leaf"].filter((path) => path.startsWith("plan ") || path.startsWith("memory "));
+  assertEquals(remaining, []);
+});

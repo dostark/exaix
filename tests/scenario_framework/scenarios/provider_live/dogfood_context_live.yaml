@@ -108,7 +108,7 @@ steps:
     type: "exactl"
     cells: ["stock-claude", "stock-opencode"]
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "stock-plan-approved"
         score_weight: 0.5
@@ -166,7 +166,7 @@ steps:
     type: "exactl"
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "cycle-plan-approved"
         score_weight: 0.5

@@ -57,3 +57,13 @@ Deno.test("the removed models, routing and config model paths name the model nou
   await assertHint(["config", "set-provider", "openai"], "exactl model use openai");
   await assertHint(["config", "set-model", "fast", "gpt-5"], "exactl config set models.<name>.model <model>");
 });
+
+Deno.test("the removed plan and memory compound paths name their grouped replacements", async () => {
+  await assertHint(["plan", "approve-all"], "exactl plan approve --all");
+  await assertHint(["plan", "amendment", "show-all"], "exactl plan amendment show --all");
+  await assertHint(["plan", "amendment", "approve-all"], "exactl plan amendment approve --all");
+  await assertHint(["memory", "pending", "list", "--eligible"], "exactl memory proposal list");
+  await assertHint(["memory", "pending", "approve-all"], "exactl memory proposal approve --all");
+  await assertHint(["memory", "delete-learning", "l-1"], "exactl memory learning remove l-1");
+  await assertHint(["memory", "rebuild-index", "--include-embeddings"], "exactl memory index rebuild");
+});

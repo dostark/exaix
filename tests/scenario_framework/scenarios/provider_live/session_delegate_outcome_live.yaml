@@ -87,7 +87,7 @@ steps:
   - id: "approve-plan"
     type: "exactl"
     command: "plan"
-    args: ["approve-all"]
+    args: ["approve", "--all"]
     output_criteria:
       - id: "plan-approved"
         score_weight: 0.5

@@ -24,6 +24,7 @@ const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const LEGACY_JOURNAL = "journal";
 const LEGACY_MEMORY = "memory";
 const LEGACY_CONFIG = "config";
+const LEGACY_PLAN = "plan";
 const USAGE_TEMPLATE_MARKER = "<";
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
@@ -49,6 +50,13 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: [LEGACY_CONFIG, "model"], canonical: "exactl model candidates" },
   { legacy: [LEGACY_CONFIG, "set-provider"], canonical: "exactl model use" },
   { legacy: [LEGACY_CONFIG, "set-model"], canonical: "exactl config set models.<name>.model <model>" },
+  { legacy: [LEGACY_PLAN, "approve-all"], canonical: "exactl plan approve --all" },
+  { legacy: [LEGACY_PLAN, "amendment", "show-all"], canonical: "exactl plan amendment show --all" },
+  { legacy: [LEGACY_PLAN, "amendment", "approve-all"], canonical: "exactl plan amendment approve --all" },
+  { legacy: [LEGACY_MEMORY, "pending"], canonical: "exactl memory proposal" },
+  { legacy: [LEGACY_MEMORY, "pending", "approve-all"], canonical: "exactl memory proposal approve --all" },
+  { legacy: [LEGACY_MEMORY, "delete-learning"], canonical: "exactl memory learning remove" },
+  { legacy: [LEGACY_MEMORY, "rebuild-index"], canonical: "exactl memory index rebuild" },
 ];
 
 /** The row whose legacy words are the longest prefix of the typed words, or null. */

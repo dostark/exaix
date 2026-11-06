@@ -7,9 +7,11 @@
  */
 
 import { Command } from "@cliffy/command";
-import { GeneralStatus, MemoryScope, RequestOperation } from "@exaix/core";
+import { MemoryScope, RequestOperation } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
+import { selectBulkTargets } from "./bulk_targets.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
   CLI_LIMIT_HELP,
@@ -19,7 +21,12 @@ import {
   CLI_OUTPUT_FORMAT_DEFAULT,
   CLI_OUTPUT_FORMAT_HELP,
   CLI_OUTPUT_FORMAT_OPTION,
+  ExaCtlSubNoun,
+  ExaCtlVerb,
 } from "../exactl_constants.ts";
+
+/** Result text that starts a failed approval. MemoryCommands reports a failure as text, not as an error. */
+const FAILED_APPROVAL_PREFIXES: readonly string[] = ["Error:", "Proposal not found:"];
 
 interface IExecutionListOptions {
   portal?: Opt<string, Reason.OptionalInput>;
@@ -46,10 +53,11 @@ function createMemoryCommand(runtime: IExaCtlRuntime) {
     const [name, child] of [
       ...addMemoryCommands1(runtime),
       ...addMemoryCommands2(runtime),
-      ...addMemoryCommands3(runtime),
       ...addMemoryCommands4(runtime),
     ]
   ) command.command(name, child);
+  command.command(ExaCtlSubNoun.LEARNING, createLearningCommand(runtime));
+  command.command(ExaCtlSubNoun.INDEX, createIndexCommand(runtime));
   return command;
 }
 
@@ -163,8 +171,32 @@ function addMemoryCommands2(runtime: IExaCtlRuntime) {
             }),
         ),
     ],
-    [
-      "rebuild-index",
+  ] as const;
+}
+
+function createLearningCommand(runtime: IExaCtlRuntime) {
+  const { memoryCommands } = runtime;
+  return new Command()
+    .description("Manage global learnings")
+    .command(
+      `${ExaCtlVerb.REMOVE} <learningId:string>`,
+      new Command()
+        .description("Soft-delete a global learning (status → deleted, retained for audit)")
+        .option(CLI_OPTION_REASON, "Deletion reason")
+        .action(async (options, ...args: string[]) => {
+          const learningId = args[0];
+          const result = await memoryCommands.deleteLearning(learningId, options.reason);
+          console.log(result);
+        }),
+    );
+}
+
+function createIndexCommand(runtime: IExaCtlRuntime) {
+  const { memoryCommands } = runtime;
+  return new Command()
+    .description("Manage memory bank search indices")
+    .command(
+      ExaCtlVerb.REBUILD,
       new Command()
         .description("Rebuild memory bank search indices")
         .option("-e, --include-embeddings", "Regenerate embedding vectors for all learnings")
@@ -174,25 +206,7 @@ function addMemoryCommands2(runtime: IExaCtlRuntime) {
           });
           console.log(result);
         }),
-    ],
-  ] as const;
-}
-
-function addMemoryCommands3(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  return [
-    [
-      "delete-learning <learningId:string>",
-      new Command()
-        .description("Soft-delete a global learning (status → deleted, retained for audit)")
-        .option(CLI_OPTION_REASON, "Deletion reason")
-        .action(async (options, ...args: string[]) => {
-          const learningId = args[0];
-          const result = await memoryCommands.deleteLearning(learningId, options.reason);
-          console.log(result);
-        }),
-    ],
-  ] as const;
+    );
 }
 
 function addMemoryCommands4(runtime: IExaCtlRuntime) {
@@ -203,7 +217,7 @@ function addMemoryCommands4(runtime: IExaCtlRuntime) {
   };
   return [
     [
-      GeneralStatus.PENDING,
+      ExaCtlSubNoun.PROPOSAL,
       new Command()
         .description("Manage pending memory update proposals")
         .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -229,14 +243,29 @@ function addMemoryCommands4(runtime: IExaCtlRuntime) {
             }),
         )
         .command(
-          "approve [proposalId:string]",
+          "approve [proposalIds...:string]",
           new Command()
-            .description("Approve a pending proposal or preview auto-approvals")
+            .description("Approve pending proposals or preview auto-approvals")
+            .option("--all", "Approve every pending proposal")
             .option("--dry-run", "Preview auto-approvable proposals without changing state")
-            .action(async (options, ...args: string[]) => {
-              const proposalId = args[0];
-              const result = await memoryCommands.pendingApprove(proposalId, !!options.dryRun);
-              console.log(result);
+            .action(async (options, ...ids: string[]) => {
+              if (options.dryRun) {
+                if (ids.length > 0 || options.all) {
+                  throw new ExaCtlError(ExaCtlExitCode.USAGE, "--dry-run takes no proposal id. Use it alone.");
+                }
+                console.log(await memoryCommands.pendingApprove(undefined, true));
+                return;
+              }
+              const targets = selectBulkTargets(ids, options.all === true, "proposal");
+              if (targets.all) {
+                console.log(await memoryCommands.pendingApproveAll());
+                return;
+              }
+              for (const proposalId of targets.ids) {
+                const result = await memoryCommands.pendingApprove(proposalId, false);
+                console.log(result);
+                if (FAILED_APPROVAL_PREFIXES.some((prefix) => result.startsWith(prefix))) break;
+              }
             }),
         )
         .command(
@@ -247,15 +276,6 @@ function addMemoryCommands4(runtime: IExaCtlRuntime) {
             .action(async (options, ...args: string[]) => {
               const proposalId = args[0];
               const result = await memoryCommands.pendingReject(proposalId, options.reason);
-              console.log(result);
-            }),
-        )
-        .command(
-          "approve-all",
-          new Command()
-            .description("Approve all pending proposals")
-            .action(async () => {
-              const result = await memoryCommands.pendingApproveAll();
               console.log(result);
             }),
         ),
