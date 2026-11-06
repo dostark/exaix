@@ -234,7 +234,7 @@ function _waitForJournalStep(id: string, eventType: string, timeoutSec: number):
   return [
     `  - id: "${id}"`,
     `    type: "exactl"`,
-    `    command: "journal"`,
+    `    command: "log"`,
     `    args: ["wait", "--event", "${eventType}", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "${timeoutSec}"]`,
     `    timeout_sec: ${timeoutSec}`,
     `    input_criteria: []`,
@@ -389,7 +389,7 @@ export function renderSweTaskTemplate(
     "",
     `  - id: "wait-for-daemon-ready"`,
     `    type: "exactl"`,
-    `    command: "journal"`,
+    `    command: "log"`,
     `    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]`,
     `    timeout_sec: 30`,
     `    input_criteria: []`,

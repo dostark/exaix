@@ -1344,7 +1344,7 @@ another model. A `default_model` that names a fallback chain keeps the choosing 
 The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
 
 ```bash
-exactl logs --filter action_type=model.resolved --format json
+exactl log list --filter action_type=model.resolved --format json
 ```
 
 ##### `exactl config model` & `exactl models` — Solo model curation (the curated model registry)
@@ -2988,8 +2988,8 @@ $ exactl request "Write the release notes" --skills release-notes
 #### **Log & Journal Commands** - Inspect the Activity Journal and cost reports
 
 ```bash
-exactl journal                    # Show last 20 events
-exactl journal --action config.updated
+exactl log list                    # Show last 20 events
+exactl log list --action config.updated
 exactl log cost                   # Aggregated cost report
 ```
 
@@ -3263,7 +3263,7 @@ The daemon computes a SHA-256 checksum of the effective Config DB at boot and pe
 exactl config validate --integrity
 
 # Check the journal for integrity events
-exactl journal --action config.integrity_verified
+exactl log list --action config.integrity_verified
 ```
 
 **Bulk editing:**
@@ -3373,29 +3373,29 @@ error. Eval reports are written to the output directory as `eval-report.json`.
 #### **Log & Journal Commands** - Query the Activity Journal
 
 Every action in Exaix is recorded in the append-only Activity Journal. The `journal`
-and `log journal` commands let you inspect this audit trail. The `log cost` command
+and `log list` commands let you inspect this audit trail. The `log cost` command
 aggregates cost data across runs.
 
 ```bash
 # Query the journal (default: last 20 events, newest first)
-exactl journal
-exactl log journal
+exactl log list
+exactl log list
 
 # Filter by action type
-exactl journal --action config.updated
-exactl journal --action config.integrity_mismatch
+exactl log list --action config.updated
+exactl log list --action config.integrity_mismatch
 
 # Filter by trace id
-exactl journal --trace-id <uuid>
+exactl log list --trace-id <uuid>
 
 # Filter by agent
-exactl journal --agent my-agent
+exactl log list --agent my-agent
 
 # Time range queries
-exactl journal --since "2026-06-01" --until "2026-06-07"
+exactl log list --since "2026-06-01" --until "2026-06-07"
 
 # Aggregation
-exactl journal --action-type plan.approved --count
+exactl log list --action-type plan.approved --count
 
 # Display cost reports
 exactl log cost
@@ -3410,16 +3410,16 @@ the daemon is ready, a flow completes, a plan is approved, and so on.
 
 ```bash
 # Block until the daemon is ready (default timeout 30s), then exit 0
-exactl journal wait --event daemon.ready
+exactl log wait --event daemon.ready
 
 # Raise the timeout
-exactl journal wait --event flow.completed --timeout 120
+exactl log wait --event flow.completed --timeout 120
 
 # Only count events timestamped after a given time (ISO datetime) — ignore earlier events
-exactl journal wait --event plan.approved --since "2026-06-01T12:00:00Z" --timeout 120
+exactl log wait --event plan.approved --since "2026-06-01T12:00:00Z" --timeout 120
 
 # Match only events whose payload contains a substring (SQL LIKE pattern)
-exactl journal wait --event model.resolved --payload "%preferred_list%"
+exactl log wait --event model.resolved --payload "%preferred_list%"
 ```
 
 The journal is the primary audit surface — every `config.set`, `plan.approved`,
@@ -3477,7 +3477,7 @@ exactl tool confirm <confirmation-id>
 exactl tool deny <confirmation-id>
 ```
 
-Pending confirmations are also visible through the journal (`exactl journal --action tool.confirmation_pending`).
+Pending confirmations are also visible through the journal (`exactl log list --action tool.confirmation_pending`).
 
 ---
 
@@ -3557,9 +3557,9 @@ exactl mcp start                          # Start MCP server for external client
 exactl mcp status                          # Check MCP server status
 
 # Activity Journal
-exactl journal --tail 20                  # View recent activity
-exactl journal --filter action_type=error # Find errors
-exactl journal --count                    # Count activities by type
+exactl log list --tail 20                  # View recent activity
+exactl log list --filter action_type=error # Find errors
+exactl log list --count                    # Count activities by type
 
 # System info and evaluation
 exactl version                            # Show binary and schema version
@@ -3581,14 +3581,14 @@ Query activity history:
 
 ```bash
 # View recent activity history
-exactl journal --tail 10
+exactl log list --tail 10
 
 # Filter by trace ID to see complete request lifecycle
-TRACE_ID=$(exactl journal --tail 1 --format json | jq -r '.[0].trace_id')
-exactl journal --filter trace_id=$TRACE_ID
+TRACE_ID=$(exactl log list --tail 1 --format json | jq -r '.[0].trace_id')
+exactl log list --filter trace_id=$TRACE_ID
 
 # Audit all errors across the system
-exactl journal --filter action_type=error
+exactl log list --filter action_type=error
 ```
 
 ### 4.5 Output Formatting
@@ -4516,7 +4516,7 @@ unset fields fall through to the blueprint default. `--preferred-provider` narro
 candidate pool and skips cross-provider scoring.
 
 Every resolution emits a `model_resolved` trace event visible via
-`exactl logs --filter model_resolved`.
+`exactl log list --filter model_resolved`.
 
 #### CLI Flags
 
@@ -5847,7 +5847,7 @@ started:
 ### 9.2 Best Practices
 
 1. **Review Plans:** Always inspect the diffs in the TUI (`exactl plan show`) before approving.
-1. **Audit Logs:** Use `exactl journal` to audit agent activity.
+1. **Audit Logs:** Use `exactl log list` to audit agent activity.
 1. **Keep Keys Private:** Never commit your `.env` or `exa.config.toml` if it contains secrets (though it shouldn't).
 
 ### 9.3 Adversarial robustness and gate-bypass attribution
@@ -5918,7 +5918,7 @@ The Activity Journal provides a permanent, searchable audit trail of all agent a
 **Usage:**
 
 ```bash
-exactl journal [options]
+exactl log list [options]
 ```
 
 **Core Options:**
@@ -5945,116 +5945,116 @@ exactl journal [options]
 
 ```bash
 # View recent system activity (last 50 entries)
-exactl journal
+exactl log list
 
 # Show only the last 10 entries
-exactl journal --tail 10
+exactl log list --tail 10
 
 # Output in JSON format for scripting
-exactl journal --format json
+exactl log list --format json
 
 # Display in table format for better readability
-exactl journal --format table
+exactl log list --format table
 ```
 
 #### Filtering by Trace ID
 
 ```bash
 # Investigate a specific request's complete lifecycle
-exactl journal --filter trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890
+exactl log list --filter trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Get the trace ID from a recent request and investigate
-TRACE_ID=$(exactl journal --tail 1 --format json | jq -r '.[0].trace_id')
-exactl journal --filter trace_id=$TRACE_ID
+TRACE_ID=$(exactl log list --tail 1 --format json | jq -r '.[0].trace_id')
+exactl log list --filter trace_id=$TRACE_ID
 ```
 
 #### Filtering by Action Type
 
 ```bash
 # Show only request creation events
-exactl journal --filter action_type=request.created
+exactl log list --filter action_type=request.created
 
 # Show all plan-related events (using wildcard)
-exactl journal --filter action_type=plan.%
+exactl log list --filter action_type=plan.%
 
 # Show all errors
-exactl journal --filter action_type=error
+exactl log list --filter action_type=error
 
 # Show blueprint operations
-exactl journal --filter action_type=blueprint.%
+exactl log list --filter action_type=blueprint.%
 ```
 
 #### Filtering by Agent
 
 ```bash
 # Show activity for a specific agent
-exactl journal --filter agent_role=security-auditor
+exactl log list --filter agent_role=security-auditor
 
 # Show activity for mock agents (using wildcard)
-exactl journal --filter agent_role=mock-%
+exactl log list --filter agent_role=mock-%
 ```
 
 #### Time-Based Filtering
 
 ```bash
 # Show activity since a specific date
-exactl journal --filter since=2024-01-01
+exactl log list --filter since=2024-01-01
 
 # Show activity since a specific datetime
-exactl journal --filter since=2024-01-01T10:00:00
+exactl log list --filter since=2024-01-01T10:00:00
 
 # Show recent activity (last hour)
-exactl journal --filter since=$(date -d '1 hour ago' +%Y-%m-%dT%H:%M:%S)
+exactl log list --filter since=$(date -d '1 hour ago' +%Y-%m-%dT%H:%M:%S)
 ```
 
 #### Payload Pattern Matching
 
 ```bash
 # Search for activities containing specific text in payload
-exactl journal --payload %security%
+exactl log list --payload %security%
 
 # Check for potential credential leaks
-exactl journal --payload %password%
-exactl journal --payload %api_key%
-exactl journal --payload %secret%
+exactl log list --payload %password%
+exactl log list --payload %api_key%
+exactl log list --payload %secret%
 
 # Find token usage information
-exactl journal --payload %tokens%
+exactl log list --payload %tokens%
 
 # Search for cost-related activities
-exactl journal --payload %cost%
+exactl log list --payload %cost%
 ```
 
 #### Aggregation and Analysis
 
 ```bash
 # Count total activities by action type
-exactl journal --count
+exactl log list --count
 
 # Get distinct list of all agents that have performed actions
-exactl journal --distinct agent_role
+exactl log list --distinct agent_role
 
 # Get distinct list of all action types
-exactl journal --distinct action_type
+exactl log list --distinct action_type
 
 # Get distinct actors (users who performed actions)
-exactl journal --distinct actor
+exactl log list --distinct actor
 ```
 
 #### Advanced Multi-Filter Queries
 
 ```bash
 # Combine multiple filters: errors from specific agent since date
-exactl journal --filter action_type=error --filter agent_role=security-auditor --filter since=2024-01-01
+exactl log list --filter action_type=error --filter agent_role=security-auditor --filter since=2024-01-01
 
 # Find all failed actions for a specific trace
-exactl journal --filter trace_id=$TRACE_ID --filter action_type=action.failed
+exactl log list --filter trace_id=$TRACE_ID --filter action_type=action.failed
 
 # Security audit: check for dangerous commands executed
-exactl journal --filter action_type=action.executing --payload %rm% --payload %sudo%
+exactl log list --filter action_type=action.executing --payload %rm% --payload %sudo%
 
 # Performance analysis: find slow operations
-exactl journal --payload %timeout% --payload %error%
+exactl log list --payload %timeout% --payload %error%
 ```
 
 #### Real-World Use Cases
@@ -6063,10 +6063,10 @@ exactl journal --payload %timeout% --payload %error%
 
 ```bash
 # Find the trace ID of a failed request
-FAILED_TRACE=$(exactl journal --filter action_type=request.failed --tail 1 --format json | jq -r '.[0].trace_id')
+FAILED_TRACE=$(exactl log list --filter action_type=request.failed --tail 1 --format json | jq -r '.[0].trace_id')
 
 # Investigate the complete failure chain
-exactl journal --filter trace_id=$FAILED_TRACE
+exactl log list --filter trace_id=$FAILED_TRACE
 ```
 
 For provider request diagnostics, set `log_level = "debug"` in your existing `[system]`
@@ -6076,46 +6076,46 @@ headers are excluded; request bodies can contain prompts and tool results. Provi
 the compatible profile suppress both request and response body dumps.
 
 ```bash
-exactl journal --filter action_type=provider.request_debug_dump --tail 10 --format json
+exactl log list --filter action_type=provider.request_debug_dump --tail 10 --format json
 ```
 
 **Security Auditing:**
 
 ```bash
 # Check for unauthorized file access attempts
-exactl journal --payload %permission%denied% --payload %access%denied%
+exactl log list --payload %permission%denied% --payload %access%denied%
 
 # Audit all portal access
-exactl journal --filter action_type=portal.% --tail 100
+exactl log list --filter action_type=portal.% --tail 100
 
 # Check for sensitive data in logs
-exactl journal --payload %password% --payload %key% --payload %secret% | wc -l
+exactl log list --payload %password% --payload %key% --payload %secret% | wc -l
 ```
 
 **Performance Monitoring:**
 
 ```bash
 # Count requests by agent over time
-exactl journal --filter action_type=request.created --distinct agent_role
+exactl log list --filter action_type=request.created --distinct agent_role
 
 # Find most active time periods
-exactl journal --count --filter since=$(date -d '7 days ago' +%Y-%m-%d)
+exactl log list --count --filter since=$(date -d '7 days ago' +%Y-%m-%d)
 
 # Monitor token usage trends
-exactl journal --payload %tokens% --tail 100 --format json | jq '.[] | .payload.tokens.total // 0' | paste -sd+ | bc
+exactl log list --payload %tokens% --tail 100 --format json | jq '.[] | .payload.tokens.total // 0' | paste -sd+ | bc
 ```
 
 **Compliance and Reporting:**
 
 ```bash
 # Export all activities for a specific month to JSON
-exactl journal --filter since=2024-01-01 --filter since=2024-02-01 --format json > january_activities.json
+exactl log list --filter since=2024-01-01 --filter since=2024-02-01 --format json > january_activities.json
 
 # Generate audit report for specific agent
-exactl journal --filter agent_role=production-agent --format json > production_audit.json
+exactl log list --filter agent_role=production-agent --format json > production_audit.json
 
 # Count human approvals vs automated actions
-exactl journal --filter action_type=plan.approved --count
+exactl log list --filter action_type=plan.approved --count
 ```
 
 #### Power User: Direct SQL Access
@@ -6166,7 +6166,7 @@ cp ~/Exaix/.exa/journal.db ~/backups/journal_$(date +%Y%m%d).db
 > **This is a Team/Enterprise Edition feature.** The command is present only in Team/Enterprise
 > `exactl` builds; a Solo build's compiled help and command graph never mention it.
 
-`exactl journal export-otel <trace-id>` projects one journal trace into OTLP/HTTP JSON spans a
+`exactl log export-otel <trace-id>` projects one journal trace into OTLP/HTTP JSON spans a
 Phoenix instance, an OpenTelemetry Collector, or any other `/v1/traces` receiver can consume. It is
 explicit and read-only: there is no `enabled` flag, no background exporter, and no change to what
 the journal itself records — invoking the command is the only opt-in, and it never writes to the
@@ -6175,7 +6175,7 @@ selected records.
 **Usage:**
 
 ```bash
-exactl journal export-otel <trace-id> [--eval-run-id <id>] [--stdout]
+exactl log export-otel <trace-id> [--eval-run-id <id>] [--stdout]
 ```
 
 | Option               | Description                                                        |
@@ -6185,13 +6185,13 @@ exactl journal export-otel <trace-id> [--eval-run-id <id>] [--stdout]
 
 ```bash
 # Export a trace to the endpoint configured in [otel_export] (default: a local Collector on :4318)
-exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890
+exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Attach one specific evaluation outcome
-exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --eval-run-id run-042
+exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --eval-run-id run-042
 
 # Preview the OTLP payload without sending it anywhere
-exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --stdout
+exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --stdout
 ```
 
 Without `--eval-run-id`, the export attaches an evaluation outcome only when exactly one eval run
@@ -6218,7 +6218,7 @@ results, error text, and file paths never leave the export.
 **Troubleshooting:**
 
 - `TRACE_NOT_FOUND` — no journal record carries that exact `trace_id`. Check the ID with
-  `exactl journal --filter trace_id=<id>` first.
+  `exactl log list --filter trace_id=<id>` first.
 - `AMBIGUOUS_EVAL_OUTCOME` — more than one eval run matched the trace; the error lists the
   candidate run IDs, pass one explicitly with `--eval-run-id`.
 - `UNSUPPORTED_ENDPOINT_SCHEME` / `UNSAFE_ENDPOINT_COMPONENT` / `INSECURE_NON_LOOPBACK_ENDPOINT` —
@@ -6235,9 +6235,9 @@ Full span mapping, identity derivation, and privacy-attribute allowlist:
 
 Exaix provides comprehensive cost tracking and budget management for AI provider usage. This feature helps you monitor spending, set limits, and optimize your AI usage costs.
 
-## exactl cost
+## exactl log cost
 
-Use `exactl cost` to inspect persisted provider calls. Add `--group-by model` or
+Use `exactl log cost` to inspect persisted provider calls. Add `--group-by model` or
 `--group-by portal` for per-group call counts, prompt/completion tokens,
 cache-read/cache-creation tokens, and total USD cost. The same view is available
 as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace-id`, and
@@ -6245,8 +6245,8 @@ as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace-id`, and
 existing per-call table and totals.
 
 ```bash
-exactl cost --group-by model
-exactl cost --group-by portal --since 2026-09-01
+exactl log cost --group-by model
+exactl log cost --group-by portal --since 2026-09-01
 ```
 
 `--group-by role` reports that role attribution is not available in this build.
@@ -6339,13 +6339,13 @@ Query cost information through the Activity Journal:
 
 ```bash
 # View recent cost-related activities
-exactl journal --payload %cost% --tail 10
+exactl log list --payload %cost% --tail 10
 
 # Find high-cost operations
-exactl journal --payload %tokens% --tail 20 --format json | jq '.[] | select(.payload.cost > 1.0)'
+exactl log list --payload %tokens% --tail 20 --format json | jq '.[] | select(.payload.cost > 1.0)'
 
 # Daily cost summary (requires external processing)
-exactl journal --filter since=$(date +%Y-%m-%d) --payload %cost% --format json > daily_costs.json
+exactl log list --filter since=$(date +%Y-%m-%d) --payload %cost% --format json > daily_costs.json
 ```
 
 ### 11.5 Cost Optimization Tips

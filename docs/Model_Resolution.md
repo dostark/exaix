@@ -34,7 +34,7 @@ Exaix turns that into exactly one concrete choice and records why. You can alway
 "why did it pick that?" after the fact:
 
 ```bash
-exactl logs --filter action_type=model.resolved --format json
+exactl log list --filter action_type=model.resolved --format json
 ```
 
 ## 2. How the choice gets made
@@ -197,7 +197,7 @@ Journal, along with the Team-specific events above (a model added to your catalo
 routing decision, a cost mismatch, and so on). The one query worth remembering:
 
 ```bash
-exactl logs --filter action_type=model.resolved --format json
+exactl log list --filter action_type=model.resolved --format json
 ```
 
 If a choice ever looks wrong, this is where to start — it shows exactly what Exaix

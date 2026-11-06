@@ -56,7 +56,7 @@ steps:
   # an environment whose CLI cannot load a provider credential still runs the request.
   - id: await-flow
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 25
     continue_on_failure: true

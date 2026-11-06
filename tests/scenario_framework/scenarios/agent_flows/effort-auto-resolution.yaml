@@ -25,7 +25,7 @@ steps:
 
   - id: "wait-for-daemon-ready"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
@@ -50,7 +50,7 @@ steps:
 
   - id: "wait-effort-heuristic"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []
@@ -91,7 +91,7 @@ steps:
 
   - id: "wait-for-daemon-ready-native"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
@@ -116,7 +116,7 @@ steps:
 
   - id: "wait-effort-native"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []
@@ -206,7 +206,7 @@ steps:
 
   - id: "wait-for-daemon-ready-flow"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
@@ -225,7 +225,7 @@ steps:
 
   - id: "wait-flow-completed"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "flow.completed", "--since-rowid", "$STEP_BASELINE", "--timeout", "600"]
     timeout_sec: 600
     input_criteria: []
@@ -293,7 +293,7 @@ steps:
 
   - id: "wait-effort-skill-floor"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []

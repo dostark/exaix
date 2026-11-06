@@ -41,7 +41,7 @@ steps:
         contains: [daemon.started]
   - id: await-terminal
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
     timeout_sec: 35
     output_criteria:

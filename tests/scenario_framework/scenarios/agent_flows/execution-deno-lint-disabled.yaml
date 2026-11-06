@@ -70,7 +70,7 @@ steps:
 
   - id: "wait-for-execution"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "execution.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 150
     output_criteria:

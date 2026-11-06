@@ -8,11 +8,6 @@
 
 import { UIOutputFormat } from "@exaix/tui";
 
-/** The name of each subcommand of the journal command. */
-export enum ExaCtlJournalSubcommand {
-  WAIT = "wait",
-}
-
 /** The name of each exactl command that hangs directly under the root command. */
 export enum ExaCtlCommandName {
   REQUEST = "request",
@@ -29,10 +24,7 @@ export enum ExaCtlCommandName {
   MEMORY = "memory",
   DASHBOARD = "dashboard",
   MCP = "mcp",
-  JOURNAL = "journal",
-  COST = "cost",
   LOG = "log",
-  LOGS = "logs",
   MODELS = "models",
   VERSION = "version",
   MIGRATE = "migrate",

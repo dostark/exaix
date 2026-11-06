@@ -1,7 +1,7 @@
 /**
  * @module JournalVerifyCommandTest
  * @path apps/exactl/tests/journal_verify_command_test.ts
- * @description Verifies `exactl journal verify`: exit 0 on an intact chain, exit 1 on a
+ * @description Verifies `exactl log verify`: exit 0 on an intact chain, exit 1 on a
  *   tampered row, and an integrity event journalled with a trace id.
  */
 
@@ -10,7 +10,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { createStubConfig, createStubContext, initTestDbService } from "@exaix/testing";
 import { JournalCommands } from "../src/commands/journal_commands.ts";
 
-Deno.test("security: journal verify exit code is 0 for an intact chain and 1 for a broken link", async () => {
+Deno.test("security: log verify exit code is 0 for an intact chain and 1 for a broken link", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const cmd = new JournalCommands(createStubContext({ config: createStubConfig(config), db }));
@@ -36,7 +36,7 @@ Deno.test("security: journal verify exit code is 0 for an intact chain and 1 for
   }
 });
 
-Deno.test("security: journal verify reports an unhashed prefix without failing", async () => {
+Deno.test("security: log verify reports an unhashed prefix without failing", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const cmd = new JournalCommands(createStubContext({ config: createStubConfig(config), db }));

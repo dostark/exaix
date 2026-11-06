@@ -7,7 +7,7 @@
  *   one scheduler refresh cycle (refresh_on_start) admits stub catalog entries, and a
  *   structured-plan execution for an agent role with `characteristics: ["best"]` resolves
  *   via ModelResolver with `reason: "best_ranked"` — all asserted via the Activity
- *   Journal on the real daemon lifecycle (`exactl logs` reads the same table).
+ *   Journal on the real daemon lifecycle (`exactl log list` reads the same table).
  *
  *   This test exists only because three production gaps were found and fixed while
  *   building it (Phase 135 Step 9, GAP-C9):

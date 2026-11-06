@@ -45,9 +45,8 @@ export interface IExecuteScenarioStepOptions {
   // share one sandbox workspace, so a `wait-for-file` step can be satisfied INSTANTLY by a stale
   // match from an earlier scenario's artefact. Set to the scenario's start time; omit to accept any match.
   artifactBaselineMs?: number;
-  // Journal rowid floor a `journal wait --since $JOURNAL_BASELINE` barrier counts from. Capturing
-  // it at wait-start can miss an event the PRECEDING step already produced (e.g. `daemon start`
-  // journalling `daemon.ready` before the wait begins); pass the rowid captured before that step ran.
+  // Journal rowid floor for a `log wait` barrier. Pass the rowid captured before the preceding step.
+  // A baseline taken at wait-start misses an event that step already journalled.
   journalBaselineRowid?: number;
   // The SCENARIO's journal rowid baseline (captured at scenario start), not the per-step barrier
   // baseline — used to resolve `$TRACE_ID`/`$REQUEST_ID` to the CURRENT scenario's request. A

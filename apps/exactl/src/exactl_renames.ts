@@ -21,12 +21,22 @@ export const MAX_HINT_ECHO_CHARS = 200;
 const SINGLE_QUOTE = "'";
 const ESCAPED_SINGLE_QUOTE = `'\\''`;
 const CONTROL_CHARACTERS = /\p{Cc}/gu;
+const LEGACY_JOURNAL = "journal";
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: ["blueprint", "agent-role"], canonical: "exactl blueprint" },
   { legacy: ["blueprint", "ls"], canonical: "exactl blueprint list" },
   { legacy: ["blueprint", "rm"], canonical: "exactl blueprint remove" },
+  { legacy: [LEGACY_JOURNAL], canonical: "exactl log list" },
+  { legacy: ["logs"], canonical: "exactl log list" },
+  { legacy: ["log", LEGACY_JOURNAL], canonical: "exactl log list" },
+  { legacy: [LEGACY_JOURNAL, "wait"], canonical: "exactl log wait" },
+  { legacy: ["log", LEGACY_JOURNAL, "wait"], canonical: "exactl log wait" },
+  { legacy: [LEGACY_JOURNAL, "verify"], canonical: "exactl log verify" },
+  { legacy: ["log", LEGACY_JOURNAL, "verify"], canonical: "exactl log verify" },
+  { legacy: ["cost"], canonical: "exactl log cost" },
+  { legacy: [LEGACY_JOURNAL, "export-otel"], canonical: "exactl log export-otel" },
 ];
 
 /** The row whose legacy words are the longest prefix of the typed words, or null. */

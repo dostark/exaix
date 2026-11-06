@@ -60,7 +60,7 @@ steps:
 
   - id: "wait-for-react-step"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "flow.step.started", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
@@ -85,7 +85,7 @@ steps:
 
   - id: "wait-for-query-symbols"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "dynamic_tool_call", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120
     output_criteria:

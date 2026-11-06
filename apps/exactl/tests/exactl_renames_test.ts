@@ -63,3 +63,26 @@ Deno.test("quoteForShell neutralizes quotes, $(…), backticks, newlines and con
   const long = "a".repeat(MAX_HINT_ECHO_CHARS + 10);
   assertEquals(quoteForShell(long), `'${"a".repeat(MAX_HINT_ECHO_CHARS)}'`);
 });
+
+Deno.test("the journal paths map to log paths", () => {
+  const expected: Array<[string[], string]> = [
+    [["journal"], "exactl log list"],
+    [["logs"], "exactl log list"],
+    [["log", "journal"], "exactl log list"],
+    [["journal", "wait"], "exactl log wait"],
+    [["log", "journal", "wait"], "exactl log wait"],
+    [["journal", "verify"], "exactl log verify"],
+    [["log", "journal", "verify"], "exactl log verify"],
+    [["cost"], "exactl log cost"],
+    [["journal", "export-otel"], "exactl log export-otel"],
+  ];
+  for (const [legacy, canonical] of expected) {
+    assertEquals(findRename(legacy)?.canonical, canonical, legacy.join(" "));
+  }
+});
+
+Deno.test("a valid log path is not a rename", () => {
+  for (const typed of [["log"], ["log", "list"], ["log", "wait"], ["log", "verify"], ["log", "cost"]]) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});

@@ -81,7 +81,7 @@ steps:
   # Block on `daemon.ready`, which the daemon process emits only after every watcher is confirmed listening. It is distinct from the CLI's daemon.started.
   - id: "wait-for-daemon-ready"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []

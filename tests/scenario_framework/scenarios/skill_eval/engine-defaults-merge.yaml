@@ -36,7 +36,7 @@ steps:
   # `skills.match_completed` reports only the matching stage, which this pinned request skips, so it could never show the merge.
   - id: "wait-for-match"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "skills.resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:

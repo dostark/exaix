@@ -330,7 +330,7 @@ Exaix uses a **tiered database architecture** aligned with edition requirements:
 | **Enterprise** 🟣 | PostgreSQL + immudb      | WORM-compliant, cryptographically verified     |
 
 The Solo SQLite journal carries a SHA-256 hash chain: every activity row stores `prev_hash`
-and `row_hash`, so an edit or deletion is detectable. `exactl journal verify` walks the
+and `row_hash`, so an edit or deletion is detectable. `exactl log verify` walks the
 chain in rowid order, exits `1` on the first broken link, and emits
 `journal.integrity.verified` / `journal.integrity.failed`. Rows written before the chain
 existed are reported as an unverifiable prefix rather than a failure. The chain makes

@@ -42,7 +42,7 @@ steps:
 
   - id: "wait-for-flow-completed"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120
     input_criteria: []

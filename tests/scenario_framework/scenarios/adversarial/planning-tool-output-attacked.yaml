@@ -40,7 +40,7 @@ steps:
 
   - id: "wait-for-daemon-ready"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria: []

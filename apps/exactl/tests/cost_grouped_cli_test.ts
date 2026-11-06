@@ -12,7 +12,7 @@ import { CostCommands } from "../src/commands/cost_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
 
-Deno.test("exactl cost --group-by model renders totals from provider_costs", async () => {
+Deno.test("exactl log cost --group-by model renders totals from provider_costs", async () => {
   const { db, cleanup } = await createCliTestContext();
   try {
     const tracker = new CostTracker(db);
@@ -41,7 +41,7 @@ Deno.test("exactl cost --group-by model renders totals from provider_costs", asy
       const originalLog = console.log;
       console.log = (...args) => output.push(args.join(" "));
       try {
-        await mod.__test_command.parse(["cost", "--group-by", "model"]);
+        await mod.__test_command.parse(["log", "cost", "--group-by", "model"]);
       } finally {
         console.log = originalLog;
       }
@@ -110,7 +110,7 @@ Deno.test("[security] cost grouping rejects unknown dimensions before querying",
   }
 });
 
-Deno.test("exactl cost --group-by model reports persisted request cardinality, not row count (GAP-13)", async () => {
+Deno.test("exactl log cost --group-by model reports persisted request cardinality, not row count (GAP-13)", async () => {
   const { context, db, cleanup } = await createCliTestContext();
   try {
     const tracker = new CostTracker(db);

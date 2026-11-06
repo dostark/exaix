@@ -2,7 +2,7 @@
  * @module AgentStatusResolvedModel
  * @path apps/tui/src/agent_status/resolved_model.ts
  * @description Phase 132 GAP-10 — derive the resolved provider:model for an agent from
- *   the journaled `model.resolved` entries (the same event `exactl logs --filter
+ *   the journaled `model.resolved` entries (the same event `exactl log list --filter
  *   model_resolved` surfaces). The TUI is barred from importing execution services
  *   (boundary rule), so it reads the journal event instead.
  * @architectural-layer TUI

@@ -3,7 +3,7 @@
  * @path apps/exactl/tests/journal_wait_command_test.ts
  * @related-files []
  * @architectural-layer CLI
- * @description Tests for `exactl journal wait` — a readiness barrier that polls the activity
+ * @description Tests for `exactl log wait` — a readiness barrier that polls the activity
  *   journal until a matching event appears above a rowid baseline (or times out). Used by
  *   scenario steps to replace the framework's wait-for-journal-event step type.
  */
@@ -29,7 +29,7 @@ async function currentMaxRowid(db: Awaited<ReturnType<typeof initTestDbService>>
 }
 
 Deno.test({
-  name: "journal wait returns when the event is present above the baseline",
+  name: "log wait returns when the event is present above the baseline",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -51,7 +51,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait --since (ISO timestamp) counts events timestamped after it",
+  name: "log wait --since (ISO timestamp) counts events timestamped after it",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -73,7 +73,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait --since (ISO timestamp) ignores events timestamped at or before it",
+  name: "log wait --since (ISO timestamp) ignores events timestamped at or before it",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -95,7 +95,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait ignores events at or below the sinceRowid baseline (times out)",
+  name: "log wait ignores events at or below the sinceRowid baseline (times out)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -115,7 +115,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait times out when the event never appears",
+  name: "log wait times out when the event never appears",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -134,7 +134,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait --event (repeated) matches on the first event that appears",
+  name: "log wait --event (repeated) matches on the first event that appears",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -162,7 +162,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait --event (repeated) times out when none of the events appear",
+  name: "log wait --event (repeated) times out when none of the events appear",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -188,7 +188,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait without an event is rejected",
+  name: "log wait without an event is rejected",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -197,7 +197,7 @@ Deno.test({
       const result = await expectExitWithLogs(
         () => (waitCommand(db, config).wait({ timeout: 1 } as IJournalWaitOptions)),
       );
-      assertStringIncludes(result.errors.join("\n"), "requires --event");
+      assertStringIncludes(result.errors.join("\n"), "log wait requires --event");
     } finally {
       await cleanup();
     }

@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 # Asserts the exaix_* domain tools themselves. The previous version drove `exactl request`
-# and `exactl journal` from the CLI — a different surface from the tools it is tagged for,
+# and `exactl log list` from the CLI — a different surface from the tools it is tagged for,
 # so a broken exaix_create_request handler would not have failed this scenario.
 id: "tools-domain-operations"
 title: "Domain tools — create_request, list_plans, query_journal through the MCP server"

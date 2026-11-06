@@ -838,7 +838,7 @@ exactl eval report --view interactive
 Unlike every pack above, OTel export (Phase 177) is **not a scenario-runner flag** — there is no
 `--otel-export` option on `main.ts` and no scenario tag that triggers it. It is a separate,
 explicit **Team/Enterprise-only CLI action** run after a scenario (or any other request) has
-already produced journal evidence: `exactl journal export-otel <trace-id>` projects that one
+already produced journal evidence: `exactl log export-otel <trace-id>` projects that one
 trace's supported journal rows into OTLP/HTTP JSON spans a Phoenix instance or an OpenTelemetry
 Collector can ingest. Full methodology — the span mapping, identity derivation, privacy allowlist,
 and eval-outcome join — is in `docs/Exaix_Evaluation.md` §20; this section covers only how it
@@ -860,10 +860,10 @@ note.
 ```bash
 # 1. Run a scenario (or any request) normally and capture its trace ID
 exactl eval run --pack agent_flows --tag smoke
-TRACE_ID=$(exactl journal --filter action_type=llm.call.completed --tail 1 --format json | jq -r '.[0].trace_id')
+TRACE_ID=$(exactl log list --filter action_type=llm.call.completed --tail 1 --format json | jq -r '.[0].trace_id')
 
 # 2. (Compiled Team CLI only) point [otel_export] at a real receiver, then export
-exactl journal export-otel "$TRACE_ID" --eval-run-id <run-id>
+exactl log export-otel "$TRACE_ID" --eval-run-id <run-id>
 
 # 3. Record redacted evidence: the invocation (with any secret/endpoint redacted), the receiver's
 #    config and version, the resolved OTel trace ID, and the spans/attributes it reported — see
@@ -953,7 +953,7 @@ steps:
   `--wait` barrier first.** The delegate's `return.json` lands on disk before the
   reconciler commits the corresponding `session.delegate.*` journal row, so a
   `trace_scoped` journal-assert immediately after the FS poll is a race and can
-  legitimately return `[]` on a correct run. Insert `exactl journal wait --event
+  legitimately return `[]` on a correct run. Insert `exactl log wait --event
   <reconciler-committed-event> --since-rowid $JOURNAL_BASELINE` before the assert (see
   `scenarios/provider_live/session_delegate_outcome_live.yaml`'s `wait-for-reconcile`
   step), and add a drift-guard test pinning the barrier precedes every trace-scoped assert.

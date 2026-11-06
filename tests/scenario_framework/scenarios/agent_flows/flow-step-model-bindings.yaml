@@ -33,7 +33,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE"]
   - id: await-config-fixture
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -59,7 +59,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE"]
   - id: await-config-mock
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -73,7 +73,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/broad.json"]
   - id: await-broad-overlay
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -83,7 +83,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --bind, "flow:binding-split/step:compose=service=compat-fixture"]
   - id: await-pinned-refusal
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, binding.rejected, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -113,7 +113,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE"]
   - id: await-daemon-overlay
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -138,7 +138,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --locked, "$WORKSPACE_ROOT/.exa/fifth.lock.json"]
   - id: await-locked-replay
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
@@ -163,7 +163,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --locked, "$WORKSPACE_ROOT/.exa/first.lock.json"]
   - id: await-drifted-replay
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, binding.rejected, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 

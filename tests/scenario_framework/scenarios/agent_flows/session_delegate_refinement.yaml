@@ -77,7 +77,7 @@ steps:
   # The preceding wait gates on existence, so this barrier waits for the reconcile itself.
   - id: "wait-for-delegate-reconciled"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:

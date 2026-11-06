@@ -28,7 +28,7 @@ steps:
       - { id: retry-submitted, kind: command-exit-code, equals: 0 }
   - id: await-retry-failure
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
     timeout_sec: 35
     output_criteria:
@@ -62,7 +62,7 @@ steps:
       - { id: malformed-submitted, kind: command-exit-code, equals: 0 }
   - id: await-rejection
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
     timeout_sec: 35
     output_criteria:

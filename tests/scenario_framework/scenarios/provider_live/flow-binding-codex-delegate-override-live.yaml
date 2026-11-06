@@ -45,7 +45,7 @@ steps:
         score_weight: 0.1
   - id: await-flow
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "360"]
     timeout_sec: 360
     output_criteria:

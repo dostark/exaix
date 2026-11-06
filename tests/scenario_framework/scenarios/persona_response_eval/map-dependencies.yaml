@@ -65,7 +65,7 @@ steps:
           - daemon.restarted
   - id: wait-for-daemon-ready
     type: exactl
-    command: journal
+    command: log
     args:
       - wait
       - --event
@@ -105,7 +105,7 @@ steps:
         score_weight: 0.15
   - id: wait-for-accepted-plan
     type: exactl
-    command: journal
+    command: log
     args:
       - wait
       - --event

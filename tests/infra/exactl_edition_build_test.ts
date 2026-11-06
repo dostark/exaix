@@ -26,8 +26,8 @@ async function ensureEditionBuild(edition: "solo" | "team", binary: string): Pro
   assertEquals(output.code, 0, new TextDecoder().decode(output.stderr));
 }
 
-async function journalHelp(binary: string): Promise<string> {
-  const output = await new Deno.Command(binary, { args: ["journal", "--help"], stdout: "piped", stderr: "piped" })
+async function logHelp(binary: string): Promise<string> {
+  const output = await new Deno.Command(binary, { args: ["log", "--help"], stdout: "piped", stderr: "piped" })
     .output();
   assertEquals(output.code, 0, new TextDecoder().decode(output.stderr));
   return new TextDecoder().decode(output.stdout);
@@ -37,8 +37,8 @@ Deno.test("compiled exactl editions isolate the Team OTel command by graph and d
   await ensureEditionBuild("solo", SOLO_BINARY);
   await ensureEditionBuild("team", TEAM_BINARY);
 
-  const soloHelp = await journalHelp(SOLO_BINARY);
-  const teamHelp = await journalHelp(TEAM_BINARY);
+  const soloHelp = await logHelp(SOLO_BINARY);
+  const teamHelp = await logHelp(TEAM_BINARY);
   assertFalse(soloHelp.includes("export-otel"));
   assertStringIncludes(teamHelp, "export-otel");
 

@@ -2,7 +2,7 @@
  * @module CodexCacheTokensIntegrationTest
  * @path tests/integration/codex_cache_tokens_test.ts
  * @description Replays verbatim live Codex exec JSONL through the daemon's provider
- * wrappers into dedicated SQLite cache columns and the exactl cost report.
+ * wrappers into dedicated SQLite cache columns and the exactl log cost report.
  * @architectural-layer Integration
  * @related-files [packages/ai-clidelegate/src/cli_delegate_model_provider.ts, packages/ai/src/traced_provider.ts, packages/ai/src/rate_limited_provider.ts, apps/exactl/src/commands/cost_commands.ts]
  */
@@ -26,7 +26,7 @@ interface ICodexCacheActivityRow {
   cache_creation_tokens: number | null;
 }
 
-Deno.test("[Codex cache tokens] live exec JSONL survives provider wrappers, dedicated activity columns and exactl cost", async () => {
+Deno.test("[Codex cache tokens] live exec JSONL survives provider wrappers, dedicated activity columns and exactl log cost", async () => {
   const stdout: string = await Deno.readTextFile(
     new URL("./fixtures/codex-cache-tokens/exec.jsonl", import.meta.url),
   );

@@ -399,7 +399,7 @@ The most common step type. Runs `exactl <command> <args>` against the workspace 
 ```
 
 Examples: `exactl request --agent-role <id> --plan-only --file $REQUEST_FIXTURE`,
-`exactl review approve $REQUEST_ID`, `exactl journal wait --event daemon.ready --since-rowid $JOURNAL_BASELINE`,
+`exactl review approve $REQUEST_ID`, `exactl log wait --event daemon.ready --since-rowid $JOURNAL_BASELINE`,
 `exactl flow validate <flow-id>`.
 
 ### 5.2 `wait-for-file` — poll until a file appears (or timeout)
@@ -624,7 +624,7 @@ Requires `instructions`; pauses the run (in `manual-checkpoint` mode) for human 
 - **`shell`** — forbidden. Every `type: shell` step is a validator violation
   (`deno task check:scenario-declarative`); migrate to typed steps.
 - **`wait-for-journal-event`** — retired in favor of
-  `exactl journal wait --event <type> --since-rowid $JOURNAL_BASELINE`.
+  `exactl log wait --event <type> --since-rowid $JOURNAL_BASELINE`.
 - **`wait-for-status`, `wait-for-json-field`, `frontmatter-assert`, `cleanup`** — reserved
   `ScenarioStepType` enum entries with no scenario usage and no dedicated executor; the
   executor treats them as criteria-only virtual steps. Don't author new scenarios with them.
@@ -775,7 +775,7 @@ steps:
 
   - id: "wait-for-daemon-ready"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
 
   - id: "submit-request"

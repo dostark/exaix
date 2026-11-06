@@ -25,7 +25,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --portal, sample-ts-project]
   - id: await-flow
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "240"]
     timeout_sec: 260
     output_criteria:

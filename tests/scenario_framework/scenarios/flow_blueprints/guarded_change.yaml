@@ -32,7 +32,7 @@ steps:
         equals: 0
   - id: await-terminal
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "90"]
     timeout_sec: 95
     output_criteria:

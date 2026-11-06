@@ -896,7 +896,7 @@ async function loadJournalFromCli(options: IEvaluateCriterionOptions): Promise<I
   const exactl = options.exactlExecutable || "exactl";
   try {
     const command = new Deno.Command(exactl, {
-      args: ["journal", "--format", "json", "-n", "200"],
+      args: ["log", "list", "--format", "json", "-n", "200"],
       stdout: "piped",
       stderr: "piped",
       env: options.env,

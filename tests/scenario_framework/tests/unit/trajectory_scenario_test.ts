@@ -59,7 +59,7 @@ Deno.test("[TrajectoryScenario] live partial-credit control captures a completed
   const submit = scenario.steps.find((step) => step.id === "submit-request");
   const barrier = scenario.steps.find((step) => step.id === "await-flow");
   assertEquals(submit?.command, "request");
-  assertEquals(barrier?.command, "journal");
+  assertEquals(barrier?.command, "log");
   assert(barrier?.args?.includes("flow.completed"));
   const full = scenario.steps.find((step) => step.id === "assert-tool-selection");
   const partial = scenario.steps.find((step) => step.id === "assert-partial-control");

@@ -48,12 +48,7 @@ import { buildEvalCommand } from "./command_builders/eval_command.ts";
 import type { IExaCtlRuntime } from "./exactl_runtime.ts";
 import { ExaCtlCommandName } from "./exactl_constants.ts";
 import { handleExaCtlError } from "./exactl_error_handler.ts";
-import {
-  buildCostCommand,
-  buildJournalCommand,
-  buildLogCommand,
-  buildLogsCommand,
-} from "./command_builders/log_command.ts";
+import { buildLogCommand } from "./command_builders/log_command.ts";
 
 export interface IExaCtlCommandOptions {
   registerEditionCommands?: (root: typeof baseCommand, context: ICliApplicationContext) => void;
@@ -269,13 +264,8 @@ const baseCommand: ExaCtlBaseCommand = new Command()
     buildMcpCommand(runtime),
   );
 
-const journalCommand = buildJournalCommand(runtime);
-
 baseCommand
-  .command(ExaCtlCommandName.COST, buildCostCommand(runtime))
-  .command(ExaCtlCommandName.LOG, buildLogCommand(journalCommand, buildCostCommand(runtime)))
-  .command(ExaCtlCommandName.LOGS, buildLogsCommand(runtime))
-  .command(ExaCtlCommandName.JOURNAL, journalCommand)
+  .command(ExaCtlCommandName.LOG, buildLogCommand(runtime))
   .command(ExaCtlCommandName.MODELS, buildModelsCommand(runtime))
   .command(ExaCtlCommandName.VERSION, buildVersionCommand(runtime))
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))

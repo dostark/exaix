@@ -71,7 +71,7 @@ steps:
   # this point, so the wait targets prompt assembly rather than a produced plan.
   - id: "wait-for-prompt-assembled"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "agent.prompt_assembled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     input_criteria: []

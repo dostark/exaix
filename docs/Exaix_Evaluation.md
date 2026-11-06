@@ -1786,7 +1786,7 @@ for the full evidence trail.
 
 ## 20. OpenTelemetry Export
 
-**Team/Enterprise only.** `exactl journal export-otel <trace-id>` projects one Activity Journal
+**Team/Enterprise only.** `exactl log export-otel <trace-id>` projects one Activity Journal
 trace into OTLP/HTTP JSON spans an OTel-native tool (Phoenix, an OTel Collector, any `/v1/traces`
 receiver) can consume. It is absent from Solo builds — the exporter module lives in
 `exaix-team/packages/otel-export/`, never `packages/`, and `check:edition-graph` proves no static

@@ -2,7 +2,6 @@
   "root-name": [],
   "sub-noun": [
     "git worktrees",
-    "log journal",
     "memory pending",
     "memory skill",
     "routing policy"
@@ -46,12 +45,6 @@
     "plan approve-all"
   ],
   "duplicate-handler": [
-    "cost",
-    "journal verify",
-    "journal wait",
-    "log cost",
-    "log journal verify",
-    "log journal wait",
     "memory skill approve",
     "memory skill create",
     "memory skill deprecate",

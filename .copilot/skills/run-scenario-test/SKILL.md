@@ -80,7 +80,7 @@ Common failure classes and fixes
   - Request created but never processed (request.created only, request stays status: pending):
     no daemon was running. Add daemon lifecycle steps at the START of each config change:
         type: exactl, command: daemon, args: [start] (or restart to reload config), then
-        journal wait --event daemon.ready --since-rowid $JOURNAL_BASELINE --timeout 30.
+        log wait --event daemon.ready --since-rowid $JOURNAL_BASELINE --timeout 30.
   - Flow fails with `source "step" but no stepId specified`: a step input of source: step
     uses `stepId: <id>`, not `from: [<id>]`. aggregate uses `from`.
   - Flow steps depend on a portal they never got: the flow needs the portal mounted before the

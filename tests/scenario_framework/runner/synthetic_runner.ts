@@ -551,9 +551,8 @@ export async function runSyntheticScenario(
   // trajectory-assert step can scope to exactly its named source_step, not the whole run.
   const stepRowidWindows = new Map<string, { start: number; end: number }>();
 
-  // Rowid before the PREVIOUS step ran, handed to a `journal wait --since-rowid` barrier as
-  // its baseline — a barrier capturing its own baseline at wait-start would miss an event
-  // the prior step produced.
+  // Rowid before the previous step ran. It is the baseline of a `log wait --since-rowid` barrier.
+  // A baseline taken at wait-start would miss an event the previous step produced.
   let previousStepStartRowid = 0;
   // The SCENARIO's baseline, captured once at start — the floor for $TRACE_ID/$REQUEST_ID
   // resolution. A per-step baseline would rise past the request and leave $REQUEST_ID unresolvable.
@@ -1111,7 +1110,7 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // Substituted at step-execution time with `request-<trace[0:8]>` (review/plan approve key).
   "REQUEST_ID",
   // Substituted at step-execution time with the scenario's journal rowid baseline, so an
-  // `exactl journal wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
+  // `exactl log wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
   "JOURNAL_BASELINE",
   // Substituted per step by `step_executor.ts` so waits can ignore events before that step.
   "STEP_BASELINE",

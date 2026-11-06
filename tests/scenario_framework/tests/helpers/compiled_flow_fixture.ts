@@ -46,7 +46,7 @@ export async function startCompiledFlowDaemon(
   await Deno.writeTextFile(pathBuilders.runtimePath(workspaceRoot, "daemon.pid"), pid);
   const ready = await new Deno.Command(binaries.cli, {
     args: [
-      "journal",
+      "log",
       "wait",
       "--event",
       "daemon.ready",

@@ -16,7 +16,7 @@ codex exec --json --model gpt-5.6-sol --sandbox read-only --skip-git-repo-check 
 The live call reported 23,239 input tokens, 11,136 cached input tokens, five
 output tokens and zero reasoning tokens. The dedicated SQLite
 `activity.cache_read_tokens` and `provider_costs.cache_read_tokens` columns
-both contained 11,136. The production `exactl cost` handler rendered
+both contained 11,136. The production `exactl log cost` handler rendered
 `11136/-` and `Total Cache Tokens: Read: 11136, Creation: 0`.
 
 A preceding direct `codex exec --json` call reported 24,392 input tokens and

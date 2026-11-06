@@ -32,7 +32,7 @@ steps:
     args: [--file, "$REQUEST_FIXTURE", --portal, todo-app]
   - id: verify-flow-completed
     type: exactl
-    command: journal
+    command: log
     args: [wait, --event, flow.completed, --since-rowid, "$JOURNAL_BASELINE", --timeout, "900"]
     timeout_sec: 905
     output_criteria:

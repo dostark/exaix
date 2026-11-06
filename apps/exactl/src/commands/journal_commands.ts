@@ -38,10 +38,10 @@ export interface IJournalWaitOptions {
   payload?: string;
 }
 
-/** Actor recorded on journal-integrity events emitted by `exactl journal verify`. */
+/** Actor recorded on journal-integrity events emitted by `exactl log verify`. */
 const JOURNAL_VERIFY_ACTOR = "exactl-journal-verify";
 
-/** Default readiness-barrier timeout for `exactl journal wait` (seconds). */
+/** Default readiness-barrier timeout for `exactl log wait` (seconds). */
 const JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC = 30;
 /** Poll cadence for the readiness barrier — an event appearing after the baseline is noticed
  *  within one interval. */
@@ -107,7 +107,7 @@ export class JournalCommands extends BaseCommand {
     const timeoutSec = options.timeout ?? JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC;
     const payload = options.payload;
     if (events.length === 0) {
-      console.error(colors.red("journal wait requires --event <action_type>"));
+      console.error(colors.red("log wait requires --event <action_type>"));
       Deno.exit(1);
     }
     // Baseline: `--since-rowid` (internal) wins over `--since` (timestamp); with neither, the
@@ -258,7 +258,7 @@ export class JournalCommands extends BaseCommand {
 }
 
 /** Converts bare event names (e.g., `model_resolved`) to `action_type=<name>`
- *  for the `exactl logs` command. Passes through existing `key=value` pairs.
+ *  for the `exactl log list` command. Passes through existing `key=value` pairs.
  */
 export function normalizeLogsFilter(filters: string[]): string[] {
   return filters.map((f) => f.includes("=") ? f : `action_type=${f}`);

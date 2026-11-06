@@ -25,7 +25,7 @@ const KNOWN_EXACTL_COMMANDS = new Set([
   "request",
   "plan",
   "review",
-  "journal",
+  "log",
   "config",
   "git",
   "flow",

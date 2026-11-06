@@ -58,7 +58,7 @@ steps:
 
   - id: "wait-for-daemon-ready"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
@@ -78,7 +78,7 @@ steps:
   # driver asserts the reason code, the absence of the sentinel and of capture files.
   - id: "wait-for-request-failure"
     type: "exactl"
-    command: "journal"
+    command: "log"
     args: ["wait", "--event", "request.failed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "90"]
     timeout_sec: 90
     input_criteria: []

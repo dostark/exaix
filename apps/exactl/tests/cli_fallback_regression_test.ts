@@ -271,7 +271,7 @@ Deno.test("[regression] PlanCommands works with stub db", async () => {
 Deno.test("[regression] a missing provider credential degrades only the provider", async () => {
   // Reading the journal or printing config needs no model.
   // A provider that cannot be built must therefore leave every other service real.
-  // Otherwise a step such as `journal wait` fails on a credential it never needed.
+  // Otherwise a step such as `log wait` fails on a credential it never needed.
   const root = await Deno.makeTempDir({ prefix: "exactl-provider-degraded-" });
   const configPath = join(root, "exa.config.toml");
   await Deno.writeTextFile(
