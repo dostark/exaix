@@ -6,7 +6,7 @@ tags: [
   "smoke",
   "subsystem:skills",
   "entity:architecture-review",
-  "entity:blueprint-best-practices",
+  "entity:implementation-plan",
   "entity:collaborative-flow",
   "entity:documentation-driven",
   "entity:error-handling",
@@ -56,7 +56,7 @@ steps:
         payload_includes:
           pinned_skill_ids:
             - "architecture-review"
-            - "blueprint-best-practices"
+            - "implementation-plan"
             - "collaborative-flow"
             - "documentation-driven"
             - "error-handling"

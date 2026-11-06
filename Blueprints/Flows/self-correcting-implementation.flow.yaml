@@ -1,7 +1,7 @@
 id: self-correcting-implementation
 name: Self-correcting implementation
 description: Plan, implement and test a change, then loop back once when the quality gate rejects it.
-version: 1.0.0
+version: 1.1.0
 defaultSkills:
   - tdd-methodology
 namespace:
@@ -12,6 +12,7 @@ settings:
   timeout: 600000
 steps:
   - id: plan
+    skills: [tdd-methodology, implementation-plan]
     name: Plan the implementation
     agent_role: software-architect
     effort: high

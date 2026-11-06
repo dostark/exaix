@@ -15,6 +15,9 @@
  * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts", "packages/execution/src/agent_composer.ts"]
  */
 
+import { prepareFlowSkillPins } from "./flow_skill_pins.ts";
+import type { ISkillOperationContext, ISkillPin } from "@exaix/core/skills";
+import type { ISkillsService } from "@exaix/core/types";
 import { AgentComposer, type IAgentExecutionResult, type IBlueprint } from "@exaix/execution";
 import type { StrategyRegistry } from "@exaix/execution";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
@@ -84,6 +87,7 @@ interface IRequestContextContext {
 interface IParsedRequest {
   userPrompt: string;
   context: IRequestContextContext;
+  skills?: Opt<string[], Reason.OptionalInput>;
   requestId?: string;
   traceId?: string;
   scenarioId?: string;
@@ -113,9 +117,15 @@ export interface IRunner {
   withProvider?(provider: IModelProvider, selectedModel: { provider: string; model: string }): IRunner;
 }
 
+interface IStrategyStepDeclaration {
+  effort: Opt<EffortDeclaration, Reason.OptionalContext>;
+  thinking: Opt<ThinkingDeclaration, Reason.OptionalContext>;
+}
+
 /** For constructing a fresh, per-call `AgentComposer` — never a shared instance, since
  *  it carries mutable state (`planWrittenFiles`) that must not survive past one call. */
 interface IAgentComposerConstructionDeps {
+  skillsService?: Opt<ISkillsService, Reason.OptionalDependency>;
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;
@@ -250,6 +260,7 @@ export class AgentComposerAdapter {
     const analysis = request.requestAnalysis;
     const parsedRequest: IParsedRequest = {
       userPrompt: this.withSharedNamespace(request),
+      skills: request.skills,
       context: (request.context ?? {}) as IRequestContextContext,
       requestId: request.requestId,
       traceId: request.traceId,
@@ -348,6 +359,7 @@ export class AgentComposerAdapter {
       gitServiceFactory,
     });
     const planWrittenFiles = await this.writeAuthorization.get(traceId, baseDir);
+    const selected = await this.prepareStrategySkills(agentRole, request, traceId, strategy);
     const orchestrator = new AgentComposer({
       config,
       db,
@@ -359,6 +371,8 @@ export class AgentComposerAdapter {
       modelResolver,
       strategyRegistry,
       planWrittenFiles,
+      skills: this.orchestratorDeps.skillsService,
+      options: { fixedClient: boundResolution.fixedClient, skillOperation: selected?.operation },
       contextPort,
       trustedAgentRoles,
       effortResolver,
@@ -367,7 +381,6 @@ export class AgentComposerAdapter {
         : {}),
       ...(boundResolution.cliDelegateBinding ? { cliDelegateBinding: boundResolution.cliDelegateBinding } : {}),
       ...(this.orchestratorDeps.cliDelegateRun ? { cliDelegateRun: this.orchestratorDeps.cliDelegateRun } : {}),
-      ...(boundResolution.fixedClient ? { options: { fixedClient: boundResolution.fixedClient } } : {}),
     });
 
     try {
@@ -381,21 +394,11 @@ export class AgentComposerAdapter {
         plan: userPrompt,
         portal: request.portal,
       };
-      const options: IAgentExecutionOptionsInput = {
-        agent_role: agentRole,
-        portal: request.portal,
-        strategy,
-        ...(boundResolution.boundEffort !== undefined
-          ? { effort: boundResolution.boundEffort }
-          : request.effort !== undefined
-          ? { effort: request.effort }
-          : {}),
-        ...(boundResolution.boundThinking !== undefined
-          ? { thinking: boundResolution.boundThinking }
-          : request.thinking !== undefined
-          ? { thinking: request.thinking }
-          : {}),
-      };
+      const options = this.strategyStepOptions(agentRole, request.portal, strategy, {
+        effort: boundResolution.boundEffort ?? request.effort,
+        thinking: boundResolution.boundThinking ?? request.thinking,
+      });
+      options.resolved_skills = selected?.pins;
       const result = await orchestrator.executeStep(context, options);
       // A flow step's prompt requires wrapping the answer in <thought>/<content> tags. ReAct
       // already extracts the <content> body; CliDelegate returns raw unparsed text, so this
@@ -409,6 +412,47 @@ export class AgentComposerAdapter {
     } finally {
       orchestrator.dispose();
     }
+  }
+
+  /** Prepares declared skills only on the injected CLI transport path. */
+  private async prepareStrategySkills(
+    agentRole: string,
+    request: IFlowStepRequest,
+    traceId: string,
+    strategy: ExecutionStrategyName,
+  ): Promise<{ pins: ISkillPin[]; operation: ISkillOperationContext } | undefined> {
+    const deps = this.orchestratorDeps;
+    if (
+      strategy !== ExecutionStrategyName.CLI_DELEGATE || !deps?.skillsService || !deps.config.skills.inject_in_prompt
+    ) {
+      return undefined;
+    }
+    const blueprint = await this.loader.load(agentRole);
+    if (!blueprint) throw new Error(`Blueprint not found for agent_role: ${agentRole}`);
+    return await prepareFlowSkillPins({
+      skills: deps.skillsService,
+      config: deps.config,
+      logger: deps.logger,
+      blueprint,
+      request,
+      traceId,
+    });
+  }
+
+  /** Preserves request declarations when no binding overrides them. */
+  private strategyStepOptions(
+    agentRole: string,
+    portal: string,
+    strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
+    declaration: IStrategyStepDeclaration,
+  ): IAgentExecutionOptionsInput {
+    return {
+      agent_role: agentRole,
+      portal,
+      strategy,
+      ...(declaration.effort === undefined ? {} : { effort: declaration.effort }),
+      ...(declaration.thinking === undefined ? {} : { thinking: declaration.thinking }),
+    };
   }
 
   /** The strategy step's bound target: the bound provider, the bound cli-delegate tool, or

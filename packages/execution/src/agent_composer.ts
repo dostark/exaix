@@ -41,7 +41,7 @@ import type {
 } from "@exaix/schemas/agent_composer.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType } from "@exaix/core";
-import type { ExecutionStrategyName } from "@exaix/core";
+import { ExecutionStrategyName } from "@exaix/core";
 
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 
@@ -77,6 +77,7 @@ import type { PromptBuilder } from "./prompt_builder.ts";
 
 import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 
+import type { ISkillOperationContext } from "@exaix/core/skills";
 import {
   applyBlueprintToolScope,
   authorizedPathsOf,
@@ -117,6 +118,8 @@ export interface IAgentFileBlueprint {
 
 /** Optional configuration for AgentComposer. */
 export interface IAgentComposerOptions {
+  /** Preserves the caller's flow and step provenance for skill submissions. */
+  skillOperation?: Opt<ISkillOperationContext, Reason.OptionalContext>;
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
@@ -401,14 +404,17 @@ export class AgentComposer {
     const pins = options.resolved_skills ?? context.resolved_skills;
     if (!pins || pins.length === 0) return null;
     if (!this.skills) throw new SkillUnavailableError("", "Pinned skills cannot be replayed without a skills service");
-    const operation = createSkillOperationContext({
+    const operation = this.options?.skillOperation ?? createSkillOperationContext({
       agentRole: options.agent_role ?? "unknown",
       portal: options.portal,
       traceId: context.trace_id,
       requestId: context.request_id,
       configGeneration: this.skills.currentConfigGeneration(),
     });
-    return await createPinnedSkillPrompt(this.skills, pins, operation);
+    const prompt = await createPinnedSkillPrompt(this.skills, pins, operation);
+    return options.strategy === ExecutionStrategyName.CLI_DELEGATE
+      ? prompt?.fit(this.config.skills.context_budget_chars) ?? null
+      : prompt;
   }
 
   /**

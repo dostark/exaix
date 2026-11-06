@@ -52,13 +52,30 @@ the learning system are draft folders under `Memory/Skills/learned/` until a per
 Use `implementation-plan` to turn agreed requirements into a grounded, bounded
 implementation plan. It covers production wiring, dependency order, validation,
 and compatible migrations using the target project's own conventions.
-The `software-architect` role includes it by default. Other roles can request it explicitly.
+Planning steps select it explicitly in the feature-development, migration-planning, refactoring, and self-correcting implementation flows.
+Other requests can select it explicitly. The role supplies its response contract.
 The skill produces a plan; it does not authorize implementation or publication.
 
 Use `blueprint-best-practices` when creating, reviewing, or maintaining skill files.
 It covers purpose, discovery metadata, supported files, sidecar consistency, revisions,
 and evidence. Its `skill-authoring`, `skill-maintenance`, and `skill-catalog` tags
 select authoring guidance. It is not the architect's default planning skill.
+
+For a CLI-delegate flow, the adapter resolves step skills and role defaults before
+launch. It stores immutable revision pins and records submitted usage with the
+request, trace, flow, and step identity. A missing skill, a revision or usage-write
+failure, or an insufficient budget for an explicit or critical skill prevents
+launch. Optional defaults can be omitted by the budget; omitted bodies have no
+submission usage row.
+
+The existing `skills.context_budget_chars` setting must fit the selected bodies.
+The deterministic delivery fixtures use 32,000 characters. A 2,000-character
+budget cannot fit the critical `response-contract` body. Configure a suitable
+budget before using these flows; the global default is unchanged.
+
+The planning and authoring delivery scenarios exercise a captured CLI boundary
+and durable usage without a model call. They prove transport and contract
+presence. They do not measure the quality of a model-generated plan or skill.
 
 Agent roles reference skills by name in their `default_skills` list, e.g.
 `default_skills: ["response-contract", "code-review", "portal-grounding"]`. At

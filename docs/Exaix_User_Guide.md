@@ -828,10 +828,30 @@ the dedicated guide: [Exaix_Memory.md](Exaix_Memory.md).
 
 The `implementation-plan` Blueprint skill prepares a bounded implementation plan from agreed requirements.
 It uses the target project's conventions and covers dependencies, production wiring, validation, and migration rollback.
-The `software-architect` role includes this skill by default. Planning does not authorize implementation or publication.
+Implementation-planning steps select this skill explicitly; other architect tasks retain their own purpose.
+The role supplies `response-contract`. Planning does not authorize implementation or publication.
 
 Use `blueprint-best-practices` for skill authoring and maintenance, including consistent metadata, references, revisions, and validation evidence.
 It no longer provides ordinary implementation-planning guidance and is selected separately from `implementation-plan`.
+
+For CLI-delegate flow steps, explicit skills and role defaults are pinned to
+immutable revisions before launch. Submission usage carries the request, trace,
+flow, and step identity. Missing skills, failed revision or usage writes, and
+insufficient space for an explicit or critical skill stop the launch.
+The role's critical `response-contract` requires `<thought>` and raw JSON inside
+`<content>`; the planning skill uses that contract.
+
+Set the existing character budget to fit the selected skills, for example:
+
+```toml
+[skills]
+context_budget_chars = 32000
+```
+
+The global default is unchanged. A 2,000-character budget cannot fit the response
+contract alone. With `skills.inject_in_prompt = false`, skill injection remains
+disabled. Skill-authoring requests can explicitly select `blueprint-best-practices`
+with the `default` role; ordinary implementation planning selects `implementation-plan`.
 
 Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
 

@@ -2012,6 +2012,7 @@ Deno.test({
       };
 
       const skillsPrompt: IPinnedSkillPrompt = {
+        includedNames: [],
         text: "S".repeat(200),
         record: () => Promise.resolve(),
         fit: () => skillsPrompt,

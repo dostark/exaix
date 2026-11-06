@@ -3,9 +3,7 @@ name: Migration Planning Flow
 description: >-
   Plan code migrations with impact analysis, risk assessment, and step-by-step
   execution plan
-version: 1.0.0
-defaultSkills:
-  - planning-driven
+version: 1.1.0
 steps:
   - id: gather-requirements
     name: Gather Migration Requirements
@@ -96,6 +94,7 @@ steps:
       maxAttempts: 1
       backoffMs: 1000
   - id: create-migration-plan
+    skills: [implementation-plan]
     name: Create Migration Plan
     type: agent
     agent_role: software-architect

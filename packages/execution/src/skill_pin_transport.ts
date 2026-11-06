@@ -32,6 +32,8 @@ interface IPinnedPromptEntry {
 export interface IPinnedSkillPrompt {
   /** Critical then ordinary skill sections, ready to place in a prompt. Empty when nothing fits. */
   readonly text: string;
+  /** Canonical names whose complete blocks are included. */
+  readonly includedNames: readonly string[];
   /** Records one submission for each skill whose complete block is inside `submitted`. */
   record(submitted: string, kind: SkillSubmissionKind, round: number): Promise<void>;
   /** The same prompt cut to whole skills that fit in `maxChars`, critical skills first. */
@@ -82,6 +84,7 @@ function assemble(
     .join("\n\n");
   return {
     text,
+    includedNames: entries.map((entry) => entry.entry.skillId),
     async record(submitted, kind, round) {
       const items = entries.filter((entry) => submitted.includes(entry.block)).map((entry) => entry.item);
       if (items.length === 0) return;

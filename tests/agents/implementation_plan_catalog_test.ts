@@ -12,14 +12,13 @@ import { SkillRootKind, SkillStatus } from "@exaix/core";
 import { REPO_ROOT } from "@exaix/testing";
 import { CATALOG_CONTEXT, createCatalogLoader } from "../../scripts/skill_catalog_loader.ts";
 
-Deno.test("the architect loads planning defaults without skill-authoring instructions", async () => {
+Deno.test("the architect loads a response contract without global implementation-planning instructions", async () => {
   const loader = createBlueprintLoader(join(REPO_ROOT, "Blueprints"));
   const architect = await loader.load("software-architect");
   assertExists(architect);
   assertEquals(loader.toLegacyBlueprint(architect).defaultSkills, [
     "response-contract",
     "architecture-review",
-    "implementation-plan",
     "collaborative-flow",
   ]);
   assertEquals(architect.frontmatter.permitted_tools, [

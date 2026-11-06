@@ -1063,6 +1063,7 @@ if (import.meta.main) {
       {
         config,
         db: dbService,
+        skillsService,
         logger,
         permissions: portalPermissions,
         provider: llmProvider,

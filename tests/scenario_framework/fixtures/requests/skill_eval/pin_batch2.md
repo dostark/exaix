@@ -5,12 +5,12 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-skills: [architecture-review, blueprint-best-practices, collaborative-flow, documentation-driven, error-handling]
+skills: [architecture-review, implementation-plan, collaborative-flow, documentation-driven, error-handling]
 ---
 
-# Assess the layering between the request pipeline and the execution package
+# Plan improvements to the request and execution boundary
 
-Assess whether the boundary between `packages/request` and `packages/execution` still holds.
+Prepare a bounded implementation plan for improving the boundary between `packages/request` and `packages/execution`.
 `RequestProcessor` constructs the parsed request and hands it to `AgentRunner`; the contract
 between them is an interface, but several fields are populated by mutation after
 construction. Examine:
@@ -25,4 +25,5 @@ Acceptance criteria:
 
 - The current contract is described in one paragraph, distinguishing intent from accident
 - Every mutation-after-construction site is listed with the risk it creates
-- Each recommendation names the document that would have to change alongside the code
+- Each planned change names the affected contract, documentation, dependency, production wiring, and verification
+- The output is an executable plan in raw JSON inside the response contract, without implementing the changes

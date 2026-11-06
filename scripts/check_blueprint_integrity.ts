@@ -46,6 +46,7 @@ interface IIntegrityResult {
 const TRIGGER_MATCHED_SKILLS: string[] = [
   "fix-bug",
   "blueprint-best-practices",
+  "implementation-plan",
   "portal-grounding",
   "commit-message",
   "gap-analysis",

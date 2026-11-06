@@ -6,6 +6,32 @@ Flow orchestration, validation, and checkpoint services for Exaix.
 
 `@exaix/flow` owns the **flow engine** — the runtime that executes multi-step agent workflows with condition evaluation, quality gates, parallel execution groups, error recovery, and checkpointing. Flows are defined in `exa.config.toml` and orchestrate agents through sequenced steps.
 
+## Skill Delivery
+
+`AgentComposerAdapter.run` forwards explicit request skills to the runner.
+`runWithStrategy` resolves declared skills for CLI delegation through
+`prepareFlowSkillPins` in `src/flow_skill_pins.ts`. The daemon supplies its shared
+skills service. Selection merges step skills with role defaults, removes duplicate
+names and evaluation-suppressed names, verifies the configured role root, and
+persists immutable revision pins before constructing the composer.
+
+The composer receives the same operation identity and fits pinned bodies to the
+configured skill budget. Explicit and critical bodies must fit; optional omitted
+defaults have `content_included: false` and no submitted usage. Revision resolution
+and durable usage writes complete before the external CLI boundary. Skill
+injection opt-out remains effective.
+
+The shipped feature-development, migration-planning, refactoring, and
+self-correcting implementation flows select `implementation-plan` at their
+planning steps. Other architect tasks do not inherit this skill. The architect's
+`response-contract` default supplies the executable output format.
+
+Deterministic integration checks use real selection, storage, composition, and
+`FlowRunner` with a captured CLI process. They do not execute a provider or external
+CLI. See `tests/integration/blueprint_skill_delivery_test.ts` for failure controls
+and `tests/scenario_framework/tests/unit/blueprint_skill_delivery_scenarios_test.ts`
+for executable scenario command checks.
+
 ## Condition Expression Syntax
 
 ```typescript

@@ -1,9 +1,7 @@
 id: refactoring
 name: Code Refactoring Flow
 description: "Safe code refactoring with analysis, implementation, and validation"
-version: 1.0.0
-defaultSkills:
-  - clean-code
+version: 1.1.0
 steps:
   - id: analyze-current-code
     name: Analyze Current Code
@@ -18,7 +16,8 @@ steps:
       maxAttempts: 2
       backoffMs: 1000
   - id: identify-improvements
-    name: Identify Improvement Opportunities
+    skills: [implementation-plan]
+    name: Plan Refactoring Improvements
     type: agent
     agent_role: software-architect
     strategy: cli_delegate

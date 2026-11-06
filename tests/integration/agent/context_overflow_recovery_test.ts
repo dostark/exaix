@@ -47,6 +47,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       execute: async (blueprint, context, options) => {
         const skillsPrompt: IPinnedSkillPrompt = {
           text: "S".repeat(500),
+          includedNames: [],
           record: () => Promise.resolve(),
           fit: () => skillsPrompt,
         };

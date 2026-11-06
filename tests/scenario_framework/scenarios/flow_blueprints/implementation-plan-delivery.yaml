@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+id: implementation-plan-delivery
+title: Deterministic planning skill and response-contract delivery
+pack: flow_blueprints
+tags: [smoke, "subsystem:skills", "entity:implementation-plan"]
+request_fixture: fixtures/requests/skill_eval/implementation_plan_delivery.md
+mode_support: [auto]
+portals: []
+steps:
+  - id: assert-flow-delivery
+    type: run-script
+    command: deno
+    args: [
+      test,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      --filter,
+      "flow delivery: shipped feature-development",
+      "$REPO_ROOT/tests/integration/blueprint_skill_delivery_test.ts",
+      --,
+      "$REQUEST_FIXTURE",
+    ]
+    timeout_sec: 120
+    output_criteria:
+      - id: planning-flow-contract
+        kind: command-exit-code
+        equals: 0

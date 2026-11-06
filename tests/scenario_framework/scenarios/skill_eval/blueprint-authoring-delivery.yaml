@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+id: blueprint-authoring-delivery
+title: Deterministic skill-authoring and response-contract delivery
+pack: skill_eval
+tags: [smoke, "subsystem:skills", "entity:blueprint-best-practices"]
+request_fixture: fixtures/requests/skill_eval/blueprint_authoring_delivery.md
+mode_support: [auto]
+portals: []
+steps:
+  - id: assert-authoring-delivery
+    type: run-script
+    command: deno
+    args: [
+      test,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      --filter,
+      "flow delivery: blueprint-best-practices",
+      "$REPO_ROOT/tests/integration/blueprint_skill_delivery_test.ts",
+      --,
+      "$REQUEST_FIXTURE",
+    ]
+    timeout_sec: 120
+    output_criteria:
+      - id: authoring-contract
+        kind: command-exit-code
+        equals: 0
