@@ -47,3 +47,13 @@ Deno.test("the removed skills paths name the skill noun", async () => {
   await assertHint(["memory", "skill", "list"], "exactl skill list");
   await assertHint(["skills", "show", "testing-standard", "--revision", "abc"], "exactl skill show testing-standard");
 });
+
+Deno.test("the removed models, routing and config model paths name the model noun", async () => {
+  await assertHint(["models", "list"], "exactl model list");
+  await assertHint(["models", "pricing"], "exactl model list");
+  await assertHint(["routing", "explain", "--request", "r.md"], "exactl model route explain");
+  await assertHint(["routing", "policy", "validate", "policy.yaml"], "exactl model route validate policy.yaml");
+  await assertHint(["config", "model", "--list"], "exactl model candidates");
+  await assertHint(["config", "set-provider", "openai"], "exactl model use openai");
+  await assertHint(["config", "set-model", "fast", "gpt-5"], "exactl config set models.<name>.model <model>");
+});

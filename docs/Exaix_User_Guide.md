@@ -262,7 +262,7 @@ cheapest = ["ollama"]
   **exempt from cost filtering**, so it can win even under a tight budget. An unknown-priced
   model is never treated as "cheapest" — only a genuinely known price qualifies.
 - Curate these lists from the CLI instead of editing TOML by hand — see
-  [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-the-curated-model-registry).
+  [`exactl model candidates` and `exactl model list`](#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
 - **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
   stricter routing rigor arrive with the Team edition (the Team edition model registry); Solo behaviour is unchanged
   when no Team module is present. For the full precedence chain, characteristic scoring
@@ -1347,28 +1347,27 @@ The chosen provider, model, and the reason are journalled as `model.resolved`. I
 exactl log list --filter action_type=model.resolved --format json
 ```
 
-##### `exactl config model` & `exactl models` — Solo model curation (the curated model registry)
+##### `exactl model candidates` & `exactl model list` — Solo model curation (the curated model registry)
 
 Curate the per-size preferred lists and inspect the Solo model floor without editing TOML by hand.
 Curated lists are written back to `exa.config.toml` (`model_presets.<SIZE>.candidates`) — the same
 surface the resolver reads — so there is no separate database.
 
 ```bash
-# Inspect the Solo model floor: provider:model, pricing provenance, and staleness
-exactl models list
-exactl models pricing
+# Inspect the Solo model floor: provider:model, pricing provenance, staleness and per-Mtok prices
+exactl model list
 
 # Curate the preferred providers for size M (order matters — first healthy provider wins)
-exactl config model --size M anthropic ollama
+exactl model candidates --size M anthropic ollama
 
 # Add a characteristic reorder hint (promotes ollama when --characteristic cheapest is used)
-exactl config model --size M --characteristic cheapest ollama
+exactl model candidates --size M --characteristic cheapest ollama
 
 # Show the current curated lists (unregistered providers are flagged "unconfigured")
-exactl config model --list
+exactl model candidates --list
 
 # Clear a size's curated list (falls back to scoring)
-exactl config model --size M --clear
+exactl model candidates --size M --clear
 ```
 
 Notes:
@@ -1413,16 +1412,16 @@ tracked_benchmarks = ["swe_bench_verified", "swe_bench_pro", "gpqa"]
 feature = ["swe_bench_verified", "swe_bench_pro"]
 ```
 
-With the catalog enabled, `exactl config model` validates an explicit entry against the live
+With the catalog enabled, `exactl model candidates` validates an explicit entry against the live
 catalog (and auto-admits a real-but-unused model on first use, instead of Solo's pass-through),
 and two more commands become available:
 
 ```bash
 # Trigger/inspect the live refresh cycle
-exactl models refresh
+exactl model refresh
 
 # Append an advisory benchmark-score column to the model list
-exactl models list --benchmark swe_bench_verified
+exactl model list --benchmark swe_bench_verified
 ```
 
 See [`docs/Model_Resolution.md`](Model_Resolution.md) for the full explanation of what each
@@ -2353,18 +2352,18 @@ Use routing commands to preview how Exaix will choose an agent role before execu
 
 ```bash
 # Preview routing candidate ranking for a request file
-exactl routing explain --request ./Workspace/Requests/my-request.md
+exactl model route explain --request ./Workspace/Requests/my-request.md
 
 # Validate a routing policy file
-exactl routing policy validate ./routing.policy.yaml
+exactl model route validate ./routing.policy.yaml
 
 # Validate the configured default routing policy
-exactl routing policy validate
+exactl model route validate
 ```
 
-`exactl routing explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected agent role/version, matched rule, routing strategy, and top candidate scores.
+`exactl model route explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected agent role/version, matched rule, routing strategy, and top candidate scores.
 
-`exactl routing policy validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file.
+`exactl model route validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file.
 
 ##### Flow Step Types
 

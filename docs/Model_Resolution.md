@@ -85,17 +85,16 @@ files by hand:
 
 ```bash
 # Inspect what's available: provider:model, pricing, freshness
-exactl models list
-exactl models pricing
+exactl model list
 
 # For size-M requests, try Anthropic first, then Ollama
-exactl config model --size M anthropic ollama
+exactl model candidates --size M anthropic ollama
 
 # See your current preferences
-exactl config model --size M --list
+exactl model candidates --size M --list
 
 # Reset back to automatic scoring
-exactl config model --size M --clear
+exactl model candidates --size M --clear
 ```
 
 This is the same for Solo and Team — your curated preferences are always checked before
@@ -138,7 +137,7 @@ by default; enable it in your config if you want deterministic tie-breaking.
 
 Solo's model list is static — it ships with the binary and only updates when you
 upgrade Exaix. Enabling Team gives you a **live catalog** that periodically checks each
-provider for new and retired models, so `exactl models list` and every resolution
+provider for new and retired models, so `exactl model list` and every resolution
 decision reflect what's actually available right now, not what was available when you
 installed Exaix.
 

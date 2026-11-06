@@ -1,7 +1,7 @@
 /**
  * @module ModelRegistryCliRoundTripTest
  * @path tests/integration/model_registry_cli_round_trip_test.ts
- * @description Phase 135 Step 9 (Action 2) — CLI round-trip: `exactl models list
+ * @description Phase 135 Step 9 (Action 2) — CLI round-trip: `exactl model list
  *   --benchmark` run as a REAL subprocess against a Config DB seeded with a
  *   model_benchmark row (as a live Team daemon's refresh/benchmark scheduler would
  *   write), proving the CLI process's benchmark reader (constructed independently in
@@ -86,7 +86,7 @@ Deno.test({
       writeCliConfig(configPath, tempDir);
       seedBenchmarkRow(tempDir);
 
-      const result = await runExactl(configPath, ["models", "list", "--benchmark", "swe_bench_verified"]);
+      const result = await runExactl(configPath, ["model", "list", "--benchmark", "swe_bench_verified"]);
 
       if (result.code !== 0) {
         throw new Error(`exactl exited ${result.code}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);

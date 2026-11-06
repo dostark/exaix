@@ -3,12 +3,12 @@
  * @path apps/exactl/tests/model_commands_test.ts
  * @related-files [apps/exactl/src/commands/model_commands.ts]
  * @architectural-layer CLI
- * @description Unit tests for ModelCommands — the Solo curation CLI (config model
- *   + models list/pricing). Covers registry-backed display, curated-list writes with
+ * @description Unit tests for ModelCommands — the Solo curation CLI (model candidates
+ *   + model list). Covers registry-backed display, curated-list writes with
  *   Solo validation semantics (G10), dedup, clear idempotency, and unconfigured flags.
  *   Curated lists persist to exa.config.toml (TOML write-back) — the surface the
  *   resolver reads (config.model_presets) — honoring the phase's zero-DB constraint.
- *   Phase 134 Step 6 — models list/pricing + config model curation, provenance/staleness display.
+ *   Phase 134 Step 6 — model list + model candidates curation, provenance/staleness display.
  */
 
 import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
@@ -109,7 +109,7 @@ function captureLog(): { lines: string[]; restore: () => void } {
   return { lines, restore: () => (console.log = original) };
 }
 
-Deno.test("[model-cli] models list renders provider:model, provenance and verified_at staleness", async () => {
+Deno.test("[model-cli] model list renders provider:model, provenance and verified_at staleness", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
   const cap = captureLog();
   try {
@@ -124,7 +124,7 @@ Deno.test("[model-cli] models list renders provider:model, provenance and verifi
   assertStringIncludes(out, "unknown");
 });
 
-Deno.test("[step135.8] models list --benchmark <name> shows the advisory score column", async () => {
+Deno.test("[step135.8] model list --benchmark <name> shows the advisory score column", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry(), undefined, {
     getBenchmark: (p: string, m: string, benchmark: string) =>
       Promise.resolve(
@@ -142,7 +142,7 @@ Deno.test("[step135.8] models list --benchmark <name> shows the advisory score c
   assertStringIncludes(out, "swe_bench_verified");
 });
 
-Deno.test("[step135.8] models list --benchmark with no reader wired shows '-' for every row (Solo/CLI-without-Team degrades gracefully)", async () => {
+Deno.test("[step135.8] model list --benchmark with no reader wired shows '-' for every row (Solo/CLI-without-Team degrades gracefully)", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
   const cap = captureLog();
   try {
@@ -155,7 +155,7 @@ Deno.test("[step135.8] models list --benchmark with no reader wired shows '-' fo
   assertStringIncludes(out, "-");
 });
 
-Deno.test("[step135.8] models list without --benchmark omits the benchmark column entirely (no behavior change)", async () => {
+Deno.test("[step135.8] model list without --benchmark omits the benchmark column entirely (no behavior change)", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
   const cap = captureLog();
   try {
@@ -167,21 +167,24 @@ Deno.test("[step135.8] models list without --benchmark omits the benchmark colum
   assertFalse(out.includes("Benchmark"));
 });
 
-Deno.test("[model-cli] models pricing shows per-Mtok prices with static/unknown provenance", async () => {
+Deno.test("model list shows the models list columns and the models pricing columns in one table", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
   const cap = captureLog();
   try {
-    await cmd.showPricing();
+    await cmd.listModels();
   } finally {
     cap.restore();
   }
   const out = cap.lines.join("\n");
-  assertStringIncludes(out, "3"); // inputPerMtok for anthropic
+  for (const header of ["Model", "Provenance", "Verified", "Input $/Mtok", "Output $/Mtok"]) {
+    assertStringIncludes(out, header);
+  }
+  assertStringIncludes(out, "$3"); // inputPerMtok for anthropic
   assertStringIncludes(out, "static");
   assertStringIncludes(out, "unknown");
 });
 
-Deno.test("[model-cli] config model --size M writes candidates; --list round-trips; --clear resets", async () => {
+Deno.test("[model-cli] model candidates --size M writes candidates; --list round-trips; --clear resets", async () => {
   await withTomlConfig(async (configPath, read) => {
     // Entries are provider names — the form the resolver's tryResolveCurated reads
     // (it looks each entry up via ProviderRegistry.getProviderMetadata).
@@ -197,7 +200,7 @@ Deno.test("[model-cli] config model --size M writes candidates; --list round-tri
   });
 });
 
-Deno.test("[model-cli] config model rejects an ambiguous bare name with qualifying options", async () => {
+Deno.test("[model-cli] model candidates rejects an ambiguous bare name with qualifying options", async () => {
   await withTomlConfig(async (configPath) => {
     // A bare entry that is not a known provider but matches a model owned by >1
     // provider is ambiguous — the user likely typed a model name; reject and hint.
@@ -221,7 +224,7 @@ Deno.test("[model-cli] config model rejects an ambiguous bare name with qualifyi
   });
 });
 
-Deno.test("[model-cli] config model stores unregistered-provider entries flagged unconfigured (G10)", async () => {
+Deno.test("[model-cli] model candidates stores unregistered-provider entries flagged unconfigured (G10)", async () => {
   await withTomlConfig(async (configPath, read) => {
     // "madeup" is not a registered provider and matches no model → stored but flagged
     // unconfigured (Solo pre-curation allowance).
@@ -235,7 +238,7 @@ Deno.test("[model-cli] config model stores unregistered-provider entries flagged
   });
 });
 
-Deno.test("[model-cli] config model --size M writing 3 entries where the 2nd is invalid keeps no partial state", async () => {
+Deno.test("[model-cli] model candidates --size M writing 3 entries where the 2nd is invalid keeps no partial state", async () => {
   await withTomlConfig(async (configPath, read) => {
     // Entry 2 is an ambiguous bare model name → whole write rejected atomically.
     const registry = createStubRegistry({
@@ -277,7 +280,7 @@ Deno.test("[model-cli] --size M writing the same entry twice produces a single e
   });
 });
 
-Deno.test("[model-cli] config model --size M --characteristic cheapest writes the characteristics sub-map", async () => {
+Deno.test("[model-cli] model candidates --size M --characteristic cheapest writes the characteristics sub-map", async () => {
   await withTomlConfig(async (configPath, read) => {
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.setCharacteristic("M", "cheapest", ["ollama"]);
@@ -285,7 +288,7 @@ Deno.test("[model-cli] config model --size M --characteristic cheapest writes th
   });
 });
 
-Deno.test("[model-cli] config model rejects an unknown size", async () => {
+Deno.test("[model-cli] model candidates rejects an unknown size", async () => {
   await withTomlConfig(async (configPath) => {
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await assertRejects(
@@ -296,7 +299,7 @@ Deno.test("[model-cli] config model rejects an unknown size", async () => {
   });
 });
 
-Deno.test("[model-cli][step5] models refresh refuses when model_registry is disabled/absent (Solo default)", async () => {
+Deno.test("[model-cli][step5] model refresh refuses when model_registry is disabled/absent (Solo default)", async () => {
   await withTomlConfig(async (configPath) => {
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await assertRejects(
@@ -307,7 +310,7 @@ Deno.test("[model-cli][step5] models refresh refuses when model_registry is disa
   });
 });
 
-Deno.test("[model-cli][step5] models refresh with model_registry.enabled=true prints daemon-refresh guidance", async () => {
+Deno.test("[model-cli][step5] model refresh with model_registry.enabled=true prints daemon-refresh guidance", async () => {
   await withTomlConfig(async (configPath, _read) => {
     Deno.writeTextFileSync(configPath, readConfigFixture("exactl-model-refresh-guidance"));
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);

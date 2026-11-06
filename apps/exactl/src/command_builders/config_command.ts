@@ -30,7 +30,6 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       ...addConfigCommands5(runtime),
       ...addConfigCommands6(runtime),
       ...addConfigCommands7(runtime),
-      ...addConfigCommands8(runtime),
     ]
   ) command.command(name, child);
   return command;
@@ -359,40 +358,6 @@ function addConfigCommands6(runtime: IExaCtlRuntime) {
         }),
     ],
     [
-      "set-model",
-      new Command()
-        .description("Set model for a named configuration")
-        .arguments("<name:string> <model:string>")
-        .action(async (_options, ...args) => {
-          try {
-            await configCommands.setModel(args[0], args[1]);
-            display.info("config.set-model", args[0], { model: args[1] });
-          } catch (error) {
-            display.error("cli.error", "config set-model", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "set-provider",
-      new Command()
-        .description("Set provider and configure default model")
-        .arguments("<provider:string>")
-        .action(async (_options, ...args) => {
-          try {
-            await configCommands.setProvider(args[0]);
-            display.info("config.set-provider", args[0], {});
-          } catch (error) {
-            display.error("cli.error", "config set-provider", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
       "set-path",
       new Command()
         .description("Set a path configuration")
@@ -447,59 +412,6 @@ function addConfigCommands7(runtime: IExaCtlRuntime) {
             }
           } catch (error) {
             display.error("cli.error", "config list-profiles", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
-
-function addConfigCommands8(runtime: IExaCtlRuntime) {
-  const { display, modelCommands } = runtime;
-  return [
-    [
-      "model",
-      new Command()
-        .description("Curate the per-size model candidate list the resolver reads")
-        .option("--size <size:string>", "Capability tier: S|M|L|XL")
-        .option("--characteristic <name:string>", "Write a characteristic sub-list instead of the base list")
-        .option("--clear", "Reset the size's candidate list to empty")
-        .option("--list", "Show curated lists per size with unconfigured flags")
-        .arguments("[entries...:string]")
-        .action(async (options, ...entries: string[]) => {
-          try {
-            if (options.list) {
-              const lists = await modelCommands.listCandidates();
-              for (const [size, view] of Object.entries(lists)) {
-                console.log(`  ${size}:`);
-                for (const e of view.entries) {
-                  console.log(`    ${e.entry}${e.unconfigured ? "  (unconfigured)" : ""}`);
-                }
-              }
-              return;
-            }
-            if (!options.size) {
-              throw new Error("--size <S|M|L|XL> is required (or use --list).");
-            }
-            if (options.clear) {
-              await modelCommands.clearCandidates(options.size);
-              display.info("config.model.clear", options.size, {});
-              return;
-            }
-            if (options.characteristic) {
-              await modelCommands.setCharacteristic(options.size, options.characteristic, entries);
-              display.info("config.model.characteristic", options.size, {
-                characteristic: options.characteristic,
-                count: entries.length,
-              });
-              return;
-            }
-            await modelCommands.setCandidates(options.size, entries);
-            display.info("config.model.set", options.size, { count: entries.length });
-          } catch (error) {
-            display.error("cli.error", "config model", {
               message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
             });
             Deno.exit(1);

@@ -7,7 +7,14 @@
  * @related-files [apps/exactl/src/exactl_renames.ts]
  */
 
-import { assert, assertEquals, assertNotEquals, assertStrictEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertNotEquals,
+  assertNotMatch,
+  assertStrictEquals,
+  assertStringIncludes,
+} from "@std/assert";
 import { EXACTL_RENAMES, findRename, MAX_HINT_ECHO_CHARS, quoteForShell, renameHint } from "../src/exactl_renames.ts";
 
 function rowFor(legacy: readonly string[]) {
@@ -107,6 +114,43 @@ Deno.test("a skills hint keeps the typed verb and arguments", () => {
 
 Deno.test("other memory paths are not renames", () => {
   for (const typed of [["memory"], ["memory", "list"], ["memory", "search"], ["skill"], ["skill", "list"]]) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});
+
+Deno.test("the models, routing and config model paths map to the model noun", () => {
+  const expected: Array<[string[], string]> = [
+    [["models"], "exactl model"],
+    [["models", "pricing"], "exactl model list"],
+    [["routing", "explain"], "exactl model route explain"],
+    [["routing", "policy", "validate"], "exactl model route validate"],
+    [["config", "model"], "exactl model candidates"],
+    [["config", "set-provider"], "exactl model use"],
+    [["config", "set-model"], "exactl config set models.<name>.model <model>"],
+  ];
+  for (const [legacy, canonical] of expected) {
+    assertEquals(findRename(legacy)?.canonical, canonical, legacy.join(" "));
+  }
+});
+
+Deno.test("a models hint keeps the typed verb and a pricing hint drops it", () => {
+  const refresh = ["models", "refresh"];
+  assertStringIncludes(renameHint(rowFor(refresh), refresh), "use 'exactl model refresh'");
+  const pricing = ["models", "pricing"];
+  assertStringIncludes(renameHint(rowFor(pricing), pricing), "use 'exactl model list'");
+  const provider = ["config", "set-provider", "openai"];
+  assertStringIncludes(renameHint(rowFor(provider), provider), "use 'exactl model use openai'");
+});
+
+Deno.test("a usage template replaces the typed arguments instead of following them", () => {
+  const typed = ["config", "set-model", "fast", "gpt-5"];
+  const hint = renameHint(rowFor(typed), typed);
+  assertStringIncludes(hint, "use 'exactl config set models.<name>.model <model>'");
+  assertNotMatch(hint, /gpt-5/);
+});
+
+Deno.test("other config paths are not renames", () => {
+  for (const typed of [["config", "get"], ["config", "set"], ["config", "show"], ["model", "list"], ["routing"]]) {
     assertEquals(findRename(typed), null, typed.join(" "));
   }
 });

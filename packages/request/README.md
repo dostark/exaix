@@ -121,8 +121,8 @@ Requests are routed as either **Flow** (multi-agent, with quality gates) or **Ag
 ## CLI Inspection
 
 ```text
-exactl routing explain --request ./Workspace/Requests/my-request.md
-exactl routing policy validate ./routing.policy.yaml
+exactl model route explain --request ./Workspace/Requests/my-request.md
+exactl model route validate ./routing.policy.yaml
 ```
 
 ## See Also

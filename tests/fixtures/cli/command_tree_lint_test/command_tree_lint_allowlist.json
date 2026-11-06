@@ -2,17 +2,13 @@
   "root-name": [],
   "sub-noun": [
     "git worktrees",
-    "memory pending",
-    "routing policy"
+    "memory pending"
   ],
   "leaf-verb": [
     "config list-profiles",
     "config lock",
     "config lock-list",
-    "config model",
-    "config set-model",
     "config set-path",
-    "config set-provider",
     "config unlock",
     "config use-profile",
     "git branches",
@@ -20,7 +16,6 @@
     "memory delete-learning",
     "memory pending approve-all",
     "memory rebuild-index",
-    "models pricing",
     "plan amendment approve-all",
     "plan amendment show-all",
     "plan approve-all",
@@ -32,9 +27,7 @@
   "compound-leaf": [
     "config list-profiles",
     "config lock-list",
-    "config set-model",
     "config set-path",
-    "config set-provider",
     "config use-profile",
     "memory delete-learning",
     "memory pending approve-all",

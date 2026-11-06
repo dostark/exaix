@@ -70,7 +70,7 @@ export interface IModelRegistry {
   getModelPricing(provider: string, model: string): Promise<IModelPricing>;
 }
 
-/** The advisory benchmark-score reader `exactl models list --benchmark` uses.
+/** The advisory benchmark-score reader `exactl model list --benchmark` uses.
  *  `ModelRegistryService` (Team) satisfies this; Solo/no-reader degrades to "-". */
 export interface IBenchmarkReader {
   getBenchmark(provider: string, model: string, benchmark: string): Promise<number | undefined>;

@@ -39,7 +39,7 @@ import { buildDaemonCommand, buildMigrateCommand, buildVersionCommand } from "./
 import { buildPortalCommand } from "./command_builders/portal_command.ts";
 import { buildConfigCommand } from "./command_builders/config_command.ts";
 import { buildBlueprintCommand } from "./command_builders/blueprint_command.ts";
-import { buildModelsCommand, buildRoutingCommand } from "./command_builders/routing_command.ts";
+import { buildModelCommand } from "./command_builders/model_command.ts";
 import { buildFlowCommand } from "./command_builders/flow_command.ts";
 import { buildMemoryCommand } from "./command_builders/memory_command.ts";
 import { buildDashboardCommand, buildWatchCommand } from "./command_builders/dashboard_command.ts";
@@ -238,10 +238,6 @@ const baseCommand: ExaCtlBaseCommand = new Command()
     ExaCtlCommandName.BLUEPRINT,
     buildBlueprintCommand(runtime),
   )
-  .command(
-    ExaCtlCommandName.ROUTING,
-    buildRoutingCommand(runtime),
-  )
   // Flow commands
   .command(
     ExaCtlCommandName.FLOW,
@@ -263,7 +259,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
 
 baseCommand
   .command(ExaCtlCommandName.LOG, buildLogCommand(runtime))
-  .command(ExaCtlCommandName.MODELS, buildModelsCommand(runtime))
+  .command(ExaCtlCommandName.MODEL, buildModelCommand(runtime))
   .command(ExaCtlCommandName.VERSION, buildVersionCommand(runtime))
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
   .command(ExaCtlCommandName.TOOL, buildToolCommand(runtime))

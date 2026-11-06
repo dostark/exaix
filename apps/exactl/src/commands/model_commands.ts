@@ -1,15 +1,15 @@
 /**
  * @module ModelCommands
  * @path apps/exactl/src/commands/model_commands.ts
- * @description Solo curation CLI — `exactl models list/pricing` (registry-backed
- *   display of the DefaultModelRegistry floor) and `exactl config model` (curate the
+ * @description Solo curation CLI — `exactl model list` (registry-backed
+ *   display of the DefaultModelRegistry floor) and `exactl model candidates` (curate the
  *   per-size `model_presets.<SIZE>.candidates` list + `characteristics` sub-map that the
  *   ModelResolver reads). Curated lists persist via TOML write-back to exa.config.toml —
  *   the surface the resolver reads — so the loop closes with zero DB (Phase 134, Solo).
  * @architectural-layer CLI
  * @dependencies ["@exaix/core/types", "@std/toml"]
  * @related-files ["apps/exactl/src/exactl.ts", "apps/exactl/src/init.ts", "packages/ai/src/model_resolver.ts", "packages/model-registry/src/default_model_registry.ts"]
- * @phase-134 Step 6 — Solo curation CLI; no `models refresh` surface (that is Team/Phase 135).
+ * @phase-134 Step 6 — Solo curation CLI; no `model refresh` surface (that is Team/Phase 135).
  */
 
 import { parse, stringify } from "@std/toml";
@@ -35,7 +35,7 @@ interface ICharacteristicMap {
   [characteristic: string]: string[];
 }
 
-/** Options for `models list`; `--benchmark` adds an optional advisory score column. */
+/** Options for `model list`. `--benchmark` adds an optional advisory score column. */
 interface IListModelsOptions {
   benchmark?: string;
 }
@@ -66,10 +66,10 @@ interface IConfigToml {
 /** Valid capability tiers for curated lists (mirrors ModelSize / DEFAULT_MODEL_PRESETS keys). */
 const VALID_SIZES: readonly string[] = ["S", "M", "L", "XL"];
 
-/** Age (ms) beyond which an overlay `verified_at` is rendered as stale in `models list`. */
+/** Age (ms) beyond which an overlay `verified_at` is rendered as stale in `model list`. */
 const STALENESS_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
-/** Display commands read the injected `IModelRegistry` floor; `config model` writes
+/** Display commands read the injected `IModelRegistry` floor; `model candidates` writes
  *  curated lists to exa.config.toml via TOML write-back. */
 export class ModelCommands {
   constructor(
@@ -78,10 +78,10 @@ export class ModelCommands {
     private readonly benchmarkReader?: Opt<IBenchmarkReader, Reason.OptionalDependency>,
   ) {}
 
-  // Display: models list / models pricing
+  // Display: model list
 
-  /** `models list [--benchmark <name>]` shows provider:model, provenance, and verified_at
-   *  staleness; `--benchmark` adds an advisory score column, "-" when unscored. */
+  /** `model list` shows provider:model, provenance, staleness and per-Mtok prices.
+   *  `--benchmark` adds an advisory score column that shows "-" when unscored. */
   async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
     const providers = await this.registry.getAllProviders();
     const rows: string[][] = [];
@@ -93,6 +93,8 @@ export class ModelCommands {
           `${m.provider}:${m.model}`,
           pricing.provenance,
           this.renderVerifiedAt(pricing.verifiedAt),
+          this.renderPrice(pricing.inputPerMtok),
+          this.renderPrice(pricing.outputPerMtok),
         ];
         if (options?.benchmark) {
           row.push(await this.renderBenchmarkScore(m.provider, m.model, options.benchmark));
@@ -100,7 +102,13 @@ export class ModelCommands {
         rows.push(row);
       }
     }
-    const headers = [colors.bold("Model"), colors.bold("Provenance"), colors.bold("Verified")];
+    const headers = [
+      colors.bold("Model"),
+      colors.bold("Provenance"),
+      colors.bold("Verified"),
+      colors.bold("Input $/Mtok"),
+      colors.bold("Output $/Mtok"),
+    ];
     if (options?.benchmark) {
       headers.push(colors.bold(`Benchmark (${options.benchmark})`));
     }
@@ -110,38 +118,9 @@ export class ModelCommands {
     console.log("");
   }
 
-  /** `models pricing` — per-Mtok input/output prices with provenance from the floor. */
-  async showPricing(): Promise<void> {
-    const providers = await this.registry.getAllProviders();
-    const rows: string[][] = [];
-    for (const provider of providers) {
-      const models = await this.registry.getProviderModels(provider);
-      for (const m of models) {
-        const pricing = await this.registry.getModelPricing(m.provider, m.model);
-        rows.push([
-          `${m.provider}:${m.model}`,
-          this.renderPrice(pricing.inputPerMtok),
-          this.renderPrice(pricing.outputPerMtok),
-          pricing.provenance,
-        ]);
-      }
-    }
-    const table = new Table()
-      .header([
-        colors.bold("Model"),
-        colors.bold("Input $/Mtok"),
-        colors.bold("Output $/Mtok"),
-        colors.bold("Provenance"),
-      ])
-      .body(rows);
-    console.log(colors.cyan(colors.bold("\nModel Pricing (Solo floor)")));
-    table.render();
-    console.log("");
-  }
+  // Team: model refresh
 
-  // Team: models refresh
-
-  /** `models refresh` (Team surface). Refresh runs inside the daemon's
+  /** `model refresh` (Team surface). Refresh runs inside the daemon's
    *  RegistryRefreshScheduler; the CLI holds only the Solo floor, so this reads
    *  `model_registry.enabled` to decide whether to refuse or guide. */
   // deno-lint-ignore require-await -- async so the guard's synchronous throw rejects the promise
@@ -149,7 +128,7 @@ export class ModelCommands {
     const cfg = this.readConfig();
     if (cfg.model_registry?.enabled !== true) {
       throw new Error(
-        "models refresh requires the Team live registry: set `model_registry.enabled = true` " +
+        "model refresh requires the Team live registry: set `model_registry.enabled = true` " +
           "in exa.config.toml and run a Team daemon (EXAIX_EDITION=team). It is a no-op in Solo.",
       );
     }
@@ -162,9 +141,9 @@ export class ModelCommands {
     );
   }
 
-  // Curation: config model
+  // Curation: model candidates
 
-  /** `config model --size <S> <entries…>` validates and writes a curated candidate list.
+  /** `model candidates --size <S> <entries…>` validates and writes a curated candidate list.
    *  An unregistered provider is allowed (flagged `unconfigured`); an ambiguous bare name
    *  is rejected. The write is atomic — any rejection leaves the file untouched. */
   async setCandidates(size: string, entries: string[]): Promise<void> {
@@ -177,7 +156,7 @@ export class ModelCommands {
     });
   }
 
-  /** `config model --size <S> --characteristic <name> <entries…>` writes a characteristic sub-list (intra-pool reorder hint the resolver honours). */
+  /** `model candidates --size <S> --characteristic <name> <entries…>` writes a characteristic sub-list (intra-pool reorder hint the resolver honours). */
   async setCharacteristic(size: string, name: string, entries: string[]): Promise<void> {
     this.assertValidSize(size);
     await this.validateEntries(entries);
@@ -188,7 +167,7 @@ export class ModelCommands {
     });
   }
 
-  /** `config model --size <S> --clear` — reset the curated list to empty (idempotent). */
+  /** `model candidates --size <S> --clear` — reset the curated list to empty (idempotent). */
   async clearCandidates(size: string): Promise<void> {
     this.assertValidSize(size);
     await this.mutateConfig((cfg) => {
@@ -197,7 +176,7 @@ export class ModelCommands {
     });
   }
 
-  /** `config model --list` returns the curated lists per size, each entry annotated with whether its provider is registered (`unconfigured`). */
+  /** `model candidates --list` returns the curated lists per size, each entry annotated with whether its provider is registered (`unconfigured`). */
   async listCandidates(): Promise<Record<string, ISizeCandidates>> {
     const cfg = this.readConfig();
     const registered = new Set(await this.registry.getAllProviders());
@@ -265,7 +244,7 @@ export class ModelCommands {
 
   private requireConfigPath(): string {
     if (!this.configPath) {
-      throw new Error("No config path available for model curation (config model requires a config file).");
+      throw new Error("No config path available for model curation (model candidates requires a config file).");
     }
     return this.configPath;
   }

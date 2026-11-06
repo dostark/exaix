@@ -11,7 +11,7 @@
 export interface IExaCtlRename {
   /** Old path words after `exactl`, such as `["blueprint", "ls"]`. */
   readonly legacy: readonly string[];
-  /** New invocation shown to the user, such as `exactl blueprint list`. */
+  /** New invocation shown to the user, such as `exactl blueprint list`. A text with `<placeholders>` is a usage template. */
   readonly canonical: string;
 }
 
@@ -23,6 +23,8 @@ const ESCAPED_SINGLE_QUOTE = `'\\''`;
 const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const LEGACY_JOURNAL = "journal";
 const LEGACY_MEMORY = "memory";
+const LEGACY_CONFIG = "config";
+const USAGE_TEMPLATE_MARKER = "<";
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
@@ -40,6 +42,13 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: [LEGACY_JOURNAL, "export-otel"], canonical: "exactl log export-otel" },
   { legacy: ["skills"], canonical: "exactl skill" },
   { legacy: [LEGACY_MEMORY, "skill"], canonical: "exactl skill" },
+  { legacy: ["models"], canonical: "exactl model" },
+  { legacy: ["models", "pricing"], canonical: "exactl model list" },
+  { legacy: ["routing", "explain"], canonical: "exactl model route explain" },
+  { legacy: ["routing", "policy", "validate"], canonical: "exactl model route validate" },
+  { legacy: [LEGACY_CONFIG, "model"], canonical: "exactl model candidates" },
+  { legacy: [LEGACY_CONFIG, "set-provider"], canonical: "exactl model use" },
+  { legacy: [LEGACY_CONFIG, "set-model"], canonical: "exactl config set models.<name>.model <model>" },
 ];
 
 /** The row whose legacy words are the longest prefix of the typed words, or null. */
@@ -60,7 +69,8 @@ export function quoteForShell(text: string): string {
 
 /** The one-line stderr hint for a rename row. */
 export function renameHint(rename: IExaCtlRename, typed: readonly string[]): string {
-  const rest = typed
+  const isTemplate = rename.canonical.includes(USAGE_TEMPLATE_MARKER);
+  const rest = isTemplate ? [] : typed
     .slice(rename.legacy.length)
     .map((word) => PLAIN_WORD.test(word) ? word : quoteForShell(word));
   const replacement = [rename.canonical, ...rest].join(" ");
