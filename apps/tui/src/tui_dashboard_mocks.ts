@@ -72,6 +72,7 @@ import { SECONDS_PER_HOUR } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type {
   IRequestAnalysis,
+  IRequestCancelResult,
   IRequestEntry,
   IRequestMetadata,
   IRequestOptions,
@@ -405,6 +406,14 @@ export class MockRequestService implements IRequestService {
 
   updateRequestStatus(_requestId: string, _status: RequestStatusType): Promise<boolean> {
     return Promise.resolve(true);
+  }
+  cancelRequest(requestId: string, _reason: Opt<string, Reason.TestStub>): Promise<IRequestCancelResult> {
+    return Promise.resolve({
+      trace_id: requestId,
+      filename: `request-${requestId}.md`,
+      previous_status: RequestStatus.PENDING,
+      status: RequestStatus.CANCELLED,
+    });
   }
   getAnalysis(_requestId: string): Promise<IRequestAnalysis | null> {
     return Promise.resolve(null);

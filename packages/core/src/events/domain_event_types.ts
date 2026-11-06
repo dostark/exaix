@@ -424,6 +424,14 @@ export interface IContextQueryDeniedPayload {
   reason: string;
 }
 
+/** Typed payload for request.cancelled. `request_id` is the request trace id. */
+export interface IRequestCancelledPayload {
+  request_id: string;
+  previous_status: string;
+  reason: string | null;
+  cancelled_by: string;
+}
+
 /** Typed payload for dogfood.context.connection_closed. */
 export interface IContextConnectionClosedPayload {
   connection_id: string;
@@ -806,6 +814,7 @@ export const DomainEventType = {
   // Request processing — status and provider events
   RequestStatusUpdateFailed: "request.status_update_failed",
   RequestAnalyzed: "request.analyzed",
+  RequestCancelled: "request.cancelled",
   RequestFlowValidationFailed: "flow.validation.failed",
   RequestProviderSelected: "provider.selected",
   RequestProviderSelectionFailed: "provider.selection_failed",

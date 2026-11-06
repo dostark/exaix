@@ -25,6 +25,7 @@ Deno.test("[EventRegistry] DomainEventType has correct values", () => {
   assertEquals(DomainEventType.ResourceLockAcquired, "resource_lock.acquired");
   assertEquals(DomainEventType.ResourceLockBlocked, "resource_lock.blocked");
   assertEquals(DomainEventType.ResourceLockReleased, "resource_lock.released");
+  assertEquals(DomainEventType.RequestCancelled, "request.cancelled");
 });
 
 Deno.test("[EventRegistry] TDomainEventType resolves from all enum values", () => {

@@ -5,7 +5,7 @@
  */
 
 import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 
 import { RequestAdapter } from "../../../apps/common/adapters/request_adapter.ts";
@@ -105,6 +105,35 @@ Deno.test("RequestAdapter delegates create/list/show helpers and update status p
     analyze: () => toPromise(createRequestAnalysis()),
   });
   assertEquals(await noUpdateAdapter.updateRequestStatus(TEST_TRACE_ID, RequestStatus.COMPLETED), false);
+});
+
+Deno.test("RequestAdapter forwards cancelRequest with the reason and refuses a service without it", async () => {
+  const metadata = createRequestMetadata();
+  const calls: Array<{ id: string; reason: string | undefined }> = [];
+  const base = {
+    create: () => toPromise(metadata),
+    list: () => toPromise([metadata]),
+    show: () => toPromise({ metadata, content: "ok" }),
+    getRequestContent: () => toPromise("ok"),
+    analyze: () => toPromise(createRequestAnalysis()),
+  };
+  const adapter = new RequestAdapter({
+    ...base,
+    cancelRequest: (id: string, reason: string | undefined) => {
+      calls.push({ id, reason });
+      return toPromise({
+        trace_id: id,
+        filename: "request-x.md",
+        previous_status: RequestStatus.PENDING,
+        status: "cancelled" as const,
+      });
+    },
+  });
+  const result = await adapter.cancelRequest(TEST_TRACE_ID, "duplicate");
+  assertEquals(result.status, "cancelled");
+  assertEquals(calls, [{ id: TEST_TRACE_ID, reason: "duplicate" }]);
+
+  await assertRejects(() => new RequestAdapter(base).cancelRequest(TEST_TRACE_ID, undefined), Error, "cancelRequest");
 });
 
 Deno.test("DisplayAdapter forwards log calls and defaults target to system", async () => {

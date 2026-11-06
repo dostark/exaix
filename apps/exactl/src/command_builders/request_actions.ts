@@ -28,6 +28,8 @@ import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
 import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
+import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import type { ICliApplicationContext, IDisplayService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import { ProviderFactory } from "@exaix/ai";
@@ -693,4 +695,22 @@ export async function handleRequestInspect(
   options: IInspectCommandOptions,
 ): Promise<void> {
   await new InspectCommands(context).inspect(traceId, options);
+}
+
+/** Cancels a request and maps each refusal to its exit code. */
+export async function handleRequestCancel(
+  context: IRequestActionContext,
+  requestId: string,
+  reason: Opt<string, Reason.OptionalInput>,
+): Promise<void> {
+  try {
+    await context.requestCommands.cancel(requestId, reason);
+  } catch (error) {
+    if (error instanceof RequestCancelNotAllowedError) {
+      throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, error.message);
+    }
+    if (error instanceof RequestIdError) throw new ExaCtlError(ExaCtlExitCode.USAGE, error.message);
+    if (error instanceof RequestNotFoundError) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, error.message);
+    throw error;
+  }
 }

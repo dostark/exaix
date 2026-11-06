@@ -22,7 +22,7 @@ import { type ILogEntry, MonitorView } from "../src/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../src/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../../../tests/helpers/test_utils.ts";
 import { runtimeSkillFixture } from "@exaix/testing";
-import type { IRequestEntry, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
+import type { IRequestCancelResult, IRequestEntry, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "@exaix/storage-sqlite";
@@ -172,6 +172,18 @@ export function createMockRequestService(
         return Promise.resolve(true);
       }
       return Promise.resolve(false);
+    }
+    cancelRequest(id: string, _reason: string | undefined): Promise<IRequestCancelResult> {
+      const request = this.requests.find((r) => r.trace_id === id);
+      if (!request) return Promise.reject(new Error("Request not found"));
+      const previous = request.status;
+      request.status = RequestStatus.CANCELLED;
+      return Promise.resolve({
+        trace_id: id,
+        filename: request.filename,
+        previous_status: previous,
+        status: RequestStatus.CANCELLED,
+      });
     }
     getAnalysis(_id: string): Promise<IRequestAnalysis | null> {
       return Promise.resolve(null);
@@ -631,6 +643,7 @@ function createLegacyMockRequestService(): IRequestService {
     create: () => Promise.resolve(createMockRequestMetadata()),
     createRequest: () => Promise.resolve(createMockRequestMetadata()),
     updateRequestStatus: () => Promise.resolve(true),
+    cancelRequest: () => Promise.reject(new Error("Not implemented in legacy mock")),
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in legacy mock")),
   };
@@ -669,9 +682,15 @@ export function createLegacyTuiSessionWithTracking(): {
       createCalled = true;
       return Promise.resolve(commonTestData.mockObjects.newRequest() as IRequestEntry);
     },
-    updateRequestStatus: () => {
+    updateRequestStatus: () => Promise.resolve(true),
+    cancelRequest: () => {
       deleteCalled = true;
-      return Promise.resolve(true);
+      return Promise.resolve({
+        trace_id: "t",
+        filename: "request-t.md",
+        previous_status: RequestStatus.PENDING,
+        status: RequestStatus.CANCELLED,
+      });
     },
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in legacy mock")),
@@ -698,6 +717,7 @@ export function createLegacyTuiSessionWithLongTraceId(): InstanceType<typeof _Le
         trace_id: "12345678-abcd-efgh-ijkl-mnopqrstuvwx",
       } as Partial<IRequestEntry> as IRequestEntry),
     updateRequestStatus: () => Promise.resolve(true),
+    cancelRequest: () => Promise.reject(new Error("Not implemented in legacy mock")),
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in legacy mock")),
   };
@@ -715,6 +735,7 @@ export function createLegacyTuiSessionWithErrors(): InstanceType<typeof _LegacyR
     create: () => Promise.reject(new Error("Create error")),
     createRequest: () => Promise.reject(new Error("Create error")),
     updateRequestStatus: () => Promise.reject(new Error("Delete error")),
+    cancelRequest: () => Promise.reject(new Error("Delete error")),
     getAnalysis: () => Promise.reject(new Error("Analysis error")),
     analyze: () => Promise.reject(new Error("Analysis error")),
   };

@@ -18,8 +18,10 @@ import {
 } from "../handlers/request_clarify_handler.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import {
   AnalysisMode,
+  type IRequestCancelResult,
   type IRequestEntry,
   type IRequestMetadata,
   type IRequestOptions,
@@ -91,32 +93,52 @@ export class RequestCommands extends BaseCommand {
     return result.content;
   }
 
+  /** Cancels a pending or needs_clarification request. A pending clarification wait state of the request is
+   *  cancelled too, so the request file and the wait state agree. */
+  async cancel(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    const result = await this.requests.cancelRequest(requestId, reason);
+    if (result.previous_status === RequestStatus.NEEDS_CLARIFICATION) {
+      for (const resumeToken of await this.pendingClarificationTokens(result.trace_id)) {
+        await this.waitStateCommands.cancel(resumeToken, reason);
+      }
+    }
+    return result;
+  }
+
+  /** Resume tokens of the pending clarification wait states of a trace. A missing wait directory yields none. */
+  private async pendingClarificationTokens(traceId: string): Promise<string[]> {
+    const cfg = this.context.config.getAll();
+    const waitDir = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates, traceId);
+    const tokens: string[] = [];
+    try {
+      for await (const entry of Deno.readDir(waitDir)) {
+        if (!entry.isFile || !entry.name.endsWith(".json")) continue;
+        let parsed;
+        try {
+          parsed = WaitStateSchema.parse(JSON.parse(await Deno.readTextFile(join(waitDir, entry.name))));
+        } catch {
+          continue;
+        }
+        if (parsed.kind === "clarification" && parsed.status === "pending") tokens.push(parsed.resumeToken);
+      }
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+    return tokens;
+  }
+
   /** `options.engine` is for DI in tests. */
   async clarify(
     requestId: string,
     options?: Opt<IClarifyOptions, Reason.OptionalInput>,
   ): Promise<IClarifyResult> {
     if (!options?.onClarificationResolved) {
-      const cfg = this.context.config.getAll();
-      const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates);
       const resolvedBy = options?.resolvedBy;
       const resolveCallback = async (traceId: string) => {
-        const waitDir = join(waitStatesRoot, traceId);
         try {
-          for await (const entry of Deno.readDir(waitDir)) {
-            if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-            const content = await Deno.readTextFile(join(waitDir, entry.name));
-            let parsed;
-            try {
-              parsed = WaitStateSchema.parse(JSON.parse(content));
-            } catch {
-              continue;
-            }
-            if (parsed.kind === "clarification" && parsed.status === "pending") {
-              // Route through WaitStateCommands (not a direct file write) so this resolution
-              // carries the same resolvedBy audit attribution as every other wait-state gate.
-              await this.waitStateCommands.approve(parsed.resumeToken, undefined, resolvedBy);
-            }
+          for (const resumeToken of await this.pendingClarificationTokens(traceId)) {
+            // WaitStateCommands keeps the resolvedBy audit attribution of every wait-state gate.
+            await this.waitStateCommands.approve(resumeToken, undefined, resolvedBy);
           }
         } catch {
           // wait directory may not exist — ignore

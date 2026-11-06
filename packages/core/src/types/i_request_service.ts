@@ -9,12 +9,14 @@
 import type { RequestSource } from "@exaix/core";
 import type {
   AnalysisMode,
+  IRequestCancelResult,
   IRequestEntry,
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
 } from "@exaix/core/request";
 import type { RequestStatusType } from "@exaix/core/status";
+import type { Opt, Reason } from "./optional_marker.ts";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 
@@ -60,6 +62,11 @@ export interface IRequestService {
    * Update the status of a request.
    */
   updateRequestStatus(requestId: string, status: RequestStatusType): Promise<boolean>;
+
+  /**
+   * Cancel a pending or needs_clarification request and journal request.cancelled.
+   */
+  cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult>;
 
   /**
    * Get the analysis for a specific request.

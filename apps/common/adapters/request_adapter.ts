@@ -12,7 +12,13 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { RequestStatusType } from "@exaix/core/status";
 import type { AnalysisMode } from "@exaix/core/types";
 import type { RequestSource } from "@exaix/core";
-import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
+import type {
+  IRequestCancelResult,
+  IRequestEntry,
+  IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
+} from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRequestCommandService {
@@ -28,6 +34,7 @@ interface IRequestCommandService {
   show(idOrFilename: string): Promise<IRequestShowResult>;
   getRequestContent(requestId: string): Promise<string>;
   updateRequestStatus?(requestId: string, status: RequestStatusType): Promise<boolean>;
+  cancelRequest?(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult>;
   getAnalysis?(requestId: string): Promise<IRequestAnalysis | null>;
   analyze(
     requestId: string,
@@ -81,6 +88,13 @@ export class RequestAdapter implements IRequestService {
       return false;
     }
     return await this.service.updateRequestStatus(requestId, status);
+  }
+
+  async cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    if (typeof this.service.cancelRequest !== "function") {
+      throw new Error("This request service does not support cancelRequest");
+    }
+    return await this.service.cancelRequest(requestId, reason);
   }
 
   async getAnalysis(requestId: string): Promise<IRequestAnalysis | null> {

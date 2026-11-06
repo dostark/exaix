@@ -22,7 +22,7 @@ import {
   STATUS_ICONS,
 } from "../src/request_manager_view.ts";
 import {
-  type createMockRequestService as _createMockRequestService,
+  createMockRequestService,
   createTuiWithRequests,
   createViewWithRequests,
   sampleBasicRequest,
@@ -585,4 +585,45 @@ Deno.test("Phase 13.6: Collapse and expand all", async () => {
   // Expand all ('E' key)
   await tui.handleKey(KEYS.CAP_E);
   assertEquals(tui.getState().requestTree[0].expanded, true);
+});
+
+Deno.test("cancel action calls cancelRequest", async () => {
+  const service = createMockRequestService(_sampleRequests([{ trace_id: "req-1", subject: "IRequest 1" }]));
+  const calls: Array<{ id: string; reason: string | undefined }> = [];
+  service.cancelRequest = (id: string, reason: string | undefined) => {
+    calls.push({ id, reason });
+    return Promise.resolve({
+      trace_id: id,
+      filename: "request-req-1.md",
+      previous_status: RequestStatus.PENDING,
+      status: RequestStatus.CANCELLED,
+    });
+  };
+  let updated = false;
+  service.updateRequestStatus = () => {
+    updated = true;
+    return Promise.resolve(true);
+  };
+  const view = new RequestManagerView(service);
+  const tui = view.createTuiSession(service.requests);
+
+  tui.showCancelConfirm("req-1");
+  await tui.handleKey(KEYS.ENTER);
+
+  assertEquals(calls, [{ id: "req-1", reason: undefined }]);
+  assertEquals(updated, false);
+  assertEquals(service.requests[0].status, RequestStatus.CANCELLED);
+});
+
+Deno.test("a refused cancel leaves the request status and shows the error", async () => {
+  const service = createMockRequestService(_sampleRequests([{ trace_id: "req-2", subject: "Running" }]));
+  service.cancelRequest = () => Promise.reject(new Error("Request req-2 is in_progress and in flight."));
+  const view = new RequestManagerView(service);
+  const tui = view.createTuiSession(service.requests);
+
+  tui.showCancelConfirm("req-2");
+  await tui.handleKey(KEYS.ENTER);
+
+  assertEquals(service.requests[0].status, RequestStatus.PENDING);
+  assertStringIncludes(tui.getStatusMessage(), "in flight");
 });

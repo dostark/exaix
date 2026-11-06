@@ -10,7 +10,7 @@ import type { AnalysisMode, IRequestOptions } from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
 import { RequestManagerTuiSession } from "../src/request_manager_view.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
-import type { IRequest, IRequestAnalysis } from "@exaix/core/request";
+import type { IRequest, IRequestAnalysis, IRequestCancelResult } from "@exaix/core/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 
 class MockRequestService implements IRequestService {
@@ -104,6 +104,15 @@ class MockRequestService implements IRequestService {
 
   updateRequestStatus(_requestId: string, _status: RequestStatusType): Promise<boolean> {
     return Promise.resolve(true);
+  }
+
+  cancelRequest(requestId: string, _reason: string | undefined): Promise<IRequestCancelResult> {
+    return Promise.resolve({
+      trace_id: requestId,
+      filename: `request-${requestId}.md`,
+      previous_status: RequestStatus.PENDING,
+      status: RequestStatus.CANCELLED,
+    });
   }
 
   getAnalysis(_requestId: string): Promise<IRequestAnalysis | null> {

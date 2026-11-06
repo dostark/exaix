@@ -35,6 +35,7 @@ import { RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui"
 import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 
 import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/types";
+import type { IRequestCancelResult } from "@exaix/core/request";
 import type { IRequestService } from "@exaix/core/types";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,
@@ -252,6 +253,14 @@ export class MinimalRequestServiceMock implements IRequestService {
   }
   updateRequestStatus(_requestId: string, _status: RequestStatusType): Promise<boolean> {
     return Promise.resolve(true);
+  }
+  cancelRequest(requestId: string, _reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    return Promise.resolve({
+      trace_id: requestId,
+      filename: `request-${requestId}.md`,
+      previous_status: RequestStatus.PENDING,
+      status: RequestStatus.CANCELLED,
+    });
   }
 
   create(
@@ -711,7 +720,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
 
     try {
       this.startLoading("Cancelling request...");
-      await this.service.updateRequestStatus(requestId, RequestStatus.CANCELLED);
+      await this.service.cancelRequest(requestId, undefined);
 
       // Update local state
       const request = this.requests.find((r) => r.trace_id === requestId);
@@ -1072,7 +1081,7 @@ export class LegacyRequestManagerTuiSession {
         case RequestOperation.DELETE: {
           const delRequest = this.requests[this.selectedIndex];
           if (delRequest) {
-            await this.service.updateRequestStatus(delRequest.trace_id, RequestStatus.CANCELLED);
+            await this.service.cancelRequest(delRequest.trace_id, undefined);
             this.statusMessage = `Cancelled request: ${delRequest.trace_id.slice(0, 8)}`;
           }
           break;
@@ -1134,6 +1143,10 @@ export class RequestManagerView implements IRequestService {
 
   updateRequestStatus(requestId: string, status: RequestStatusType): Promise<boolean> {
     return this.service.updateRequestStatus(requestId, status);
+  }
+
+  cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    return this.service.cancelRequest(requestId, reason);
   }
 
   create(

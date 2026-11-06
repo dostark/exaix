@@ -1507,6 +1507,27 @@ exactl request create "fix something"          # vague → quality gate detects 
 | `NEEDS_CLARIFICATION` | Awaiting your response to the most recent round of questions         |
 | `ENRICHING`           | Quality gate is auto-rewriting an underspecified request (transient) |
 
+#### **`exactl request cancel` — Cancel a Request**
+
+Use `exactl request cancel` to stop a request that no execution has started:
+
+```bash
+exactl request cancel <trace-id>
+exactl request cancel <trace-id> --reason "Duplicate of another request"
+```
+
+The command accepts a request in the `pending` or `needs_clarification` status. It sets `status: cancelled`, writes a `request.cancelled` journal row with the previous status, the reason and who cancelled it, and cancels a pending clarification wait state of the request. The id is a full trace id, a request file name or a trace id prefix of at least 8 characters.
+
+Any other status exits with code 4 and the file stays as it was:
+
+| Status                                              | Message and next step                                   |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| `planned`                                           | Reject the plan instead: `exactl plan reject <plan-id>` |
+| `analyzing`, `enriching`, `refining`, `in_progress` | The request is in flight. Retry when it settles         |
+| `completed`, `failed`, `cancelled`                  | The request is already final                            |
+
+An empty, short or ambiguous id exits with code 2, and an unknown id exits with code 3. `exactl request clarify <trace-id> --cancel` is a different command: it abandons the clarification session and puts the request back in the queue.
+
 #### **Request Quality Gate — How Scoring Works**
 
 Every request passes through a three-tier quality assessment before the agent runs:

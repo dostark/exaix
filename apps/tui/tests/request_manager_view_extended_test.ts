@@ -132,6 +132,7 @@ function createTestSessionWithMockService(
     create: () => Promise.resolve({} as IRequest),
     createRequest: () => Promise.resolve({} as IRequest),
     updateRequestStatus: () => Promise.resolve(true),
+    cancelRequest: () => Promise.reject(new Error("Not implemented in extended test mock")),
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in extended test mock")),
   };
@@ -426,6 +427,7 @@ Deno.test("RequestManagerTuiSession: detail view without skills shows (none)", a
     create: () => Promise.resolve({} as IRequest),
     createRequest: () => Promise.resolve({} as IRequest),
     updateRequestStatus: () => Promise.resolve(true),
+    cancelRequest: () => Promise.reject(new Error("Not implemented in extended test mock")),
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in extended test mock")),
   };

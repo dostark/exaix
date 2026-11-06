@@ -13,6 +13,7 @@ import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import {
   handleRequestAnalyze,
+  handleRequestCancel,
   handleRequestClarify,
   handleRequestCreate,
   handleRequestInspect,
@@ -121,6 +122,15 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
         .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options: IRequestAnalyzeOptions, ...id: string[]) => {
           await handleRequestAnalyze({ requestCommands, display }, id[0], options);
+        }),
+    ],
+    [
+      `${ExaCtlVerb.CANCEL} <requestId:string>`,
+      new Command()
+        .description("Cancel a pending or needs_clarification request")
+        .option("--reason <reason:string>", "Why the request is cancelled")
+        .action(async (options: { reason?: string }, ...id: string[]) => {
+          await handleRequestCancel({ requestCommands, display }, id[0], options.reason);
         }),
     ],
     [

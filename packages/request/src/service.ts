@@ -19,6 +19,11 @@ import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { AnalysisMode } from "@exaix/core/types";
+import { DomainEventType } from "@exaix/core/events";
+import type { IRequestCancelledPayload } from "@exaix/core/events";
+import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
+import { type IRequestCancelResult, MIN_REQUEST_ID_PREFIX_CHARS } from "@exaix/core/request";
+import { PathResolver } from "@exaix/portal";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -259,6 +264,55 @@ export class RequestService {
     } catch {
       return false;
     }
+  }
+
+  /** Cancels a request that no execution has started. The path comes from the directory listing, never from the id. */
+  async cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    const entry = await this.resolveCancelTarget(requestId);
+    const path = await new PathResolver(this.config).validatePath(entry.path!, [this.requestsDir]);
+    const content = await Deno.readTextFile(path);
+    const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    if (!match) throw new RequestNotFoundError(requestId);
+    const previousStatus = this.parseFrontmatter(match[1]).status as RequestStatusType;
+    if (previousStatus !== RequestStatus.PENDING && previousStatus !== RequestStatus.NEEDS_CLARIFICATION) {
+      throw new RequestCancelNotAllowedError(entry.trace_id, previousStatus);
+    }
+    const lines = match[1].split("\n").map((line) =>
+      line.trim().startsWith("status:") ? `status: ${RequestStatus.CANCELLED}` : line
+    );
+    await Deno.writeTextFile(path, `---\n${lines.join("\n")}\n---\n${match[2]}`);
+
+    const payload: IRequestCancelledPayload = {
+      request_id: entry.trace_id,
+      previous_status: previousStatus,
+      reason: reason ?? null,
+      cancelled_by: await this.userIdentityGetter(),
+    };
+    await this.display.info(DomainEventType.RequestCancelled, entry.trace_id, { ...payload }, entry.trace_id);
+    return {
+      trace_id: entry.trace_id,
+      filename: entry.filename,
+      previous_status: previousStatus,
+      status: RequestStatus.CANCELLED,
+    };
+  }
+
+  /** An exact trace id or filename, or a unique trace id prefix of at least MIN_REQUEST_ID_PREFIX_CHARS. */
+  private async resolveCancelTarget(requestId: string): Promise<IRequestEntry> {
+    if (requestId.length === 0) throw new RequestIdError("Request id is empty.", []);
+    const entries = await this.list();
+    const exact = entries.find((e) => e.trace_id === requestId || e.filename === requestId);
+    if (exact) return exact;
+    if (requestId.length < MIN_REQUEST_ID_PREFIX_CHARS) {
+      throw new RequestIdError(`Request id needs at least ${MIN_REQUEST_ID_PREFIX_CHARS} characters.`, []);
+    }
+    const matches = entries.filter((e) => e.trace_id.startsWith(requestId));
+    if (matches.length > 1) {
+      const ids = matches.map((e) => e.trace_id);
+      throw new RequestIdError(`Request id '${requestId}' matches several requests: ${ids.join(", ")}.`, ids);
+    }
+    if (matches.length === 0) throw new RequestNotFoundError(requestId);
+    return matches[0];
   }
 
   async getAnalysis(requestId: string): Promise<IRequestAnalysis | null> {

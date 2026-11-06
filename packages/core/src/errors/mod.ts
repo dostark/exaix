@@ -10,3 +10,4 @@
 export * from "./context_error.ts";
 export * from "./safe_error.ts";
 export * from "./context_budget_error.ts";
+export * from "./request_cancel_errors.ts";
