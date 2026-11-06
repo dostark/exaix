@@ -11,7 +11,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { SkillsService } from "@exaix/core/skills";
 import { initTestDbService, REPO_ROOT } from "@exaix/testing";
 
-Deno.test("Blueprint planning defaults and trigger-selected guidance have separate discovery routes", async () => {
+Deno.test("skill-authoring tags select authoring guidance and planning tags select planning guidance", async () => {
   const environment = await initTestDbService();
   try {
     const service = new SkillsService(
@@ -24,11 +24,12 @@ Deno.test("Blueprint planning defaults and trigger-selected guidance have separa
       new EventLogger({ db: environment.db }),
     );
     const cases = [
-      { tags: ["best-practices", "plan-quality", "blueprint"], expected: ["blueprint-best-practices"] },
+      { tags: ["skill-authoring", "skill-maintenance", "skill-catalog"], expected: ["blueprint-best-practices"] },
       {
         tags: ["implementation-plan", "implementation-planning", "migration-planning"],
         expected: ["implementation-plan"],
       },
+      { tags: ["best-practices", "plan-quality", "blueprint"], expected: [] },
     ];
     const selected = new Set(["blueprint-best-practices", "implementation-plan"]);
     for (const sample of cases) {

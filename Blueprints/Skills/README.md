@@ -55,6 +55,11 @@ and compatible migrations using the target project's own conventions.
 The `software-architect` role includes it by default. Other roles can request it explicitly.
 The skill produces a plan; it does not authorize implementation or publication.
 
+Use `blueprint-best-practices` when creating, reviewing, or maintaining skill files.
+It covers purpose, discovery metadata, supported files, sidecar consistency, revisions,
+and evidence. Its `skill-authoring`, `skill-maintenance`, and `skill-catalog` tags
+select authoring guidance. It is not the architect's default planning skill.
+
 Agent roles reference skills by name in their `default_skills` list, e.g.
 `default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
 request time the skill service loads the matching skill folder and injects each skill's

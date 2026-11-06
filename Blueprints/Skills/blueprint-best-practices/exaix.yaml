@@ -1,33 +1,37 @@
-title: Blueprint Best Practices
+title: Blueprint Skill Authoring and Maintenance
 triggers:
   tags:
-    - best-practices
-    - plan-quality
-    - blueprint
+    - skill-authoring
+    - skill-maintenance
+    - skill-catalog
 constraints:
-  - Never overwrite unrelated changes — use patch_file for targeted edits to large files
-  - Only cite files and symbols that exist in the provided portal context; verify before acting
-  - Every plan step must have concrete successCriteria and explicit tools/actions
-  - Solve the task with the fewest edits that satisfy the requirements
+  - Apply this skill to Blueprint skill authoring and maintenance, not ordinary implementation planning
+  - Use the current catalog format and production loader rather than inventing unsupported fields or reference layouts
+  - Keep skill instructions separate from agent-role identity, model selection, and tool authority
+  - Align body, sidecar constraints, triggers, and outputs within the approved scope
+  - Check role defaults and consumers when a skill changes purpose, name, or expected output
+  - Validate representative outcomes and incorrect controls without relying on wording checks
+  - Distinguish format validity, prompt delivery, observed behavior, and measured benefit
+  - Follow applicable approval rules and preserve unrelated skills and work
 output_requirements:
-  - 'Precision: use patch_file for targeted edits, write_file only for new or small files'
-  - 'Ground references: verify file/symbol existence before acting'
-  - 'Executable steps: each step has concrete successCriteria and explicit tools/actions'
-  - 'Minimal change: solve with the fewest edits that satisfy requirements'
-  - 'Assumptions and risks: surface ambiguity and destructive actions explicitly'
+  - Skill purpose, intended requests, current behavior, and proposed change
+  - Consistent skill files, sidecar fields, references, and required catalog metadata
+  - Representative cases, independent outcome checks, and plausible incorrect controls
+  - Format, prose, delivery, and behavior evidence with precise unverified limits
+  - Affected role defaults and consumers when the skill contract changes
 quality_criteria:
-  - name: Grounding
-    description: Every referenced file and symbol is verified to exist
-    weight: 30
-  - name: Executability
-    description: Each step is independently verifiable and runnable
-    weight: 30
-  - name: Scope Discipline
-    description: The plan solves the task without speculative refactors or unrequested scope
-    weight: 20
-  - name: Risk Transparency
-    description: Ambiguities and destructive actions are surfaced explicitly
-    weight: 20
+  - name: Scope and discovery
+    description: The skill has a precise purpose and its metadata selects the intended tasks
+    weight: 25
+  - name: Instruction quality
+    description: Instructions provide useful decisions and constraints without duplicated or speculative rules
+    weight: 25
+  - name: Contract consistency
+    description: Files, sidecars, references, role defaults, and consumers agree with the supported catalog contract
+    weight: 25
+  - name: Evidence honesty
+    description: Validation distinguishes loader results, actual delivery, behavior, and measured benefit
+    weight: 25
 applies_to:
   agents:
     - '*'

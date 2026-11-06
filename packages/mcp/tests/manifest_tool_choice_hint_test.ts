@@ -1,16 +1,10 @@
 /**
  * @module ManifestToolChoiceHintTest
  * @path packages/mcp/tests/manifest_tool_choice_hint_test.ts
- * @description Phase 154 Step 5: `IToolManifestEntry.preferred_tool_choice_hint` is a new
- *   optional agent-facing string exposing Phase 151/152's "prefer patch_file for targeted
- *   edits" tool-selection guidance (already established in
- *   Blueprints/Skills/blueprint-best-practices.skill.md's "Precision" practice) through the
- *   MCP tool-definition surface, so external MCP clients get the same signal the internal
- *   ReAct loop already has via skill-file prose. Step 6 wires `appendToolChoiceHint()` (this
- *   file) into both `LocalToolDispatcher.getToolDefinitions()` and, more importantly, the
- *   real MCP server's `tools/list` response (`exaix-team/packages/mcp-server/tests/tool_choice_hint_e2e_test.ts`
- *   is the non-deferrable proof for the latter — `LocalToolDispatcher` is not what the real
- *   server's `tools/list` is built from).
+ * @description Checks manifest hints that prefer patch_file for targeted edits.
+ *   The hints preserve the historical Blueprint "Precision" guidance for external MCP clients.
+ *   This test covers manifest data, not the server's tools/list response.
+ *   Server coverage lives in exaix-team/packages/mcp-server/tests/tool_choice_hint_e2e_test.ts.
  * @architectural-layer MCP
  * @related-files [packages/mcp/src/manifest.ts, packages/mcp/server/local_tool_dispatcher.ts, exaix-team/packages/mcp-server/server.ts]
  */

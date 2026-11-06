@@ -49,9 +49,9 @@ export interface IToolManifestEntry {
   /** Agent-facing description answering: what it does, when to prefer it, what it returns,
    *  and what can go wrong. */
   description: string;
-  /** Short agent-facing tool-selection guidance, e.g. "prefer for targeted edits". Sourced from the same
-   *  tool-selection guidance established for the internal ReAct loop (blueprint-best-practices.skill.md's
-   *  "Precision" practice), exposed here so external MCP clients get the same signal. */
+  /** Short tool-selection guidance, such as "prefer for targeted edits".
+   *  Preserves the original Blueprint "Precision" practice for external MCP clients.
+   *  The manifest supplies this guidance independently of the current skill catalog. */
   preferred_tool_choice_hint?: string;
   /** JSON Schema draft-07 descriptor for the tool's accepted input parameters, mirroring the handler's own
    *  getToolDefinition().inputSchema. Populated for MCP_HANDLER-kind tools with a matching ToolRegistry entry;

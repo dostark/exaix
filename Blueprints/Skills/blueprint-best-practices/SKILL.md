@@ -1,34 +1,55 @@
 ---
 name: blueprint-best-practices
-description: "Guidelines for generating high-quality, executable plans — precision, grounding, executability, minimal change, and risk awareness"
+description: Create, review, or maintain Blueprint skill files and sidecars. Use for skill authoring and catalog maintenance rather than ordinary implementation planning.
 ---
-# Blueprint Best Practices
 
-A good plan is precise, grounded, executable, minimal, and honest about risk.
-Apply these five practices to every plan you produce.
+# Blueprint Skill Authoring and Maintenance
 
-1. **Precision**: Use `patch_file` for targeted edits to large files; reserve
-   `write_file` for new or small files so you never overwrite unrelated changes.
-   Touching only the lines that must change keeps diffs reviewable and avoids
-   regressions in code you did not intend to modify. When `write_file` is
-   genuinely required for a large new file, use the `TOML_BLOCK:N` pattern from
-   `response-contract` rather than inline JSON.
+Write skills that improve decisions for a defined task. Keep instructions accurate, discoverable, and testable.
+Use the catalog's current authoring format and production loader as the format contract.
 
-2. **Ground every reference**: Only cite files and symbols that exist in the
-   provided portal context; verify with `read_file`/`grep_search` before acting,
-   and never invent paths or modules. A plan built on a hallucinated path fails
-   the moment an agent tries to execute it.
+## Define the skill boundary
 
-3. **Make steps executable**: Each plan step needs concrete `successCriteria`
-   and, where it changes the workspace, explicit `tools`/`actions` — a step a
-   reader cannot verify or run is not done. Prefer one verifiable outcome per
-   step over a vague paragraph of intent.
+State the skill's purpose, intended requests, and expected deliverable.
+Check existing skills before adding another. Separate distinct responsibilities without duplicating whole workflows.
+Keep task instructions in the skill and persona, model, and tool authority in the agent role.
+Do not turn one failure or example into a universal rule.
 
-4. **Prefer the smallest change**: Solve the task with the fewest edits that
-   satisfy the requirements; avoid speculative refactors or unrequested scope.
-   Extra scope is extra risk and extra review; defer it to its own request.
+## Write useful instructions
 
-5. **State assumptions and risks**: If a requirement is ambiguous or an action
-   is destructive, surface it in `<thought>` and list it under the plan's
-   `risks` rather than guessing silently. Naming a risk lets the reviewer accept
-   or redirect it before any change is made.
+Use a precise name and description that help select the skill for the right task.
+Include decision criteria, relevant constraints, expected evidence, and stopping conditions where they affect correctness.
+Scale detail to the task. Avoid generic advice, repeated policies, and speculative requirements.
+Use the required instruction-prose standard. Preserve literal commands, identifiers, and quotations.
+Put substantial conditional detail in supported references and explain when to read them.
+Keep shared guidance in one maintained location. Do not require unavailable skills or tools.
+
+## Keep files and metadata consistent
+
+Use the supported folder structure, frontmatter, sidecar fields, and reference-link rules.
+Keep the folder name, declared name, description, triggers, constraints, and outputs consistent.
+Do not broaden triggers to unrelated tasks merely to improve discovery.
+Preserve existing identifiers, role permissions, and quality weights unless their change is part of the approved scope.
+Align sidecar constraints with body changes in the same review.
+Check role defaults and callers when changing a skill's purpose, name, or expected output.
+
+## Validate behavior and delivery
+
+Use representative requests with independently defined outcomes and plausible incorrect controls.
+Test the decisions the skill should improve rather than matching its words or headings.
+Run changed executable helpers and prove that meaningful failures are detected.
+Load the folder through the production catalog validator and run applicable prose, reference, and size checks.
+Treat advisory size findings separately from blocking format or policy failures.
+
+Distinguish format validity, actual prompt delivery, task behavior, and measured benefit.
+Record the loaded source and revision when testing delivery.
+Do not infer behavioral success from a loader pass or benefit from additional instructions.
+Use controlled task comparisons for benefit claims, or state the precise reason measurement remains pending.
+
+## Maintain approved revisions
+
+Before a change, record current behavior, proposed wording, sidecar changes, validation cases, and exclusions.
+Follow the applicable review and approval policy. Approval of one skill does not authorize edits to another.
+Preserve unrelated work. Update required catalog metadata and affected fixtures with the approved change.
+Check revision and approval state after editing. Do not represent a stale approved revision as the changed content.
+Report validation results and unresolved limits. Do not publish or change role permissions without applicable authorization.

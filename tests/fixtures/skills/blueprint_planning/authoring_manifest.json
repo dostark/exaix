@@ -1,0 +1,27 @@
+{
+  "approval_date": "2026-11-06",
+  "proposal_revision": 1,
+  "purpose_change": "implementation plan quality to skill authoring and maintenance",
+  "before_hashes": {
+    "Blueprints/Skills/blueprint-best-practices/SKILL.md": "a79a5e16e6472d23104f71ed887349ca5ff233e5b8e815678fd8cd55626661c8",
+    "Blueprints/Skills/blueprint-best-practices/exaix.yaml": "116a476aea9240f6a758c47a383780ae7b9af58a0adeb531189f457749b239e1"
+  },
+  "approved_hashes": {
+    "Blueprints/Skills/blueprint-best-practices/SKILL.md": "71f11b609718e607a66843cd853bbfe3fac736209549685e86dbfb5d22f34987",
+    "Blueprints/Skills/blueprint-best-practices/exaix.yaml": "2b4d561987298a6b56ac09eca17eb45b6d04521d4bbaafc59fc0923b5e334cdf"
+  },
+  "case_sha256": "294fb90abf34dd89c882149498f40e7680fc328885e56f9ed60991d04c1cb18e",
+  "limits": [
+    "The shipped catalog previously had no authoring case corpus for this purpose.",
+    "Tag matching and role defaults are observable discovery evidence, not provider submission or task success.",
+    "Five authored outcome cases remain unexecuted; there is no controlled benefit result."
+  ],
+  "baseline_parent": "a66efb7ae",
+  "verification": {
+    "focused_tests": 17,
+    "guidance_tests": 119,
+    "prose": "body and sidecar pass with zero findings",
+    "discovery": "real matching accepts the authoring tags and rejects old planning tags",
+    "behavior": "five model cases remain unexecuted; no benefit claim"
+  }
+}

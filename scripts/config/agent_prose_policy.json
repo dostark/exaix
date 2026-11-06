@@ -830,6 +830,406 @@
         "advisoryDecisions": [],
         "unresolvedRuleIds": []
       }
+    },
+    {
+      "path": "Skills/blueprint-best-practices/SKILL.md",
+      "contentHash": "71f11b609718e607a66843cd853bbfe3fac736209549685e86dbfb5d22f34987",
+      "kind": "mixed",
+      "spans": [
+        {
+          "selector": "yaml:description",
+          "contentHash": "122649a43902c06efec163df6e6938cdc6df7b0042e2ec7b96fe2c8f32cba129",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "frontmatter prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Blueprint Skill Authoring and Maintenance",
+          "contentHash": "cd7b88fbc5fa90cfbe775bda4989af4abaf4a777adfb48f8f51d96353fbc7894",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Define the skill boundary",
+          "contentHash": "bf8dce736d204d71bcc88a494102fd26822ad9aa59b8f86c96ccf6f73be2a170",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Write useful instructions",
+          "contentHash": "16414891e90055ea3e823e877ac9abca2ae6c5378f6feccee9646d8b5afdefbd",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Keep files and metadata consistent",
+          "contentHash": "80ee23d2cc540e34ae14e42f39333f3e96d2226333209cb2fbe5182d7a9debc6",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Validate behavior and delivery",
+          "contentHash": "d16b6eb23cb8fb34735e8499ec4e69e745bc96400e505c83d0cc6fb67b0f1eff",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Maintain approved revisions",
+          "contentHash": "81cb25e4335aed26052fa1d682a44290b0af80f71d465ca1024626f55293837f",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        }
+      ],
+      "review": {
+        "reviewer": "Codex, approved Blueprint skill proposal revision 1",
+        "reviewedHash": "71f11b609718e607a66843cd853bbfe3fac736209549685e86dbfb5d22f34987",
+        "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
+        "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
+        "classificationHash": "4ad7a88ab2da4a4cd01f43f32c7eca3427d03a4e41c9d257a65f2b709ab887a9",
+        "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ruleDecisions": [
+          {
+            "ruleId": "STE-5.1",
+            "outcome": "pass",
+            "reason": "Reviewed the procedural sentences and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.3",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive explanations and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.6",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive paragraphs against the six-sentence limit."
+          },
+          {
+            "ruleId": "STE-8.1",
+            "outcome": "pass",
+            "reason": "Eligible instructions contain no semicolons. Literal examples retain their source text."
+          },
+          {
+            "ruleId": "STE-8.4",
+            "outcome": "pass",
+            "reason": "Lists, identifiers and quotations use the shared normalization and counting rules."
+          },
+          {
+            "ruleId": "STE-8.5",
+            "outcome": "pass",
+            "reason": "Reviewed procedural instruction counts, list items, identifiers, and literal examples."
+          },
+          {
+            "ruleId": "STE-8.6",
+            "outcome": "pass",
+            "reason": "Descriptions state current requirements or the limits of the proposed method."
+          },
+          {
+            "ruleId": "STE-8.7",
+            "outcome": "pass",
+            "reason": "Reviewed lists and paragraphs with the shared normalization rules."
+          },
+          {
+            "ruleId": "EXAIX-01",
+            "outcome": "pass",
+            "reason": "The skill starts with its task and expected deliverable. Its sections state concrete actions."
+          },
+          {
+            "ruleId": "EXAIX-02",
+            "outcome": "pass",
+            "reason": "The planning body covers bounded implementation plans. The authoring body covers skill files and catalog maintenance."
+          },
+          {
+            "ruleId": "EXAIX-03",
+            "outcome": "pass",
+            "reason": "The instructions contain no agent self-reflection or work narration."
+          },
+          {
+            "ruleId": "EXAIX-04",
+            "outcome": "pass",
+            "reason": "The body explains the method and the sidecar supplies its constraints and output obligations."
+          },
+          {
+            "ruleId": "EXAIX-05",
+            "outcome": "pass",
+            "reason": "Short sections and sidecar lists make required actions and outputs explicit."
+          }
+        ],
+        "advisoryDecisions": [],
+        "unresolvedRuleIds": []
+      }
+    },
+    {
+      "path": "Skills/blueprint-best-practices/exaix.yaml",
+      "contentHash": "2b4d561987298a6b56ac09eca17eb45b6d04521d4bbaafc59fc0923b5e334cdf",
+      "kind": "mixed",
+      "spans": [
+        {
+          "selector": "yaml:title",
+          "contentHash": "05470e51940f0749d11be2c767eda22b36e671f2fead5972e54980702b1c4d6a",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[0]",
+          "contentHash": "7718a3d1f773f56d2f5324d840b60ab34234ce3185cb9240be3d51a92d236cfc",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[1]",
+          "contentHash": "9b924bf8e4aa628c0ae4a87824b7bb78a5d9fc37dddb2fc81ac41954627b6d53",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[2]",
+          "contentHash": "107d5d1adb343ae0f6788eb569fbb5893fd179f93784e93c02d04dc94d3938e7",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[3]",
+          "contentHash": "40a7afe6373dc060fc9c591a5d3d331ed1b548270a3b02f5bac8670333c88f61",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[4]",
+          "contentHash": "c5df39fa9ca7a35e098883615abad25db11e1cc1021347f675b42127b0ba3607",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[5]",
+          "contentHash": "b2c02d223751b3c6f1a90ed6c34efee7e0e8968d5846c40c1e2e454e50a31daf",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[6]",
+          "contentHash": "22b70024edd96a68ca42049860516b0ed186c0b785acf40d463046741443ff35",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[7]",
+          "contentHash": "3345197b85272641b32102223a5dede2d12f6c53bc4f98b53a3d817a87b84dd4",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[0]",
+          "contentHash": "544d4f2dfc0d2ea957633fac277d0bd4cb3c6f6bc902bd71a675f5f6ff863ae4",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[1]",
+          "contentHash": "a68dfb96e343b211e35796c5007b9f5728ca0660fa6940a635ca8243e061b173",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[2]",
+          "contentHash": "a6392e9782f17c1b329daec6dda9229b26465b630ed8579c7a3e5500b2db58a5",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[3]",
+          "contentHash": "66d42c86ab651eb4f4b0cd3abd0e3cbb52e9a1da53f4e775737e22d429ee042d",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[4]",
+          "contentHash": "775fb1c0f778d19d29e54a24ba134544177b2d0be5d5393b57d9d5a71f4cdfe7",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[0].name",
+          "contentHash": "b6376c4272b7183c760e2daea927567d1351c336d344732e69e9be8349d065b7",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[0].description",
+          "contentHash": "62c0909eaed298bd57032594de80091b2a128501030b22f3e2aa5e96c5b8eb64",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[1].name",
+          "contentHash": "c9a53f38eb14183281a6353319ffa6c7281a438efd9236fe5bf2122854ff446a",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[1].description",
+          "contentHash": "1603b43b8fe66fca46541e157188202c733c09f4a7c81c3afc1ee91967a7f093",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[2].name",
+          "contentHash": "5fe9a28760a6f937d78b56e2461525e48aaaa6fd64f29dcedffaf9aeaf6f25e2",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[2].description",
+          "contentHash": "7024c057738c094e15044362797a161964915a9b548b643bd98e4a623b6075a0",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[3].name",
+          "contentHash": "56786b27bcdbaf06ddf9fd1887072636f58e4106504c93b5079ba5460fe605ba",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:quality_criteria[3].description",
+          "contentHash": "9d60bc5d0822e5df894cd0cb74878dbe50721c083e928b1a6b4924cc38286fe1",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        }
+      ],
+      "review": {
+        "reviewer": "Codex, approved Blueprint skill proposal revision 1",
+        "reviewedHash": "2b4d561987298a6b56ac09eca17eb45b6d04521d4bbaafc59fc0923b5e334cdf",
+        "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
+        "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
+        "classificationHash": "e3c710898345e9ce9641600b37859f88955fedbc9538da891e15dca370889b04",
+        "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ruleDecisions": [
+          {
+            "ruleId": "STE-5.1",
+            "outcome": "pass",
+            "reason": "Reviewed the procedural sentences and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.3",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive explanations and normalized word counts against the twenty-word limit."
+          },
+          {
+            "ruleId": "STE-6.6",
+            "outcome": "pass",
+            "reason": "Reviewed descriptive paragraphs against the six-sentence limit."
+          },
+          {
+            "ruleId": "STE-8.1",
+            "outcome": "pass",
+            "reason": "Eligible instructions contain no semicolons. Literal examples retain their source text."
+          },
+          {
+            "ruleId": "STE-8.4",
+            "outcome": "pass",
+            "reason": "Lists, identifiers and quotations use the shared normalization and counting rules."
+          },
+          {
+            "ruleId": "STE-8.5",
+            "outcome": "pass",
+            "reason": "Reviewed procedural instruction counts, list items, identifiers, and literal examples."
+          },
+          {
+            "ruleId": "STE-8.6",
+            "outcome": "pass",
+            "reason": "Descriptions state current requirements or the limits of the proposed method."
+          },
+          {
+            "ruleId": "STE-8.7",
+            "outcome": "pass",
+            "reason": "Reviewed lists and paragraphs with the shared normalization rules."
+          },
+          {
+            "ruleId": "EXAIX-01",
+            "outcome": "pass",
+            "reason": "The skill starts with its task and expected deliverable. Its sections state concrete actions."
+          },
+          {
+            "ruleId": "EXAIX-02",
+            "outcome": "pass",
+            "reason": "The planning body covers bounded implementation plans. The authoring body covers skill files and catalog maintenance."
+          },
+          {
+            "ruleId": "EXAIX-03",
+            "outcome": "pass",
+            "reason": "The instructions contain no agent self-reflection or work narration."
+          },
+          {
+            "ruleId": "EXAIX-04",
+            "outcome": "pass",
+            "reason": "The body explains the method and the sidecar supplies its constraints and output obligations."
+          },
+          {
+            "ruleId": "EXAIX-05",
+            "outcome": "pass",
+            "reason": "Short sections and sidecar lists make required actions and outputs explicit."
+          }
+        ],
+        "advisoryDecisions": [],
+        "unresolvedRuleIds": []
+      }
     }
   ],
   "technicalTerms": []

@@ -830,6 +830,9 @@ The `implementation-plan` Blueprint skill prepares a bounded implementation plan
 It uses the target project's conventions and covers dependencies, production wiring, validation, and migration rollback.
 The `software-architect` role includes this skill by default. Planning does not authorize implementation or publication.
 
+Use `blueprint-best-practices` for skill authoring and maintenance, including consistent metadata, references, revisions, and validation evidence.
+It no longer provides ordinary implementation-planning guidance and is selected separately from `implementation-plan`.
+
 Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
 
 #### Key Concepts
