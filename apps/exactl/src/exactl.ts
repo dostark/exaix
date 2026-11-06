@@ -42,7 +42,7 @@ import { buildBlueprintCommand } from "./command_builders/blueprint_command.ts";
 import { buildModelCommand } from "./command_builders/model_command.ts";
 import { buildFlowCommand } from "./command_builders/flow_command.ts";
 import { buildMemoryCommand } from "./command_builders/memory_command.ts";
-import { buildDashboardCommand, buildWatchCommand } from "./command_builders/dashboard_command.ts";
+import { buildDashboardCommand } from "./command_builders/dashboard_command.ts";
 import { buildMcpCommand } from "./command_builders/mcp_command.ts";
 import { buildEvalCommand } from "./command_builders/eval_command.ts";
 import type { IExaCtlRuntime } from "./exactl_runtime.ts";
@@ -265,7 +265,6 @@ baseCommand
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
   .command(ExaCtlCommandName.TOOL, buildToolCommand(runtime))
   .command(ExaCtlCommandName.SKILL, buildSkillCommand(runtime))
-  .command(ExaCtlCommandName.WATCH, buildWatchCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 
 // cliffy attaches .error() to the last registered command unless reset() runs first.

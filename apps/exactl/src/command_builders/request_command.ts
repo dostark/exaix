@@ -7,7 +7,7 @@
  */
 
 import { Command } from "@cliffy/command";
-import { RequestOperation } from "@exaix/core";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -25,79 +25,18 @@ import {
 } from "./request_actions.ts";
 import type { IInspectCommandOptions } from "../commands/inspect_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import {
-  CLI_CMD_SHOW_ID,
-  CLI_OPTION_JSON_HELP,
-  CLI_OPTION_MODEL,
-  CLI_OPTION_WAIT_RESOLVED_BY,
-  CLI_PORTAL_LONG_OPTION,
-} from "../exactl_constants.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { CLI_CMD_SHOW_ID, CLI_OPTION_JSON_HELP, CLI_OPTION_WAIT_RESOLVED_BY, ExaCtlVerb } from "../exactl_constants.ts";
+import { buildRequestCreateBase } from "./request_create_options.ts";
 
 function createRequestCreateCommand(runtime: IExaCtlRuntime) {
   const { context, display, requestCommands } = runtime;
-  return new Command()
+  return buildRequestCreateBase()
     .description("Create a request for an Exaix agent or multi-agent flow (PRIMARY INTERFACE)")
     .arguments("[description:string]")
     .option("--agent <agent:string>", "Target agent role blueprint", { default: CLI_DEFAULTS.AGENT })
-    .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
-      default: CLI_DEFAULTS.PRIORITY,
-    })
-    .option(CLI_PORTAL_LONG_OPTION, "Portal alias for context")
-    .option("--target-branch <branch:string>", "Target branch for this request (portal-aware)")
-    .option(CLI_OPTION_MODEL, "Named model configuration")
-    .option("--model-size <size:string>", "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)")
-    .option(
-      "--characteristic <value:string>",
-      "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)",
-      { collect: true },
-    )
-    .option(
-      "--thinking [mode:string]",
-      "Extended thinking: bare --thinking means true; accepts true|false|auto",
-    )
-    .option(
-      "--effort <tier:string>",
-      "Reasoning token budget: low|medium|high|auto (auto asks the system to decide)",
-    )
-    .option(
-      "--preferred-provider <provider:string>",
-      "Narrow candidates to specific provider (skips cross-provider scoring)",
-    )
     .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --agent)")
-    .option("--skills <skills:string>", "Comma-separated list of skills to inject")
-    .option("-s, --subject <subject:string>", "Human-readable subject for the request")
-    .option(
-      "--acceptance-criteria <criteria:string>",
-      "Acceptance criterion (repeatable: --acceptance-criteria 'A' --acceptance-criteria 'B')",
-      { collect: true },
-    )
-    .option(
-      "--expected-outcome <outcome:string>",
-      "Expected outcome (repeatable: --expected-outcome 'A' --expected-outcome 'B')",
-      { collect: true },
-    )
     .option("-f, --file <file:string>", "Read description from file")
-    .option(
-      "--overlay <file:string>",
-      "Per-run binding overlay file (repeatable: --overlay a.json --overlay b.toml)",
-      { collect: true },
-    )
-    .option(
-      "--bind <spec:string>",
-      "Per-run binding (repeatable), e.g. flow:research/step:compose=service=openai",
-      { collect: true },
-    )
-    .option("--locked <file:string>", "Replay a prior run's binding lock file")
-    .option("--dry-run", "Show what would be created without writing")
-    .option(
-      "--dry-run-context",
-      "Print a projected input-token breakdown without writing a request file or calling a real LLM",
-    )
-    .option("--json", CLI_OPTION_JSON_HELP)
-    .option("--analyze", "Trigger immediate intent analysis for the request")
-    .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
-      default: AnalysisMode.HEURISTIC,
-    })
     .action(async (options, description?: Opt<string, Reason.OptionalInput>) => {
       await handleRequestCreate(
         { requestCommands, display, appContext: context },
@@ -127,7 +66,7 @@ function createRequestCommand(runtime: IExaCtlRuntime) {
 }
 
 function addRequestCommands1(runtime: IExaCtlRuntime) {
-  const { fullContext, display, requestCommands } = runtime;
+  const { fullContext, display, requestCommands, watchCommandInstance } = runtime;
   return [
     [
       RequestOperation.LIST,
@@ -149,6 +88,26 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
         .description("Show request details")
         .action(async (_options: void, ...args: string[]) => {
           await handleRequestShow({ requestCommands, display }, args[0]);
+        }),
+    ],
+    [
+      `${ExaCtlVerb.WATCH} [requestId:string]`,
+      new Command()
+        .description("Tail live execution events for a request or a trace (SSE stream with historical fallback)")
+        .option("--trace <traceId:string>", "Watch this trace id instead of a request")
+        .action(async (options: { trace?: string }, requestId?: Opt<string, Reason.OptionalInput>) => {
+          if ((requestId === undefined) === (options.trace === undefined)) {
+            throw new ExaCtlError(ExaCtlExitCode.USAGE, "Pass a request id or --trace <trace-id>, not both.");
+          }
+          try {
+            const traceId = options.trace ?? (await requestCommands.show(requestId as string)).metadata.trace_id;
+            await watchCommandInstance.watch(traceId);
+          } catch (error) {
+            display.error("cli.error", "watch", {
+              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+            });
+            Deno.exit(1);
+          }
         }),
     ],
     [

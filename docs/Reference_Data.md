@@ -274,7 +274,7 @@ Core infrastructure modules for architecture validation:
 | **EventLogger**              | Publishes `IStreamingEvent` to event bus     | `packages/core/src/logger/event_logger.ts`                 |
 | **ReActLoopStrategy**        | Emits heartbeat via `setInterval` during LLM | `packages/execution/src/strategies/react_loop_strategy.ts` |
 | **SseHandler**               | Bridges HTTP SSE to `EventBusService`        | `exaix-team/packages/mcp-server/sse_handler.ts`            |
-| **WatchCommand**             | CLI `exactl watch <trace_id>` with colors    | `apps/exactl/src/commands/watch.ts`                        |
+| **WatchCommand**             | CLI `exactl request watch` with colors       | `apps/exactl/src/commands/watch.ts`                        |
 | **MilestoneEventBusEmitter** | Bridges IMilestoneEmitter to EventBusService | `packages/core/src/observability/milestone_emitter.ts`     |
 
 ### Key Design Decisions
@@ -750,7 +750,7 @@ Emission site map (post-progress-streaming gap remediation):
 
 ### Milestone Rendering in CLI `watch`
 
-The `exactl watch` command renders milestone events (`type: "milestone"`) with:
+The `exactl request watch` command renders milestone events (`type: "milestone"`) with:
 
 | Element                 | Rendering                                                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |

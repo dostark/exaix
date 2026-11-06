@@ -3,7 +3,7 @@
  * @path apps/exactl/tests/watch_command_test.ts
  * @related-files []
  * @architectural-layer CLI
- * @description Tests for the `exactl watch <trace_id>` CLI command that tails
+ * @description Tests for the `exactl request watch` CLI command that tails
  * live execution SSE streams and falls back to historical DB queries.
  */
 

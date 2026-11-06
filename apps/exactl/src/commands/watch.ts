@@ -1,7 +1,7 @@
 /**
  * @module WatchCommand
  * @path apps/exactl/src/commands/watch.ts
- * @description CLI command `exactl watch <trace_id>` that tails live execution
+ * @description CLI command `exactl request watch` that tails live execution
  * SSE streams with color-coded output, falling back to historical DB queries
  * for completed traces.
  * @architectural-layer CLI

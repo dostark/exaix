@@ -52,6 +52,7 @@ const MOVES: readonly Move[] = [
   ["mcp start", "mcp serve", NO_FLAGS, NO_FLAGS],
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
   ["request", "request create", ["--agent-role", "-a"], ["--agent"]],
+  ["watch", "request watch", NO_FLAGS, ["--trace"]],
 ];
 
 const nodes = walkCommandTree(createExaCtlCommand());

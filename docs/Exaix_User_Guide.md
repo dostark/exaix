@@ -1238,8 +1238,8 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 | Option                  | Short | Description                                                                                                                                                  |
 | ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--agent-role`          | `-a`  | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                                                             |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent-role)                                                                                               |
+| `--agent`               |       | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                                                             |
+| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                                                                    |
 | `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                                                                |
 | `--portal`              |       | Portal alias for project context                                                                                                                             |
 | `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                                                  |
@@ -2194,6 +2194,9 @@ exactl flow list --json
 exactl flow show <flow-id>
 exactl flow show research-pipeline
 
+# Run a flow: create a request for it (same as `exactl request create "..." --flow <flow-id>`)
+exactl flow run <flow-id> "Review the auth module"
+
 # Validate a flow definition
 exactl flow validate <flow-id>
 exactl flow validate research-pipeline
@@ -3105,14 +3108,17 @@ exactl memory search --project MyProject "API changes"
 
 #### **Watch Command** - Live Execution Streaming
 
-The `exactl watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types.
+The `exactl request watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types.
 
 ```bash
+# Watch a live execution by request id
+exactl request watch <request-id>
+
 # Watch a live execution by trace ID
-exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
+exactl request watch --trace a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Watch with a custom SSE port (if not using default 8765)
-EXA_SSE_PORT=9000 exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
+EXA_SSE_PORT=9000 exactl request watch --trace a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Output format (color-coded):**

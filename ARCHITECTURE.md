@@ -1634,7 +1634,7 @@ ReActLoopStrategy ──heartbeat──▶ EventBusService ◀── EventLogger
                                    SseHandler (GET /api/v1/traces/:id/stream)
                                          │
                                          ▼
-                                   WatchCommand (exactl watch <trace_id>)
+                                   WatchCommand (exactl request watch --trace <trace_id>)
                                          │
                                          ▼
                                Color-coded terminal output

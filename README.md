@@ -128,7 +128,7 @@ deno task cli -- plan show <plan-id>
 deno task cli -- plan approve <plan-id>
 
 # 7. Observe and then stop the daemon when finished.
-deno task cli -- watch <trace-id>
+deno task cli -- request watch --trace <trace-id>
 deno task stop
 ```
 

@@ -114,3 +114,9 @@ Deno.test("`request list -a` is still the --all option and prints no hint", asyn
   const run = await runExactlInTempWorkspace(["request", "list", "-a"]);
   assertEquals(run.code, 0, run.stderr);
 });
+
+Deno.test("`exactl watch <trace>` names `request watch --trace`", async () => {
+  const run = await runExactlInTempWorkspace(["watch", "550e8400-e29b-41d4-a716-446655440000"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertStringIncludes(run.stderr, "use 'exactl request watch --trace <trace-id>'");
+});

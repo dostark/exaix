@@ -9,7 +9,24 @@
 import { Command } from "@cliffy/command";
 import { RequestOperation } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { CLI_OPTION_JSON_HELP } from "../exactl_constants.ts";
+import { CLI_OPTION_JSON_HELP, ExaCtlVerb } from "../exactl_constants.ts";
+import { handleRequestCreate, type IRequestCreateOptions } from "./request_actions.ts";
+import { buildRequestCreateBase } from "./request_create_options.ts";
+
+function createFlowRunCommand(runtime: IExaCtlRuntime) {
+  const { context, display, requestCommands } = runtime;
+  return buildRequestCreateBase()
+    .description("Create a request that runs a flow")
+    .example("Run a flow", 'exactl flow run code-review "Review the auth module"')
+    .action(async (options, ...args: string[]) => {
+      const [flowId, description] = args;
+      await handleRequestCreate(
+        { requestCommands, display, appContext: context },
+        { ...(options as IRequestCreateOptions), flow: flowId },
+        description,
+      );
+    });
+}
 
 function createFlowCommand(runtime: IExaCtlRuntime) {
   const { flowCommands } = runtime;
@@ -34,6 +51,7 @@ function createFlowCommand(runtime: IExaCtlRuntime) {
           await flowCommands.showFlow(flowId, options);
         }),
     )
+    .command(`${ExaCtlVerb.RUN} <flowId:string> <description:string>`, createFlowRunCommand(runtime))
     .command(
       "validate <flowId:string>",
       new Command()

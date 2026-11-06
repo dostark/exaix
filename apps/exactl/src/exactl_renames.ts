@@ -90,6 +90,7 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: [LEGACY_CONFIG, "use-profile"], canonical: "exactl config profile use" },
   { legacy: [LEGACY_CONFIG, "list-profiles"], canonical: "exactl config profile list" },
   { legacy: [LEGACY_CONFIG, "set-path"], canonical: "exactl config set paths.<key> <dir>" },
+  { legacy: ["watch"], canonical: "exactl request watch --trace <trace-id>" },
   { legacy: ["mcp", "start"], canonical: "exactl mcp serve" },
   {
     legacy: ["mcp", "connect"],

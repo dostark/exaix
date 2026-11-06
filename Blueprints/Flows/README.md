@@ -159,7 +159,7 @@ the full 17-flow catalog rollout and its per-step rationale.
 exactl flow list            # list available flows
 exactl flow show <id>       # show a flow's definition
 exactl flow validate <id>   # validate a flow against the schema
-exactl request create "…" --flow <id>   # run a request through a flow
+exactl flow run <id> "…"   # run a request through a flow
 ```
 
 ## Creating a new flow

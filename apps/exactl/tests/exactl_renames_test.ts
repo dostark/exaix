@@ -293,3 +293,11 @@ Deno.test("requestCreateHint quotes the typed description", () => {
   assertStringIncludes(requestCreateHint(["$(rm -rf ~)"]), "exactl request create '$(rm -rf ~)'");
   assertStringIncludes(requestCreateHint(["it's"]), `'it'\\''s'`);
 });
+
+Deno.test("the root watch path maps to request watch with a trace id", () => {
+  assertEquals(
+    findRename(["watch", "550e8400-e29b-41d4-a716-446655440000"])?.canonical,
+    "exactl request watch --trace <trace-id>",
+  );
+  assertEquals(findRename(["request", "watch"]), null);
+});
