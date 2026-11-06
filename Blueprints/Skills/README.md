@@ -49,6 +49,12 @@ the learning system are draft folders under `Memory/Skills/learned/` until a per
 
 ## Usage
 
+Use `implementation-plan` to turn agreed requirements into a grounded, bounded
+implementation plan. It covers production wiring, dependency order, validation,
+and compatible migrations using the target project's own conventions.
+The `software-architect` role includes it by default. Other roles can request it explicitly.
+The skill produces a plan; it does not authorize implementation or publication.
+
 Agent roles reference skills by name in their `default_skills` list, e.g.
 `default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
 request time the skill service loads the matching skill folder and injects each skill's

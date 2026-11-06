@@ -46,7 +46,7 @@ function describe(rootLabel: string, diagnostic: ISkillDiagnostic): string {
 }
 
 /** The counts the repository's own tracked corpora have today. */
-export const REPOSITORY_EXPECTED_COUNTS: ISkillCorpusCounts = { catalog: 27, dogfood: 28 };
+export const REPOSITORY_EXPECTED_COUNTS: ISkillCorpusCounts = { catalog: 28, dogfood: 28 };
 
 /** Validates the tracked authored skill roots. Learned roots, operator portal roots and config are never read. */
 export async function checkSkillCatalog(

@@ -13,7 +13,7 @@ description: "Architecture design specialist for scalable, maintainable system d
 default_skills: [
   "response-contract",
   "architecture-review",
-  "blueprint-best-practices",
+  "implementation-plan",
   "collaborative-flow",
 ]
 permitted_tools:

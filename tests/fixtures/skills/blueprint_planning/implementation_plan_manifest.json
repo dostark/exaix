@@ -1,0 +1,24 @@
+{
+  "approval_date": "2026-11-06",
+  "proposal_revision": 1,
+  "baseline_parent": "5490fca13",
+  "before_role_sha256": "eced82b56a1862a30664c4e8838764b6d976215c397dcb7b6481f30af5950b85",
+  "approved_files": {
+    "Blueprints/Skills/implementation-plan/SKILL.md": "4403828eb1cd4de89eb55eac67f84a935b7a57895b305f25ef55150827f93c8c",
+    "Blueprints/Skills/implementation-plan/exaix.yaml": "12677a15095bd14b9a2702559469eb9b67d3a98db0f9ce5ce3c7c9002355762f",
+    "Blueprints/Agents/software-architect.md": "1b33db31bd47452f879b58cb744af64cb00d29d955cfefd2417548aaa6de1839"
+  },
+  "case_sha256": "b4cd0b3a8822d0b4e9221eb80ac898731db293b56f04a169a87bd93f1a540995",
+  "limits": [
+    "No existing live case selects the new implementation-plan revision.",
+    "Role/catalog checks establish default selection and resolvability, not provider submission or model behavior.",
+    "No preregistered treatment/control trial exists for this skill; benefit is unmeasured."
+  ],
+  "verification": {
+    "catalog_and_role_tests": 11,
+    "guidance_tests": 119,
+    "static_ci_exit": 0,
+    "prose": "body and sidecar pass with zero findings",
+    "behavior": "not executed; no behavioral success or benefit claimed"
+  }
+}

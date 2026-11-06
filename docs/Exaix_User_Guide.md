@@ -826,6 +826,10 @@ the dedicated guide: [Exaix_Memory.md](Exaix_Memory.md).
 
 ### 3.3 Procedural Skills
 
+The `implementation-plan` Blueprint skill prepares a bounded implementation plan from agreed requirements.
+It uses the target project's conventions and covers dependencies, production wiring, validation, and migration rollback.
+The `software-architect` role includes this skill by default. Planning does not authorize implementation or publication.
+
 Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
 
 #### Key Concepts

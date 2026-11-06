@@ -1,0 +1,40 @@
+title: Implementation Planning
+triggers:
+  tags:
+    - implementation-plan
+    - implementation-planning
+    - migration-planning
+constraints:
+  - Plan from agreed requirements and verified code, preserving settled decisions and established terminology
+  - Keep criteria pending when a material decision is unresolved
+  - Prefer complete production slices with bounded checkpoints and actual blocking dependencies
+  - Identify production consumers, wiring owners, and integration checks for runtime behavior
+  - Use compatible expand, migrate, and contract stages only for justified broad mechanical migrations
+  - Specify focused tests, independent expectations, failure cases, compatibility checks, and rollback conditions
+  - Keep ordinary decisions in the plan and propose ADRs only for qualifying consequential tradeoffs
+  - Produce a reviewable plan without treating planning as permission to implement or publish
+output_requirements:
+  - Goal, scope, exclusions, current behavior, and required behavior
+  - Grounded changes, decision rationale, and material alternatives
+  - Bounded checkpoints with dependencies, production consumers, wiring, and testable acceptance criteria
+  - Focused validation, relevant failure cases, documentation, and migration rollback where applicable
+  - Assumptions, pending decisions, risks, and honest review status
+quality_criteria:
+  - name: Requirement coverage
+    description: Acceptance criteria cover the agreed behavior without speculative scope
+    weight: 30
+  - name: Grounding and integration
+    description: Existing contracts are verified and required production wiring has executable validation
+    weight: 30
+  - name: Sequencing and compatibility
+    description: Bounded checkpoints have actual dependencies and preserve required compatibility
+    weight: 25
+  - name: Evidence and risk
+    description: Tests have independent expectations and the plan records unresolved decisions, risks, and review limits
+    weight: 15
+related_skills:
+  - requirements-analysis
+  - architecture-review
+applies_to:
+  agents:
+    - '*'

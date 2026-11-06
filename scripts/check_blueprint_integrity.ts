@@ -45,6 +45,7 @@ interface IIntegrityResult {
 /** Skills exempt from the orphan-skill rule (trigger-matched, not in default_skills). */
 const TRIGGER_MATCHED_SKILLS: string[] = [
   "fix-bug",
+  "blueprint-best-practices",
   "portal-grounding",
   "commit-message",
   "gap-analysis",
