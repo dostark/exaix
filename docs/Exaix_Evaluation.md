@@ -1597,7 +1597,7 @@ validity threat in the user-simulation research (the "benevolence bias") — it 
 overstates real-world reliability, since a real requester is not always cooperative.
 
 **What the interactive pack's adherence rate actually proves.** Every resolved wait-state gate
-carries a `resolvedBy` actor identity (an additive parameter on `exactl wait
+carries a `resolvedBy` actor identity (an additive parameter on `exactl approval
 approve/reject/amend/expire/cancel`, journalled as a `wait_state.command_resolved` event); the
 adherence rate checks that this attribution stays correct. For the `interactive` pack
 specifically, this is a **bookkeeping-consistency** result, not a bypass-resistance one — the

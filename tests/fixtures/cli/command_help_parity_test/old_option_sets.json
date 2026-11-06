@@ -105,5 +105,40 @@
     "-p",
     "-s"
   ],
-  "watch": []
+  "watch": [],
+  "wait list": [
+    "--status",
+    "-s"
+  ],
+  "wait approve": [
+    "--message",
+    "--resolved-by",
+    "-m"
+  ],
+  "wait reject": [
+    "--message",
+    "--resolved-by",
+    "-m"
+  ],
+  "wait amend": [
+    "--message",
+    "--resolved-by",
+    "-m"
+  ],
+  "wait expire": [
+    "--message",
+    "--resolved-by",
+    "-m"
+  ],
+  "wait cancel": [
+    "--message",
+    "--resolved-by",
+    "-m"
+  ],
+  "tool pending": [],
+  "tool confirm": [],
+  "tool deny": [
+    "--reason",
+    "-r"
+  ]
 }

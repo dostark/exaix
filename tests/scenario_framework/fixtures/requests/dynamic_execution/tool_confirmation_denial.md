@@ -13,6 +13,6 @@ This request supports the Phase 79 scenario that exercises the queued tool confi
 
 Expected behavior:
 
-1. A pending tool confirmation can be listed through `exactl tool pending`
-2. The pending confirmation can be denied through `exactl tool deny`
+1. A pending tool confirmation can be listed through `exactl approval list`
+2. The pending confirmation can be denied through `exactl approval reject tool:<id>`
 3. The denied confirmation no longer appears in the pending list

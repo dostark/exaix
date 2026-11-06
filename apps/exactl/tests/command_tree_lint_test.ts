@@ -81,3 +81,7 @@ Deno.test("no allow-listed compound-leaf entry remains for a plan or memory leaf
 Deno.test("the compound-leaf allow-list is empty", () => {
   assertEquals(allowlist["compound-leaf"], []);
 });
+
+Deno.test("the grammar allow-list is empty", () => {
+  assertEquals(Object.values(allowlist).flat(), []);
+});

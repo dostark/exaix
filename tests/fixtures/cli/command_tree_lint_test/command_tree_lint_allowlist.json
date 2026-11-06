@@ -1,11 +1,7 @@
 {
   "root-name": [],
   "sub-noun": [],
-  "leaf-verb": [
-    "tool confirm",
-    "tool deny",
-    "tool pending"
-  ],
+  "leaf-verb": [],
   "compound-leaf": [],
   "duplicate-handler": []
 }

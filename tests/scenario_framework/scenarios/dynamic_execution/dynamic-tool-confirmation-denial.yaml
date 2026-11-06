@@ -30,19 +30,19 @@ steps:
   - id: "list-pending"
     type: "exactl"
     name: "List pending tool confirmations"
-    command: "tool"
-    args: ["pending"]
+    command: "approval"
+    args: ["list"]
     output_criteria:
       - id: "pending-entry-visible"
         score_weight: 0.5
         kind: "command-output-contains"
-        contains: ["123e4567-e89b-42d3-a456-426614174000", "exaix_create_request", "dynamic-create-request"]
+        contains: ["tool:123e4567-e89b-42d3-a456-426614174000", "exaix_create_request", "dynamic-create-request"]
 
   - id: "deny-confirmation"
     type: "exactl"
     name: "Deny pending tool confirmation"
-    command: "tool"
-    args: ["deny", "123e4567-e89b-42d3-a456-426614174000", "--reason", "Denied by scenario framework"]
+    command: "approval"
+    args: ["reject", "tool:123e4567-e89b-42d3-a456-426614174000", "--reason", "Denied by scenario framework"]
     output_criteria:
       - id: "denial-confirmed"
         score_weight: 0.7
@@ -52,10 +52,10 @@ steps:
   - id: "verify-empty-pending"
     type: "exactl"
     name: "Verify there are no remaining pending tool confirmations"
-    command: "tool"
-    args: ["pending"]
+    command: "approval"
+    args: ["list"]
     output_criteria:
       - id: "no-pending-left"
         score_weight: 0.7
         kind: "command-output-contains"
-        contains: ["No pending tool confirmations."]
+        contains: ["No pending approvals."]

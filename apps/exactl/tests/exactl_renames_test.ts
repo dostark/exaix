@@ -301,3 +301,26 @@ Deno.test("the root watch path maps to request watch with a trace id", () => {
   );
   assertEquals(findRename(["request", "watch"]), null);
 });
+
+Deno.test("the wait and tool paths map to the approval noun", () => {
+  const expected: Array<[string[], string]> = [
+    [["wait"], "exactl approval <list|show|approve|reject|amend|expire|cancel>"],
+    [["wait", "list"], "exactl approval list"],
+    [["wait", "approve", "tok"], "exactl approval approve wait:<token>"],
+    [["wait", "reject", "tok"], "exactl approval reject wait:<token>"],
+    [["wait", "amend", "tok"], "exactl approval amend wait:<token>"],
+    [["wait", "expire", "tok"], "exactl approval expire wait:<token>"],
+    [["wait", "cancel", "tok"], "exactl approval cancel wait:<token>"],
+    [["tool"], "exactl approval <list|show|approve|reject>"],
+    [["tool", "pending"], "exactl approval list"],
+    [["tool", "confirm", "id"], "exactl approval approve tool:<id>"],
+    [["tool", "deny", "id"], "exactl approval reject tool:<id>"],
+  ];
+  for (const [typed, canonical] of expected) assertEquals(findRename(typed)?.canonical, canonical, typed.join(" "));
+});
+
+Deno.test("the approval paths and the mcp tool path are not renames", () => {
+  for (const typed of [["approval", "list"], ["approval", "approve", "wait:t"], ["mcp", "tool", "list"]]) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});

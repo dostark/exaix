@@ -13,7 +13,7 @@ export enum ExaCtlCommandName {
   REQUEST = "request",
   PLAN = "plan",
   REVIEW = "review",
-  WAIT = "wait",
+  APPROVAL = "approval",
   GIT = "git",
   DAEMON = "daemon",
   PORTAL = "portal",
@@ -27,7 +27,6 @@ export enum ExaCtlCommandName {
   MODEL = "model",
   VERSION = "version",
   MIGRATE = "migrate",
-  TOOL = "tool",
   SKILL = "skill",
   EVAL = "eval",
 }

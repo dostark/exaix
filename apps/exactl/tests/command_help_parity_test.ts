@@ -53,6 +53,15 @@ const MOVES: readonly Move[] = [
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
   ["request", "request create", ["--agent-role", "-a"], ["--agent"]],
   ["watch", "request watch", NO_FLAGS, ["--trace"]],
+  ["wait list", "approval list", NO_FLAGS, NO_FLAGS],
+  ["wait approve", "approval approve", NO_FLAGS, NO_FLAGS],
+  ["wait reject", "approval reject", ["--message", "-m"], NO_FLAGS],
+  ["wait amend", "approval amend", NO_FLAGS, NO_FLAGS],
+  ["wait expire", "approval expire", NO_FLAGS, NO_FLAGS],
+  ["wait cancel", "approval cancel", NO_FLAGS, NO_FLAGS],
+  ["tool pending", "approval list", NO_FLAGS, NO_FLAGS],
+  ["tool confirm", "approval approve", NO_FLAGS, NO_FLAGS],
+  ["tool deny", "approval reject", NO_FLAGS, NO_FLAGS],
 ];
 
 const nodes = walkCommandTree(createExaCtlCommand());

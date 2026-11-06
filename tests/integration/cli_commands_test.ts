@@ -512,12 +512,12 @@ function makeWaitStateJson(overrides: object = {}): string {
   );
 }
 
-cliTest("CLI: wait list shows pending wait states", async () => {
+cliTest("CLI: approval list shows pending wait states", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
     await writeWaitState(env, "550e8400-e29b-41d4-a716-446655440000");
 
-    const result = await runExactl(["wait", "list"], env.tempDir);
+    const result = await runExactl(["approval", "list"], env.tempDir);
     assertEquals(result.code, 0);
     assertStringIncludes(result.stdout, "550e8400");
   } finally {
@@ -525,12 +525,12 @@ cliTest("CLI: wait list shows pending wait states", async () => {
   }
 });
 
-cliTest("CLI: wait list --status pending filters correctly", async () => {
+cliTest("CLI: approval list --status pending filters correctly", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
     await writeWaitState(env, "550e8400-e29b-41d4-a716-446655440000", { status: "fulfilled" });
 
-    const result = await runExactl(["wait", "list", "--status", "fulfilled"], env.tempDir);
+    const result = await runExactl(["approval", "list", "--status", "fulfilled"], env.tempDir);
     assertEquals(result.code, 0);
     assertStringIncludes(result.stdout, "550e8400");
   } finally {
@@ -538,10 +538,10 @@ cliTest("CLI: wait list --status pending filters correctly", async () => {
   }
 });
 
-cliTest("CLI: wait list shows empty state when no wait states", async () => {
+cliTest("CLI: approval list shows empty state when no wait states", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
-    const result = await runExactl(["wait", "list"], env.tempDir);
+    const result = await runExactl(["approval", "list"], env.tempDir);
     assertEquals(result.code, 0);
   } finally {
     await env.cleanup();

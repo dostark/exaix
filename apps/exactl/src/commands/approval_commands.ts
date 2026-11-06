@@ -1,0 +1,217 @@
+/**
+ * @module ApprovalCommands
+ * @path apps/exactl/src/commands/approval_commands.ts
+ * @description CLI commands that list, show and decide pending human decisions of the runtime gates: wait states and tool confirmations.
+ * @architectural-layer CLI
+ * @dependencies [apps/exactl/src/commands/wait_state_commands.ts, apps/exactl/src/commands/tool_commands.ts, apps/exactl/src/commands/approval_id.ts]
+ * @related-files [apps/exactl/src/command_builders/approval_command.ts]
+ * @visible
+ */
+
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlVerb } from "../exactl_constants.ts";
+import { ApprovalKind, type IApprovalRef, ownerCommand, parseApprovalId } from "./approval_id.ts";
+import type { ToolCommands } from "./tool_commands.ts";
+import type { WaitStateCommands } from "./wait_state_commands.ts";
+
+export interface IApprovalListEntry {
+  readonly kind: ApprovalKind;
+  /** Typed id printed to the user: `${kind}:${id}`. */
+  readonly ref: string;
+  readonly summary: string;
+  readonly created_at: string;
+  readonly trace_id: Opt<string, Reason.TraceAbsent>;
+  /** Exact command that decides this item. */
+  readonly act: string;
+}
+
+export interface IApprovalDecision {
+  readonly kind: ApprovalKind;
+  readonly id: string;
+  readonly status: string;
+  /** Wait state id for a wait ref, null for a tool ref. */
+  readonly waitStateId: string | null;
+}
+
+export interface IApprovalDetail {
+  readonly kind: ApprovalKind;
+  readonly id: string;
+  readonly fields: Record<string, string>;
+}
+
+export interface IApprovalDecisionOptions {
+  readonly message?: Opt<string, Reason.OptionalInput>;
+  readonly reason?: Opt<string, Reason.OptionalInput>;
+  readonly resolvedBy?: Opt<string, Reason.OptionalInput>;
+}
+
+interface IApprovalListOptions {
+  readonly status?: Opt<string, Reason.QueryFilter>;
+}
+
+interface IRuntimeRef extends IApprovalRef {
+  readonly kind: ApprovalKind.WAIT | ApprovalKind.TOOL;
+}
+
+type WaitVerb = ExaCtlVerb.AMEND | ExaCtlVerb.EXPIRE | ExaCtlVerb.CANCEL;
+
+const PENDING_STATUS = "pending";
+const APPROVE_ACT = `exactl approval ${ExaCtlVerb.APPROVE}`;
+const TOOL_APPROVED_STATUS = "approved";
+const TOOL_DENIED_STATUS = "denied";
+
+export class ApprovalCommands extends BaseCommand {
+  constructor(
+    context: ICommandContext,
+    private readonly waitStates: WaitStateCommands,
+    private readonly tools: ToolCommands,
+  ) {
+    super(context);
+  }
+
+  async list(options: IApprovalListOptions): Promise<IApprovalListEntry[]> {
+    const status = options.status ?? PENDING_STATUS;
+    const waits = await this.waitStates.list(status);
+    const tools = status === PENDING_STATUS ? await this.listPendingTools() : [];
+    const entries: IApprovalListEntry[] = [
+      ...waits.map((wait) => ({
+        kind: ApprovalKind.WAIT,
+        ref: `${ApprovalKind.WAIT}:${wait.resumeToken}`,
+        summary: `${wait.kind} ${wait.status}`,
+        created_at: wait.createdAt,
+        trace_id: wait.traceId,
+        act: `${APPROVE_ACT} ${ApprovalKind.WAIT}:${wait.resumeToken}`,
+      })),
+      ...tools.map((tool) => ({
+        kind: ApprovalKind.TOOL,
+        ref: `${ApprovalKind.TOOL}:${tool.id}`,
+        summary: `${tool.toolName} ${tool.stepId ?? ""}`.trim(),
+        created_at: tool.requestedAt,
+        trace_id: tool.traceId,
+        act: `${APPROVE_ACT} ${ApprovalKind.TOOL}:${tool.id}`,
+      })),
+    ];
+    return entries.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+
+  /** A failing tool source must not hide the wait states: its failure becomes one stderr line. */
+  private async listPendingTools(): Promise<ToolConfirmationRequest[]> {
+    try {
+      return await this.tools.listPending();
+    } catch (error) {
+      console.error(`approval list: tool confirmations unavailable: ${error instanceof Error ? error.message : error}`);
+      return [];
+    }
+  }
+
+  async show(rawId: string): Promise<IApprovalDetail> {
+    const ref = await this.resolve(rawId, ExaCtlVerb.SHOW);
+    if (ref.kind === ApprovalKind.TOOL) {
+      const request = (await this.tools.listPending()).find((entry) => entry.id === ref.id);
+      if (!request) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No pending tool confirmation: ${ref.id}`);
+      return {
+        kind: ref.kind,
+        id: ref.id,
+        fields: {
+          id: request.id,
+          toolName: request.toolName,
+          stepId: request.stepId ?? "",
+          traceId: request.traceId,
+          requestedAt: request.requestedAt,
+          expiresAt: request.expiresAt,
+          args: JSON.stringify(request.args),
+        },
+      };
+    }
+    const wait = (await this.waitStates.list()).find((entry) => entry.resumeToken === ref.id);
+    if (!wait) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No wait state for resume token: ${ref.id}`);
+    const fields: Record<string, string> = {};
+    for (const [key, value] of Object.entries(wait)) if (value !== undefined) fields[key] = String(value);
+    return { kind: ref.kind, id: ref.id, fields };
+  }
+
+  async approve(rawId: string, options: IApprovalDecisionOptions): Promise<IApprovalDecision> {
+    const ref = await this.resolve(rawId, ExaCtlVerb.APPROVE);
+    if (ref.kind === ApprovalKind.TOOL) {
+      await this.tools.confirm(ref.id);
+      return { kind: ref.kind, id: ref.id, status: TOOL_APPROVED_STATUS, waitStateId: null };
+    }
+    const updated = await this.waitStates.approve(ref.id, options.message, await this.actor(options));
+    return { kind: ref.kind, id: ref.id, status: updated.status, waitStateId: updated.waitStateId };
+  }
+
+  async reject(rawId: string, options: IApprovalDecisionOptions): Promise<IApprovalDecision> {
+    const ref = await this.resolve(rawId, ExaCtlVerb.REJECT);
+    if (ref.kind === ApprovalKind.TOOL) {
+      await this.tools.deny(ref.id, options.reason ?? undefined);
+      return { kind: ref.kind, id: ref.id, status: TOOL_DENIED_STATUS, waitStateId: null };
+    }
+    const updated = await this.waitStates.reject(ref.id, options.reason, await this.actor(options));
+    return { kind: ref.kind, id: ref.id, status: updated.status, waitStateId: updated.waitStateId };
+  }
+
+  amend(rawId: string, options: IApprovalDecisionOptions): Promise<IApprovalDecision> {
+    return this.decideWait(ExaCtlVerb.AMEND, rawId, options);
+  }
+
+  expire(rawId: string, options: IApprovalDecisionOptions): Promise<IApprovalDecision> {
+    return this.decideWait(ExaCtlVerb.EXPIRE, rawId, options);
+  }
+
+  cancel(rawId: string, options: IApprovalDecisionOptions): Promise<IApprovalDecision> {
+    return this.decideWait(ExaCtlVerb.CANCEL, rawId, options);
+  }
+
+  private async decideWait(
+    verb: WaitVerb,
+    rawId: string,
+    options: IApprovalDecisionOptions,
+  ): Promise<IApprovalDecision> {
+    const ref = await this.resolve(rawId, verb);
+    if (ref.kind === ApprovalKind.TOOL) {
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, `exactl approval ${verb} acts on wait: refs only.`);
+    }
+    const updated = await this.waitStates[verb](ref.id, options.message, await this.actor(options));
+    return { kind: ref.kind, id: ref.id, status: updated.status, waitStateId: updated.waitStateId };
+  }
+
+  /** Every wait decision names an actor, because the wait state journals its resolution only then. */
+  private async actor(options: IApprovalDecisionOptions): Promise<string> {
+    return options.resolvedBy ?? await this.getUserIdentity();
+  }
+
+  private async resolve(rawId: string, verb: ExaCtlVerb): Promise<IRuntimeRef> {
+    const parsed = parseApprovalId(rawId);
+    if (parsed.kind === undefined) return await this.resolveBare(parsed.id);
+    if (parsed.kind === ApprovalKind.WAIT || parsed.kind === ApprovalKind.TOOL) {
+      return { kind: parsed.kind, id: parsed.id };
+    }
+    const owner = verb === ExaCtlVerb.APPROVE || verb === ExaCtlVerb.REJECT ? ownerCommand(parsed, verb) : undefined;
+    throw new ExaCtlError(
+      ExaCtlExitCode.USAGE,
+      owner === undefined
+        ? `exactl approval ${verb} acts on wait: and tool: refs only.`
+        : `${parsed.kind} approvals are decided with '${owner}'.`,
+    );
+  }
+
+  /** A bare id resolves over the wait and tool sources and only when exactly one of them holds it. */
+  private async resolveBare(id: string): Promise<IRuntimeRef> {
+    const refs: IRuntimeRef[] = [];
+    if ((await this.waitStates.list()).some((wait) => wait.resumeToken === id)) {
+      refs.push({ kind: ApprovalKind.WAIT, id });
+    }
+    if ((await this.tools.listPending()).some((tool) => tool.id === id)) refs.push({ kind: ApprovalKind.TOOL, id });
+    if (refs.length === 0) {
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No wait state or pending tool confirmation matches '${id}'.`);
+    }
+    if (refs.length > 1) {
+      const typed = refs.map((ref) => `${ref.kind}:${ref.id}`).join(", ");
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, `'${id}' matches several approvals: ${typed}. Pass the typed id.`);
+    }
+    return refs[0];
+  }
+}

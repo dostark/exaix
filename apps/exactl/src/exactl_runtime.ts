@@ -19,11 +19,10 @@ import type { DashboardCommands } from "./commands/dashboard_commands.ts";
 import type { MemoryCommands } from "./commands/memory_commands.ts";
 import type { ModelCommands } from "./commands/model_commands.ts";
 import type { RoutingCommands } from "./commands/routing_commands.ts";
-import type { WaitStateCommands } from "./commands/wait_state_commands.ts";
+import type { ApprovalCommands } from "./commands/approval_commands.ts";
 import type { IServiceContext } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { EvalCommands } from "./commands/eval_commands.ts";
-import type { ToolCommands } from "./commands/tool_commands.ts";
 import type { WatchCommand } from "./commands/watch.ts";
 
 export interface IExaCtlRuntime {
@@ -44,10 +43,9 @@ export interface IExaCtlRuntime {
   readonly flowCommands: FlowCommands;
   readonly dashboardCommands: DashboardCommands;
   readonly memoryCommands: MemoryCommands;
-  readonly waitStateCommands: WaitStateCommands;
+  readonly approvalCommands: ApprovalCommands;
   readonly evalCommands: EvalCommands;
   readonly modelCommands: ModelCommands;
   readonly watchCommandInstance: WatchCommand;
-  readonly toolCommands: ToolCommands;
   readonly services: IServiceContext;
 }

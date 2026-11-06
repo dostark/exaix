@@ -9,22 +9,17 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { __test_command } from "../src/exactl.ts";
 
-Deno.test("[regression] CLI wiring: tool confirmation commands are registered", () => {
-  const toolCmd = __test_command.getCommand("tool");
-  assertExists(toolCmd, "tool command should be registered");
+Deno.test("[regression] CLI wiring: approval commands are registered and the wait and tool roots are gone", () => {
+  const approvalCmd = __test_command.getCommand("approval");
+  assertExists(approvalCmd, "approval command should be registered");
 
-  const pendingCmd = toolCmd.getCommand("pending");
-  const confirmCmd = toolCmd.getCommand("confirm");
-  const denyCmd = toolCmd.getCommand("deny");
+  for (const verb of ["list", "show", "approve", "reject", "amend", "expire", "cancel"]) {
+    assertEquals(approvalCmd.getCommand(verb)?.getName(), verb, `approval ${verb} should be registered`);
+  }
 
-  assertExists(pendingCmd, "tool pending subcommand should be registered");
-  assertExists(confirmCmd, "tool confirm subcommand should be registered");
-  assertExists(denyCmd, "tool deny subcommand should be registered");
+  const reasonOption = approvalCmd.getCommand("reject")?.getOption("reason");
+  assertExists(reasonOption, "approval reject should have --reason option");
 
-  assertEquals(pendingCmd.getName(), "pending");
-  assertEquals(confirmCmd.getName(), "confirm");
-  assertEquals(denyCmd.getName(), "deny");
-
-  const reasonOption = denyCmd.getOption("reason");
-  assertExists(reasonOption, "tool deny should have --reason option");
+  assertEquals(__test_command.getCommand("tool"), undefined);
+  assertEquals(__test_command.getCommand("wait"), undefined);
 });

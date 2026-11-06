@@ -3194,36 +3194,47 @@ $ exactl daemon logs --follow
 
 #### **Skill Command** - Manage procedural skills
 
-#### **Tool Commands** - Manage pending tool confirmations
-
 #### **Version Command** - Display version information
 
-#### **Wait Commands** - Resolve durable wait states
+#### **Approval Commands** - Resolve wait states and tool confirmations
 
 Durable wait states come from session delegation gates, which pause until an
 operator resolves them. A failing flow quality gate does not create one: it
-halts the run with `gate_halted`. Use `exactl wait` commands to list and
-resolve pending session delegation decisions.
+halts the run with `gate_halted`. A tool that needs human approval waits as a
+pending tool confirmation. Use `exactl approval` to list and decide both.
+
+Every item has a typed id: `wait:<resume-token>` for a wait state and `tool:<confirmation-id>`
+for a tool confirmation. A bare id works when exactly one of the two holds it. Ids of other
+kinds (`plan:`, `review:`, `proposal:`, `skill:`, `amendment:`, `clarification:`) exit with
+code 2 and print the command of the noun that owns them, such as `exactl plan approve <id>`.
 
 ```bash
-# List all pending wait states
-exactl wait list
+# List pending wait states and tool confirmations, with the command that decides each
+exactl approval list
 
-# Filter by status
-exactl wait list --status pending
+# Filter wait states by status
+exactl approval list --status fulfilled
 
-# Approve a wait state (flow resumes from last checkpoint)
-exactl wait approve <resume-token> -m "Approved after review"
+# Show one item
+exactl approval show wait:<resume-token>
 
-# Reject a wait state
-exactl wait reject <resume-token> -m "Does not meet criteria"
+# Approve a wait state (flow resumes from last checkpoint) or a tool confirmation
+exactl approval approve wait:<resume-token> -m "Approved after review"
+exactl approval approve tool:<confirmation-id>
 
-# Amend a wait state — marks original as amended and creates a successor
-exactl wait amend <resume-token> -m "Please revise approach"
+# Reject a wait state or deny a tool confirmation
+exactl approval reject wait:<resume-token> --reason "Does not meet criteria"
+exactl approval reject tool:<confirmation-id> --reason "Not needed"
 
-# Expire a wait state (bypasses deadline)
-exactl wait expire <resume-token> -m "Timed out"
+# Wait states only: amend, expire and cancel
+exactl approval amend wait:<resume-token> -m "Please revise approach"
+exactl approval expire wait:<resume-token> -m "Timed out"
+exactl approval cancel wait:<resume-token> -m "No longer needed"
 ```
+
+Every wait decision records an actor: the `--resolved-by` value, or your user identity when you give
+none. A tool decision writes a `tool_confirmation.decided` journal row with the confirmation id, the tool,
+the step, the outcome, the reason and who decided.
 
 **Wait state lifecycle:**
 
@@ -3496,21 +3507,21 @@ exactl skill match "Refactor authentication module"
 
 ---
 
-#### **Tool Commands** - Manage pending tool confirmations
+#### **Tool Confirmations** - Resolve pending tool confirmations
 
 When a tool requires human approval (e.g., writing to a file outside the workspace,
-or a dangerous config change), it enters a pending confirmation state. Use `tool`
+or a dangerous config change), it enters a pending confirmation state. Use `approval`
 commands to review and resolve these.
 
 ```bash
-# List all pending tool confirmations
-exactl tool pending
+# List all pending approvals, tool confirmations included
+exactl approval list
 
 # Approve a pending confirmation by id
-exactl tool confirm <confirmation-id>
+exactl approval approve tool:<confirmation-id>
 
 # Deny a pending confirmation by id
-exactl tool deny <confirmation-id>
+exactl approval reject tool:<confirmation-id>
 ```
 
 Pending confirmations are also visible through the journal (`exactl log list --action tool.confirmation_pending`).
@@ -3601,7 +3612,7 @@ exactl log list --count                    # Count activities by type
 # System info and evaluation
 exactl version                            # Show binary and schema version
 exactl migrate check                      # Check schema compatibility
-exactl tool pending                       # List pending tool confirmations
+exactl approval list                      # List pending wait states and tool confirmations
 exactl eval run --pack smoke              # Run an evaluation scenario
 ```
 
@@ -5895,7 +5906,7 @@ hostile input via the `adversarial` and `interactive` evaluation packs
 See `docs/Exaix_Evaluation.md` §18 for the full methodology, vector catalogue, and personas. Two
 production mechanisms exist specifically to make this measurable:
 
-- **Actor attribution on gate resolution.** `exactl wait approve/reject/amend/expire/cancel`
+- **Actor attribution on gate resolution.** `exactl approval approve/reject/amend/expire/cancel` on a `wait:` ref
   accept an optional `--resolved-by <actor>` value, merged into the wait-state's metadata and
   journalled as a `wait_state.command_resolved` event — so an audit can distinguish a gate
   resolved through the intended CLI/API surface from any other write that flips its status.

@@ -9,6 +9,8 @@
 import { z } from "zod";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import { DomainEventType, type IToolConfirmationDecidedPayload } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const DEFAULT_DENIAL_REASON = "User declined";
 
@@ -17,8 +19,12 @@ export class ToolCommands extends BaseCommand {
     super(context);
   }
 
+  async listPending(): Promise<ToolConfirmationRequest[]> {
+    return await this.db.listPendingToolConfirmations();
+  }
+
   async pending(): Promise<void> {
-    const pending = await this.db.listPendingToolConfirmations();
+    const pending = await this.listPending();
     if (pending.length === 0) {
       console.log("No pending tool confirmations.");
       return;
@@ -42,6 +48,7 @@ export class ToolCommands extends BaseCommand {
       decidedAt: new Date().toISOString(),
       decidedBy,
     });
+    await this.logDecision(request, true, undefined, decidedBy);
     console.log(`Tool confirmation approved: ${request.id}`);
   }
 
@@ -54,7 +61,25 @@ export class ToolCommands extends BaseCommand {
       decidedAt: new Date().toISOString(),
       decidedBy,
     });
+    await this.logDecision(request, false, reason, decidedBy);
     console.log(`Tool confirmation denied: ${request.id}`);
+  }
+
+  private async logDecision(
+    request: ToolConfirmationRequest,
+    approved: boolean,
+    reason: Opt<string, Reason.OptionalInput>,
+    decidedBy: string,
+  ): Promise<void> {
+    const payload: IToolConfirmationDecidedPayload = {
+      confirmation_id: request.id,
+      tool_name: request.toolName,
+      step_id: request.stepId ?? null,
+      approved,
+      reason: reason ?? null,
+      decided_by: decidedBy,
+    };
+    await this.display.info(DomainEventType.ToolConfirmationDecided, request.id, { ...payload }, request.traceId);
   }
 
   private async requirePendingRequest(id: string): Promise<ToolConfirmationRequest> {

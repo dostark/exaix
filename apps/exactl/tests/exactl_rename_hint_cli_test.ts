@@ -120,3 +120,10 @@ Deno.test("`exactl watch <trace>` names `request watch --trace`", async () => {
   assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
   assertStringIncludes(run.stderr, "use 'exactl request watch --trace <trace-id>'");
 });
+
+Deno.test("`exactl wait list` and `exactl tool pending` exit 2 with their hints", async () => {
+  await assertHint(["wait", "list"], "exactl approval list");
+  await assertHint(["tool", "pending"], "exactl approval list");
+  await assertHint(["wait", "approve", "550e8400-e29b-41d4-a716-446655440001"], "exactl approval approve wait:<token>");
+  await assertHint(["tool", "deny", "123e4567-e89b-42d3-a456-426614174000"], "exactl approval reject tool:<id>");
+});

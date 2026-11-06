@@ -424,6 +424,16 @@ export interface IContextQueryDeniedPayload {
   reason: string;
 }
 
+/** Typed payload for tool_confirmation.decided. `reason` is set on a denial only. */
+export interface IToolConfirmationDecidedPayload {
+  confirmation_id: string;
+  tool_name: string;
+  step_id: string | null;
+  approved: boolean;
+  reason: string | null;
+  decided_by: string;
+}
+
 /** Typed payload for request.cancelled. `request_id` is the request trace id. */
 export interface IRequestCancelledPayload {
   request_id: string;
@@ -510,6 +520,7 @@ export const DomainEventType = {
    *  `resolvedBy` actor identity — the deterministic, journal-visible signal a policy-adherence
    *  check reads to confirm a gate was resolved through the intended surface. */
   WaitStateCommandResolved: "wait_state.command_resolved",
+  ToolConfirmationDecided: "tool_confirmation.decided",
 
   // Session delegation events. Emitted today by SessionReturnWatcher: returned,
   // reconciled, scope_violation, token_rejected, budget_exceeded. The rest (briefed,

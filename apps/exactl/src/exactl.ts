@@ -23,6 +23,7 @@ import { ModelCommands } from "./commands/model_commands.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
+import { ApprovalCommands } from "./commands/approval_commands.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
 import { BINARY_VERSION, scrubProcessEnv } from "@exaix/core";
 import { initializeServices, type IServiceContext, isTestMode as isTestModeImport } from "./init.ts";
@@ -33,7 +34,7 @@ import { EvalCommands } from "./commands/eval_commands.ts";
 import { buildRequestCommand } from "./command_builders/request_command.ts";
 import { buildPlanCommand } from "./command_builders/plan_command.ts";
 import { buildReviewCommand } from "./command_builders/review_command.ts";
-import { buildToolCommand, buildWaitCommand } from "./command_builders/wait_command.ts";
+import { buildApprovalCommand } from "./command_builders/approval_command.ts";
 import { buildGitCommand } from "./command_builders/git_command.ts";
 import { buildDaemonCommand, buildMigrateCommand, buildVersionCommand } from "./command_builders/daemon_command.ts";
 import { buildPortalCommand } from "./command_builders/portal_command.ts";
@@ -94,6 +95,7 @@ const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
 const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
+const approvalCommands: ApprovalCommands = new ApprovalCommands(fullContext, waitStateCommands, toolCommands);
 const evalCommands: EvalCommands = new EvalCommands(fullContext);
 // Solo model curation CLI. Reads the model registry floor for display and writes
 // curated lists to exa.config.toml (the resolver's read surface).
@@ -123,11 +125,10 @@ const runtime: IExaCtlRuntime = {
   flowCommands,
   dashboardCommands,
   memoryCommands,
-  waitStateCommands,
+  approvalCommands,
   evalCommands,
   modelCommands,
   services,
-  toolCommands,
   watchCommandInstance,
 };
 
@@ -209,10 +210,10 @@ const baseCommand: ExaCtlBaseCommand = new Command()
     ExaCtlCommandName.REVIEW,
     buildReviewCommand(runtime),
   )
-  // Wait state commands
+  // Approval commands: wait states and tool confirmations
   .command(
-    ExaCtlCommandName.WAIT,
-    buildWaitCommand(runtime),
+    ExaCtlCommandName.APPROVAL,
+    buildApprovalCommand(runtime),
   )
   // Git commands
   .command(
@@ -263,7 +264,6 @@ baseCommand
   .command(ExaCtlCommandName.MODEL, buildModelCommand(runtime))
   .command(ExaCtlCommandName.VERSION, buildVersionCommand(runtime))
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
-  .command(ExaCtlCommandName.TOOL, buildToolCommand(runtime))
   .command(ExaCtlCommandName.SKILL, buildSkillCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 

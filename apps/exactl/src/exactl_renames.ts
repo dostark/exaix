@@ -8,6 +8,7 @@
  */
 
 import type { Opt, Reason } from "@exaix/core/types";
+import { ExaCtlVerb } from "./exactl_constants.ts";
 
 /** One removed command path and the path that replaces it. */
 export interface IExaCtlRename {
@@ -38,6 +39,8 @@ const LEGACY_MEMORY = "memory";
 const LEGACY_CONFIG = "config";
 const LEGACY_PLAN = "plan";
 const LEGACY_PORTAL = "portal";
+const LEGACY_WAIT = "wait";
+const LEGACY_TOOL = "tool";
 const USAGE_TEMPLATE_MARKER = "<";
 export const REQUEST_NOUN = "request";
 const CREATE_VERB = "create";
@@ -90,6 +93,17 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: [LEGACY_CONFIG, "use-profile"], canonical: "exactl config profile use" },
   { legacy: [LEGACY_CONFIG, "list-profiles"], canonical: "exactl config profile list" },
   { legacy: [LEGACY_CONFIG, "set-path"], canonical: "exactl config set paths.<key> <dir>" },
+  { legacy: [LEGACY_WAIT], canonical: "exactl approval <list|show|approve|reject|amend|expire|cancel>" },
+  { legacy: [LEGACY_WAIT, "list"], canonical: "exactl approval list" },
+  { legacy: [LEGACY_WAIT, ExaCtlVerb.APPROVE], canonical: `exactl approval ${ExaCtlVerb.APPROVE} wait:<token>` },
+  { legacy: [LEGACY_WAIT, ExaCtlVerb.REJECT], canonical: `exactl approval ${ExaCtlVerb.REJECT} wait:<token>` },
+  { legacy: [LEGACY_WAIT, ExaCtlVerb.AMEND], canonical: `exactl approval ${ExaCtlVerb.AMEND} wait:<token>` },
+  { legacy: [LEGACY_WAIT, ExaCtlVerb.EXPIRE], canonical: `exactl approval ${ExaCtlVerb.EXPIRE} wait:<token>` },
+  { legacy: [LEGACY_WAIT, ExaCtlVerb.CANCEL], canonical: `exactl approval ${ExaCtlVerb.CANCEL} wait:<token>` },
+  { legacy: [LEGACY_TOOL], canonical: "exactl approval <list|show|approve|reject>" },
+  { legacy: [LEGACY_TOOL, "pending"], canonical: "exactl approval list" },
+  { legacy: [LEGACY_TOOL, "confirm"], canonical: `exactl approval ${ExaCtlVerb.APPROVE} tool:<id>` },
+  { legacy: [LEGACY_TOOL, "deny"], canonical: `exactl approval ${ExaCtlVerb.REJECT} tool:<id>` },
   { legacy: ["watch"], canonical: "exactl request watch --trace <trace-id>" },
   { legacy: ["mcp", "start"], canonical: "exactl mcp serve" },
   {
