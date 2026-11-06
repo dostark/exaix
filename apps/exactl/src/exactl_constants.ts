@@ -42,6 +42,86 @@ export enum ExaCtlCommandName {
   EVAL = "eval",
 }
 
+/** Every verb an exactl leaf may use. A new verb is a change to this enum. */
+export enum ExaCtlVerb {
+  LIST = "list",
+  SHOW = "show",
+  CREATE = "create",
+  ADD = "add",
+  EDIT = "edit",
+  REMOVE = "remove",
+  VALIDATE = "validate",
+  APPROVE = "approve",
+  REJECT = "reject",
+  REVISE = "revise",
+  AMEND = "amend",
+  EXPIRE = "expire",
+  CANCEL = "cancel",
+  DEPRECATE = "deprecate",
+  RUN = "run",
+  WATCH = "watch",
+  SEARCH = "search",
+  MATCH = "match",
+  EXPLAIN = "explain",
+  ANALYZE = "analyze",
+  REFRESH = "refresh",
+  REBUILD = "rebuild",
+  DERIVE = "derive",
+  CLARIFY = "clarify",
+  INSPECT = "inspect",
+  GET = "get",
+  SET = "set",
+  UNSET = "unset",
+  DIFF = "diff",
+  HISTORY = "history",
+  ROLLBACK = "rollback",
+  COMPACT = "compact",
+  START = "start",
+  STOP = "stop",
+  RESTART = "restart",
+  STATUS = "status",
+  LOGS = "logs",
+  SERVE = "serve",
+  CALL = "call",
+  PRUNE = "prune",
+  USE = "use",
+  VERIFY = "verify",
+  WAIT = "wait",
+  COMPARE = "compare",
+  REPORT = "report",
+  GENERATE = "generate",
+  SCORE = "score",
+  CHECK = "check",
+  BINDINGS = "bindings",
+  REVISIONS = "revisions",
+  USAGE = "usage",
+  CANDIDATES = "candidates",
+  EXPORT_OTEL = "export-otel",
+  /** `git log`. */
+  LOG = "log",
+  /** `log cost`. */
+  COST = "cost",
+}
+
+/** Sub-nouns: a command that owns verbs but is not a root. */
+export enum ExaCtlSubNoun {
+  AMENDMENT = "amendment",
+  PROJECT = "project",
+  EXECUTION = "execution",
+  PROPOSAL = "proposal",
+  LEARNING = "learning",
+  INDEX = "index",
+  KNOWLEDGE = "knowledge",
+  ROUTE = "route",
+  BRANCH = "branch",
+  WORKTREE = "worktree",
+  TOOL = "tool",
+  LOCK = "lock",
+  BLOCK = "block",
+  PROFILE = "profile",
+  CALIBRATION = "calibration",
+}
+
 export interface IBlueprintCliLabels {
   createDescription: string;
   nameOption: string;
@@ -84,18 +164,6 @@ export const BLUEPRINT_CLI_LABELS: IBlueprintCliLabels = {
   editDescription: "Edit blueprint in $EDITOR",
   removeDescription: "Remove a blueprint",
   deprecateDescription: "Mark a blueprint as deprecated (retires it without deleting the file)",
-};
-
-export const AGENT_ROLE_CLI_LABELS: IBlueprintCliLabels = {
-  createDescription: "Create a new agent role blueprint",
-  nameOption: "Agent role name (required)",
-  listDescription: "List all agent role blueprints",
-  listHint:
-    'Create an agent role with: exactl blueprint agent-role create <agent-role-id> --name "Name" --model "provider:model"',
-  showDescription: "Show agent role blueprint details",
-  editDescription: "Edit agent role blueprint in $EDITOR",
-  removeDescription: "Remove an agent role blueprint",
-  deprecateDescription: "Mark an agent role blueprint as deprecated (retires it without deleting the file)",
 };
 
 export const CLI_CMD_SHOW_ID = "show <id>";

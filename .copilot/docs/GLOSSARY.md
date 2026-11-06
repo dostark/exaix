@@ -138,10 +138,10 @@ managing blueprints and flows, running validations and CI checks.
 CLI option used to select the agent role blueprint for a given request. The CLI
 resolves the agent role and delegates execution to the correct agent.
 
-### `exactl blueprint agent-role *`
+### `exactl blueprint *`
 
 CLI subcommands for managing agent role blueprints (list, create, validate, show,
-delete). These commands operate only on `Blueprints/Agents/`.
+edit, remove, deprecate). These commands operate only on `Blueprints/Agents/`.
 
 ---
 

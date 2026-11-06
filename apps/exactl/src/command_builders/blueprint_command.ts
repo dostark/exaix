@@ -12,7 +12,6 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { IBlueprintMetadata, IBlueprintValidationResult } from "@exaix/schemas/blueprint.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
-  AGENT_ROLE_CLI_LABELS,
   BLUEPRINT_CLI_LABELS,
   DEFAULT_CAPABILITIES_LABEL,
   DISPLAY_CATEGORY_BLUEPRINTS,
@@ -223,60 +222,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
     )
     .command("edit <agent-id>", blueprintEditCommand(BLUEPRINT_CLI_LABELS))
     .command("remove <agent-id>", blueprintRemoveCommand(BLUEPRINT_CLI_LABELS))
-    .command("deprecate <agent-id>", blueprintDeprecateCommand(BLUEPRINT_CLI_LABELS))
-    .command(
-      "ls",
-      new Command().description("Alias for 'list'").action(async () => {
-        const blueprints = await blueprintCommands.list();
-        if (blueprints.length === 0) {
-          display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: 0 });
-          return;
-        }
-        display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
-        for (const blueprint of blueprints) {
-          display.info(blueprint.agent_role, blueprint.name, blueprintSummary(blueprint));
-        }
-      }),
-    )
-    .command(
-      "rm <agent-id>",
-      new Command().description("Alias for 'remove'").option("--force", "Skip confirmation").action(
-        async (options, ...args: string[]) => {
-          const agentRole = args[0];
-          await blueprintCommands.remove(agentRole, { force: options.force });
-          display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
-        },
-      ),
-    )
-    // agent-role subcommands
-    .command(
-      "agent-role",
-      new Command()
-        .description("Manage agent role blueprints")
-        .command("create <agent-role-id>", blueprintCreateCommand(AGENT_ROLE_CLI_LABELS))
-        .command(RequestOperation.LIST, blueprintListCommand(AGENT_ROLE_CLI_LABELS))
-        .command("show <agent-role-id>", blueprintShowCommand(AGENT_ROLE_CLI_LABELS))
-        .command(
-          "validate <agent-role-id>",
-          new Command()
-            .description("Validate agent role blueprint format")
-            .action(async (_options, ...args: string[]) => {
-              const agentRole = args[0];
-              try {
-                const result = await blueprintCommands.validate(agentRole);
-                reportValidation(agentRole, result);
-              } catch (error) {
-                display.error("cli.error", "blueprint validate", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        )
-        .command("edit <agent-role-id>", blueprintEditCommand(AGENT_ROLE_CLI_LABELS))
-        .command("remove <agent-role-id>", blueprintRemoveCommand(AGENT_ROLE_CLI_LABELS))
-        .command("deprecate <agent-role-id>", blueprintDeprecateCommand(AGENT_ROLE_CLI_LABELS)),
-    );
+    .command("deprecate <agent-id>", blueprintDeprecateCommand(BLUEPRINT_CLI_LABELS));
 }
 
 export function buildBlueprintCommand(runtime: IExaCtlRuntime): ReturnType<typeof createBlueprintCommand> {

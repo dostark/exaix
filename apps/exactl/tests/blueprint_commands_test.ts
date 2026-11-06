@@ -951,3 +951,26 @@ Deno.test("[blueprint] deprecate - writes the `deprecated` flag that routing con
     await teardownTest();
   }
 });
+
+Deno.test("blueprint list/show/create cover the former agent-role cases", async () => {
+  await setupTest();
+  try {
+    const agentRole = "former-agent-role-case";
+    await commands.create(agentRole, { name: "Former Case", model: "ollama:llama3.2" });
+
+    const listed = await commands.list();
+    assertEquals(listed.some((blueprint) => blueprint.agent_role === agentRole), true);
+
+    const shown = await commands.show(agentRole);
+    assertEquals(shown.agent_role, agentRole);
+
+    const validation = await commands.validate(agentRole);
+    assertEquals(validation.valid, true);
+
+    await commands.remove(agentRole, { force: true });
+    const afterRemove = await commands.list();
+    assertEquals(afterRemove.some((blueprint) => blueprint.agent_role === agentRole), false);
+  } finally {
+    await teardownTest();
+  }
+});

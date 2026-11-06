@@ -148,8 +148,7 @@ The agent role catalog is a flat set of concrete agent roles under
 subdirectories were retired in identity skill quality refactoring — examples merged into concrete
 agent roles, templates converted to skills in `Blueprints/Skills/`).
 
-`exactl blueprint create <id>` (alias: `exactl blueprint agent-role create <id>`)
-creates an agent role. There is no separate template library; instead, scaffold a
+`exactl blueprint create <id>` creates an agent role. There is no separate template library; instead, scaffold a
 new agent role by cloning an existing one as a prototype:
 
 | Flag                     | Purpose                                                                |

@@ -47,6 +47,7 @@ import { buildMcpCommand } from "./command_builders/mcp_command.ts";
 import { buildEvalCommand } from "./command_builders/eval_command.ts";
 import type { IExaCtlRuntime } from "./exactl_runtime.ts";
 import { ExaCtlCommandName } from "./exactl_constants.ts";
+import { handleExaCtlError } from "./exactl_error_handler.ts";
 import {
   buildCostCommand,
   buildJournalCommand,
@@ -282,6 +283,9 @@ baseCommand
   .command(ExaCtlCommandName.SKILLS, buildSkillsCommand(runtime))
   .command(ExaCtlCommandName.WATCH, buildWatchCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
+
+// cliffy attaches .error() to the last registered command unless reset() runs first.
+baseCommand.reset().error((error) => handleExaCtlError(error, Deno.args, Deno.exit));
 
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
 

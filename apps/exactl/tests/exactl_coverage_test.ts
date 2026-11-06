@@ -577,22 +577,6 @@ Deno.test("blueprint remove error exits with message", async () => {
   });
 });
 
-// Blueprint Alias Commands
-
-Deno.test("blueprint rm alias calls remove", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.blueprintCommands.remove = (id: string, opts?: { force?: boolean }) => {
-      called = true;
-      assertEquals(id, "agent-rm");
-      assertEquals(opts?.force, true);
-      return Promise.resolve();
-    };
-    await mod.__test_command.parse(["blueprint", "rm", "agent-rm", "--force"]);
-    assert(called);
-  });
-});
-
 // Request List with Status Filter
 
 Deno.test("request list passes status filter", async () => {

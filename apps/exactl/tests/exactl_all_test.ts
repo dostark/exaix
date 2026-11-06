@@ -512,18 +512,6 @@ Deno.test("request inline --dry-run logs dry_run and creates file", async () => 
   });
 });
 
-Deno.test("blueprint ls alias calls blueprintCommands.list", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.blueprintCommands.list = () => {
-      called = true;
-      return Promise.resolve([]);
-    };
-    await mod.__test_command.parse(["blueprint", "ls"]);
-    assert(called);
-  });
-});
-
 Deno.test("flow list calls flowCommands.listFlows", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;

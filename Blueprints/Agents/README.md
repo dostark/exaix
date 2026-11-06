@@ -82,10 +82,10 @@ Either author the `.md` file directly (using the frontmatter above), or scaffold
 
 ```bash
 # Clone an existing agent role's model, capabilities, and body as a starting point:
-exactl blueprint agent-role create my-agent-role --name "My Agent Role" --from senior-coder
+exactl blueprint create my-agent-role --name "My Agent Role" --from senior-coder
 
 # Or define it from scratch:
-exactl blueprint agent-role create my-agent-role --name "My Agent Role" --model "provider:model"
+exactl blueprint create my-agent-role --name "My Agent Role" --model "provider:model"
 ```
 
 > The previous `--template <name>` flag (backed by a separate template library)
