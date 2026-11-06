@@ -6,7 +6,6 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/command_builders/request_command.ts]
  */
 
-import type { Command } from "@cliffy/command";
 import type { PlanCommands } from "./commands/plan_commands.ts";
 import type { RequestCommands } from "./commands/request_commands.ts";
 import type { ReviewCommands } from "./commands/review_commands.ts";
@@ -45,7 +44,6 @@ export interface IExaCtlRuntime {
   readonly flowCommands: FlowCommands;
   readonly dashboardCommands: DashboardCommands;
   readonly memoryCommands: MemoryCommands;
-  readonly memorySkillCommand: Command;
   readonly waitStateCommands: WaitStateCommands;
   readonly evalCommands: EvalCommands;
   readonly modelCommands: ModelCommands;

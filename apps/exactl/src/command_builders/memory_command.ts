@@ -48,7 +48,6 @@ function createMemoryCommand(runtime: IExaCtlRuntime) {
       ...addMemoryCommands2(runtime),
       ...addMemoryCommands3(runtime),
       ...addMemoryCommands4(runtime),
-      ...addMemoryCommands5(runtime),
     ]
   ) command.command(name, child);
   return command;
@@ -261,13 +260,6 @@ function addMemoryCommands4(runtime: IExaCtlRuntime) {
             }),
         ),
     ],
-  ] as const;
-}
-
-function addMemoryCommands5(runtime: IExaCtlRuntime) {
-  const { memorySkillCommand } = runtime;
-  return [
-    ["skill", memorySkillCommand],
   ] as const;
 }
 

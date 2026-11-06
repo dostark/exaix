@@ -1,10 +1,9 @@
 /**
  * @module SkillCommands
  * @path apps/exactl/src/command_builders/skill_commands.ts
- * @description One builder for the skill command group. `exactl skills` and `exactl memory skill`
- *   register the same group, so both aliases expose list, show, match, derive, create, approve,
- *   deprecate, revisions, usage and validate with identical options. A failed command prints its
- *   message and exits with 1, or with 2 for a malformed argument.
+ * @description Builds the skill command group. `exactl skill` exposes list, show, match, derive, create,
+ *   approve, deprecate, revisions, usage and validate. A failed command prints its message and exits
+ *   with 1, or with 2 for a malformed argument.
  * @architectural-layer CLI
  * @dependencies [@cliffy/command, @exaix/tui, ../commands/memory_commands.ts]
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/memory_commands.ts]
@@ -47,8 +46,8 @@ async function run(action: () => Promise<string>): Promise<void> {
   }
 }
 
-/** Fills one command group with the skill commands. Every alias that exposes them calls this. */
-export function registerSkillCommands(group: Command, memory: MemoryCommands): void {
+/** Fills one command group with the skill commands. */
+function registerSkillCommands(group: Command, memory: MemoryCommands): void {
   group
     .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
     .option(PORTAL_OPTION, PORTAL_HELP)
@@ -244,9 +243,9 @@ export function registerSkillCommands(group: Command, memory: MemoryCommands): v
     );
 }
 
-/** The top-level skills alias of the memory skill commands. */
-export function buildSkillsCommand(runtime: IExaCtlRuntime): Command {
-  const command = new Command().description("Manage procedural skills (alias of 'memory skill')");
+/** The root skill command over the memory skill handlers. */
+export function buildSkillCommand(runtime: IExaCtlRuntime): Command {
+  const command = new Command().description("Manage procedural skills");
   registerSkillCommands(command, runtime.memoryCommands);
   return command;
 }

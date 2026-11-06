@@ -23,7 +23,7 @@ steps:
 
   - id: "validate-catalog"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["validate", "--format", "json"]
     output_criteria:
       - id: "catalog-valid"
@@ -35,7 +35,7 @@ steps:
 
   - id: "list-shows-the-draft"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["list", "--all"]
     output_criteria:
       - id: "draft-listed"
@@ -44,7 +44,7 @@ steps:
 
   - id: "derive-another-draft"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: [
       "derive",
       "--learning-ids",
@@ -61,7 +61,7 @@ steps:
 
   - id: "approve-with-a-stale-revision-is-refused"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["approve", "review-flow", "--revision", "00000000-0000-4000-8000-000000000000"]
     expect_failure: true
     output_criteria:
@@ -71,7 +71,7 @@ steps:
 
   - id: "approve-with-a-malformed-revision-is-an-argument-error"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["approve", "review-flow", "--revision", "not-a-uuid"]
     expect_failure: true
     output_criteria:
@@ -81,7 +81,7 @@ steps:
 
   - id: "approve-the-reviewed-revision"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["approve", "review-flow", "--revision", "2beced21-b31f-5fe8-b100-5dc8256b2fbe"]
     output_criteria:
       - id: "approval-succeeds"
@@ -156,7 +156,7 @@ steps:
 
   - id: "revisions-show-the-used-revision"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["revisions", "review-flow"]
     output_criteria:
       - id: "one-use-recorded"
@@ -165,7 +165,7 @@ steps:
 
   - id: "deprecate-the-skill"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["deprecate", "review-flow"]
     output_criteria:
       - id: "deprecated"

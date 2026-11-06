@@ -29,7 +29,7 @@ export enum ExaCtlCommandName {
   VERSION = "version",
   MIGRATE = "migrate",
   TOOL = "tool",
-  SKILLS = "skills",
+  SKILL = "skill",
   WATCH = "watch",
   EVAL = "eval",
 }

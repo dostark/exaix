@@ -3,7 +3,6 @@
   "sub-noun": [
     "git worktrees",
     "memory pending",
-    "memory skill",
     "routing policy"
   ],
   "leaf-verb": [
@@ -44,26 +43,5 @@
     "plan amendment show-all",
     "plan approve-all"
   ],
-  "duplicate-handler": [
-    "memory skill approve",
-    "memory skill create",
-    "memory skill deprecate",
-    "memory skill derive",
-    "memory skill list",
-    "memory skill match",
-    "memory skill revisions",
-    "memory skill show",
-    "memory skill usage",
-    "memory skill validate",
-    "skills approve",
-    "skills create",
-    "skills deprecate",
-    "skills derive",
-    "skills list",
-    "skills match",
-    "skills revisions",
-    "skills show",
-    "skills usage",
-    "skills validate"
-  ]
+  "duplicate-handler": []
 }

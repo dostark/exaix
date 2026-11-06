@@ -844,38 +844,38 @@ Skills load from an ordered list of roots. The first root that holds a name wins
 
 #### CLI Access
 
-Use the top-level `exactl skills` command (or the alias `exactl memory skill`). Add `--portal <alias>` to include that portal's project skills. Add `--format table|json|md` for output.
+Use the `exactl skill` command. Add `--portal <alias>` to include that portal's project skills. Add `--format table|json|md` for output.
 
 ```bash
 # List all available skills; --all also reports folders that did not load
-exactl skills list
-exactl skills list --category core
-exactl skills list --all --format json
+exactl skill list
+exactl skill list --category core
+exactl skill list --all --format json
 
 # Show a skill, or one stored revision of it
-exactl skills show testing-standard
-exactl skills show testing-standard --revision <revision-uuid> --format json
+exactl skill show testing-standard
+exactl skill show testing-standard --revision <revision-uuid> --format json
 
 # Test skill matching for a specific request
-exactl skills match "Implement the feature and run tests"
+exactl skill match "Implement the feature and run tests"
 
 # Create or derive a DRAFT, review its folder, then approve the exact revision
-exactl skills create release-notes --description "Draft release notes" --instructions "..."
-exactl skills derive --learning-ids a,b --name "API Security Patterns"
-exactl skills approve release-notes --revision <revision-uuid>
-exactl skills deprecate release-notes
+exactl skill create release-notes --description "Draft release notes" --instructions "..."
+exactl skill derive --learning-ids a,b --name "API Security Patterns"
+exactl skill approve release-notes --revision <revision-uuid>
+exactl skill deprecate release-notes
 
 # History and audit
-exactl skills revisions release-notes
-exactl skills usage --trace <trace-id> --format json
-exactl skills validate            # typed reasons for every folder; exits 1 when one is invalid
+exactl skill revisions release-notes
+exactl skill usage --trace <trace-id> --format json
+exactl skill validate            # typed reasons for every folder; exits 1 when one is invalid
 ```
 
 `approve` fails with exit code 1 when the draft changed after your review, so an old review never approves new content. `deprecate` takes a skill out of matching, and it needs a fresh approval to return. Exit code 0 means success, exit code 1 means a refused or failed operation, and exit code 2 means a malformed argument such as a revision that is not a UUID. Failures print a short message and never the body of a skill.
 
 Skill text is shown with terminal control characters removed, so a draft cannot change your terminal while you review it. `--format json` returns the exact stored text. A stored revision is readable only from its own portal or from global scope, so `show --revision` and `revisions` never reveal another portal's project skill.
 
-Only `exactl skills show --revision` and `revisions` read stored history. A deleted or edited skill stays readable there, but a stored revision is never injected by itself.
+Only `exactl skill show --revision` and `revisions` read stored history. A deleted or edited skill stays readable there, but a stored revision is never injected by itself.
 
 #### Configuration
 
@@ -2955,31 +2955,31 @@ exactl eval report --pack swe-tasks --format table
 Skills are reusable procedural knowledge that agents apply. They are folders (`SKILL.md` plus an optional `exaix.yaml`). See [Procedural Skills](#33-procedural-skills) for the folder format, roots and plan pins.
 
 ```bash
-exactl skills list [--all] [--category core|project|learned]
-exactl skills show <skill-id> [--revision <uuid>]
-exactl skills match "Implement user authentication"
-exactl skills create <name> --description "Skill description"
-exactl skills derive --learning-ids <id1,id2> --name "API Security Patterns"
-exactl skills approve <name> --revision <uuid>
-exactl skills deprecate <name>
-exactl skills revisions <name>
-exactl skills usage --trace <trace-id>
-exactl skills validate [name]
+exactl skill list [--all] [--category core|project|learned]
+exactl skill show <skill-id> [--revision <uuid>]
+exactl skill match "Implement user authentication"
+exactl skill create <name> --description "Skill description"
+exactl skill derive --learning-ids <id1,id2> --name "API Security Patterns"
+exactl skill approve <name> --revision <uuid>
+exactl skill deprecate <name>
+exactl skill revisions <name>
+exactl skill usage --trace <trace-id>
+exactl skill validate [name]
 ```
 
-`exactl memory skill ...` is the same command group. Every command accepts `--portal` and `--format`.
+Every `exactl skill` command accepts `--portal` and `--format`.
 
 **Review flow:**
 
 ```bash
 # 1. A draft is created. It prints the draft path and its revision.
-$ exactl skills create release-notes --instructions "Summarize merged commits."
+$ exactl skill create release-notes --instructions "Summarize merged commits."
 Created draft skill: release-notes (release-notes)
 Draft path: learned/release-notes
 Revision: 3c0e...
 
 # 2. Read the folder, then approve exactly the revision you read.
-$ exactl skills approve release-notes --revision 3c0e...
+$ exactl skill approve release-notes --revision 3c0e...
 
 # 3. Use it in a request.
 $ exactl request "Write the release notes" --skills release-notes
@@ -3156,7 +3156,7 @@ $ exactl daemon logs --follow
 
 #### **Migrate Command** - Check workspace schema compatibility
 
-#### **Skills Command** - Quick alias for `memory skill`
+#### **Skill Command** - Manage procedural skills
 
 #### **Tool Commands** - Manage pending tool confirmations
 
@@ -3442,20 +3442,20 @@ recommends migration steps. This is also checked automatically at daemon start.
 
 ---
 
-#### **Skills Command** - Quick alias for `memory skill`
+#### **Skill Command** - Manage procedural skills
 
-The `skills` command is a top-level alias for the most common `memory skill`
-subcommands. See the **Skill Commands** section above for full documentation.
+The `skill` command is a top-level noun. See the **Skill Commands** section above
+for full documentation.
 
 ```bash
-# List all skills (same as memory skill list)
-exactl skills list
+# List all skills
+exactl skill list
 
-# Show a specific skill (same as memory skill show)
-exactl skills show <skill-id>
+# Show a specific skill
+exactl skill show <skill-id>
 
 # Find skills matching a request description
-exactl skills match "Refactor authentication module"
+exactl skill match "Refactor authentication module"
 ```
 
 ---
@@ -3549,8 +3549,8 @@ exactl git log --trace <id>                # Find commits by trace
 
 # Memory and skills
 exactl memory search "authentication"      # Search execution history
-exactl skills match "API design"           # Find relevant skills
-exactl skills list                          # List all skills
+exactl skill match "API design"           # Find relevant skills
+exactl skill list                          # List all skills
 
 # MCP server
 exactl mcp start                          # Start MCP server for external clients

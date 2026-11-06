@@ -39,7 +39,7 @@ the learning system are draft folders under `Memory/Skills/learned/` until a per
 
 ## Lifecycle
 
-`exactl skills create` and `derive` write a draft. Review the folder, then run `exactl skills approve <name> --revision <revision>`. An edit to the body or the sidecar returns an approved learned or project skill to draft. See the [User Guide](../../docs/Exaix_User_Guide.md#33-procedural-skills).
+`exactl skill create` and `derive` write a draft. Review the folder, then run `exactl skill approve <name> --revision <revision>`. An edit to the body or the sidecar returns an approved learned or project skill to draft. See the [User Guide](../../docs/Exaix_User_Guide.md#33-procedural-skills).
 
 ## Structure
 

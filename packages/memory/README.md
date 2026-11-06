@@ -30,7 +30,7 @@ Schemas are defined in `@exaix/schemas`:
 
 ## Skills in Memory Services
 
-`LlmLearningExtractor` and `MemoryReflectionService` submit their content policy skills through `policySkillSubmission` (`@exaix/core/skills`), so every background model call writes its `skill_usage` rows like a request call does. Learned skills are written as draft folders under `Memory/Skills/learned` and need `exactl skills approve` before they are injected.
+`LlmLearningExtractor` and `MemoryReflectionService` submit their content policy skills through `policySkillSubmission` (`@exaix/core/skills`), so every background model call writes its `skill_usage` rows like a request call does. Learned skills are written as draft folders under `Memory/Skills/learned` and need `exactl skill approve` before they are injected.
 
 ## See Also
 

@@ -22,6 +22,7 @@ const SINGLE_QUOTE = "'";
 const ESCAPED_SINGLE_QUOTE = `'\\''`;
 const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const LEGACY_JOURNAL = "journal";
+const LEGACY_MEMORY = "memory";
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
@@ -37,6 +38,8 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: ["log", LEGACY_JOURNAL, "verify"], canonical: "exactl log verify" },
   { legacy: ["cost"], canonical: "exactl log cost" },
   { legacy: [LEGACY_JOURNAL, "export-otel"], canonical: "exactl log export-otel" },
+  { legacy: ["skills"], canonical: "exactl skill" },
+  { legacy: [LEGACY_MEMORY, "skill"], canonical: "exactl skill" },
 ];
 
 /** The row whose legacy words are the longest prefix of the typed words, or null. */

@@ -1,7 +1,7 @@
 /**
  * @module SkillCommandsTest
  * @path apps/exactl/tests/commands/skill_commands_test.ts
- * @description Phase 206 Step 5 — `skills show` and the nested `memory skill show` read usage
+ * @description Phase 206 Step 5 — `skill show` read usage
  *   totals from the journal DB: overall and per-revision counts plus the last use. Both
  *   registrations call the same handler, so one handler test covers both aliases.
  * @architectural-layer Test

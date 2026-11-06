@@ -7,7 +7,7 @@
  */
 
 import { Command } from "@cliffy/command";
-import { buildSkillsCommand, registerSkillCommands } from "./command_builders/skill_commands.ts";
+import { buildSkillCommand } from "./command_builders/skill_commands.ts";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
 import { ReviewCommands } from "./commands/review_commands.ts";
@@ -92,8 +92,6 @@ const toolCommands: ToolCommands = new ToolCommands(fullContext);
 const flowCommands: FlowCommands = new FlowCommands(fullContext);
 const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
-const memorySkillCommand = new Command().description("Manage procedural skills");
-registerSkillCommands(memorySkillCommand, memoryCommands);
 const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
 const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
 const evalCommands: EvalCommands = new EvalCommands(fullContext);
@@ -124,7 +122,6 @@ const runtime: IExaCtlRuntime = {
   flowCommands,
   dashboardCommands,
   memoryCommands,
-  memorySkillCommand,
   waitStateCommands,
   evalCommands,
   modelCommands,
@@ -270,7 +267,7 @@ baseCommand
   .command(ExaCtlCommandName.VERSION, buildVersionCommand(runtime))
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
   .command(ExaCtlCommandName.TOOL, buildToolCommand(runtime))
-  .command(ExaCtlCommandName.SKILLS, buildSkillsCommand(runtime))
+  .command(ExaCtlCommandName.SKILL, buildSkillCommand(runtime))
   .command(ExaCtlCommandName.WATCH, buildWatchCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 

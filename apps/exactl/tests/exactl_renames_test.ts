@@ -86,3 +86,27 @@ Deno.test("a valid log path is not a rename", () => {
     assertEquals(findRename(typed), null, typed.join(" "));
   }
 });
+
+Deno.test("the skills and memory skill paths map to the skill noun", () => {
+  const expected: Array<[string[], string]> = [
+    [["skills"], "exactl skill"],
+    [["memory", "skill"], "exactl skill"],
+  ];
+  for (const [legacy, canonical] of expected) {
+    assertEquals(findRename(legacy)?.canonical, canonical, legacy.join(" "));
+  }
+});
+
+Deno.test("a skills hint keeps the typed verb and arguments", () => {
+  for (const typed of [["skills", "list"], ["memory", "skill", "list"]]) {
+    assertStringIncludes(renameHint(rowFor(typed), typed), "use 'exactl skill list'");
+  }
+  const approve = ["skills", "approve", "release-notes"];
+  assertStringIncludes(renameHint(rowFor(approve), approve), "use 'exactl skill approve release-notes'");
+});
+
+Deno.test("other memory paths are not renames", () => {
+  for (const typed of [["memory"], ["memory", "list"], ["memory", "search"], ["skill"], ["skill", "list"]]) {
+    assertEquals(findRename(typed), null, typed.join(" "));
+  }
+});

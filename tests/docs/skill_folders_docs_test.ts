@@ -1,7 +1,7 @@
 /**
  * @module SkillFoldersDocsTest
  * @path tests/docs/skill_folders_docs_test.ts
- * @description Active guidance matches the skill folder behavior. The registered `exactl skills` commands and their
+ * @description Active guidance matches the skill folder behavior. The registered `exactl skill` commands and their
  *   options appear in the User Guide, the sample config skills tables parse through the real config schema, the
  *   journal tables and skill events appear in the reference data, and active guidance never tells a reader to use
  *   the removed compiler, the runtime JSON store or flat skill files. Historical records are excluded.
@@ -73,17 +73,16 @@ async function help(...args: string[]): Promise<string> {
   return stripAnsiCode(new TextDecoder().decode(output.stdout));
 }
 
-Deno.test("[skill docs] the User Guide documents every registered skills command and its public options", async () => {
+Deno.test("[skill docs] the User Guide documents every registered skill command and its public options", async () => {
   const guide = await read(GUIDE);
-  const group = await help("skills");
+  const group = await help("skill");
   for (const command of SKILL_COMMANDS) {
-    assert(new RegExp(`^\\s+${command}\\b`, "m").test(group), `exactl skills registers ${command}`);
-    assertStringIncludes(guide, `exactl skills ${command}`, `the Guide documents exactl skills ${command}`);
+    assert(new RegExp(`^\\s+${command}\\b`, "m").test(group), `exactl skill registers ${command}`);
+    assertStringIncludes(guide, `exactl skill ${command}`, `the Guide documents exactl skill ${command}`);
   }
-  assertStringIncludes(guide, "exactl memory skill", "the Guide documents the memory skill alias");
   for (const option of ["--revision", "--trace", "--portal", "--all"]) {
     assertStringIncludes(
-      await help("skills", option === "--trace" ? "usage" : option === "--all" ? "list" : "show"),
+      await help("skill", option === "--trace" ? "usage" : option === "--all" ? "list" : "show"),
       option,
       `CLI help must document ${option}`,
     );
@@ -149,8 +148,8 @@ Deno.test("[skill docs] the reference data documents the scope table and the app
 
 Deno.test("[skill docs] failed CLI help retains its command and exit diagnostic", async () => {
   await assertRejects(
-    () => help("skills", "unregistered-cutover-command"),
+    () => help("skill", "unregistered-cutover-command"),
     Error,
-    "CLI help failed for skills unregistered-cutover-command",
+    "CLI help failed for skill unregistered-cutover-command",
   );
 });

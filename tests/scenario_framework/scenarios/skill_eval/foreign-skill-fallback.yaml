@@ -27,7 +27,7 @@ steps:
 
   - id: "validate-catalog"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["validate", "--format", "json"]
     output_criteria:
       - id: "catalog-valid"
@@ -36,7 +36,7 @@ steps:
 
   - id: "approve-the-reviewed-revision"
     type: "exactl"
-    command: "skills"
+    command: "skill"
     args: ["approve", "changelog-writer", "--revision", "e61c1688-73d9-57a8-96c9-b4ccddc8e6e0"]
     output_criteria:
       - id: "approval-succeeds"
