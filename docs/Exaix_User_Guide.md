@@ -1008,6 +1008,38 @@ exactl --help
 exactl daemon status
 ```
 
+### 4.1b Command Grammar
+
+Every `exactl` command follows one grammar:
+
+```text
+exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]
+```
+
+A noun is an Exaix entity, such as `request`, `plan` or `skill`. A verb comes from one closed set, such as
+`list`, `show`, `create`, `approve`, `reject`, `cancel` and `run`. A command never glues a verb to a noun, so a
+bulk decision is `exactl plan approve --all` and not a separate leaf. The 19 root commands form four groups:
+
+| Group       | Roots                                                        |
+| ----------- | ------------------------------------------------------------ |
+| Work        | `request`, `plan`, `review`, `flow`, `approval`              |
+| Definitions | `blueprint`, `skill`, `portal`, `memory`, `model`            |
+| Operations  | `daemon`, `log`, `git`, `mcp`, `config`, `eval`, `dashboard` |
+| System      | `version`, `migrate`                                         |
+
+Run `exactl <noun> --help` to list the verbs of a noun. A request starts with
+`exactl request create "<description>"`, and `exactl flow run <flow-id> "<description>"` starts one through a
+named flow. `exactl request watch` follows one, and `exactl request cancel <request-id>` stops a request that
+has not started executing.
+
+**Removed paths.** A hard cut replaced the older spellings. Each removed path exits with code 2 and prints
+the command that replaces it on one line. The
+[CHANGELOG](CHANGELOG.md) lists every removed path next to its replacement.
+
+**What waits for a human.** `exactl approval list` shows every pending human decision from all eight sources,
+oldest first, with the exact command that decides each row. See
+[Approval Commands](#approval-commands---resolve-wait-states-and-tool-confirmations) for the `approval` verbs.
+
 ### 4.1a Working with the TUI Dashboard
 
 Exaix provides a powerful Terminal User Interface (TUI) dashboard for real-time monitoring, plan review, portal management, and daemon control—all from your terminal. The TUI dashboard is the recommended cockpit for day-to-day operations.
@@ -1018,12 +1050,6 @@ To start the dashboard, run:
 
 ```bash
 exactl dashboard
-```
-
-You can also specify a workspace:
-
-```bash
-exactl dashboard --workspace /path/to/Exaix
 ```
 
 For help and available options:
@@ -1147,9 +1173,6 @@ The `exactl dashboard` command launches the interactive Terminal User Interface 
 ```bash
 # Launch the TUI dashboard
 exactl dashboard
-
-# Optional: run in a specific workspace
-exactl dashboard --workspace /path/to/Exaix
 
 # See help and options
 exactl dashboard --help
@@ -4364,7 +4387,7 @@ of its request context, without it needing to ask for them.
 - `architectureOverview` can come back empty when analysis ran in `quick` mode; use
   `standard` or `deep` mode if you need it populated.
 - Most gathered categories (dependencies, tech stack, directory stats, git history,
-  licenses, vulnerabilities) can only be inspected via `exactl portal knowledge
+  licenses, vulnerabilities) can only be inspected via `exactl portal knowledge show
   <alias>` or by reading `knowledge.json` directly — they have no dedicated
   on-demand query surface for an agent today. Only exported symbols and file
   relationships do.

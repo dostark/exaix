@@ -20,6 +20,13 @@
 
 ## Unreleased — Phase 238 (exactl Command Grammar and Consolidation)
 
+### Added
+
+- `exactl request create` starts a request, `exactl request watch` follows one, `exactl request cancel` cancels a request that has not started executing and journals `request.cancelled`, and `exactl flow run` starts a request through a named flow.
+- `exactl approval` lists, shows and decides wait states and tool confirmations by typed id such as `wait:<resume-token>` and `tool:<confirmation-id>`, and each tool decision journals `tool_confirmation.decided`.
+- `exactl log`, `exactl skill` and `exactl model` replace the journal, cost, skills, models and routing commands, and `exactl model list` shows the price of each model with its source and verified date.
+- `--all` on `exactl plan approve`, `exactl plan amendment approve` and `exactl memory proposal approve` replaces the compound `approve-all` commands.
+
 ### Changed
 
 - The four control-plane MCP tools follow the `noun_verb` grammar of exactl: `exaix_create_request` is now `exaix_request_create`, `exaix_list_plans` is `exaix_plan_list`, `exaix_approve_plan` is `exaix_plan_approve` and `exaix_query_journal` is `exaix_log_list`.
@@ -28,6 +35,78 @@
 ### Removed
 
 - The four old MCP tool names stop working: a call to one returns a tool-not-found error that names the new tool, and a blueprint, agent composer option or approval rule that lists one fails to load with a message that says which name to write instead, so update `permitted_tools` and approval rules in an existing workspace.
+- Every exactl command path in the table below stops working: each prints the command that replaces it on one line and exits with code 2.
+
+### exactl command path renames
+
+The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (see [Command Grammar](Exaix_User_Guide.md#41b-command-grammar)).
+
+| Removed path                                                    | Replacement                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `exactl blueprint agent-role`                                   | `exactl blueprint`                                                                   |
+| `exactl blueprint ls`                                           | `exactl blueprint list`                                                              |
+| `exactl blueprint rm`                                           | `exactl blueprint remove`                                                            |
+| `exactl journal`                                                | `exactl log list`                                                                    |
+| `exactl logs`                                                   | `exactl log list`                                                                    |
+| `exactl log journal`                                            | `exactl log list`                                                                    |
+| `exactl journal wait`                                           | `exactl log wait`                                                                    |
+| `exactl log journal wait`                                       | `exactl log wait`                                                                    |
+| `exactl journal verify`                                         | `exactl log verify`                                                                  |
+| `exactl log journal verify`                                     | `exactl log verify`                                                                  |
+| `exactl cost`                                                   | `exactl log cost`                                                                    |
+| `exactl journal export-otel`                                    | `exactl log export-otel`                                                             |
+| `exactl skills`                                                 | `exactl skill`                                                                       |
+| `exactl memory skill`                                           | `exactl skill`                                                                       |
+| `exactl models`                                                 | `exactl model`                                                                       |
+| `exactl models pricing`                                         | `exactl model list`                                                                  |
+| `exactl routing explain`                                        | `exactl model route explain`                                                         |
+| `exactl routing policy validate`                                | `exactl model route validate`                                                        |
+| `exactl config model`                                           | `exactl model candidates`                                                            |
+| `exactl config set-provider`                                    | `exactl model use`                                                                   |
+| `exactl config set-model`                                       | `exactl config set models.<name>.model <model>`                                      |
+| `exactl plan approve-all`                                       | `exactl plan approve --all`                                                          |
+| `exactl plan amendment show-all`                                | `exactl plan amendment show --all`                                                   |
+| `exactl plan amendment approve-all`                             | `exactl plan amendment approve --all`                                                |
+| `exactl memory pending`                                         | `exactl memory proposal`                                                             |
+| `exactl memory pending approve-all`                             | `exactl memory proposal approve --all`                                               |
+| `exactl memory delete-learning`                                 | `exactl memory learning remove`                                                      |
+| `exactl memory rebuild-index`                                   | `exactl memory index rebuild`                                                        |
+| `exactl git branches`                                           | `exactl git branch list`                                                             |
+| `exactl git worktrees`                                          | `exactl git worktree`                                                                |
+| `exactl portal analyze`                                         | `exactl portal knowledge analyze`                                                    |
+| `exactl portal knowledge`                                       | `exactl portal knowledge show`                                                       |
+| `exactl config lock`                                            | `exactl config lock add`                                                             |
+| `exactl config unlock`                                          | `exactl config lock remove`                                                          |
+| `exactl config lock-list`                                       | `exactl config lock list`                                                            |
+| `exactl config use-profile`                                     | `exactl config profile use`                                                          |
+| `exactl config list-profiles`                                   | `exactl config profile list`                                                         |
+| `exactl config set-path`                                        | `exactl config set paths.<key> <dir>`                                                |
+| `exactl wait`                                                   | `exactl approval <list\|show\|approve\|reject\|amend\|expire\|cancel>`               |
+| `exactl wait list`                                              | `exactl approval list`                                                               |
+| `exactl wait approve`                                           | `exactl approval approve wait:<token>`                                               |
+| `exactl wait reject`                                            | `exactl approval reject wait:<token>`                                                |
+| `exactl wait amend`                                             | `exactl approval amend wait:<token>`                                                 |
+| `exactl wait expire`                                            | `exactl approval expire wait:<token>`                                                |
+| `exactl wait cancel`                                            | `exactl approval cancel wait:<token>`                                                |
+| `exactl tool`                                                   | `exactl approval <list\|show\|approve\|reject>`                                      |
+| `exactl tool pending`                                           | `exactl approval list`                                                               |
+| `exactl tool confirm`                                           | `exactl approval approve tool:<id>`                                                  |
+| `exactl tool deny`                                              | `exactl approval reject tool:<id>`                                                   |
+| `exactl watch`                                                  | `exactl request watch --trace <trace-id>`                                            |
+| `exactl mcp start`                                              | `exactl mcp serve`                                                                   |
+| `exactl mcp connect`                                            | `exactl mcp tool list --server <url>, or exactl mcp tool call <tool> --server <url>` |
+| `exactl request "<text>"`                                       | `exactl request create "<text>"`                                                     |
+| `exactl request create --agent-role <name>` and `-a <name>`     | `exactl request create --agent <name>`                                               |
+| `exactl dashboard --workspace <dir>` (the option never existed) | `exactl dashboard`                                                                   |
+
+### MCP tool renames
+
+| Removed tool name      | Replacement            |
+| ---------------------- | ---------------------- |
+| `exaix_create_request` | `exaix_request_create` |
+| `exaix_list_plans`     | `exaix_plan_list`      |
+| `exaix_approve_plan`   | `exaix_plan_approve`   |
+| `exaix_query_journal`  | `exaix_log_list`       |
 
 ## Unreleased — Phase 237 (Class Design Metrics and God Class Detection)
 

@@ -42,7 +42,7 @@ Find a rule by topic:
 - **Layer and edition boundaries:** [TUI](#tui-boundaries), [CLI](#cli-boundaries),
   [Edition Tier](#edition-tier-boundary), [Package Purity](#package-module-purity),
   [Layer-Aware Constants](#layer-aware-constant-imports)
-- **Design conventions:** [Interfaces](#di-and-interfaces), [Environment Variables](#env-vars),
+- **Design conventions:** [exactl Command Naming](#exactl-command-naming), [Interfaces](#di-and-interfaces), [Environment Variables](#env-vars),
   [Optional Parameters](#optional-params), [Workspace Paths](#exaix-path-construction),
   [Tool Names](#tool-naming)
 - **Module structure and observability:** [Module Structure](#module-structure),
@@ -344,6 +344,23 @@ The CLI command layer reaches the core only through the package aliases. The bou
 - `apps/exactl/src/helpers/` belongs to the CLI. Modules outside `apps/exactl/src/` do not import it.
 
 Zones of `exaix/import-boundaries` in `packages/lint-policy/tests/fixtures/catalog_v1.json` enforce these rules.
+
+## exactl Command Naming {#exactl-command-naming}
+
+Every `exactl` command path is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]`. The command tree test
+`apps/exactl/tests/command_tree_lint_test.ts` walks the live tree and enforces these rules:
+
+- A root is a member of `ExaCtlCommandName`, a sub-noun is a member of `ExaCtlSubNoun`, and a leaf verb is a member of
+  `ExaCtlVerb`, all in `apps/exactl/src/exactl_constants.ts`. A new word is a change to its enum.
+- A leaf never glues a verb to a noun. A bulk action is the verb leaf with `--all`, and a group of related leaves is
+  a sub-noun with its own verbs. A hyphenated leaf is allowed only when it is itself an `ExaCtlVerb` member.
+- Two paths never share one action handler. A second spelling of a command is a duplicate and fails the lint.
+- A bulk decision takes `--all` or one or more ids. Both together is a usage error.
+- A usage failure throws `ExaCtlError` with an `ExaCtlExitCode`. Only the root error handler turns it into an exit code.
+- A removed path gets a row in `EXACTL_RENAMES`, never an alias. The row prints its replacement and exits 2.
+  The lint fails when a path of the table exists in the live tree.
+- The allow-list fixture of the lint names a violation by rule and path, never by count, and may only lose entries.
+  A stale entry fails the lint.
 
 <a id="edition-tier-boundary"></a>
 

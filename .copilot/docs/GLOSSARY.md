@@ -133,9 +133,9 @@ flows. The composite form is `"Blueprints/Flows"`.
 Primary CLI entrypoint for Exaix operations: creating and sending requests,
 managing blueprints and flows, running validations and CI checks.
 
-### `--agent-role` (CLI flag)
+### `--agent` (CLI flag)
 
-CLI option used to select the agent role blueprint for a given request. The CLI
+Option of `exactl request create` that selects the agent role blueprint for a request. The CLI
 resolves the agent role and delegates execution to the correct agent.
 
 ### `exactl blueprint *`
@@ -207,7 +207,7 @@ interfaces, database columns and journal payloads for each core concept.
 
 | Name         | Where used                                                                               | Meaning                                                                                                      |
 | ------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `agent_role` | Request frontmatter, flow YAML step, CLI flag `--agent-role`, DB column, journal payload | The canonical slug that selects and, once resolved, identifies an agent role blueprint (e.g. `senior-coder`) |
+| `agent_role` | Request frontmatter, flow YAML step, CLI flag `--agent`, DB column, journal payload | The canonical slug that selects and, once resolved, identifies an agent role blueprint (e.g. `senior-coder`) |
 
 Unlike the retired `identity`/`identity_id` pair, `agent_role` is used
 end-to-end as both the user-facing input and the stored value — there is no

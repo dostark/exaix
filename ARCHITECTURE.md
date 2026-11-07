@@ -444,18 +444,45 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
 **Config history, rollback, and integrity checksum:**
 
 - **Config history/rollback CLI** — `config history <key>` reads the append-only log via `IConfigAdapter.getHistory(key)` (already on the interface), displaying each entry as `id=<id> <value> <created_at> (source: <source>)` newest-first. `config rollback <key> <id>` looks up the historical row by id, appends a new row restoring that value with `source="rollback"`, and emits `config.rolled_back`. Both leverage the existing `getOverrideHistory` and `insertOverride` DAOs with no schema changes.
-- **Key locking (`config_locked_keys`)** — a `config_locked_keys` SQLite table (`key`, `locked_at`, `locked_by`, `reason`) checked by a shared `assertWritable(validationKey)` guard inside both `DirectConfigAdapter.set()` and `DaemonConfigAdapter.set()`, called with the **resolved** validation key (not the raw caller-supplied key) so a lock on a base key also covers profile-scoped writes to it (GAP-1, closed in post-gap remediation). A locked key is refused by every write surface (CLI `set`, MCP `ConfigApply`, daemon own writes, profile-scoped `set`) with `ConfigKeyLockedError` until `config unlock`. Managed by `config lock/unlock/lock-list` CLI commands; emits `config.key_locked`/`config.key_unlocked` events.
+- **Key locking (`config_locked_keys`)** — a `config_locked_keys` SQLite table (`key`, `locked_at`, `locked_by`, `reason`) checked by a shared `assertWritable(validationKey)` guard inside both `DirectConfigAdapter.set()` and `DaemonConfigAdapter.set()`, called with the **resolved** validation key (not the raw caller-supplied key) so a lock on a base key also covers profile-scoped writes to it (GAP-1, closed in post-gap remediation). A locked key is refused by every write surface (CLI `set`, MCP `ConfigApply`, daemon own writes, profile-scoped `set`) with `ConfigKeyLockedError` until `config lock remove`. Managed by `config lock add|remove|list` CLI commands; emits `config.key_locked`/`config.key_unlocked` events.
 - **Integrity checksum (`_checksum`)** — a SHA-256 hash over the effective Config DB (all keys except `_checksum` itself, sorted, concatenated as `key||value`), stored as a synthetic `_checksum` row in `config_overrides` with `source="integrity"`. `persistChecksum()` refreshes it after every adapter write so legitimate writes never trip a mismatch. `verifyIntegrity()` compares stored vs. computed at daemon boot and on each periodic poll tick (gated by `CONFIG_INTEGRITY_POLL_INTERVAL_MS`), journaling `config.integrity_verified` (match) or `config.integrity_mismatch` (tamper detected). Excluded from `listOverrides()`, `diff()`, and the DB watcher's hot-apply loop.
 - **Config edit (`$EDITOR`)** — `config edit` renders current overrides (excluding `_checksum`) to a temp file as `key = value` lines, opens `$EDITOR`, and applies changed lines through `adapter.set()` so lock/validation/debounce all still apply. Non-zero editor exit discards all changes. Every changed line is validated via `adapter.validateAtPath()` **before** any line is applied; if any line fails, the edit aborts with no committed changes (GAP-3, closed in post-gap remediation) — avoids the partial-apply state where a later invalid line would otherwise leave earlier valid lines already written. Mirrors the existing `$EDITOR` spawn pattern from blueprint commands.
 - **Rollback id validation** — `config rollback <key> <id>` rejects a non-integer or non-positive `id` with a clear `rollback id must be a positive integer` error before it reaches the DAO lookup, instead of silently coercing to `NaN` and surfacing a confusing `ConfigKeyNotFoundError` (GAP-4, closed in post-gap remediation).
 
-**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles,history,rollback,lock,unlock,lock-list,edit,block {add,remove,list},compact}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
+**CLI surface:** `exactl config {get,set,unset,validate,show,diff,history,rollback,edit,compact,lock {add,remove,list},profile {list,use},block {add,remove,list}}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
 
 **Validation bounds:** Zod schemas use `resolveConfigurableBounds(key)` from `@exaix/core/config` (via `c()`/`cBounds()` helpers at `packages/schemas/src/config.ts`) to derive min/max/default from the registry — no separate MIN/MAX constants needed.
 
 **CI gate:** `deno task check:config-keys` ensures no duplicate keys.
 
 ---
+
+## exactl Command Tree {#exactl-command-tree}
+
+`exactl` follows one grammar, `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]`. Three enums in
+`apps/exactl/src/exactl_constants.ts` hold it: `ExaCtlCommandName` (the 19 roots), `ExaCtlSubNoun` and
+`ExaCtlVerb` (the closed verb set). A new verb, sub-noun or root is a change to its enum.
+
+- **Builder layout.** `apps/exactl/src/exactl.ts` registers one root per `ExaCtlCommandName` member. Each root
+  comes from `apps/exactl/src/command_builders/<noun>_command.ts`, which exports `build<Noun>Command(runtime)` over the
+  shared `IExaCtlRuntime`. The builders hold wiring only. The behavior lives in the command classes under
+  `apps/exactl/src/commands/`, which a builder reaches through the runtime.
+- **Root error handler.** `apps/exactl/src/exactl_error_handler.ts` is the only place that maps a failure to an
+  exit code. A builder throws `ExaCtlError` with an `ExaCtlExitCode` (2 usage, 3 not found, 4 state conflict). The handler prints
+  the message to stderr and exits with that code. A usage error changes no state, so it writes no journal event.
+- **Rename hints.** The hard cut of the older command spellings keeps no alias. `apps/exactl/src/exactl_renames.ts`
+  holds `EXACTL_RENAMES`, a table of removed paths and their replacements, and `findRename` and `renameHint`. The
+  table runs only after cliffy rejects a path: the handler then prints `use '<replacement>'` and exits 2.
+- **Tree-lint.** `apps/exactl/tests/command_tree_lint_test.ts` walks the live tree with
+  `apps/exactl/src/docs/command_tree_walk.ts` and holds the grammar: every leaf is an `ExaCtlVerb`, no compound leaf, no
+  duplicate handler, and no path of `EXACTL_RENAMES` in the tree. Its allow-list fixture is empty and may only shrink.
+- **Pending human decisions.** `exactl approval list` merges eight sources, one per kind: plan, amendment, review,
+  clarification, proposal, skill, wait and tool. `apps/exactl/src/commands/approval_sources.ts` defines each source
+  over the command that owns the data. `ApprovalCommands.list` runs them in parallel, hides a clarification wait
+  state behind the clarification row of its trace, and sorts oldest first. A failing source prints one stderr line and
+  hides no other row. Only `wait:` and `tool:` refs are decided through `exactl approval`. Any other kind exits 2 and
+  names the command of the noun that owns it. The control-plane MCP tools follow the same grammar:
+  `exaix_request_create`, `exaix_plan_list`, `exaix_plan_approve` and `exaix_log_list`.
 
 ## Parsing & Schema Layer
 
