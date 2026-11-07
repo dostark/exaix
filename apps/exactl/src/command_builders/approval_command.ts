@@ -57,7 +57,7 @@ async function report(
 function createApprovalCommand(runtime: IExaCtlRuntime) {
   const { approvalCommands, display } = runtime;
   return new Command()
-    .description("List and decide pending human decisions: wait states and tool confirmations")
+    .description("List every pending human decision and decide wait states and tool confirmations")
     .command(
       ExaCtlVerb.LIST,
       new Command()

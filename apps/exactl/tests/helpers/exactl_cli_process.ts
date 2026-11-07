@@ -17,23 +17,37 @@ export interface IExaCtlCliRun {
   code: number;
 }
 
+/** An exactl entry point and the edition it serves. */
+export interface IExaCtlEntry {
+  readonly path: string;
+  readonly edition: string;
+}
+
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
 const TEST_ENV_PREFIX = "EXA_TEST";
 const SOLO_EDITION = "solo";
+const TEAM_EDITION = "team";
+
+const SOLO_ENTRY: IExaCtlEntry = { path: join(REPO_ROOT, "apps/exactl/main.ts"), edition: SOLO_EDITION };
+export const TEAM_ENTRY: IExaCtlEntry = {
+  path: join(REPO_ROOT, "exaix-team/apps/exactl/main.ts"),
+  edition: TEAM_EDITION,
+};
 
 /** The parent environment without the test-mode switches that other test files set in this process. */
-function childEnv(configPath: string): Record<string, string> {
+function childEnv(configPath: string, edition: string): Record<string, string> {
   const env = Deno.env.toObject();
   for (const key of Object.keys(env)) {
     if (key.startsWith(TEST_ENV_PREFIX)) delete env[key];
   }
-  return { ...env, EXA_CONFIG_PATH: configPath, EXAIX_EDITION: SOLO_EDITION };
+  return { ...env, EXA_CONFIG_PATH: configPath, EXAIX_EDITION: edition };
 }
 
 /** Runs each `exactl <args>` in order against one temporary workspace that `seed` fills first. */
 export async function runExactlSeededWorkspace(
   seed: (root: string) => Promise<void> | void,
   argsList: string[][],
+  entry: IExaCtlEntry = SOLO_ENTRY,
 ): Promise<IExaCtlCliRun[]> {
   const root = await Deno.makeTempDir({ prefix: "exactl-cli-" });
   try {
@@ -49,12 +63,12 @@ export async function runExactlSeededWorkspace(
           "--allow-all",
           "--config",
           join(REPO_ROOT, "deno.json"),
-          join(REPO_ROOT, "apps/exactl/main.ts"),
+          entry.path,
           ...args,
         ],
         cwd: root,
         clearEnv: true,
-        env: childEnv(configPath),
+        env: childEnv(configPath, entry.edition),
         stdout: "piped",
         stderr: "piped",
       }).output();
