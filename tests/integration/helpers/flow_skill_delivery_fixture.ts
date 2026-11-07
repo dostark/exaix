@@ -8,10 +8,11 @@
 import { CliDelegateConfigSchema } from "@exaix/schemas/session_delegate.ts";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
-import { ExecutionStrategyName } from "@exaix/core";
+import { ExecutionStrategyName, SKILL_EVENT_RESOLVED } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { SkillsService } from "@exaix/core/skills";
-import { AgentComposerAdapter } from "@exaix/flow";
+import { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IFlowStepRequest } from "@exaix/flow";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig, initTestDbService, REPO_ROOT } from "@exaix/testing";
@@ -28,6 +29,7 @@ export interface IFlowSkillUsage {
   trace_id: string;
   request_id: string;
   match_source: string;
+  content_sha256: string;
 }
 
 interface IFlowSkillDeliveryFixture {
@@ -35,8 +37,15 @@ interface IFlowSkillDeliveryFixture {
   config: ReturnType<typeof createMockConfig>;
   skills: SkillsService;
   adapter: AgentComposerAdapter;
-  launches: Array<{ objective: string; usage: IFlowSkillUsage[] }>;
+  logger: EventLogger;
+  launches: Array<{ objective: string; usage: IFlowSkillUsage[]; args: string[] }>;
   rows: () => Promise<IFlowSkillUsage[]>;
+  resolutions: () => Promise<Array<{ payload: string; trace_id: string }>>;
+  executeFlowStep: (
+    flow: IFlow,
+    step: string,
+    context: Parameters<FlowRunner["execute"]>[1],
+  ) => ReturnType<FlowRunner["execute"]>;
   request: (skills: string[]) => IFlowStepRequest;
   execute: (role: string, request: IFlowStepRequest) => ReturnType<AgentComposerAdapter["runWithStrategy"]>;
   cleanup: () => Promise<void>;
@@ -65,12 +74,12 @@ export async function flowSkillDeliveryFixture(): Promise<IFlowSkillDeliveryFixt
   const rows = async () => {
     await env.db.waitForFlush();
     return await env.db.preparedAll<IFlowSkillUsage>(
-      "SELECT skill_name, revision_id, flow_id, flow_step_id, root_kind, source_path, agent_role, trace_id, request_id, match_source FROM skill_usage ORDER BY id",
+      "SELECT u.*, r.content_sha256 FROM skill_usage u JOIN skill_revisions r ON r.revision_id = u.revision_id ORDER BY u.id",
     );
   };
-  const launches: Array<{ objective: string; usage: IFlowSkillUsage[] }> = [];
+  const launches: Array<{ objective: string; usage: IFlowSkillUsage[]; args: string[] }> = [];
   const run: IRunCliDelegateProcess = async (_command, args) => {
-    launches.push({ objective: args[1], usage: await rows() });
+    launches.push({ objective: args[1], usage: await rows(), args: [...args] });
     return {
       code: 0,
       stdout: JSON.stringify({
@@ -104,8 +113,27 @@ export async function flowSkillDeliveryFixture(): Promise<IFlowSkillDeliveryFixt
     config,
     skills,
     adapter,
+    logger,
+    executeFlowStep: (flow, step, context) =>
+      new FlowRunner({
+        agentExecutor: {
+          run: () => Promise.resolve({ thought: "fixture", content: "{}", raw: "{}" }),
+          runWithStrategy: (role, request, strategy) =>
+            request.flowStepId === step
+              ? adapter.runWithStrategy(role, request, strategy)
+              : Promise.resolve({ thought: "fixture", content: "{}", raw: "{}" }),
+        },
+        eventLogger: { log: () => {} },
+      }).execute(flow, context),
     launches,
     rows,
+    resolutions: async () => {
+      await env.db.waitForFlush();
+      return await env.db.preparedAll<{ payload: string; trace_id: string }>(
+        "SELECT payload, trace_id FROM activity WHERE action_type = ? ORDER BY rowid",
+        [SKILL_EVENT_RESOLVED],
+      );
+    },
     request: (skills: string[]): IFlowStepRequest => ({
       userPrompt: "Prepare the requested artifact without implementing it.",
       context: {},

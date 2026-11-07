@@ -1,0 +1,140 @@
+schema_version: "1.0.0"
+id: "phase234-requirements-skill-delivery"
+title: "Requirements skill delivery through the daemon and replay CLI"
+pack: "flow_blueprints"
+tags: ["smoke", "subsystem:flows", "subsystem:skills", "entity:requirements-analysis"]
+request_fixture: "fixtures/requests/flow_blueprints/feature_development.md"
+mode_support: ["auto"]
+portals:
+  - alias: blueprint-project
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/blueprint-project"
+    git_init: true
+bindings:
+  "flow:feature-development/step:analyze-requirements":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__analyze-requirements__0
+  "flow:feature-development/step:design-architecture":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__design-architecture__0
+  "flow:feature-development/step:implement-feature":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__implement-feature__0
+  "flow:feature-development/step:write-tests":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__write-tests__0
+  "flow:feature-development/step:code-review":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__code-review__0
+  "flow:feature-development/step:integration-test":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__integration-test__0
+
+steps:
+  - id: "prepare-delegate"
+    type: "run-script"
+    command: "deno"
+    args:
+      - eval
+      - |
+          await Deno.mkdir(".mock-cli", { recursive: true });
+          await Deno.remove(".mock-cli/claude").catch(() => {});
+          await Deno.writeTextFile(".mock-cli/claude", "#!/bin/sh\nexec deno run -A --config \"$REPO_ROOT/deno.json\" \"$FRAMEWORK_HOME/fixtures/cli/phase234_requirements_delegate.ts\" --evidence-root \"$WORKSPACE_ROOT\" \"$@\"\n", { mode: 0o755 });
+    output_criteria:
+      - id: "delegate-prepared"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      PATH: "$WORKSPACE_ROOT/.mock-cli:$PATH"
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/fixtures/flow_blueprints/cli_delegate.toml"
+      EXA_LLM_PROVIDER: "mock"
+      MOCK_STRICT: "1"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-flow-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "blueprint-project"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-for-completion"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.5
+
+  - id: "assert-delegate-steps"
+    type: "journal-assert"
+    action_type: "flow.step.completed"
+    trace_scoped: true
+    expect_count: 6
+    payload_equals:
+      - path: strategy
+        value: cli_delegate
+    output_criteria:
+      - id: "delegates-completed"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.5
+
+  - id: verify-requirements-capture
+    type: json-assert
+    file_pattern: ".exa/phase234-requirements-evidence.json"
+    output_criteria:
+      - id: captured-immutable-instructions-and-usage
+        kind: json-path-equals
+        target_file: ".exa/phase234-requirements-evidence.json"
+        path: "$.verified"
+        equals: true
+        score_weight: 1
+      - id: requirements-revision-root
+        kind: json-path-equals
+        target_file: ".exa/phase234-requirements-evidence.json"
+        path: "$.usage[0].root_kind"
+        equals: blueprint
+        score_weight: 1
+
+  - id: verify-requirements-resolution
+    type: journal-assert
+    action_type: skills.resolved
+    trace_scoped: true
+    payload_equals:
+      - path: agent_role
+        value: product-manager
+      - path: skill_count
+        value: 3
+    expect_count: 1
+    output_criteria:
+      - id: requirements-resolution-recorded
+        kind: command-exit-code
+        equals: 0
+        score_weight: 1
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

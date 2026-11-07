@@ -24,7 +24,6 @@ import { withEnv } from "@exaix/testing";
 import type { ISkillPin } from "@exaix/core/skills";
 import { EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
 import { copy } from "@std/fs";
-import { FlowRunner } from "@exaix/flow";
 import { flowSkillDeliveryFixture } from "./helpers/flow_skill_delivery_fixture.ts";
 
 for (
@@ -141,16 +140,7 @@ for (
       const flow = FlowSchema.parse(
         parse(await Deno.readTextFile(join(REPO_ROOT, "Blueprints", "Flows", `${sample.id}.flow.yaml`))),
       );
-      const result = await new FlowRunner({
-        agentExecutor: {
-          run: () => Promise.resolve({ thought: "fixture", content: "{}", raw: "{}" }),
-          runWithStrategy: (role, request, strategy) =>
-            request.flowStepId === sample.step
-              ? fx.adapter.runWithStrategy(role, request, strategy)
-              : Promise.resolve({ thought: "fixture", content: "{}", raw: "{}" }),
-        },
-        eventLogger: { log: () => {} },
-      }).execute(flow, {
+      const result = await fx.executeFlowStep(flow, sample.step, {
         userPrompt: await Deno.readTextFile(
           Deno.args[0] ??
             join(REPO_ROOT, "tests/scenario_framework/fixtures/requests/skill_eval/implementation_plan_delivery.md"),
