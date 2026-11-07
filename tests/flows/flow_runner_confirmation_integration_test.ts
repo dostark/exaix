@@ -52,7 +52,7 @@ class RecordingCreateRequestHandler extends ToolHandler {
 
   getToolDefinition(): IToolDefinition {
     return {
-      name: McpToolName.CREATE_REQUEST,
+      name: McpToolName.REQUEST_CREATE,
       description: "Create a request record",
       inputSchema: {
         type: "object",
@@ -129,7 +129,7 @@ description: "Handles dynamic approval-required tool calls"
 created: "2026-05-18T10:00:00.000Z"
 created_by: "test"
 permitted_tools:
-  - "exaix_create_request"
+  - "exaix_request_create"
 ---
 
 You are a senior engineer executing dynamic tool calls.
@@ -144,7 +144,7 @@ function createDynamicApprovalFlow(): IFlow {
       name: "Create request if needed",
       agent_role: "senior-coder",
       execution_mode: FlowStepExecutionMode.DYNAMIC,
-      permitted_tools: [McpToolName.CREATE_REQUEST],
+      permitted_tools: [McpToolName.REQUEST_CREATE],
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -172,7 +172,7 @@ Deno.test("FlowRunner confirmation integration: approval executes the tool and c
       reasoning: "A request should be created",
       action: {
         type: "tool_call",
-        tool: "exaix_create_request",
+        tool: "exaix_request_create",
         args: { title: "Create approved request" },
       },
     }),
@@ -203,7 +203,7 @@ Deno.test("FlowRunner confirmation integration: approval executes the tool and c
       agentExecutor: new FailingAgentExecutor(),
       eventLogger: new NoopEventLogger(),
       context,
-      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
+      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.REQUEST_CREATE, handler]])),
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
@@ -231,7 +231,7 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
       reasoning: "A request should be created",
       action: {
         type: "tool_call",
-        tool: "exaix_create_request",
+        tool: "exaix_request_create",
         args: { title: "Create denied request" },
       },
     }),
@@ -263,7 +263,7 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
       agentExecutor: new FailingAgentExecutor(),
       eventLogger: new NoopEventLogger(),
       context,
-      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
+      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.REQUEST_CREATE, handler]])),
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
@@ -275,7 +275,7 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
 
     assertEquals(result.success, true);
     assertEquals(handler.calls.length, 0);
-    assertStringIncludes(result.output, "Tool 'exaix_create_request' call denied: User declined");
+    assertStringIncludes(result.output, "Tool 'exaix_request_create' call denied: User declined");
   } finally {
     restoreProvider();
     await cleanup();

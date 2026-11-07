@@ -568,7 +568,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.QUERY_RELATIONSHIPS,
       description:
-        "List relationship edges leading forward from a layer name or file path in the current portal's knowledge graph (populated by 'portal analyze' standard/deep mode). Combines persisted file-import edges with layer-membership edges computed on demand. Use when you need to discover which files a layer contains or which files a given file imports internally; for the reverse direction (who imports a file) use find_dependents. Optionally filter by edge kind. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
+        "List relationship edges leading forward from a layer name or file path in the current portal's knowledge graph (populated by 'portal knowledge analyze' standard/deep mode). Combines persisted file-import edges with layer-membership edges computed on demand. Use when you need to discover which files a layer contains or which files a given file imports internally; for the reverse direction (who imports a file) use find_dependents. Optionally filter by edge kind. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
       parameters: {
         type: "object",
         properties: {
@@ -665,7 +665,7 @@ export function createCoreToolSchemas(
         summary: "Lists symbol-level reference edges from the portal's knowledge graph.",
         when_to_use: "Use to find who references a symbol, or which symbols it references, without reading files.",
         when_not_to_use:
-          "Do not use for file import edges — that's get_module_dependencies. Do not use if no 'portal analyze' has run for this portal. Do not expect results from a Solo or Team analysis, which never emits symbol edges.",
+          "Do not use for file import edges — that's get_module_dependencies. Do not use if no 'portal knowledge analyze' has run for this portal. Do not expect results from a Solo or Team analysis, which never emits symbol edges.",
         example: {
           input: { symbol: "src/helper.ts#format", direction: "referenced_by" },
           output: '{"data":[{"from":"src/main.ts#run","to":"src/helper.ts#format","kind":"symbol_references_symbol"}]}',
@@ -710,7 +710,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use to discover exported functions/classes/types by name, kind, or file without reading files directly.",
         when_not_to_use:
-          "Do not use to list import edges between files — that's get_module_dependencies. Do not use if no 'portal analyze' has ever run for this portal; it returns an error, not an empty list.",
+          "Do not use to list import edges between files — that's get_module_dependencies. Do not use if no 'portal knowledge analyze' has ever run for this portal; it returns an error, not an empty list.",
         example: {
           input: { name: "Router", kind: "class" },
           output:

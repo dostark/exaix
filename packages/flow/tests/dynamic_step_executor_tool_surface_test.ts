@@ -106,13 +106,13 @@ Deno.test("DYNAMIC_MODE_TOOLS derives exactly from manifest dynamic_mode_allowed
 });
 
 Deno.test("DYNAMIC_MODE_TOOLS includes read-only domain tools list_plans and query_journal", () => {
-  assert(DYNAMIC_MODE_TOOLS.has(McpToolName.LIST_PLANS), "list_plans must be in DYNAMIC_MODE_TOOLS");
-  assert(DYNAMIC_MODE_TOOLS.has(McpToolName.QUERY_JOURNAL), "query_journal must be in DYNAMIC_MODE_TOOLS");
+  assert(DYNAMIC_MODE_TOOLS.has(McpToolName.PLAN_LIST), "list_plans must be in DYNAMIC_MODE_TOOLS");
+  assert(DYNAMIC_MODE_TOOLS.has(McpToolName.LOG_LIST), "query_journal must be in DYNAMIC_MODE_TOOLS");
 });
 
 Deno.test("DYNAMIC_MODE_TOOLS excludes requires_human_approval domain tools", () => {
-  assertFalse(DYNAMIC_MODE_TOOLS.has(McpToolName.CREATE_REQUEST), "create_request has requires_human_approval=true");
-  assertFalse(DYNAMIC_MODE_TOOLS.has(McpToolName.APPROVE_PLAN), "approve_plan has requires_human_approval=true");
+  assertFalse(DYNAMIC_MODE_TOOLS.has(McpToolName.REQUEST_CREATE), "create_request has requires_human_approval=true");
+  assertFalse(DYNAMIC_MODE_TOOLS.has(McpToolName.PLAN_APPROVE), "approve_plan has requires_human_approval=true");
 });
 
 Deno.test("DYNAMIC_MODE_TOOLS excludes write and git mutation tools", () => {
@@ -167,9 +167,9 @@ Deno.test(
     const agentRole = dynamicAgentRole(
       [
         McpToolName.READ_FILE,
-        McpToolName.CREATE_REQUEST, // requires_human_approval: true
-        McpToolName.APPROVE_PLAN, // requires_human_approval: true
-        McpToolName.LIST_PLANS, // requires_human_approval: false — should be included
+        McpToolName.REQUEST_CREATE, // requires_human_approval: true
+        McpToolName.PLAN_APPROVE, // requires_human_approval: true
+        McpToolName.PLAN_LIST, // requires_human_approval: false — should be included
       ],
       "test-agent",
       "Test Agent",
@@ -185,14 +185,14 @@ Deno.test(
     await executor.execute(step, agentRole, "test input", { traceId: "t2" });
 
     assertFalse(
-      mcpClient.capturedTools.includes(McpToolName.CREATE_REQUEST),
+      mcpClient.capturedTools.includes(McpToolName.REQUEST_CREATE),
       "create_request must be filtered out (requires_human_approval: true)",
     );
     assertFalse(
-      mcpClient.capturedTools.includes(McpToolName.APPROVE_PLAN),
+      mcpClient.capturedTools.includes(McpToolName.PLAN_APPROVE),
       "approve_plan must be filtered out (requires_human_approval: true)",
     );
-    const capturedToolsIncludesLIST_PLANS: boolean = mcpClient.capturedTools.includes(McpToolName.LIST_PLANS);
+    const capturedToolsIncludesLIST_PLANS: boolean = mcpClient.capturedTools.includes(McpToolName.PLAN_LIST);
     assert(capturedToolsIncludesLIST_PLANS, "list_plans must be included (requires_human_approval: false)");
     const capturedToolsIncludesREAD_FILE: boolean = mcpClient.capturedTools.includes(McpToolName.READ_FILE);
     assert(capturedToolsIncludesREAD_FILE, "read_file must be included");

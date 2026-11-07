@@ -475,7 +475,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
   },
   // Domain tools (MCP domain)
   {
-    name: McpToolName.CREATE_REQUEST,
+    name: McpToolName.REQUEST_CREATE,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
     dynamic_mode_allowed: true,
@@ -500,7 +500,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
-    name: McpToolName.LIST_PLANS,
+    name: McpToolName.PLAN_LIST,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
     dynamic_mode_allowed: true,
@@ -528,7 +528,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
-    name: McpToolName.APPROVE_PLAN,
+    name: McpToolName.PLAN_APPROVE,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
     dynamic_mode_allowed: true,
@@ -552,7 +552,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
-    name: McpToolName.QUERY_JOURNAL,
+    name: McpToolName.LOG_LIST,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
     dynamic_mode_allowed: true,
@@ -588,7 +588,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "exaix-team/packages/mcp-server/portal_knowledge_tools.ts",
     description:
-      "List code symbols (functions, classes, interfaces, consts, types, enums) previously extracted from a portal's codebase by 'portal analyze' (standard/deep mode). Read-only; safe for dynamic execution. Use to navigate an unfamiliar codebase, find a symbol's file and signature, or discover what a portal exports without reading whole files. Optionally filter by a case-insensitive name substring (name) or symbol kind, and cap result count (limit). Returns an error if the portal has not been analyzed yet — run 'portal analyze' first. Returns an array of symbol records ranked by connectivity (pageRankScore, most-referenced first).",
+      "List code symbols (functions, classes, interfaces, consts, types, enums) previously extracted from a portal's codebase by 'portal knowledge analyze' (standard/deep mode). Read-only; safe for dynamic execution. Use to navigate an unfamiliar codebase, find a symbol's file and signature, or discover what a portal exports without reading whole files. Optionally filter by a case-insensitive name substring (name) or symbol kind, and cap result count (limit). Returns an error if the portal has not been analyzed yet — run 'portal knowledge analyze' first. Returns an array of symbol records ranked by connectivity (pageRankScore, most-referenced first).",
     input_schema: {
       type: "object",
       properties: {
@@ -634,7 +634,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "exaix-team/packages/mcp-server/portal_knowledge_tools.ts",
     description:
-      "List symbol-level reference edges (who calls this symbol, or what it calls) previously extracted from a portal's codebase by 'portal analyze'. Read-only; safe for dynamic execution. These edges exist only when the analysis enabled the Enterprise symbol graph, so an empty list is the normal answer for a Solo or Team analysis and is not an error. Use to find call sites or type usage rather than file imports. Pass a symbol endpoint as '<file>#<name>' or a bare file path, and optionally choose a direction or cap the result count. Returns an error if the portal has not been analyzed yet — run 'portal analyze' first. Returns an array of reference edges with composite '<file>#<symbolName>' endpoints.",
+      "List symbol-level reference edges (who calls this symbol, or what it calls) previously extracted from a portal's codebase by 'portal knowledge analyze'. Read-only; safe for dynamic execution. These edges exist only when the analysis enabled the Enterprise symbol graph, so an empty list is the normal answer for a Solo or Team analysis and is not an error. Use to find call sites or type usage rather than file imports. Pass a symbol endpoint as '<file>#<name>' or a bare file path, and optionally choose a direction or cap the result count. Returns an error if the portal has not been analyzed yet — run 'portal knowledge analyze' first. Returns an array of reference edges with composite '<file>#<symbolName>' endpoints.",
     input_schema: {
       type: "object",
       properties: {

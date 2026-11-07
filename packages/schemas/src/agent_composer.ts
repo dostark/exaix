@@ -8,7 +8,12 @@
  */
 
 import { z } from "zod";
-import { ExecutionStrategyName, isRejectedNativeToolName, SecurityMode } from "@exaix/core";
+import {
+  ExecutionStrategyName,
+  invalidNativeToolNamesMessage,
+  isRejectedNativeToolName,
+  SecurityMode,
+} from "@exaix/core";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 import { SkillPinVectorSchema } from "./skill_pin.ts";
 
@@ -56,7 +61,7 @@ export const AgentExecutionOptionsSchema = z.object({
   ),
   permitted_tools: z.array(z.string()).optional().refine(
     (tools) => tools === undefined || !tools.some(isRejectedNativeToolName),
-    { message: "permitted_tools contains an invalid native tool name" },
+    { error: (issue) => invalidNativeToolNamesMessage(Array.isArray(issue.input) ? issue.input : []) },
   ).describe(
     "Custom tool permissions for this execution",
   ),

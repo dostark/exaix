@@ -118,10 +118,10 @@ export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   ToolName.QUERY_SYMBOLS,
   ToolName.QUERY_RELATIONSHIPS,
   ToolName.GET_MODULE_DEPENDENCIES,
-  McpToolName.CREATE_REQUEST,
-  McpToolName.LIST_PLANS,
-  McpToolName.APPROVE_PLAN,
-  McpToolName.QUERY_JOURNAL,
+  McpToolName.REQUEST_CREATE,
+  McpToolName.PLAN_LIST,
+  McpToolName.PLAN_APPROVE,
+  McpToolName.LOG_LIST,
   McpToolName.CONFIG_GET,
   McpToolName.CONFIG_SET,
   McpToolName.CONFIG_VALIDATE,
@@ -131,6 +131,15 @@ export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   McpToolName.PORTAL_SYMBOLS,
 ]);
 
+/** Control-plane tools renamed to the `noun_verb` grammar of exactl. This is rejection data, never an alias map:
+ *  it only builds error messages that name the replacement. */
+export const RETIRED_TOOL_RENAMES: Readonly<Record<string, McpToolName>> = {
+  exaix_create_request: McpToolName.REQUEST_CREATE,
+  exaix_list_plans: McpToolName.PLAN_LIST,
+  exaix_approve_plan: McpToolName.PLAN_APPROVE,
+  exaix_query_journal: McpToolName.LOG_LIST,
+};
+
 /** Retired native names/aliases. This is rejection data, never an alias map. */
 const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>([
   "dependents",
@@ -138,6 +147,7 @@ const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>([
   "who_depends_on",
   "deno_task",
   "exaix_portal_symbols",
+  ...Object.keys(RETIRED_TOOL_RENAMES),
 ]);
 
 /** True when `name` is a rejected native-tool spelling. Native names are exact-only. A case
@@ -151,6 +161,32 @@ export function isRejectedNativeToolName(name: string): boolean {
     if (native.toLowerCase() === normalized) return true;
   }
   return false;
+}
+
+/** The validation message of a tool list that names a rejected native tool. */
+export const INVALID_NATIVE_TOOL_NAME_MESSAGE = "permitted_tools contains an invalid native tool name";
+
+/** `Use 'new_name' instead of 'old_name'.` for a renamed control-plane tool, else undefined. Case and whitespace
+ *  variants of the old name count. */
+export function retiredToolRenameHint(name: string): string | undefined {
+  if (typeof name !== "string") return undefined;
+  const normalized = name.trim().toLowerCase();
+  if (!Object.hasOwn(RETIRED_TOOL_RENAMES, normalized)) return undefined;
+  return `Use '${RETIRED_TOOL_RENAMES[normalized]}' instead of '${normalized}'.`;
+}
+
+/** The first rename hint among `names`, as a message suffix with a leading space, or an empty string. */
+export function retiredToolRenameSuffix(names: readonly string[]): string {
+  for (const name of names) {
+    const hint = retiredToolRenameHint(name);
+    if (hint !== undefined) return ` ${hint}`;
+  }
+  return "";
+}
+
+/** The validation message for a rejected tool list: the fixed text plus the rename hint when one applies. */
+export function invalidNativeToolNamesMessage(names: readonly string[]): string {
+  return `${INVALID_NATIVE_TOOL_NAME_MESSAGE}.${retiredToolRenameSuffix(names)}`;
 }
 
 /** Name-only canonicalization for allowlists, schema values and plan actions. Total and

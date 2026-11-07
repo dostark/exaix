@@ -3043,10 +3043,10 @@ exactl mcp status
 
 **Available MCP Tools:**
 
-- `exaix_create_request`: Create new requests in your workspace
-- `exaix_list_plans`: View pending plans for approval
-- `exaix_approve_plan`: Approve plans for execution
-- `exaix_query_journal`: Search the Activity Journal
+- `exaix_request_create`: Create new requests in your workspace
+- `exaix_plan_list`: View pending plans for approval
+- `exaix_plan_approve`: Approve plans for execution
+- `exaix_log_list`: Search the Activity Journal
 - File system tools: `read_file`, `write_file`, `list_dir`, etc. (scoped to workspace)
 
 **Client Integration:**
@@ -3085,7 +3085,7 @@ exactl mcp status
 # Start MCP server
 $ exactl mcp serve
 🚀 MCP Server started on stdio
-  Tools: exaix_create_request, exaix_list_plans, exaix_approve_plan, exaix_query_journal
+  Tools: exaix_request_create, exaix_plan_list, exaix_plan_approve, exaix_log_list
   File system access: scoped to workspace
 
 # External client can now use Exaix tools
@@ -5674,10 +5674,10 @@ A client without (or with the wrong) bearer token is rejected with `401`; a clie
 
 When connected, AI agents have access to high-level domain tools:
 
-- **`exaix_create_request`**: Create a new request in your workspace.
-- **`exaix_list_plans`**: List pending plans.
-- **`exaix_approve_plan`**: Approve a plan for execution.
-- **`exaix_query_journal`**: Search the Activity Journal for past events.
+- **`exaix_request_create`**: Create a new request in your workspace.
+- **`exaix_plan_list`**: List pending plans.
+- **`exaix_plan_approve`**: Approve a plan for execution.
+- **`exaix_log_list`**: Search the Activity Journal for past events.
 - **FileSystem & Git**: Standard tools (`read_file`, `write_file`, `git_status`, etc.) are also available, scoped to your workspace.
 
 ### Tool names and aliases
@@ -5728,7 +5728,7 @@ not an alias for `run_command`. OpenCode plan JSON has a separate compatibility 
 The exact-only Exaix native names must use exact spelling and case. The registry names are
 `run_deno_task`, `find_dependents`, `query_symbols`, `query_relationships`, and
 `get_module_dependencies`. The Team MCP server also exposes exact names such as
-`exaix_create_request`, `exaix_list_plans`, `exaix_approve_plan`, `exaix_query_journal`,
+`exaix_request_create`, `exaix_plan_list`, `exaix_plan_approve`, `exaix_log_list`,
 and `exaix_config_get`; it does not expose alternate native names. Retired spellings
 (`deno_task`, `who_depends_on`, `exaix_portal_symbols`, `dependents`, and `list_symbols`)
 are rejected. Blueprint and skill tool lists accept general-purpose aliases, but native

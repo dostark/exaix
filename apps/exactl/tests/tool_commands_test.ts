@@ -16,7 +16,7 @@ import { createStubGit } from "@exaix/testing";
 function createRequest(id: string): ToolConfirmationRequest {
   return {
     id,
-    toolName: "exaix_create_request",
+    toolName: "exaix_request_create",
     args: { title: "Create request" },
     stepId: "step-1",
     traceId: "trace-1",

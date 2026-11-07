@@ -171,7 +171,7 @@ Deno.test("DynamicStepExecutor appends each completed native call as its own sin
 
 Deno.test("DynamicStepExecutor replays denied native call as an error without executing it", async () => {
   const mcp = new ReplayMcpClient();
-  const approvalTool = McpToolName.CREATE_REQUEST;
+  const approvalTool = McpToolName.REQUEST_CREATE;
   mcp.approvalTools.add(approvalTool);
   let approvalRequest: ToolConfirmationRequest | undefined;
   const interceptor: IToolConfirmationInterceptor = {
@@ -218,7 +218,7 @@ Deno.test("DynamicStepExecutor replays denied native call as an error without ex
       index: 0,
       toolName: approvalTool,
       toolInput: { request: "create" },
-      toolResultContent: "Tool 'exaix_create_request' call denied: not authorized",
+      toolResultContent: "Tool 'exaix_request_create' call denied: not authorized",
       toolResultIsError: true,
     }],
     assistant: replayOf("call-denied-8", approvalTool, '{"request":"create"}'),

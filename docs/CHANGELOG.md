@@ -18,6 +18,17 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 238 (exactl Command Grammar and Consolidation)
+
+### Changed
+
+- The four control-plane MCP tools follow the `noun_verb` grammar of exactl: `exaix_create_request` is now `exaix_request_create`, `exaix_list_plans` is `exaix_plan_list`, `exaix_approve_plan` is `exaix_plan_approve` and `exaix_query_journal` is `exaix_log_list`.
+- `exactl approval list` shows every pending human decision with the command that decides it, and `--kind` selects the kinds.
+
+### Removed
+
+- The four old MCP tool names stop working: a call to one returns a tool-not-found error that names the new tool, and a blueprint, agent composer option or approval rule that lists one fails to load with a message that says which name to write instead, so update `permitted_tools` and approval rules in an existing workspace.
+
 ## Unreleased — Phase 237 (Class Design Metrics and God Class Detection)
 
 ### Added

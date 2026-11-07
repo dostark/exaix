@@ -475,7 +475,7 @@ emits rows for json-query criteria; `sums` (`{col: "<payload path>"}`) emits one
 - id: "grant-tool"
   type: "patch-blueprint"
   blueprint: "senior-coder"
-  add_capabilities: ["exaix_create_request"]
+  add_capabilities: ["exaix_request_create"]
 ```
 
 ### 5.6 `prepare-evidence` — copy a file for the judge

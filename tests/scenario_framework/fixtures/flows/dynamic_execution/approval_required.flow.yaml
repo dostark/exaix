@@ -13,7 +13,7 @@ steps:
     agent_role: "senior-coder"
     execution_mode: "dynamic"
     permitted_tools:
-      - exaix_create_request
+      - exaix_request_create
     input:
       source: "request"
     timeout: 60000

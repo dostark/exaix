@@ -74,5 +74,5 @@ Deno.test("CliConfirmationInterceptor: timeout auto-denies and records timeout s
   assertEquals(decision.decidedBy, TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT);
   assertEquals(journal.getEntries()[0].event, TOOL_CONFIRMATION_EVENT_DENIED);
   assertEquals(journal.getEntries()[0].decidedBy, TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT);
-  assertStringIncludes(String(journal.getEntries()[0].tool), "exaix_create_request");
+  assertStringIncludes(String(journal.getEntries()[0].tool), "exaix_request_create");
 });

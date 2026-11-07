@@ -14,7 +14,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { z } from "zod";
 import type { AgentExecutionOptionsSchema } from "@exaix/schemas";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
-import { ToolName } from "@exaix/core";
+import { RETIRED_TOOL_RENAMES, ToolName } from "@exaix/core";
 
 function baseOptions(permitted_tools?: string[]): z.input<typeof AgentExecutionOptionsSchema> {
   return {
@@ -68,5 +68,18 @@ Deno.test("[naming] execution options accept query_symbols and reject exaix_port
   );
   for (const tool of ["exaix_portal_symbols", " EXAIX_PORTAL_SYMBOLS ", "Query_Symbols"]) {
     assertThrows(() => InputValidator.validateAgentExecutionOptions(baseOptions([tool])), z.ZodError, undefined, tool);
+  }
+});
+
+Deno.test("[naming] a retired control-plane name in permitted_tools fails with a message naming its replacement", () => {
+  for (const [retired, replacement] of Object.entries(RETIRED_TOOL_RENAMES)) {
+    assertThrows(
+      () => InputValidator.validateAgentExecutionOptions(baseOptions([retired])),
+      z.ZodError,
+      replacement,
+    );
+    assertEquals(InputValidator.validateAgentExecutionOptions(baseOptions([replacement])).permitted_tools, [
+      replacement,
+    ]);
   }
 });

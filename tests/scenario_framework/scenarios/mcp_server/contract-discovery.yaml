@@ -84,10 +84,10 @@ steps:
       - id: "domain-and-config-tools-served"
         kind: "command-output-contains"
         contains: [
-          "exaix_create_request",
-          "exaix_list_plans",
-          "exaix_approve_plan",
-          "exaix_query_journal",
+          "exaix_request_create",
+          "exaix_plan_list",
+          "exaix_plan_approve",
+          "exaix_log_list",
           "exaix_config_get",
           "exaix_config_set",
           "exaix_config_apply",

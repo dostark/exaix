@@ -14,7 +14,7 @@ import { McpToolName } from "@exaix/mcp";
 
 const stubRequest: ToolConfirmationRequest = {
   id: "550e8400-e29b-41d4-a716-446655440000",
-  toolName: McpToolName.CREATE_REQUEST,
+  toolName: McpToolName.REQUEST_CREATE,
   args: {},
   stepId: "step-1",
   traceId: "trace-abc",

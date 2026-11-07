@@ -9,7 +9,7 @@ import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 
 const DEFAULT_CONFIRMATION_ID = "123e4567-e89b-42d3-a456-426614174000";
-const DEFAULT_TOOL_NAME = "exaix_create_request";
+const DEFAULT_TOOL_NAME = "exaix_request_create";
 const DEFAULT_STEP_ID = "dynamic-create-request";
 const DEFAULT_TRACE_ID = "scenario-framework-tool-confirmation";
 const EXPIRY_WINDOW_MS = 10 * 60 * 1000;

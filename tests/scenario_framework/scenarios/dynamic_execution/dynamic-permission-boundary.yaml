@@ -3,12 +3,12 @@ id: "dynamic-permission-boundary"
 title: "Dynamic steps are refused write tools at validation time"
 pack: "dynamic_execution"
 edition: "team"
-tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-client", "entity:exaix_create_request"]
+tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-client", "entity:exaix_request_create"]
 request_fixture: "fixtures/requests/dynamic_execution/approval_required_tool.md"
 mode_support: ["auto"]
 portals: []
 # Staged into the sandbox's Blueprints/Flows by the runner, under the flow's own declared id (`approval-required-dynamic`), which is the name the loader resolves.
-# The fixture grants `exaix_create_request` to a dynamic step. The system has no approval-required tier: tools split on `side_effect_scope === NONE` alone,
+# The fixture grants `exaix_request_create` to a dynamic step. The system has no approval-required tier: tools split on `side_effect_scope === NONE` alone,
 # and both validators (`validateDynamicStepTools`, `validateFlowForCli`) refuse any write tool in a dynamic step. So the fixture is a genuine violation, and the scenario proves the boundary holds.
 flow_fixture: "fixtures/flows/dynamic_execution/approval_required.flow.yaml"
 steps:
@@ -26,4 +26,4 @@ steps:
       - id: "names-the-offending-tool-and-step"
         score_weight: 0.7
         kind: "command-output-contains"
-        contains: ["exaix_create_request", "approval-attempt", "dynamic"]
+        contains: ["exaix_request_create", "approval-attempt", "dynamic"]

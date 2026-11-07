@@ -49,20 +49,20 @@ Deno.test("backwards_compat: domain tool handlers use their canonical exaix_ pre
   const handlers = buildHandlers(context, permissions);
 
   assertEquals(
-    handlers.get(McpToolName.CREATE_REQUEST)!.getToolDefinition().name,
-    "exaix_create_request",
+    handlers.get(McpToolName.REQUEST_CREATE)!.getToolDefinition().name,
+    "exaix_request_create",
   );
   assertEquals(
-    handlers.get(McpToolName.LIST_PLANS)!.getToolDefinition().name,
-    "exaix_list_plans",
+    handlers.get(McpToolName.PLAN_LIST)!.getToolDefinition().name,
+    "exaix_plan_list",
   );
   assertEquals(
-    handlers.get(McpToolName.APPROVE_PLAN)!.getToolDefinition().name,
-    "exaix_approve_plan",
+    handlers.get(McpToolName.PLAN_APPROVE)!.getToolDefinition().name,
+    "exaix_plan_approve",
   );
   assertEquals(
-    handlers.get(McpToolName.QUERY_JOURNAL)!.getToolDefinition().name,
-    "exaix_query_journal",
+    handlers.get(McpToolName.LOG_LIST)!.getToolDefinition().name,
+    "exaix_log_list",
   );
 });
 

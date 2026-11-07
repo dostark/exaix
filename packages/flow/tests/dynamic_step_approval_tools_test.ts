@@ -12,7 +12,7 @@
  *   `validateDynamicStepTools` split tools on `side_effect_scope === NONE` alone, and two
  *   config-mutating domain tools — `exaix_config_set` and `exaix_config_apply` — are declared
  *   `side_effect_scope: none`. They were therefore classified read-only and **already permitted**
- *   in dynamic steps, while `exaix_create_request` (scope `portal`) was refused. The boundary was
+ *   in dynamic steps, while `exaix_request_create` (scope `portal`) was refused. The boundary was
  *   not "no writes in a dynamic step"; it was "no tools whose side-effect scope happens to be
  *   labelled", and configuration mutation fell straight through it.
  *
@@ -71,9 +71,9 @@ Deno.test("[security] a write tool is still refused, and still says it is a writ
 });
 
 Deno.test("[security] an approval-required WRITE tool is reported once, not twice", () => {
-  // `exaix_create_request` is both. Two errors for one tool would double-count in the score and
+  // `exaix_request_create` is both. Two errors for one tool would double-count in the score and
   // read as two separate problems.
-  const errors = validateDynamicStepTools([dynamicStep(["exaix_create_request"])]);
+  const errors = validateDynamicStepTools([dynamicStep(["exaix_request_create"])]);
   assertEquals(errors.length, 1, `expected a single error, got: ${errors.join("; ")}`);
 });
 

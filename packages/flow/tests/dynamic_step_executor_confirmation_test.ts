@@ -143,7 +143,7 @@ function createAgentRole() {
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
     created_by: "test",
-    permitted_tools: [McpToolName.CREATE_REQUEST, McpToolName.LIST_PLANS, McpToolName.READ_FILE],
+    permitted_tools: [McpToolName.REQUEST_CREATE, McpToolName.PLAN_LIST, McpToolName.READ_FILE],
   });
 }
 
@@ -153,7 +153,7 @@ function createDynamicStep() {
     name: "Create request if needed",
     agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
-    permitted_tools: [McpToolName.CREATE_REQUEST, McpToolName.LIST_PLANS, McpToolName.READ_FILE],
+    permitted_tools: [McpToolName.REQUEST_CREATE, McpToolName.PLAN_LIST, McpToolName.READ_FILE],
   });
 }
 
@@ -162,7 +162,7 @@ class ApprovalForcingExecutor extends DynamicStepExecutor {
     _step: IFlowStep,
     _agent_role: IBlueprintFrontmatter,
   ): McpToolName[] {
-    return [McpToolName.CREATE_REQUEST];
+    return [McpToolName.REQUEST_CREATE];
   }
 }
 
@@ -176,11 +176,11 @@ interface IApprovalCase {
 
 function approvalCase(title: string, response: string | null): IApprovalCase {
   const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
-  if (response !== null) mcpClient.setResponse(McpToolName.CREATE_REQUEST, response);
+  mcpClient.setRequiresApproval(McpToolName.REQUEST_CREATE, true);
+  if (response !== null) mcpClient.setResponse(McpToolName.REQUEST_CREATE, response);
   const llmClient = new MockLlmClient();
   llmClient.setDecisions([
-    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title } },
+    { done: false, tool: McpToolName.REQUEST_CREATE, args: { title } },
     { done: true, output: "done" },
   ]);
   const journal = new MockActivityJournal();
@@ -205,9 +205,9 @@ Deno.test("DynamicStepExecutor confirmation: approved approval-required tool exe
 
   assertEquals(result.completed, true);
   assertEquals(mcpClient.getCallHistory().length, 1);
-  assertEquals(mcpClient.getCallHistory()[0].tool, McpToolName.CREATE_REQUEST);
+  assertEquals(mcpClient.getCallHistory()[0].tool, McpToolName.REQUEST_CREATE);
   assertEquals(interceptor.getRequests().length, 1);
-  assertEquals(interceptor.getRequests()[0].toolName, McpToolName.CREATE_REQUEST);
+  assertEquals(interceptor.getRequests()[0].toolName, McpToolName.REQUEST_CREATE);
   assertStringIncludes(interceptor.getRequests()[0].expiresAt, "T");
   assert(
     journal.getEntries().some((entry) => entry.event === TOOL_CONFIRMATION_EVENT_APPROVED),
@@ -217,11 +217,11 @@ Deno.test("DynamicStepExecutor confirmation: approved approval-required tool exe
 
 Deno.test("DynamicStepExecutor confirmation: denied approval-required tool returns observation and continues", async () => {
   const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
+  mcpClient.setRequiresApproval(McpToolName.REQUEST_CREATE, true);
 
   const llmClient = new MockLlmClient();
   llmClient.setDecisions([
-    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title: "Denied request" } },
+    { done: false, tool: McpToolName.REQUEST_CREATE, args: { title: "Denied request" } },
     { done: true },
   ]);
 
@@ -244,7 +244,7 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
 
   assertEquals(mcpClient.getCallHistory().length, 0);
   assertEquals(result.completed, true);
-  assertStringIncludes(result.output, "Tool 'exaix_create_request' call denied: User declined");
+  assertStringIncludes(result.output, "Tool 'exaix_request_create' call denied: User declined");
   assert(
     journal.getEntries().some((entry) => entry.event === TOOL_CONFIRMATION_EVENT_DENIED),
     "denial event must be written to the activity journal",
@@ -257,7 +257,7 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
 
 Deno.test("DynamicStepExecutor confirmation: without interceptor approval-required tools are excluded from tool surface", async () => {
   const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
+  mcpClient.setRequiresApproval(McpToolName.REQUEST_CREATE, true);
 
   const llmClient = new MockLlmClient();
   llmClient.setDecisions([{ done: true, output: "done" }]);
@@ -271,17 +271,17 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
 
   await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-no-interceptor" });
 
-  assert(!mcpClient.getCapturedTools().includes(McpToolName.CREATE_REQUEST));
-  const getCapturedToolsIncludesLIST_PLANS: boolean = mcpClient.getCapturedTools().includes(McpToolName.LIST_PLANS);
-  assert(getCapturedToolsIncludesLIST_PLANS, "getCapturedTools should include McpToolName.LIST_PLANS");
+  assert(!mcpClient.getCapturedTools().includes(McpToolName.REQUEST_CREATE));
+  const getCapturedToolsIncludesLIST_PLANS: boolean = mcpClient.getCapturedTools().includes(McpToolName.PLAN_LIST);
+  assert(getCapturedToolsIncludesLIST_PLANS, "getCapturedTools should include McpToolName.PLAN_LIST");
 });
 
 Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-required tool is reached without interceptor", async () => {
   const mcpClient = new MockMcpClient();
-  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
+  mcpClient.setRequiresApproval(McpToolName.REQUEST_CREATE, true);
 
   const llmClient = new MockLlmClient();
-  llmClient.setDecisions([{ done: false, tool: McpToolName.CREATE_REQUEST, args: {} }]);
+  llmClient.setDecisions([{ done: false, tool: McpToolName.REQUEST_CREATE, args: {} }]);
 
   const journal = new MockActivityJournal();
   const executor = new ApprovalForcingExecutor({ mcpClient, llmClient, activityJournal: journal });

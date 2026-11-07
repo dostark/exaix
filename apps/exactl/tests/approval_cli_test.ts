@@ -48,7 +48,7 @@ async function seed(root: string): Promise<void> {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)`,
     ).run(
       TOOL_ID,
-      "exaix_create_request",
+      "exaix_request_create",
       JSON.stringify({ title: "Seeded" }),
       "step-1",
       TRACE,
@@ -85,7 +85,7 @@ Deno.test("approval list shows the pending wait state and tool confirmation with
   assertEquals(list.code, 0, list.stderr);
   assertStringIncludes(list.stdout, `wait:${TOKEN}`);
   assertStringIncludes(list.stdout, `tool:${TOOL_ID}`);
-  assertStringIncludes(list.stdout, "exaix_create_request");
+  assertStringIncludes(list.stdout, "exaix_request_create");
 });
 
 Deno.test("approval exits 2 for a plan ref and a wait-only verb on a tool ref, and 3 for an unknown id", async () => {

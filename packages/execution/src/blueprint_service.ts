@@ -22,7 +22,13 @@ import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import type { JSONValue } from "@exaix/core";
-import { isRejectedNativeToolName, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
+import {
+  INVALID_NATIVE_TOOL_NAME_MESSAGE,
+  invalidNativeToolNamesMessage,
+  isRejectedNativeToolName,
+  MAX_NAME_LENGTH,
+  MAX_PROMPT_LENGTH,
+} from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { IAgentComposerOptions, IAgentFileBlueprint } from "./agent_composer.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
@@ -57,6 +63,9 @@ function effortLike(value: Opt<EffortTier | EffortDeclaration, Reason.OptionalIn
   return value === undefined || value === EFFORT_AUTO ? undefined : (value as EffortTier);
 }
 
+/** Start of a rename hint. The hint holds only fixed tool names, so it is safe to show. */
+const RENAME_HINT_MARKER = "Use '";
+
 /** Strict validation prevents YAML deserialization attacks. */
 const BlueprintSchema = z.object({
   agent_role: z.string().optional(),
@@ -69,7 +78,7 @@ const BlueprintSchema = z.object({
    *  Unrelated custom names and `undefined` versus `[]` stay unchanged. */
   permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional().refine(
     (tools) => tools === undefined || !tools.some(isRejectedNativeToolName),
-    { message: "permitted_tools contains an invalid native tool name" },
+    { error: (issue) => invalidNativeToolNamesMessage(Array.isArray(issue.input) ? issue.input : []) },
   ),
   allowed_paths: z.array(z.string().max(255)).max(100).optional(),
   /** Declared explicitly (not left to `.passthrough()`) so it is Zod-validated and typed. */
@@ -173,7 +182,13 @@ export class BlueprintService {
       return new SafeError("Blueprint not found", "BLUEPRINT_NOT_FOUND", error, this.logger);
     }
     if (error instanceof z.ZodError) {
-      return new SafeError("Blueprint contains invalid configuration", "INVALID_BLUEPRINT_SCHEMA", error, this.logger);
+      const renameHint = error.issues.map((issue) => issue.message).find((message) =>
+        message.startsWith(INVALID_NATIVE_TOOL_NAME_MESSAGE) && message.includes(RENAME_HINT_MARKER)
+      );
+      const userMessage = renameHint === undefined
+        ? "Blueprint contains invalid configuration"
+        : `Blueprint contains invalid configuration: ${renameHint}`;
+      return new SafeError(userMessage, "INVALID_BLUEPRINT_SCHEMA", error, this.logger);
     }
     if (error instanceof Error && (error.message.includes("YAML") || error.message.includes("tag"))) {
       return new SafeError("Blueprint file contains invalid YAML syntax", "YAML_PARSE_ERROR", error, this.logger);

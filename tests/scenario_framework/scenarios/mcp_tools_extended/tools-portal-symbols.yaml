@@ -6,7 +6,7 @@ id: "tools-portal-symbols"
 title: "Domain tool — query_symbols serves a portal's persisted code symbols"
 pack: "mcp_tools_extended"
 tags: ["domain", "subsystem:tools", "entity:query_symbols"]
-request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
+request_fixture: "fixtures/requests/mcp_tools_extended/exaix_request_create.md"
 mode_support: ["auto"]
 portals: []
 steps:

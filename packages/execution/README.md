@@ -69,10 +69,10 @@ sequenceDiagram
 | `git_commit`           | git      |      —       |         —         |
 | `git_status`           | git      |      ✅      |         —         |
 | `run_command`          | meta     |      —       |         —         |
-| `exaix_list_plans`     | domain   |      ✅      |         —         |
-| `exaix_query_journal`  | domain   |      ✅      |         —         |
-| `exaix_create_request` | domain   |      —       |        Yes        |
-| `exaix_approve_plan`   | domain   |      —       |        Yes        |
+| `exaix_plan_list`      | domain   |      ✅      |         —         |
+| `exaix_log_list`       | domain   |      ✅      |         —         |
+| `exaix_request_create` | domain   |      —       |        Yes        |
+| `exaix_plan_approve`   | domain   |      —       |        Yes        |
 
 ## Activity Logging Events
 

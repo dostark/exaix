@@ -49,7 +49,7 @@ function makeWaitState(resumeToken: string, overrides: Partial<IWaitState> = {})
 function makeToolRequest(id: string): ToolConfirmationRequest {
   return {
     id,
-    toolName: "exaix_create_request",
+    toolName: "exaix_request_create",
     args: { title: "Create request" },
     stepId: "step-1",
     traceId: "tool-trace-1",
@@ -260,7 +260,7 @@ Deno.test("list returns the pending wait states and tool confirmations with type
     const entries = await makeCommands(env).list({});
     assertEquals(entries.map((entry) => entry.ref).sort(), [`tool:${TOOL_ID}`, `wait:${TOKEN}`]);
     const tool = entries.find((entry) => entry.kind === "tool");
-    assertStringIncludes(tool?.summary ?? "", "exaix_create_request");
+    assertStringIncludes(tool?.summary ?? "", "exaix_request_create");
     assertStringIncludes(tool?.summary ?? "", "step-1");
     assertEquals(tool?.act, `exactl approval approve tool:${TOOL_ID}`);
   } finally {
@@ -279,7 +279,7 @@ Deno.test("show prints the fields of a wait state and of a tool confirmation", a
     assertEquals(wait.fields.status, "pending");
     const tool = await commands.show(TOOL_ID);
     assertEquals(tool.kind, "tool");
-    assertEquals(tool.fields.toolName, "exaix_create_request");
+    assertEquals(tool.fields.toolName, "exaix_request_create");
   } finally {
     await env.cleanup();
   }

@@ -3,7 +3,7 @@ id: "dynamic-tool-confirmation-denial"
 title: "Queued tool confirmation can be listed and denied"
 pack: "dynamic_execution"
 edition: "team"
-tags: ["dynamic", "tool-confirmation", "denial", "security", "subsystem:mcp-client", "entity:exaix_create_request"]
+tags: ["dynamic", "tool-confirmation", "denial", "security", "subsystem:mcp-client", "entity:exaix_request_create"]
 request_fixture: "fixtures/requests/dynamic_execution/tool_confirmation_denial.md"
 mode_support: ["auto"]
 portals: []
@@ -25,7 +25,7 @@ steps:
       - id: "confirmation-seeded"
         score_weight: 0.5
         kind: "command-output-contains"
-        contains: ["seeded", "123e4567-e89b-42d3-a456-426614174000", "exaix_create_request"]
+        contains: ["seeded", "123e4567-e89b-42d3-a456-426614174000", "exaix_request_create"]
 
   - id: "list-pending"
     type: "exactl"
@@ -36,7 +36,7 @@ steps:
       - id: "pending-entry-visible"
         score_weight: 0.5
         kind: "command-output-contains"
-        contains: ["tool:123e4567-e89b-42d3-a456-426614174000", "exaix_create_request", "dynamic-create-request"]
+        contains: ["tool:123e4567-e89b-42d3-a456-426614174000", "exaix_request_create", "dynamic-create-request"]
 
   - id: "deny-confirmation"
     type: "exactl"

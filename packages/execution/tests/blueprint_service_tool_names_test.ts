@@ -16,7 +16,7 @@ import { BlueprintService } from "@exaix/execution";
 import { SafeError } from "@exaix/core/errors";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
-import { ToolName } from "@exaix/core";
+import { RETIRED_TOOL_RENAMES, ToolName } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 
 const BLUEPRINT_BODY = "\n\nYou are a helpful assistant.\n";
@@ -150,6 +150,20 @@ Deno.test("[naming] BlueprintService accepts query_symbols and rejects exaix_por
       const role = `agent-retired-portal-${index}`;
       await writeBlueprint(root, role, blueprintContent(toolsFrontmatter(role, tool)));
       await assertRejects(() => service.loadBlueprint(role), SafeError);
+    }
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[naming] a blueprint naming a retired control-plane tool fails with a message naming the replacement", async () => {
+  const { root, service, cleanup } = await setup();
+  try {
+    for (const [retired, replacement] of Object.entries(RETIRED_TOOL_RENAMES)) {
+      await writeBlueprint(root, "agent-retired", blueprintContent(toolsFrontmatter("agent-retired", retired)));
+      await assertRejects(() => service.loadBlueprint("agent-retired"), SafeError, replacement);
+      await writeBlueprint(root, "agent-new", blueprintContent(toolsFrontmatter("agent-new", replacement)));
+      assertEquals((await service.loadBlueprint("agent-new")).blueprint.permitted_tools, [replacement]);
     }
   } finally {
     await cleanup();

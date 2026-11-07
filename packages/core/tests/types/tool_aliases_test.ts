@@ -9,7 +9,7 @@
  * @related-files [packages/core/src/types/tool_aliases.ts, packages/core/src/types/enums.ts]
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import {
   canonicalizeToolCall,
   canonicalizeToolName,
@@ -17,6 +17,8 @@ import {
   isRejectedNativeToolName,
   McpToolName,
   NATIVE_TOOL_NAMES,
+  RETIRED_TOOL_RENAMES,
+  retiredToolRenameHint,
   TOOL_ALIASES,
   TOOL_PARAM_ALIASES,
   ToolName,
@@ -281,7 +283,7 @@ Deno.test("[tool_aliases] NATIVE_TOOL_NAMES contains the current exaix-specific 
       ToolName.QUERY_RELATIONSHIPS,
       ToolName.GET_MODULE_DEPENDENCIES,
       McpToolName.PORTAL_SYMBOLS,
-      McpToolName.CREATE_REQUEST,
+      McpToolName.REQUEST_CREATE,
       McpToolName.CONFIG_APPLY,
     ]
   ) {
@@ -298,4 +300,28 @@ Deno.test("[naming] McpToolName.PORTAL_SYMBOLS is query_symbols; exaix_portal_sy
     assertEquals(canonicalizeToolName(retired), retired);
   }
   assertFalse(isRejectedNativeToolName("query_symbols"));
+});
+
+const RETIRED_CONTROL_PLANE_NAMES: Readonly<Record<string, string>> = {
+  exaix_create_request: "exaix_request_create",
+  exaix_list_plans: "exaix_plan_list",
+  exaix_approve_plan: "exaix_plan_approve",
+  exaix_query_journal: "exaix_log_list",
+};
+
+Deno.test("[tool_aliases] each retired control-plane name is rejected and its hint names the replacement", () => {
+  assertEquals({ ...RETIRED_TOOL_RENAMES }, RETIRED_CONTROL_PLANE_NAMES);
+  for (const [retired, replacement] of Object.entries(RETIRED_CONTROL_PLANE_NAMES)) {
+    assert(isRejectedNativeToolName(retired), retired);
+    assertFalse(NATIVE_TOOL_NAMES.has(retired), retired);
+    assert(NATIVE_TOOL_NAMES.has(replacement), replacement);
+    assertFalse(isRejectedNativeToolName(replacement), replacement);
+    assertStringIncludes(retiredToolRenameHint(retired) ?? "", replacement);
+    assertStringIncludes(retiredToolRenameHint(` ${retired.toUpperCase()} `) ?? "", replacement);
+  }
+});
+
+Deno.test("[tool_aliases] retiredToolRenameHint is undefined for a current or unknown name", () => {
+  assertEquals(retiredToolRenameHint("exaix_request_create"), undefined);
+  assertEquals(retiredToolRenameHint("my_custom_tool"), undefined);
 });

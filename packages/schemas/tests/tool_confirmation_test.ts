@@ -16,7 +16,7 @@ import { initTestDbService } from "@exaix/testing";
 Deno.test("ToolConfirmationRequestSchema: valid request round-trips correctly", () => {
   const input = {
     id: "550e8400-e29b-41d4-a716-446655440000",
-    toolName: "exaix_create_request",
+    toolName: "exaix_request_create",
     args: { title: "New feature" },
     stepId: "step-1",
     traceId: "trace-abc",
@@ -38,7 +38,7 @@ Deno.test("ToolConfirmationRequestSchema: valid request round-trips correctly", 
 Deno.test("ToolConfirmationRequestSchema: invalid UUID on id fails", () => {
   const input = {
     id: "not-a-uuid",
-    toolName: "exaix_create_request",
+    toolName: "exaix_request_create",
     args: {},
     stepId: "step-1",
     traceId: "trace-abc",

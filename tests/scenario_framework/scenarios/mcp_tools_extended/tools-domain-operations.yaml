@@ -1,18 +1,18 @@
 schema_version: "1.0.0"
 # Asserts the exaix_* domain tools themselves. The previous version drove `exactl request`
 # and `exactl log list` from the CLI — a different surface from the tools it is tagged for,
-# so a broken exaix_create_request handler would not have failed this scenario.
+# so a broken exaix_request_create handler would not have failed this scenario.
 id: "tools-domain-operations"
 title: "Domain tools — create_request, list_plans, query_journal through the MCP server"
 pack: "mcp_tools_extended"
 tags:
   - "domain"
   - "subsystem:tools"
-  - "entity:exaix_create_request"
-  - "entity:exaix_list_plans"
-  - "entity:exaix_approve_plan"
-  - "entity:exaix_query_journal"
-request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
+  - "entity:exaix_request_create"
+  - "entity:exaix_plan_list"
+  - "entity:exaix_plan_approve"
+  - "entity:exaix_log_list"
+request_fixture: "fixtures/requests/mcp_tools_extended/exaix_request_create.md"
 mode_support: ["auto"]
 portals: []
 steps:
@@ -36,7 +36,7 @@ steps:
 
   - id: "create-request-and-list-plans"
     type: "run-script"
-    name: "exaix_create_request writes a real request; exaix_list_plans answers"
+    name: "exaix_request_create writes a real request; exaix_plan_list answers"
     command: "deno"
     args:
       - "run"
@@ -44,9 +44,9 @@ steps:
       - "--config"
       - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_create_request"
+      - "exaix_request_create"
       - '{"subject":"tools pack domain probe","description":"created by the tools eval pack","agent_role":"tools-eval"}'
-      - "exaix_list_plans"
+      - "exaix_plan_list"
       - '{"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
@@ -79,7 +79,7 @@ steps:
 
   - id: "query-journal"
     type: "run-script"
-    name: "exaix_query_journal answers against the workspace journal"
+    name: "exaix_log_list answers against the workspace journal"
     command: "deno"
     args:
       - "run"
@@ -87,7 +87,7 @@ steps:
       - "--config"
       - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_query_journal"
+      - "exaix_log_list"
       - '{"limit":5,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"

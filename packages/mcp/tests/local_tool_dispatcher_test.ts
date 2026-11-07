@@ -139,14 +139,14 @@ Deno.test("LocalToolDispatcher - getAvailableToolNames returns empty for empty c
 
 // IToolManifestResolver
 
-Deno.test("LocalToolDispatcher - requiresHumanApproval returns true for exaix_create_request", () => {
+Deno.test("LocalToolDispatcher - requiresHumanApproval returns true for exaix_request_create", () => {
   const client = new LocalToolDispatcher(mockContext, []);
-  assertEquals(client.requiresHumanApproval(McpToolName.CREATE_REQUEST), true);
+  assertEquals(client.requiresHumanApproval(McpToolName.REQUEST_CREATE), true);
 });
 
-Deno.test("LocalToolDispatcher - requiresHumanApproval returns true for exaix_approve_plan", () => {
+Deno.test("LocalToolDispatcher - requiresHumanApproval returns true for exaix_plan_approve", () => {
   const client = new LocalToolDispatcher(mockContext, []);
-  assertEquals(client.requiresHumanApproval(McpToolName.APPROVE_PLAN), true);
+  assertEquals(client.requiresHumanApproval(McpToolName.PLAN_APPROVE), true);
 });
 
 Deno.test("LocalToolDispatcher - requiresHumanApproval returns false for read_file", () => {
@@ -343,7 +343,7 @@ Deno.test("[mcp][local] retired native names and native case/whitespace variants
 });
 
 Deno.test("[mcp][security] an alias resolves to the same approval decision as its canonical tool; an approval tool's variant never executes", async () => {
-  const client = new LocalToolDispatcher(mockContext, [new RecordingTool(McpToolName.CREATE_REQUEST, {})]);
+  const client = new LocalToolDispatcher(mockContext, [new RecordingTool(McpToolName.REQUEST_CREATE, {})]);
   for (const [alias, { canonical }] of Object.entries(TOOL_ALIASES)) {
     if (!TOOL_MANIFEST.some((entry) => entry.name === canonical)) continue;
     assertEquals(
@@ -352,8 +352,8 @@ Deno.test("[mcp][security] an alias resolves to the same approval decision as it
       alias,
     );
   }
-  assertEquals(client.requiresHumanApproval(McpToolName.CREATE_REQUEST), true);
-  await assertRejects(() => client.callTool(" EXAIX_CREATE_REQUEST " as McpToolName, {}), Error, "not found");
+  assertEquals(client.requiresHumanApproval(McpToolName.REQUEST_CREATE), true);
+  await assertRejects(() => client.callTool(" EXAIX_REQUEST_CREATE " as McpToolName, {}), Error, "not found");
 });
 
 Deno.test("[mcp][local] getToolDefinitions resolves a general-purpose alias to the canonical definition", () => {
