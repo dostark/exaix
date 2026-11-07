@@ -8,6 +8,7 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { MemoryApprovalReader } from "../src/commands/memory_approval_reader.ts";
 import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core/status";
 
@@ -19,7 +20,7 @@ import { createTestProject } from "@exaix/testing";
  * Helper to create a test environment with a pending proposal
  */
 async function createTestEnvironmentWithProposal(traceId?: string) {
-  const { commands, memoryBank, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment({
+  const { commands, context, memoryBank, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment({
     withExtractor: true,
   });
 
@@ -45,16 +46,16 @@ async function createTestEnvironmentWithProposal(traceId?: string) {
     proposalId = await extractor.createProposal(learnings[0], execution, "senior-coder");
   }
 
-  return { commands, memoryBank, extractor, cleanup, proposalId, learnings };
+  return { commands, context, memoryBank, extractor, cleanup, proposalId, learnings };
 }
 
 // Pending List Tests
 
-Deno.test("MemoryCommands: listPendingProposals returns the proposals that pendingList prints", async () => {
-  const { commands, extractor, cleanup, proposalId } = await createTestEnvironmentWithProposal();
+Deno.test("MemoryApprovalReader: listPendingProposals returns the proposals that pendingList prints", async () => {
+  const { commands, context, extractor, cleanup, proposalId } = await createTestEnvironmentWithProposal();
   try {
     assert(proposalId !== null, "the seeded environment must hold one proposal");
-    const proposals = await commands.listPendingProposals();
+    const proposals = await new MemoryApprovalReader(context).listPendingProposals();
     assertEquals(proposals.map((proposal) => proposal.id), [proposalId]);
     assertEquals(proposals, await extractor.listPending());
     assertStringIncludes(await commands.pendingList(false, UIOutputFormat.JSON), proposalId);

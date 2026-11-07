@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
+import { coerceRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { DEFAULT_AGENT_ROLE, RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequestShowResult } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
@@ -273,7 +273,7 @@ export class RequestService {
     const content = await Deno.readTextFile(path);
     const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
     if (!match) throw new RequestNotFoundError(requestId);
-    const previousStatus = this.parseFrontmatter(match[1]).status as RequestStatusType;
+    const previousStatus = coerceRequestStatus(this.parseFrontmatter(match[1]).status ?? "", entry.status);
     if (previousStatus !== RequestStatus.PENDING && previousStatus !== RequestStatus.NEEDS_CLARIFICATION) {
       throw new RequestCancelNotAllowedError(entry.trace_id, previousStatus);
     }

@@ -36,6 +36,7 @@ export interface IMemoryTestEnvironment {
   tempRoot: string;
   config: Config;
   db: DatabaseService;
+  context: ICliApplicationContext;
   commands: MemoryCommands;
   memoryBank: MemoryBankService;
   extractor: MemoryExtractorService;
@@ -102,6 +103,7 @@ export class TestEnvironmentFactory {
       tempRoot: tempDir,
       config,
       db,
+      context,
       commands,
       memoryBank,
       extractor,

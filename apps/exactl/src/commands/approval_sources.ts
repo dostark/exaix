@@ -3,13 +3,13 @@
  * @path apps/exactl/src/commands/approval_sources.ts
  * @description One source per kind of pending human decision. Each source reads its owner command and maps the items to approval rows.
  * @architectural-layer CLI
- * @dependencies [apps/exactl/src/commands/approval_id.ts, apps/exactl/src/commands/plan_commands.ts, apps/exactl/src/commands/review_commands.ts, apps/exactl/src/commands/request_commands.ts, apps/exactl/src/commands/memory_commands.ts]
+ * @dependencies [apps/exactl/src/commands/approval_id.ts, apps/exactl/src/commands/plan_commands.ts, apps/exactl/src/commands/review_commands.ts, apps/exactl/src/commands/request_commands.ts, apps/exactl/src/commands/memory_approval_reader.ts]
  * @related-files [apps/exactl/src/commands/approval_commands.ts, apps/exactl/src/exactl.ts]
  */
 
 import { PlanStatus, RequestStatus, ReviewStatus } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { MemoryCommands } from "./memory_commands.ts";
+import type { MemoryApprovalReader } from "./memory_approval_reader.ts";
 import type { PlanCommands } from "./plan_commands.ts";
 import type { RequestCommands } from "./request_commands.ts";
 import type { ReviewCommands } from "./review_commands.ts";
@@ -45,8 +45,8 @@ export interface IPlanApprovalReader {
 
 /** The memory reads that the proposal and skill sources need. */
 export interface IMemoryApprovalReader {
-  listPendingProposals: MemoryCommands["listPendingProposals"];
-  listDraftSkills: MemoryCommands["listDraftSkills"];
+  listPendingProposals: MemoryApprovalReader["listPendingProposals"];
+  listDraftSkills: MemoryApprovalReader["listDraftSkills"];
 }
 
 /** The commands that own each pending decision. */

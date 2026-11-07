@@ -25,6 +25,7 @@ import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import { ApprovalCommands } from "./commands/approval_commands.ts";
 import { createApprovalSources } from "./commands/approval_sources.ts";
+import { MemoryApprovalReader } from "./commands/memory_approval_reader.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
 import { BINARY_VERSION, scrubProcessEnv } from "@exaix/core";
 import { initializeServices, type IServiceContext, isTestMode as isTestModeImport } from "./init.ts";
@@ -104,7 +105,7 @@ const approvalCommands: ApprovalCommands = new ApprovalCommands(
     plans: planCommands,
     reviews: reviewCommands,
     requests: requestCommands,
-    memory: memoryCommands,
+    memory: new MemoryApprovalReader(fullContext),
     waitStates: waitStateCommands,
     tools: toolCommands,
   }),

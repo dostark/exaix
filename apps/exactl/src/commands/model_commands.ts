@@ -14,10 +14,10 @@
 
 import { parse, stringify } from "@std/toml";
 import * as colors from "@std/fmt/colors";
-import { Table } from "@cliffy/table";
 import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MODEL_PRESETS, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { NO_VALUE, renderModelTable, renderPrice, renderStale, renderVerifiedAt } from "./model_list_rendering.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
 interface ICuratedEntryStatus {
@@ -84,7 +84,6 @@ const PROVIDER_NAME_SEPARATOR = "-";
 const SUBSCRIPTION_SUFFIX = "-cli";
 const LOCAL_SERVICES: ReadonlySet<string> = new Set(["ollama", "llamacpp", "self-hosted"]);
 const AGGREGATOR_SERVICES: ReadonlySet<string> = new Set(["openrouter"]);
-const NO_VALUE = "-";
 
 /** How a service reaches the model. Until prices belong to an access route, the adapter name decides. */
 type AccessRoute = "native" | "subscription" | "local" | "aggregator";
@@ -129,7 +128,7 @@ export class ModelCommands {
       console.log(`No service serves ${wanted.author}${MODEL_ID_SEPARATOR}${wanted.name}.`);
       return;
     }
-    this.renderTable(rows, options?.benchmark);
+    renderModelTable(rows, options?.benchmark);
   }
 
   private async collectRows(
@@ -149,36 +148,16 @@ export class ModelCommands {
           deriveRoute(m.provider),
           pricing.provenance,
           pricing.sourceUrl ?? NO_VALUE,
-          this.renderVerifiedAt(pricing.verifiedAt),
-          this.renderStale(pricing.verifiedAt),
-          this.renderPrice(pricing.inputPerMtok),
-          this.renderPrice(pricing.outputPerMtok),
+          renderVerifiedAt(pricing.verifiedAt),
+          renderStale(pricing.verifiedAt, this.priceStalenessMaxDays),
+          renderPrice(pricing.inputPerMtok),
+          renderPrice(pricing.outputPerMtok),
         ];
         if (benchmark) row.push(await this.renderBenchmarkScore(m.provider, m.model, benchmark));
         rows.push(row);
       }
     }
     return rows;
-  }
-
-  private renderTable(rows: string[][], benchmark: Opt<string, Reason.OptionalInput>): void {
-    const headers = [
-      "Model",
-      "Author",
-      "Service",
-      "Route",
-      "Provenance",
-      "Source URL",
-      "Verified",
-      "Stale",
-      "Input $/Mtok",
-      "Output $/Mtok",
-    ];
-    if (benchmark) headers.push(`Benchmark (${benchmark}, advisory)`);
-    const table = new Table().header(headers.map((header) => colors.bold(header))).body(rows);
-    console.log(colors.cyan(colors.bold("\nModel Registry (Solo floor)")));
-    table.render();
-    console.log("");
   }
 
   private parseWantedModel(value: string): IWantedModel {
@@ -356,21 +335,6 @@ export class ModelCommands {
   }
 
   // Rendering helpers
-
-  private renderVerifiedAt(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
-    return verifiedAt === undefined ? NO_VALUE : new Date(verifiedAt).toISOString().slice(0, 10);
-  }
-
-  /** "yes" when the price is older than the configured limit, "-" when it has no verification date. */
-  private renderStale(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
-    if (verifiedAt === undefined) return NO_VALUE;
-    const limitMs = this.priceStalenessMaxDays * 24 * 60 * 60 * 1000;
-    return Date.now() - verifiedAt > limitMs ? "yes" : "no";
-  }
-
-  private renderPrice(price?: Opt<number, Reason.OptionalInput>): string {
-    return price === undefined ? NO_VALUE : `$${price}`;
-  }
 
   /** "-" when no reader is wired (Solo) or the model is unscored on `benchmark`. */
   private async renderBenchmarkScore(provider: string, model: string, benchmark: string): Promise<string> {

@@ -16,6 +16,7 @@ import { UIOutputFormat } from "@exaix/tui";
 import { SkillStatus } from "@exaix/core";
 import { policySkillSubmission, SkillsService } from "@exaix/core/skills";
 import { SkillCommandError } from "../../src/commands/memory_commands.ts";
+import { MemoryApprovalReader } from "../../src/commands/memory_approval_reader.ts";
 import { testSkillContext, writeSkillFolder } from "@exaix/testing";
 import { TestEnvironmentFactory } from "../../../../tests/fixtures/test_environment_factory.ts";
 
@@ -88,7 +89,7 @@ Deno.test("[skills --portal] project skills show only for their portal and are g
 });
 
 Deno.test("[listDraftSkills] returns drafts only and a portal draft only for its portal", async () => {
-  const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { commands, context, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await commands.skillCreate("Global Draft", { instructions: "Global body." });
     await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
@@ -96,11 +97,12 @@ Deno.test("[listDraftSkills] returns drafts only and a portal draft only for its
       pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "project", "Alpha"),
       { name: "alpha-guide", instructions: "Alpha body.", sidecar: { status: SkillStatus.ACTIVE } },
     );
-    const withoutPortal = await commands.listDraftSkills(undefined);
+    const reader = new MemoryApprovalReader(context);
+    const withoutPortal = await reader.listDraftSkills(undefined);
     assertEquals(withoutPortal.map((skill) => skill.skill_id), ["global-draft"]);
-    const forBeta = (await commands.listDraftSkills("Beta")).map((skill) => skill.skill_id).sort();
+    const forBeta = (await reader.listDraftSkills("Beta")).map((skill) => skill.skill_id).sort();
     assertEquals(forBeta, ["beta-note", "global-draft"]);
-    const forAlpha = await commands.listDraftSkills("Alpha");
+    const forAlpha = await reader.listDraftSkills("Alpha");
     assertFalse(forAlpha.some((skill) => skill.skill_id === "alpha-guide"), "an active skill is not a draft");
     for (const skill of [...withoutPortal, ...forAlpha]) assertEquals(skill.status, SkillStatus.DRAFT);
   } finally {

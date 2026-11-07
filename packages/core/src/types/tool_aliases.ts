@@ -169,8 +169,7 @@ export const INVALID_NATIVE_TOOL_NAME_MESSAGE = "permitted_tools contains an inv
 /** `Use 'new_name' instead of 'old_name'.` for a renamed control-plane tool, else undefined. Case and whitespace
  *  variants of the old name count. */
 export function retiredToolRenameHint(name: string): string | undefined {
-  if (typeof name !== "string") return undefined;
-  const normalized = name.trim().toLowerCase();
+  const normalized = `${name}`.trim().toLowerCase();
   if (!Object.hasOwn(RETIRED_TOOL_RENAMES, normalized)) return undefined;
   return `Use '${RETIRED_TOOL_RENAMES[normalized]}' instead of '${normalized}'.`;
 }

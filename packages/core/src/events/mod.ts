@@ -8,6 +8,7 @@
  */
 
 export * from "./domain_event_types.ts";
+export * from "./decision_event_payloads.ts";
 export * from "./event_registry.ts";
 export * from "./event_journal_reader.ts";
 export * from "./anomaly_classification.ts";

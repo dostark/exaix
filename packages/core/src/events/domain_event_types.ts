@@ -424,24 +424,6 @@ export interface IContextQueryDeniedPayload {
   reason: string;
 }
 
-/** Typed payload for tool_confirmation.decided. `reason` is set on a denial only. */
-export interface IToolConfirmationDecidedPayload {
-  confirmation_id: string;
-  tool_name: string;
-  step_id: string | null;
-  approved: boolean;
-  reason: string | null;
-  decided_by: string;
-}
-
-/** Typed payload for request.cancelled. `request_id` is the request trace id. */
-export interface IRequestCancelledPayload {
-  request_id: string;
-  previous_status: string;
-  reason: string | null;
-  cancelled_by: string;
-}
-
 /** Typed payload for dogfood.context.connection_closed. */
 export interface IContextConnectionClosedPayload {
   connection_id: string;
