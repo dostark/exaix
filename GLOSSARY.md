@@ -150,7 +150,7 @@ Exaix's permanent, append-only audit trail: a typed, trace-linked record of ever
 
 ### Trace ID
 
-A unique identifier that threads every event belonging to one unit of work — a Request's Trigger, its Plan, each execution step, its Review, and the final commit — into a single followable chain through the Activity Journal. Pass a Trace ID to `exactl watch <trace_id>` to stream a run's progress live, or look it up later to replay its full history end to end.
+A unique identifier that threads every event belonging to one unit of work — a Request's Trigger, its Plan, each execution step, its Review, and the final commit — into a single followable chain through the Activity Journal. Pass a Trace ID to `exactl request watch --trace <trace_id>` to stream a run's progress live, or look it up later to replay its full history end to end.
 
 ---
 

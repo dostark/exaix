@@ -84,10 +84,14 @@ Deno.test("request cancel with a short or empty id exits 2 and an unknown id exi
 });
 
 Deno.test("request cancel on a needs_clarification request also cancels its pending clarification wait state", async () => {
-  const [cancel, waits] = await runExactlSeededWorkspace(seed, [
+  const [before, cancel, after] = await runExactlSeededWorkspace(seed, [
+    ["approval", "list", "--kind", "wait"],
     ["request", "cancel", CLARIFY_TRACE],
-    ["wait", "list", "--status", "pending"],
+    ["approval", "list", "--kind", "wait"],
   ]);
+  assertEquals(before.code, 0, before.stderr);
+  assertStringIncludes(before.stdout, "wait:");
   assertEquals(cancel.code, 0, cancel.stderr);
-  assertNotMatch(waits.stdout, new RegExp(CLARIFY_TRACE));
+  assertEquals(after.code, 0, after.stderr);
+  assertNotMatch(after.stdout, /wait:/);
 });

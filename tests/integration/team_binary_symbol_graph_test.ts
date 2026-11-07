@@ -77,6 +77,7 @@ async function analyzeWithCompiledBinary(
 
     const analyzeCode = await runTeamBinary(workspaceRoot, edition, [
       "portal",
+      "knowledge",
       "analyze",
       alias,
       "--mode",
