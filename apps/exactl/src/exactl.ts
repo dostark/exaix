@@ -24,6 +24,7 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import { ApprovalCommands } from "./commands/approval_commands.ts";
+import { createApprovalSources } from "./commands/approval_sources.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
 import { BINARY_VERSION, scrubProcessEnv } from "@exaix/core";
 import { initializeServices, type IServiceContext, isTestMode as isTestModeImport } from "./init.ts";
@@ -95,7 +96,19 @@ const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
 const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
-const approvalCommands: ApprovalCommands = new ApprovalCommands(fullContext, waitStateCommands, toolCommands);
+const approvalCommands: ApprovalCommands = new ApprovalCommands(
+  fullContext,
+  waitStateCommands,
+  toolCommands,
+  createApprovalSources({
+    plans: planCommands,
+    reviews: reviewCommands,
+    requests: requestCommands,
+    memory: memoryCommands,
+    waitStates: waitStateCommands,
+    tools: toolCommands,
+  }),
+);
 const evalCommands: EvalCommands = new EvalCommands(fullContext);
 // Solo model curation CLI. Reads the model registry floor for display and writes
 // curated lists to exa.config.toml (the resolver's read surface).

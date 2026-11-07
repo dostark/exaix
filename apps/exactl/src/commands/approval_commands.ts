@@ -1,32 +1,26 @@
 /**
  * @module ApprovalCommands
  * @path apps/exactl/src/commands/approval_commands.ts
- * @description CLI commands that list, show and decide pending human decisions of the runtime gates: wait states and tool confirmations.
+ * @description CLI commands that list every pending human decision and show or decide the runtime gates: wait states and tool confirmations.
  * @architectural-layer CLI
- * @dependencies [apps/exactl/src/commands/wait_state_commands.ts, apps/exactl/src/commands/tool_commands.ts, apps/exactl/src/commands/approval_id.ts]
- * @related-files [apps/exactl/src/command_builders/approval_command.ts]
+ * @dependencies [apps/exactl/src/commands/wait_state_commands.ts, apps/exactl/src/commands/tool_commands.ts, apps/exactl/src/commands/approval_id.ts, apps/exactl/src/commands/approval_sources.ts]
+ * @related-files [apps/exactl/src/command_builders/approval_command.ts, apps/exactl/src/exactl.ts]
  * @visible
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
-import { ApprovalKind, type IApprovalRef, ownerCommand, parseApprovalId } from "./approval_id.ts";
+import { ApprovalKind, type IApprovalRef, ownerCommand, parseApprovalId, parseApprovalKinds } from "./approval_id.ts";
+import {
+  APPROVAL_PENDING_STATUS,
+  type IApprovalListEntry,
+  type IApprovalSource,
+  WAIT_KIND_CLARIFICATION,
+} from "./approval_sources.ts";
 import type { ToolCommands } from "./tool_commands.ts";
 import type { WaitStateCommands } from "./wait_state_commands.ts";
-
-export interface IApprovalListEntry {
-  readonly kind: ApprovalKind;
-  /** Typed id printed to the user: `${kind}:${id}`. */
-  readonly ref: string;
-  readonly summary: string;
-  readonly created_at: string;
-  readonly trace_id: Opt<string, Reason.TraceAbsent>;
-  /** Exact command that decides this item. */
-  readonly act: string;
-}
 
 export interface IApprovalDecision {
   readonly kind: ApprovalKind;
@@ -50,6 +44,8 @@ export interface IApprovalDecisionOptions {
 
 interface IApprovalListOptions {
   readonly status?: Opt<string, Reason.QueryFilter>;
+  /** Kind names from `--kind`. Empty or unset lists every kind. */
+  readonly kinds?: Opt<readonly string[], Reason.QueryFilter>;
 }
 
 interface IRuntimeRef extends IApprovalRef {
@@ -58,53 +54,57 @@ interface IRuntimeRef extends IApprovalRef {
 
 type WaitVerb = ExaCtlVerb.AMEND | ExaCtlVerb.EXPIRE | ExaCtlVerb.CANCEL;
 
-const PENDING_STATUS = "pending";
-const APPROVE_ACT = `exactl approval ${ExaCtlVerb.APPROVE}`;
 const TOOL_APPROVED_STATUS = "approved";
 const TOOL_DENIED_STATUS = "denied";
+
+/** A clarification wait state is shown once, as the clarification row of its trace. */
+function withoutShadowedClarifications(entries: IApprovalListEntry[]): IApprovalListEntry[] {
+  const clarifiedTraces = new Set(
+    entries.filter((entry) => entry.kind === ApprovalKind.CLARIFICATION && entry.trace_id !== undefined)
+      .map((entry) => entry.trace_id),
+  );
+  return entries.filter((entry) =>
+    !(entry.kind === ApprovalKind.WAIT && entry.wait_kind === WAIT_KIND_CLARIFICATION &&
+      clarifiedTraces.has(entry.trace_id))
+  );
+}
+
+/** Oldest first. A row without a timestamp lists last. */
+function sortByCreation(entries: IApprovalListEntry[]): IApprovalListEntry[] {
+  return entries.sort((a, b) => {
+    if (a.created_at === b.created_at) return 0;
+    if (a.created_at === "") return 1;
+    if (b.created_at === "") return -1;
+    return a.created_at.localeCompare(b.created_at);
+  });
+}
 
 export class ApprovalCommands extends BaseCommand {
   constructor(
     context: ICommandContext,
     private readonly waitStates: WaitStateCommands,
     private readonly tools: ToolCommands,
+    private readonly sources: readonly IApprovalSource[],
   ) {
     super(context);
   }
 
+  /** Runs the selected sources in parallel. A failing source becomes one stderr line and hides no other rows. */
   async list(options: IApprovalListOptions): Promise<IApprovalListEntry[]> {
-    const status = options.status ?? PENDING_STATUS;
-    const waits = await this.waitStates.list(status);
-    const tools = status === PENDING_STATUS ? await this.listPendingTools() : [];
-    const entries: IApprovalListEntry[] = [
-      ...waits.map((wait) => ({
-        kind: ApprovalKind.WAIT,
-        ref: `${ApprovalKind.WAIT}:${wait.resumeToken}`,
-        summary: `${wait.kind} ${wait.status}`,
-        created_at: wait.createdAt,
-        trace_id: wait.traceId,
-        act: `${APPROVE_ACT} ${ApprovalKind.WAIT}:${wait.resumeToken}`,
-      })),
-      ...tools.map((tool) => ({
-        kind: ApprovalKind.TOOL,
-        ref: `${ApprovalKind.TOOL}:${tool.id}`,
-        summary: `${tool.toolName} ${tool.stepId ?? ""}`.trim(),
-        created_at: tool.requestedAt,
-        trace_id: tool.traceId,
-        act: `${APPROVE_ACT} ${ApprovalKind.TOOL}:${tool.id}`,
-      })),
-    ];
-    return entries.sort((a, b) => a.created_at.localeCompare(b.created_at));
-  }
-
-  /** A failing tool source must not hide the wait states: its failure becomes one stderr line. */
-  private async listPendingTools(): Promise<ToolConfirmationRequest[]> {
-    try {
-      return await this.tools.listPending();
-    } catch (error) {
-      console.error(`approval list: tool confirmations unavailable: ${error instanceof Error ? error.message : error}`);
-      return [];
-    }
+    const status = options.status ?? APPROVAL_PENDING_STATUS;
+    const kinds = parseApprovalKinds(options.kinds ?? []);
+    const selected = this.sources.filter((source) => kinds.length === 0 || kinds.includes(source.kind));
+    const settled = await Promise.allSettled(selected.map((source) => source.list(status)));
+    const entries: IApprovalListEntry[] = [];
+    settled.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        entries.push(...result.value);
+        return;
+      }
+      const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      console.error(`approval list: ${selected[index].kind} approvals unavailable: ${reason}`);
+    });
+    return sortByCreation(withoutShadowedClarifications(entries));
   }
 
   async show(rawId: string): Promise<IApprovalDetail> {

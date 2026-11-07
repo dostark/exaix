@@ -53,7 +53,7 @@ const MOVES: readonly Move[] = [
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
   ["request", "request create", ["--agent-role", "-a"], ["--agent"]],
   ["watch", "request watch", NO_FLAGS, ["--trace"]],
-  ["wait list", "approval list", NO_FLAGS, NO_FLAGS],
+  ["wait list", "approval list", NO_FLAGS, ["--kind"]],
   ["wait approve", "approval approve", NO_FLAGS, NO_FLAGS],
   ["wait reject", "approval reject", ["--message", "-m"], NO_FLAGS],
   ["wait amend", "approval amend", NO_FLAGS, NO_FLAGS],

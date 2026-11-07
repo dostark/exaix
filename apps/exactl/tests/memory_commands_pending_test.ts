@@ -7,7 +7,7 @@
  * review, and approve agent-suggested learnings before permanent archival.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core/status";
 
@@ -49,6 +49,19 @@ async function createTestEnvironmentWithProposal(traceId?: string) {
 }
 
 // Pending List Tests
+
+Deno.test("MemoryCommands: listPendingProposals returns the proposals that pendingList prints", async () => {
+  const { commands, extractor, cleanup, proposalId } = await createTestEnvironmentWithProposal();
+  try {
+    assert(proposalId !== null, "the seeded environment must hold one proposal");
+    const proposals = await commands.listPendingProposals();
+    assertEquals(proposals.map((proposal) => proposal.id), [proposalId]);
+    assertEquals(proposals, await extractor.listPending());
+    assertStringIncludes(await commands.pendingList(false, UIOutputFormat.JSON), proposalId);
+  } finally {
+    await cleanup();
+  }
+});
 
 Deno.test("MemoryCommands: pendingList returns empty message", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();

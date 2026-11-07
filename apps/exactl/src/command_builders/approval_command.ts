@@ -1,7 +1,7 @@
 /**
  * @module ExaCtlApprovalCommand
  * @path apps/exactl/src/command_builders/approval_command.ts
- * @description Builds the exactl approval command tree: list, show and decide wait states and tool confirmations.
+ * @description Builds the exactl approval command tree: list every pending human decision, show and decide wait states and tool confirmations.
  * @architectural-layer CLI
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/approval_commands.ts]
  */
@@ -13,6 +13,8 @@ import type { IApprovalDecision } from "../commands/approval_commands.ts";
 import { ExaCtlError } from "../exactl_errors.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
+  CLI_OPTION_APPROVAL_KIND,
+  CLI_OPTION_APPROVAL_KIND_DESC,
   CLI_OPTION_REASON,
   CLI_OPTION_WAIT_MESSAGE,
   CLI_OPTION_WAIT_MESSAGE_DESC,
@@ -59,10 +61,14 @@ function createApprovalCommand(runtime: IExaCtlRuntime) {
     .command(
       ExaCtlVerb.LIST,
       new Command()
-        .description("List pending approvals with the command that decides each")
-        .option(CLI_OPTION_WAIT_STATUS, "Filter wait states by status (default: pending)")
+        .description(
+          "List pending human decisions from every source with the command that decides each. " +
+            "Draft skills show only without a portal: use 'exactl skill list --portal <alias>' for a portal draft",
+        )
+        .option(CLI_OPTION_APPROVAL_KIND, CLI_OPTION_APPROVAL_KIND_DESC)
+        .option(CLI_OPTION_WAIT_STATUS, "Select wait states of another status (default: pending); lists no other kind")
         .action(async (options) => {
-          const entries = await approvalCommands.list({ status: options.status });
+          const entries = await approvalCommands.list({ status: options.status, kinds: options.kind });
           if (entries.length === 0) {
             console.log(EMPTY_LIST_MESSAGE);
             return;

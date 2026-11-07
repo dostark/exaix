@@ -87,6 +87,27 @@ Deno.test("[skills --portal] project skills show only for their portal and are g
   }
 });
 
+Deno.test("[listDraftSkills] returns drafts only and a portal draft only for its portal", async () => {
+  const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  try {
+    await commands.skillCreate("Global Draft", { instructions: "Global body." });
+    await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
+    await writeSkillFolder(
+      pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "project", "Alpha"),
+      { name: "alpha-guide", instructions: "Alpha body.", sidecar: { status: SkillStatus.ACTIVE } },
+    );
+    const withoutPortal = await commands.listDraftSkills(undefined);
+    assertEquals(withoutPortal.map((skill) => skill.skill_id), ["global-draft"]);
+    const forBeta = (await commands.listDraftSkills("Beta")).map((skill) => skill.skill_id).sort();
+    assertEquals(forBeta, ["beta-note", "global-draft"]);
+    const forAlpha = await commands.listDraftSkills("Alpha");
+    assertFalse(forAlpha.some((skill) => skill.skill_id === "alpha-guide"), "an active skill is not a draft");
+    for (const skill of [...withoutPortal, ...forAlpha]) assertEquals(skill.status, SkillStatus.DRAFT);
+  } finally {
+    await cleanup();
+  }
+});
+
 async function draftOf(service: SkillsService, name: string) {
   return (await service.listSkills({ status: SkillStatus.DRAFT })).find((skill) => skill.name === name)!;
 }

@@ -7,7 +7,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { ENV_PORTAL_ALIAS } from "@exaix/core";
+import { ENV_PORTAL_ALIAS, SkillStatus } from "@exaix/core";
 import {
   computeSkillContentSha256,
   createSkillOperationContext,
@@ -31,7 +31,7 @@ import {
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest, ISkillsService, Opt, Reason } from "@exaix/core/types";
-import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
+import type { ILearning, IMemorySearchResult, IMemoryUpdateProposal, ISkill } from "@exaix/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
 import {
   type ISkillRevisionRow,
@@ -405,8 +405,19 @@ export class MemoryCommands extends BaseCommand {
 
   // Pending Proposals Commands
 
+  /** Proposals that wait for a human decision. */
+  async listPendingProposals(): Promise<IMemoryUpdateProposal[]> {
+    return await this.extractor.listPending();
+  }
+
+  /** Draft skills visible to the CLI. No portal lists the skills of no portal context. */
+  async listDraftSkills(portal: Opt<string, Reason.OptionalInput>): Promise<ISkill[]> {
+    await this.skills.initialize();
+    return await this.skills.listSkills({ status: SkillStatus.DRAFT }, cliSkillContext(this.skills, portal));
+  }
+
   async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
-    const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
+    const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.listPendingProposals();
 
     if (proposals.length === 0) {
       return eligible ? "No eligible proposals for auto-approval." : "No pending proposals.";

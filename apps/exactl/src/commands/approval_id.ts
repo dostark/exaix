@@ -52,6 +52,18 @@ export function parseApprovalId(raw: string): IApprovalRef | IBareApprovalId {
   return { kind: kind as ApprovalKind, id };
 }
 
+/** Parses the values of `--kind`. An unknown kind is a usage error. */
+export function parseApprovalKinds(raw: readonly string[]): ApprovalKind[] {
+  const kinds: ApprovalKind[] = [];
+  for (const value of raw.map((item) => item.trim()).filter((item) => item.length > 0)) {
+    if (!KINDS.includes(value)) {
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, `Unknown approval kind '${value}'. Use one of: ${KINDS.join(", ")}.`);
+    }
+    kinds.push(value as ApprovalKind);
+  }
+  return kinds;
+}
+
 /** The decision verbs that a kind owned by another noun still has. */
 type OwnedDecision = ExaCtlVerb.APPROVE | ExaCtlVerb.REJECT;
 

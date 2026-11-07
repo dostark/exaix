@@ -15,6 +15,7 @@ import { createStubGit } from "@exaix/testing";
 import { stub } from "@std/testing/mock";
 import { DomainEventType } from "@exaix/core/events";
 import { ApprovalCommands } from "../src/commands/approval_commands.ts";
+import { toolApprovalSource, waitApprovalSource } from "../src/commands/approval_sources.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
 import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
@@ -68,7 +69,12 @@ async function seedWaitState(env: CliContext, waitState: IWaitState): Promise<st
 
 function makeCommands(env: CliContext): ApprovalCommands {
   env.context.git = createStubGit({ getCurrentBranch: () => Promise.resolve("main") });
-  return new ApprovalCommands(env.context, new WaitStateCommands(env.context), new ToolCommands(env.context));
+  const waitStates = new WaitStateCommands(env.context);
+  const tools = new ToolCommands(env.context);
+  return new ApprovalCommands(env.context, waitStates, tools, [
+    waitApprovalSource(waitStates),
+    toolApprovalSource(tools),
+  ]);
 }
 
 async function usageError<T>(run: () => Promise<T>): Promise<ExaCtlError> {
@@ -289,7 +295,11 @@ Deno.test("a failing tool source prints a stderr notice and the wait rows still 
     await seedWaitState(env, makeWaitState(TOKEN));
     const tools = new ToolCommands(env.context);
     tools.listPending = () => Promise.reject(new Error("no such table: pending_tool_confirmations"));
-    const commands = new ApprovalCommands(env.context, new WaitStateCommands(env.context), tools);
+    const waitStates = new WaitStateCommands(env.context);
+    const commands = new ApprovalCommands(env.context, waitStates, tools, [
+      waitApprovalSource(waitStates),
+      toolApprovalSource(tools),
+    ]);
     const entries = await commands.list({});
     assertEquals(entries.map((entry) => entry.ref), [`wait:${TOKEN}`]);
     assertEquals(notices.length, 1);

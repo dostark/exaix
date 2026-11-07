@@ -3201,7 +3201,10 @@ $ exactl daemon logs --follow
 Durable wait states come from session delegation gates, which pause until an
 operator resolves them. A failing flow quality gate does not create one: it
 halts the run with `gate_halted`. A tool that needs human approval waits as a
-pending tool confirmation. Use `exactl approval` to list and decide both.
+pending tool confirmation. `exactl approval list` shows every pending human decision: plans, amendments,
+reviews, clarifications, memory proposals, draft skills, wait states and tool confirmations. Draft skills
+show only without a portal. Use `exactl skill list --portal <alias>` for a portal draft. `exactl approval`
+decides wait states and tool confirmations. The `act` column of each row names the command that decides it.
 
 Every item has a typed id: `wait:<resume-token>` for a wait state and `tool:<confirmation-id>`
 for a tool confirmation. A bare id works when exactly one of the two holds it. Ids of other
@@ -3209,10 +3212,13 @@ kinds (`plan:`, `review:`, `proposal:`, `skill:`, `amendment:`, `clarification:`
 code 2 and print the command of the noun that owns them, such as `exactl plan approve <id>`.
 
 ```bash
-# List pending wait states and tool confirmations, with the command that decides each
+# List every pending human decision, with the command that decides each
 exactl approval list
 
-# Filter wait states by status
+# Only some kinds: plan, amendment, review, clarification, proposal, skill, wait, tool
+exactl approval list --kind plan,tool
+
+# Select wait states of another status (lists no other kind)
 exactl approval list --status fulfilled
 
 # Show one item
@@ -3612,7 +3618,7 @@ exactl log list --count                    # Count activities by type
 # System info and evaluation
 exactl version                            # Show binary and schema version
 exactl migrate check                      # Check schema compatibility
-exactl approval list                      # List pending wait states and tool confirmations
+exactl approval list                      # List every pending human decision
 exactl eval run --pack smoke              # Run an evaluation scenario
 ```
 

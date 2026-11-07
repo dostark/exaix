@@ -168,6 +168,9 @@ export const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
 export const CLI_PORTAL_LONG_OPTION = "--portal <portal:string>";
 
 export const CLI_OPTION_WAIT_STATUS = "-s, --status <status:string>";
+export const CLI_OPTION_APPROVAL_KIND = "--kind <kinds:string[]>";
+export const CLI_OPTION_APPROVAL_KIND_DESC =
+  "Only these kinds, comma-separated: plan, amendment, review, clarification, proposal, skill, wait, tool";
 
 export const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
 
