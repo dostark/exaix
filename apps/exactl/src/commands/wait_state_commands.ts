@@ -204,7 +204,6 @@ export class WaitStateCommands extends BaseCommand {
       resolvedBy,
       {
         waitStateId: updated.waitStateId,
-        resumeToken: updated.resumeToken,
         action,
         status: updated.status,
         resolvedBy,

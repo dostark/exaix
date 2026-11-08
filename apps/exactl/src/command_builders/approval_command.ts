@@ -63,7 +63,7 @@ function createApprovalCommand(runtime: IExaCtlRuntime) {
       new Command()
         .description(
           "List pending human decisions from every source with the command that decides each. " +
-            "Draft skills show only without a portal: use 'exactl skill list --portal <alias>' for a portal draft",
+            "Draft skills show only for the portal of EXA_PORTAL, and for no portal when it is unset: use 'exactl skill list --portal <alias>' for another portal",
         )
         .option(CLI_OPTION_APPROVAL_KIND, CLI_OPTION_APPROVAL_KIND_DESC)
         .option(CLI_OPTION_WAIT_STATUS, "Select wait states of another status (default: pending); lists no other kind")

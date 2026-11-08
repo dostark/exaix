@@ -397,3 +397,8 @@ Deno.test("act quotes a plan id that holds a space and parses in the live tree",
     await env.cleanup();
   }
 });
+
+Deno.test("approval list help names EXA_PORTAL as the other source of the portal of a draft skill", () => {
+  const node = walkCommandTree(createExaCtlCommand()).find((candidate) => candidate.path.join(" ") === "approval list");
+  assertStringIncludes(node?.description ?? "", "EXA_PORTAL");
+});

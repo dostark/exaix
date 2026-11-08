@@ -31,6 +31,9 @@
 
 - The four control-plane MCP tools follow the `noun_verb` grammar of exactl: `exaix_create_request` is now `exaix_request_create`, `exaix_list_plans` is `exaix_plan_list`, `exaix_approve_plan` is `exaix_plan_approve` and `exaix_query_journal` is `exaix_log_list`.
 - `exactl approval list` shows every pending human decision with the command that decides it, and `--kind` selects the kinds.
+- A tool confirmation takes one decision: a second `exactl approval approve` or `reject` exits with code 4 and changes nothing, and a daemon timeout no longer overwrites a decision that a person made.
+- `exactl request cancel` of a request in `needs_clarification` also cancels its clarification wait states and journals each one, and the TUI cancel and delete actions reach the same command.
+- A `wait_state.command_resolved` journal row no longer carries the resume token of the wait state, because an amended wait state accepts its token again and the journal is readable by agents.
 
 ### Removed
 

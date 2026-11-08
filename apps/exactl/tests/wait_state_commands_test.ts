@@ -320,10 +320,34 @@ Deno.test("WaitStateCommands: approve with resolvedBy logs a WaitStateCommandRes
 
     const payload = JSON.parse(log.payload as string);
     assertEquals(payload.waitStateId, TEST_WAIT_ID);
-    assertEquals(payload.resumeToken, TEST_TOKEN);
+    assertEquals(payload.resumeToken, undefined);
     assertEquals(payload.action, "approve");
     assertEquals(payload.status, "fulfilled");
     assertEquals(payload.resolvedBy, "user-simulator:cooperative");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[security] a wait decision never writes the resume token to the journal, and an amended token stays valid", async () => {
+  const { context, tempDir, db, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState());
+    const commands = new WaitStateCommands(context);
+
+    const amended = await commands.amend(TEST_TOKEN, "Please revise", "user-simulator:cooperative");
+    assertEquals(amended.status, "amended");
+    await commands.approve(TEST_TOKEN, "Revised", "user-simulator:cooperative");
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare("SELECT target, payload FROM activity").all() as JSONObject[];
+    assertEquals(rows.filter((row) => JSON.stringify(row).includes(TEST_TOKEN)), []);
+    assertEquals(
+      rows.filter((row) => String(row.payload).includes(TEST_WAIT_ID)).length,
+      2,
+    );
   } finally {
     await cleanup();
   }

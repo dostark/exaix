@@ -1549,6 +1549,8 @@ Any other status exits with code 4 and the file stays as it was:
 | `analyzing`, `enriching`, `refining`, `in_progress` | The request is in flight. Retry when it settles         |
 | `completed`, `failed`, `cancelled`                  | The request is already final                            |
 
+A request in `needs_clarification` also cancels its pending clarification wait states, and each one writes a `wait_state.command_resolved` row with your user identity. A wait state that cannot be cancelled makes the command exit with code 1 and print `exactl approval cancel wait:<resume-token>` for it, and the request stays cancelled. The command refuses a request that started while it ran, and it exits with code 2 for a request file whose trace id is not a plain id. The TUI cancel and delete actions use the same path.
+
 An empty, short or ambiguous id exits with code 2, and an unknown id exits with code 3. `exactl request clarify <trace-id> --cancel` is a different command: it abandons the clarification session and puts the request back in the queue.
 
 #### **Request Quality Gate — How Scoring Works**
@@ -3260,6 +3262,8 @@ exactl approval amend wait:<resume-token> -m "Please revise approach"
 exactl approval expire wait:<resume-token> -m "Timed out"
 exactl approval cancel wait:<resume-token> -m "No longer needed"
 ```
+
+A tool confirmation takes one decision. A second `approve` or `reject` exits with code 4 and changes nothing, an unknown id exits with code 3, and a malformed id exits with code 2. A daemon timeout never overwrites a decision that a person made. A wait decision journals a `wait_state.command_resolved` row with the wait state id, the action, the status and who decided, and it never writes the resume token.
 
 Every wait decision records an actor: the `--resolved-by` value, or your user identity when you give
 none. A tool decision writes a `tool_confirmation.decided` journal row with the confirmation id, the tool,
