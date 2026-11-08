@@ -1727,6 +1727,7 @@
             "/exaix-dev-docs/planning/evidence(/|$)"
           ],
           "extraEntries": [
+            "apps/exactl/tests/helpers/approval_hang_probe.ts",
             "scripts/backup_repo.ts",
             "scripts/commit_plan_step.ts",
             "scripts/generate_bare_swe_scenarios.ts",

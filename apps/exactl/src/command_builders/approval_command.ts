@@ -9,9 +9,8 @@
 import { Command } from "@cliffy/command";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IDisplayService } from "@exaix/core/types";
-import type { IApprovalDecision } from "../commands/approval_commands.ts";
-import { ExaCtlError } from "../exactl_errors.ts";
-import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import type { ApprovalCommands, IApprovalDecision } from "../commands/approval_commands.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import {
   CLI_OPTION_APPROVAL_KIND,
   CLI_OPTION_APPROVAL_KIND_DESC,
@@ -23,6 +22,12 @@ import {
   CLI_OPTION_WAIT_STATUS,
   ExaCtlVerb,
 } from "../exactl_constants.ts";
+
+/** What the approval command tree reads from the runtime. */
+export interface IApprovalCommandRuntime {
+  readonly approvalCommands: ApprovalCommands;
+  readonly display: IDisplayService;
+}
 
 const EMPTY_LIST_MESSAGE = "No pending approvals.";
 const ID_ARGUMENT = "<approvalId:string>";
@@ -54,7 +59,7 @@ async function report(
   }
 }
 
-function createApprovalCommand(runtime: IExaCtlRuntime) {
+function createApprovalCommand(runtime: IApprovalCommandRuntime) {
   const { approvalCommands, display } = runtime;
   return new Command()
     .description("List every pending human decision and decide wait states and tool confirmations")
@@ -69,15 +74,14 @@ function createApprovalCommand(runtime: IExaCtlRuntime) {
         .option(CLI_OPTION_WAIT_STATUS, "Select wait states of another status (default: pending); lists no other kind")
         .action(async (options) => {
           const entries = await approvalCommands.list({ status: options.status, kinds: options.kind });
-          if (entries.length === 0) {
-            console.log(EMPTY_LIST_MESSAGE);
-            return;
-          }
+          if (entries.length === 0) console.log(EMPTY_LIST_MESSAGE);
           for (const entry of entries) {
             console.log(
               [entry.ref, entry.kind, entry.summary, entry.created_at, entry.act].join(LIST_COLUMN_SEPARATOR),
             );
           }
+          // A source that timed out may still run, and its work would keep the process alive.
+          if (approvalCommands.sourceTimedOut) Deno.exit(ExaCtlExitCode.OK);
         }),
     )
     .command(
@@ -142,6 +146,6 @@ function createApprovalCommand(runtime: IExaCtlRuntime) {
     );
 }
 
-export function buildApprovalCommand(runtime: IExaCtlRuntime): ReturnType<typeof createApprovalCommand> {
+export function buildApprovalCommand(runtime: IApprovalCommandRuntime): ReturnType<typeof createApprovalCommand> {
   return createApprovalCommand(runtime);
 }

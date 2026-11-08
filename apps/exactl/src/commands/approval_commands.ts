@@ -61,11 +61,19 @@ const TOOL_DENIED_STATUS = "denied";
 /** The longest time that one source may take for `approval list`. A source that takes longer is reported and skipped. */
 export const APPROVAL_SOURCE_TIMEOUT_MS = 30_000;
 
+/** A source did not settle within its limit. Its work may still run. */
+class ApprovalSourceTimeoutError extends Error {
+  constructor(limitMs: number) {
+    super(`timed out after ${limitMs} ms`);
+    this.name = "ApprovalSourceTimeoutError";
+  }
+}
+
 /** Rejects when the promise has not settled within the limit. The timer is always cleared. */
 async function withTimeout<T>(work: Promise<T>, limitMs: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const expired = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => reject(new Error(`timed out after ${limitMs} ms`)), limitMs);
+    timer = setTimeout(() => reject(new ApprovalSourceTimeoutError(limitMs)), limitMs);
   });
   try {
     return await Promise.race([work, expired]);
@@ -107,6 +115,13 @@ export class ApprovalCommands extends BaseCommand {
     super(context);
   }
 
+  private timedOut = false;
+
+  /** True when a source of the last `list` call timed out. Its work may keep the process alive. */
+  get sourceTimedOut(): boolean {
+    return this.timedOut;
+  }
+
   /** Runs the selected sources in parallel. A failing source becomes one stderr line and hides no other rows. */
   async list(options: IApprovalListOptions): Promise<IApprovalListEntry[]> {
     const status = options.status ?? APPROVAL_PENDING_STATUS;
@@ -114,6 +129,9 @@ export class ApprovalCommands extends BaseCommand {
     const selected = this.sources.filter((source) => kinds.length === 0 || kinds.includes(source.kind));
     const settled = await Promise.allSettled(
       selected.map((source) => withTimeout(source.list(status), this.sourceTimeoutMs)),
+    );
+    this.timedOut = settled.some((result) =>
+      result.status === "rejected" && result.reason instanceof ApprovalSourceTimeoutError
     );
     const entries: IApprovalListEntry[] = [];
     settled.forEach((result, index) => {
