@@ -64,14 +64,17 @@ content = "export function helloWorld(): string {\\n  return \\"Hello, World!\\"
 STATUS: COMPLETE
 SUMMARY: Created src/utils.ts exporting helloWorld().`;
 
-/** The repair step's ReAct prompt opens with the agent role line, so a preview fixture addresses it alone. */
+/** The blueprint body. The ReAct prompt of the repair step opens with it, followed by the agent role line. */
+const CUTOVER_SYSTEM_PROMPT = "# Verify Coder";
+
+/** The recorded repair response is addressed by the opening of the ReAct prompt: the system prompt, then the role line. */
 async function writeRepairFixture(fixturesDir: string): Promise<void> {
   await Deno.mkdir(fixturesDir, { recursive: true });
   await Deno.writeTextFile(
     join(fixturesDir, "repair-step.json"),
     JSON.stringify({
       promptHash: "phase208-repair-step",
-      promptPreview: "AGENT ROLE: Verify Coder\n",
+      promptPreview: `${CUTOVER_SYSTEM_PROMPT}\n\nAGENT ROLE: Verify Coder\n`,
       response: REPAIR_RESPONSE,
       model: "cutover-mock",
       tokens: { input: 1000, output: 200 },
@@ -142,7 +145,7 @@ async function writeAgentBlueprint(root: string): Promise<void> {
   await Deno.mkdir(agentsDir, { recursive: true });
   await Deno.writeTextFile(
     join(agentsDir, `${CUTOVER_AGENT_ROLE}.md`),
-    `---\nagent_role: "${CUTOVER_AGENT_ROLE}"\nname: "Verify Coder"\nmodel: "mock:test"\ncapabilities: ["read_file", "write_file"]\ncreated: "2026-10-06T00:00:00Z"\ncreated_by: "test"\nversion: "1.0.0"\n---\n\n# Verify Coder\n`,
+    `---\nagent_role: "${CUTOVER_AGENT_ROLE}"\nname: "Verify Coder"\nmodel: "mock:test"\ncapabilities: ["read_file", "write_file"]\ncreated: "2026-10-06T00:00:00Z"\ncreated_by: "test"\nversion: "1.0.0"\n---\n\n${CUTOVER_SYSTEM_PROMPT}\n`,
   );
 }
 
