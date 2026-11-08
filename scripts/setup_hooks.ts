@@ -388,6 +388,12 @@ rm -f "$MANIFEST_BACKUP"
 PRE_PUSH_REFS=$(mktemp)
 cat > "$PRE_PUSH_REFS"
 
+# git exports GIT_DIR (and related variables) to a hook that runs in a linked worktree.
+# Left set, a git call inside the submodule reads the parent tree instead of the submodule.
+submodule_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git "$@"
+}
+
 check_and_push_submodule() {
   SUBMODULE_NAME="$1"
   # An initialized submodule's ".git" is a FILE (a gitlink pointing at the real
@@ -420,23 +426,23 @@ check_and_push_submodule() {
     echo "🔐 Detected $SUBMODULE_NAME submodule pointer change in the parent repo."
     cd "$SUBMODULE_NAME" || exit 1
 
-    if [ -n "$(git status --porcelain)" ]; then
+    if [ -n "$(submodule_git status --porcelain)" ]; then
       echo "❌ $SUBMODULE_NAME has uncommitted changes. Commit or stash them before pushing the parent repo."
       exit 1
     fi
 
-    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
+    UPSTREAM=$(submodule_git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
     if [ -z "$UPSTREAM" ]; then
       echo "❌ $SUBMODULE_NAME has no upstream branch configured. Push it manually before pushing the parent repo."
       exit 1
     fi
 
-    AHEAD_BEHIND=$(git rev-list --left-right --count "$UPSTREAM...HEAD" 2>/dev/null || echo "0 0")
+    AHEAD_BEHIND=$(submodule_git rev-list --left-right --count "$UPSTREAM...HEAD" 2>/dev/null || echo "0 0")
     AHEAD=$(echo "$AHEAD_BEHIND" | awk '{print $1}')
 
     if [ "$AHEAD" -gt 0 ]; then
       echo "🔁 Pushing $SUBMODULE_NAME submodule to its upstream branch ($UPSTREAM)..."
-      git push
+      submodule_git push
       if [ $? -ne 0 ]; then
         echo "❌ Failed to push $SUBMODULE_NAME. Push the submodule first before pushing the parent repo."
         exit 1

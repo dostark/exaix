@@ -173,6 +173,24 @@ describe("scripts/setup_hooks.ts", () => {
   });
 });
 
+describe("pre-push submodule check", () => {
+  it("fix(hooks): runs every git call inside a submodule with the hook-injected GIT_* variables cleared", async () => {
+    // A linked worktree exports GIT_DIR to the hook. A bare `git status` in the submodule
+    // then reports the parent tree. A clean submodule looks dirty.
+    const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
+    const start = hookInstaller.indexOf('cd "$SUBMODULE_NAME" || exit 1');
+    const end = hookInstaller.indexOf("cd - >/dev/null", start);
+    assert(start !== -1 && end !== -1, "the pre-push submodule block must still enter and leave the submodule");
+    const block = hookInstaller.slice(start, end);
+    const bareGit = block.split("\n").filter((line) => /\bgit (status|rev-parse|rev-list|push)\b/.test(line));
+    assertEquals(bareGit, [], "every git call in the submodule block must go through the helper that clears GIT_*");
+    const helper = hookInstaller.slice(hookInstaller.indexOf("submodule_git()"), start);
+    for (const gitVar of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]) {
+      assertStringIncludes(helper, `-u ${gitVar}`, `the submodule git helper must clear ${gitVar}`);
+    }
+  });
+});
+
 describe("staged docs gitlink commits", () => {
   async function withHookFixture(
     body: (dir: string, git: (args: string[]) => Promise<string>) => Promise<void>,
