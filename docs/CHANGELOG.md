@@ -26,6 +26,8 @@
 - `exactl approval` lists, shows and decides wait states and tool confirmations by typed id such as `wait:<resume-token>` and `tool:<confirmation-id>`, and each tool decision journals `tool_confirmation.decided`.
 - `exactl log`, `exactl skill` and `exactl model` replace the journal, cost, skills, models and routing commands, and `exactl model list` shows the price of each model with its source and verified date.
 - `--all` on `exactl plan approve`, `exactl plan amendment approve` and `exactl memory proposal approve` replaces the compound `approve-all` commands.
+- `exactl` commands exit with code 0 for success, 1 for a failure, 2 for a usage error, 3 when an item is not found, 4 for a state conflict, 5 when the daemon is unavailable, 6 for invalid data, 7 for missing credentials, 124 for a timeout and 130 for a cancel, and a command that has not adopted a code yet can still exit with 1.
+- `exactl request cancel` refuses a request that started executing while the command ran, and it exits with code 2 for a request file whose trace id is not a plain id.
 
 ### Changed
 
@@ -35,6 +37,7 @@
 - `exactl request cancel` of a request in `needs_clarification` also cancels its clarification wait states and journals each one, and the TUI cancel and delete actions reach the same command.
 - `exactl approval list` skips a source that takes longer than 30 seconds with a notice on stderr and ends after it printed the other rows, and `exactl request cancel` exits with code 6 for a request file whose status is not a request status.
 - A `wait_state.command_resolved` journal row no longer carries the resume token of the wait state, because an amended wait state accepts its token again and the journal is readable by agents.
+- The quick start of the README installs `exactl` and runs every step with `exactl` commands instead of `deno task` commands, and it submits the first request with `exactl request create`.
 
 ### Removed
 
