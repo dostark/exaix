@@ -28,7 +28,12 @@ import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
 import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
-import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
+import {
+  RequestCancelNotAllowedError,
+  RequestIdError,
+  RequestNotFoundError,
+  RequestStatusInvalidError,
+} from "@exaix/core/errors";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import type { ICliApplicationContext, IDisplayService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
@@ -710,6 +715,7 @@ export async function handleRequestCancel(
       throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, error.message);
     }
     if (error instanceof RequestIdError) throw new ExaCtlError(ExaCtlExitCode.USAGE, error.message);
+    if (error instanceof RequestStatusInvalidError) throw new ExaCtlError(ExaCtlExitCode.INVALID, error.message);
     if (error instanceof RequestNotFoundError) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, error.message);
     throw error;
   }

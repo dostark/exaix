@@ -49,3 +49,11 @@ export class RequestNotFoundError extends Error {
     this.name = "RequestNotFoundError";
   }
 }
+
+/** The request file has no status that is a request status, so no cancel rule applies to it. */
+export class RequestStatusInvalidError extends Error {
+  constructor(readonly requestId: string) {
+    super(`Request ${requestId} has no valid status.`);
+    this.name = "RequestStatusInvalidError";
+  }
+}

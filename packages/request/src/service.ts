@@ -21,7 +21,12 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { AnalysisMode } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 import type { IRequestCancelledPayload } from "@exaix/core/events";
-import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
+import {
+  RequestCancelNotAllowedError,
+  RequestIdError,
+  RequestNotFoundError,
+  RequestStatusInvalidError,
+} from "@exaix/core/errors";
 import { type IRequestCancelResult, MIN_REQUEST_ID_PREFIX_CHARS } from "@exaix/core/request";
 import { PathResolver } from "@exaix/portal";
 import type { JSONValue } from "@exaix/core";
@@ -46,8 +51,18 @@ const MAX_CANCEL_ATTEMPTS = 3;
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 const TOP_LEVEL_STATUS_LINE = /^status:/;
 const CANCEL_TEMPORARY_SUFFIX = ".cancelling";
+const FILE_MODE_MASK = 0o777;
 const STATUS_KEY = "status:";
 const QUOTE_ENDS = /^["']|["']$/g;
+
+/** Removes a file that may already be gone, as after a rename. Any other failure stays visible. */
+async function removeIfPresent(path: string): Promise<void> {
+  try {
+    await Deno.remove(path);
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+}
 
 /** The status of the top-level `status:` line, or undefined when it is missing or not a request status. */
 function topLevelStatus(frontmatter: string): RequestStatusType | undefined {
@@ -311,9 +326,7 @@ export class RequestService {
       const match = content.match(FRONTMATTER_PATTERN);
       if (!match) throw new RequestNotFoundError(entry.trace_id);
       const previousStatus = topLevelStatus(match[1]);
-      if (previousStatus === undefined) {
-        throw new RequestIdError(`Request ${entry.filename} has no valid status.`, []);
-      }
+      if (previousStatus === undefined) throw new RequestStatusInvalidError(entry.filename);
       if (previousStatus !== RequestStatus.PENDING && previousStatus !== RequestStatus.NEEDS_CLARIFICATION) {
         throw new RequestCancelNotAllowedError(entry.trace_id, previousStatus);
       }
@@ -321,12 +334,17 @@ export class RequestService {
         TOP_LEVEL_STATUS_LINE.test(line) ? `status: ${RequestStatus.CANCELLED}` : line
       );
       const temporary = join(dirname(path), `.${basename(path)}.${crypto.randomUUID()}${CANCEL_TEMPORARY_SUFFIX}`);
-      await Deno.writeTextFile(temporary, `---\n${lines.join("\n")}\n---\n${match[2]}`);
-      if (await Deno.readTextFile(path) === content) {
-        await Deno.rename(temporary, path);
-        return previousStatus;
+      try {
+        await Deno.writeTextFile(temporary, `---\n${lines.join("\n")}\n---\n${match[2]}`);
+        const { mode } = await Deno.stat(path);
+        if (mode !== null) await Deno.chmod(temporary, mode & FILE_MODE_MASK);
+        if (await Deno.readTextFile(path) === content) {
+          await Deno.rename(temporary, path);
+          return previousStatus;
+        }
+      } finally {
+        await removeIfPresent(temporary);
       }
-      await Deno.remove(temporary);
     }
     throw new Error(`Request ${entry.trace_id} kept changing while it was cancelled. Retry.`);
   }

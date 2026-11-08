@@ -14,6 +14,7 @@ import { runExactlSeededWorkspace } from "./helpers/exactl_cli_process.ts";
 const EXIT_USAGE = 2;
 const EXIT_NOT_FOUND = 3;
 const EXIT_STATE_CONFLICT = 4;
+const EXIT_INVALID = 6;
 const REQUESTS_DIR = join("Workspace", "Requests");
 const WAIT_STATES_DIR = join("Workspace", "WaitStates");
 const PENDING_TRACE = "aaaa1111-0000-4000-8000-000000000001";
@@ -110,4 +111,16 @@ Deno.test("request cancel on a request file with a path in its trace id exits 2 
   assertStringIncludes(cancel.stderr, "no valid trace id");
   assertEquals(shown.code, 0, shown.stderr);
   assertStringIncludes(shown.stdout, "status: pending");
+});
+
+Deno.test("request cancel on a request file with an invalid status exits 6 and leaves the file", async () => {
+  const [cancel] = await runExactlSeededWorkspace(
+    async (root) => {
+      await Deno.mkdir(join(root, REQUESTS_DIR), { recursive: true });
+      await Deno.writeTextFile(join(root, REQUESTS_DIR, "request-bogus.md"), requestFile(PENDING_TRACE, "bogus"));
+    },
+    [["request", "cancel", "request-bogus.md"]],
+  );
+  assertEquals(cancel.code, EXIT_INVALID, cancel.stderr);
+  assertStringIncludes(cancel.stderr, "no valid status");
 });

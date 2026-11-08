@@ -12,13 +12,16 @@ import { dirname, join } from "@std/path";
 import { stub } from "@std/testing/mock";
 import { RequestService } from "@exaix/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
-import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
+import {
+  RequestCancelNotAllowedError,
+  RequestIdError,
+  RequestNotFoundError,
+  RequestStatusInvalidError,
+} from "@exaix/core/errors";
 import { MIN_REQUEST_ID_PREFIX_CHARS } from "@exaix/core/request";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig, createStubDisplay, initTestDbService } from "@exaix/testing";
 
-/** The list handler reads the file first. The read of cancelRequest itself is the second one. */
-const CANCEL_READ_INDEX = 1;
 const CANCELLABLE: RequestStatusType[] = [RequestStatus.PENDING, RequestStatus.NEEDS_CLARIFICATION];
 const REFUSED: RequestStatusType[] = [
   RequestStatus.PLANNED,
@@ -225,17 +228,20 @@ Deno.test("cancel changes only the top-level status line and keeps a nested stat
   });
 });
 
-Deno.test("cancel refuses when the status changed to analyzing after the first read", async () => {
+/** The names that a cancel leaves in the requests directory next to the request files. */
+function temporaryFilesIn(dir: string): string[] {
+  return [...Deno.readDirSync(dir)].map((entry) => entry.name).filter((name) => name.endsWith(".cancelling"));
+}
+
+Deno.test("cancel refuses when the status changed to analyzing while the temporary file was written", async () => {
   await withTempRoot(async (root) => {
     const service = createService(root);
     const created = await service.create("Race");
     const path = created.path!;
-    const original = Deno.readTextFile.bind(Deno);
-    let reads = 0;
-    const racing = stub(Deno, "readTextFile", async (target: string | URL) => {
-      const text = await original(target);
-      if (String(target) === path && reads++ === CANCEL_READ_INDEX) await setStatus(path, RequestStatus.ANALYZING);
-      return text;
+    const write = Deno.writeTextFile.bind(Deno);
+    const racing = stub(Deno, "writeTextFile", async (target: string | URL, data: string | ReadableStream<string>) => {
+      await write(target, data);
+      if (String(target).endsWith(".cancelling")) await setStatus(path, RequestStatus.ANALYZING);
     });
     try {
       const error = await assertRejects(
@@ -247,5 +253,46 @@ Deno.test("cancel refuses when the status changed to analyzing after the first r
       racing.restore();
     }
     assertStringIncludes(await Deno.readTextFile(path), `status: ${RequestStatus.ANALYZING}`);
+    assertEquals(temporaryFilesIn(dirname(path)), []);
+  });
+});
+
+Deno.test("cancel removes its temporary file when the rename fails and leaves the request as it was", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Rename failure");
+    const path = created.path!;
+    const before = await Deno.readTextFile(path);
+    const failing = stub(Deno, "rename", () => Promise.reject(new Error("rename refused")));
+    try {
+      await assertRejects(() => service.cancelRequest(created.trace_id, undefined), Error, "rename refused");
+    } finally {
+      failing.restore();
+    }
+    assertEquals(await Deno.readTextFile(path), before);
+    assertEquals(temporaryFilesIn(dirname(path)), []);
+  });
+});
+
+Deno.test("cancel keeps the file mode of the request", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Mode");
+    const restricted = 0o600;
+    await Deno.chmod(created.path!, restricted);
+    await service.cancelRequest(created.trace_id, undefined);
+    assertEquals((await Deno.stat(created.path!)).mode! & 0o777, restricted);
+  });
+});
+
+Deno.test("cancel of a request file whose status is not a request status throws RequestStatusInvalidError", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Bad status");
+    const path = await writeRequestFile(dirname(created.path!), "request-badstatus.md", "bad-status-trace");
+    await Deno.writeTextFile(path, (await Deno.readTextFile(path)).replace(/^status: .*$/m, "status: bogus"));
+    const before = await Deno.readTextFile(path);
+    await assertRejects(() => service.cancelRequest("request-badstatus.md", undefined), RequestStatusInvalidError);
+    assertEquals(await Deno.readTextFile(path), before);
   });
 });
