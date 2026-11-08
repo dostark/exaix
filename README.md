@@ -90,8 +90,8 @@ design rationale, see [Architecture](ARCHITECTURE.md).
 
 ## Quick start: run from source
 
-This path runs the CLI directly from the repository, so it does not assume a globally
-installed `exactl` binary. It uses Ollama for a local model; choose a cloud provider in
+This path installs the `exactl` CLI from the repository checkout, then drives Exaix
+with `exactl` commands only. It uses Ollama for a local model; choose a cloud provider in
 the [User Guide](docs/Exaix_User_Guide.md) if that better fits your environment.
 
 ### Prerequisites
@@ -103,38 +103,42 @@ the [User Guide](docs/Exaix_User_Guide.md) if that better fits your environment.
   for a supported cloud provider
 
 ```bash
-# 1. Clone and prepare the source checkout.
+# 1. Clone the source checkout.
 git clone https://github.com/dostark/exaix.git
 cd exaix
 
-# 2. For local operation, start Ollama and fetch a model.
+# 2. Install the exactl CLI. Make sure ~/.deno/bin is in your PATH.
+deno install --global --allow-all --config deno.json -n exactl apps/exactl/main.ts
+exactl --help
+
+# 3. For local operation, start Ollama and fetch a model.
 ollama serve &
 ollama pull llama3.2
 
-# 3. Configure Exaix through its source-run CLI.
-deno task cli -- config set ai.provider ollama
-deno task cli -- config set ai.model llama3.2
+# 4. Configure Exaix.
+exactl config set ai.provider ollama
+exactl config set ai.model llama3.2
 
-# 4. Start the daemon. It manages its own background process.
-deno task start
+# 5. Start the daemon. It manages its own background process.
+exactl daemon start
 
-# 5. Submit a bounded request and keep the trace ID printed by the command.
-deno task cli -- request "Add a health endpoint with a 200-status integration test" \
+# 6. Submit a bounded request and keep the trace ID printed by the command.
+exactl request create "Add a health endpoint with a 200-status integration test" \
   --acceptance-criteria "GET /health returns 200"
 
-# 6. Review the generated plan before allowing execution.
-deno task cli -- plan list
-deno task cli -- plan show <plan-id>
-deno task cli -- plan approve <plan-id>
+# 7. Review the generated plan before allowing execution.
+exactl plan list
+exactl plan show <plan-id>
+exactl plan approve <plan-id>
 
-# 7. Observe and then stop the daemon when finished.
-deno task cli -- request watch --trace <trace-id>
-deno task stop
+# 8. Observe the run, then stop the daemon when finished.
+exactl request watch --trace <trace-id>
+exactl daemon stop
 ```
 
 Do not approve a plan solely because it was generated. Check its scope, proposed tools,
 acceptance criteria, target project/branch, and the validation it will run. If a request
-needs more detail, use `deno task cli -- request clarify <trace-id>` before proceeding.
+needs more detail, use `exactl request clarify <trace-id>` before proceeding.
 
 The default clone is a complete Solo checkout; Team, Enterprise, and planning submodules
 require separate access and are not needed for this path. For deployment and contribution
@@ -176,8 +180,9 @@ turn their private session state into Exaix state.
 
 ### Observability and operator control
 
-Use the CLI to create requests, inspect plans, act on wait states, follow a trace, and
-inspect the journal. The terminal dashboard offers an interactive operational view. See
+Use `exactl` to create requests (`request create`), inspect and approve plans
+(`plan list`, `plan approve`), list pending decisions (`approval list`), follow a trace
+(`request watch`), and inspect the journal (`log list`). The terminal dashboard offers an interactive operational view. See
 the [CLI and configuration reference](docs/Exaix_User_Guide.md) for commands, output
 contracts, and troubleshooting.
 
@@ -220,7 +225,8 @@ source-code replacement; manage the source repository and runtime workspace sepa
 ## Testing and contributing
 
 Run focused checks while developing; use the repository-wide suite when the change scope
-justifies it:
+justifies it. Repository checks and tests are development tasks, not `exactl` commands, so
+they stay `deno task` commands:
 
 ```bash
 deno task check
