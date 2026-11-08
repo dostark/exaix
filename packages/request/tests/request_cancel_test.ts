@@ -9,6 +9,7 @@
 
 import { assert, assertEquals, assertInstanceOf, assertRejects, assertStringIncludes } from "@std/assert";
 import { dirname, join } from "@std/path";
+import { stub } from "@std/testing/mock";
 import { RequestService } from "@exaix/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { RequestCancelNotAllowedError, RequestIdError, RequestNotFoundError } from "@exaix/core/errors";
@@ -16,6 +17,8 @@ import { MIN_REQUEST_ID_PREFIX_CHARS } from "@exaix/core/request";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig, createStubDisplay, initTestDbService } from "@exaix/testing";
 
+/** The list handler reads the file first. The read of cancelRequest itself is the second one. */
+const CANCEL_READ_INDEX = 1;
 const CANCELLABLE: RequestStatusType[] = [RequestStatus.PENDING, RequestStatus.NEEDS_CLARIFICATION];
 const REFUSED: RequestStatusType[] = [
   RequestStatus.PLANNED,
@@ -195,4 +198,54 @@ Deno.test("cancel emits request.cancelled with previous_status and the request t
   } finally {
     await cleanup();
   }
+});
+
+Deno.test("cancel refuses a request whose trace id holds a path separator and leaves the file", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Anchor");
+    const path = await writeRequestFile(dirname(created.path!), "request-hostile.md", "../outside");
+    const before = await Deno.readTextFile(path);
+    await assertRejects(() => service.cancelRequest("request-hostile.md", undefined), RequestIdError);
+    assertEquals(await Deno.readTextFile(path), before);
+  });
+});
+
+Deno.test("cancel changes only the top-level status line and keeps a nested status key", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Nested");
+    const path = created.path!;
+    const original = await Deno.readTextFile(path);
+    await Deno.writeTextFile(path, original.replace(/^status: .*$/m, "status: pending\nnested:\n  status: keep-me"));
+    await service.cancelRequest(created.trace_id, undefined);
+    const after = await Deno.readTextFile(path);
+    assertEquals(after.match(/^status: cancelled$/gm)?.length, 1);
+    assertStringIncludes(after, "  status: keep-me");
+  });
+});
+
+Deno.test("cancel refuses when the status changed to analyzing after the first read", async () => {
+  await withTempRoot(async (root) => {
+    const service = createService(root);
+    const created = await service.create("Race");
+    const path = created.path!;
+    const original = Deno.readTextFile.bind(Deno);
+    let reads = 0;
+    const racing = stub(Deno, "readTextFile", async (target: string | URL) => {
+      const text = await original(target);
+      if (String(target) === path && reads++ === CANCEL_READ_INDEX) await setStatus(path, RequestStatus.ANALYZING);
+      return text;
+    });
+    try {
+      const error = await assertRejects(
+        () => service.cancelRequest(created.trace_id, undefined),
+        RequestCancelNotAllowedError,
+      );
+      assertEquals(error.status, RequestStatus.ANALYZING);
+    } finally {
+      racing.restore();
+    }
+    assertStringIncludes(await Deno.readTextFile(path), `status: ${RequestStatus.ANALYZING}`);
+  });
 });

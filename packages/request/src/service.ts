@@ -6,11 +6,11 @@
  * @related-files [apps/exactl/src/commands/request_commands.ts, "packages/core/src/types/i_request_service.ts"]
  */
 
-import { join } from "@std/path";
+import { basename, dirname, join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { coerceRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status";
-import { DEFAULT_AGENT_ROLE, RequestPriority, RequestSource } from "@exaix/core";
+import { isRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status";
+import { DEFAULT_AGENT_ROLE, RequestPriority, RequestSource, VALID_EXECUTION_TRACE_ID_PATTERN } from "@exaix/core";
 import type { IRequestShowResult } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
 import type { IApplicationContext } from "@exaix/core/types";
@@ -40,6 +40,20 @@ interface IRequestServiceConfig {
   context?: IApplicationContext;
   /** Journals request-analysis domain events (e.g. request.analyzed); DI'd by the service layer. */
   logger?: Opt<IEventLogger, Reason.OptionalDependency>;
+}
+
+const MAX_CANCEL_ATTEMPTS = 3;
+const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
+const TOP_LEVEL_STATUS_LINE = /^status:/;
+const CANCEL_TEMPORARY_SUFFIX = ".cancelling";
+const STATUS_KEY = "status:";
+const QUOTE_ENDS = /^["']|["']$/g;
+
+/** The status of the top-level `status:` line, or undefined when it is missing or not a request status. */
+function topLevelStatus(frontmatter: string): RequestStatusType | undefined {
+  const line = frontmatter.split("\n").find((candidate) => TOP_LEVEL_STATUS_LINE.test(candidate));
+  const value = line?.slice(STATUS_KEY.length).trim().replace(QUOTE_ENDS, "");
+  return value !== undefined && isRequestStatus(value) ? value : undefined;
 }
 
 export class RequestService {
@@ -269,19 +283,11 @@ export class RequestService {
   /** Cancels a request that no execution has started. The path comes from the directory listing, never from the id. */
   async cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
     const entry = await this.resolveCancelTarget(requestId);
-    const path = await new PathResolver(this.config).validatePath(entry.path!, [this.requestsDir]);
-    const content = await Deno.readTextFile(path);
-    const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-    if (!match) throw new RequestNotFoundError(requestId);
-    const previousStatus = coerceRequestStatus(this.parseFrontmatter(match[1]).status ?? "", entry.status);
-    if (previousStatus !== RequestStatus.PENDING && previousStatus !== RequestStatus.NEEDS_CLARIFICATION) {
-      throw new RequestCancelNotAllowedError(entry.trace_id, previousStatus);
+    if (!VALID_EXECUTION_TRACE_ID_PATTERN.test(entry.trace_id)) {
+      throw new RequestIdError(`Request ${entry.filename} has no valid trace id.`, []);
     }
-    const lines = match[1].split("\n").map((line) =>
-      line.trim().startsWith("status:") ? `status: ${RequestStatus.CANCELLED}` : line
-    );
-    await Deno.writeTextFile(path, `---\n${lines.join("\n")}\n---\n${match[2]}`);
-
+    const path = await new PathResolver(this.config).validatePath(entry.path!, [this.requestsDir]);
+    const previousStatus = await this.writeCancelled(path, entry);
     const payload: IRequestCancelledPayload = {
       request_id: entry.trace_id,
       previous_status: previousStatus,
@@ -295,6 +301,34 @@ export class RequestService {
       previous_status: previousStatus,
       status: RequestStatus.CANCELLED,
     };
+  }
+
+  /** Rewrites the top-level status line through a temporary file and a rename.
+   *  A change between the read and the rename restarts the attempt. */
+  private async writeCancelled(path: string, entry: IRequestEntry): Promise<RequestStatusType> {
+    for (let attempt = 0; attempt < MAX_CANCEL_ATTEMPTS; attempt++) {
+      const content = await Deno.readTextFile(path);
+      const match = content.match(FRONTMATTER_PATTERN);
+      if (!match) throw new RequestNotFoundError(entry.trace_id);
+      const previousStatus = topLevelStatus(match[1]);
+      if (previousStatus === undefined) {
+        throw new RequestIdError(`Request ${entry.filename} has no valid status.`, []);
+      }
+      if (previousStatus !== RequestStatus.PENDING && previousStatus !== RequestStatus.NEEDS_CLARIFICATION) {
+        throw new RequestCancelNotAllowedError(entry.trace_id, previousStatus);
+      }
+      const lines = match[1].split("\n").map((line) =>
+        TOP_LEVEL_STATUS_LINE.test(line) ? `status: ${RequestStatus.CANCELLED}` : line
+      );
+      const temporary = join(dirname(path), `.${basename(path)}.${crypto.randomUUID()}${CANCEL_TEMPORARY_SUFFIX}`);
+      await Deno.writeTextFile(temporary, `---\n${lines.join("\n")}\n---\n${match[2]}`);
+      if (await Deno.readTextFile(path) === content) {
+        await Deno.rename(temporary, path);
+        return previousStatus;
+      }
+      await Deno.remove(temporary);
+    }
+    throw new Error(`Request ${entry.trace_id} kept changing while it was cancelled. Retry.`);
   }
 
   /** An exact trace id or filename, or a unique trace id prefix of at least MIN_REQUEST_ID_PREFIX_CHARS. */

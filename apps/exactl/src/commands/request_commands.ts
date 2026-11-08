@@ -31,6 +31,8 @@ import { join } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import { WaitStateSchema } from "@exaix/flow";
 import { WaitStateCommands } from "./wait_state_commands.ts";
+import { ApprovalKind } from "./approval_id.ts";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 
 /** All operations are logged to activity_log with actor='human'. */
 export class RequestCommands extends BaseCommand {
@@ -93,16 +95,35 @@ export class RequestCommands extends BaseCommand {
     return result.content;
   }
 
-  /** Cancels a pending or needs_clarification request. A pending clarification wait state of the request is
-   *  cancelled too, so the request file and the wait state agree. */
+  /** Cancels a pending or needs_clarification request and its pending clarification wait states.
+   *  Each wait cancel names the user, so it is journaled. A failed one is reported with its command. */
   async cancel(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
     const result = await this.requests.cancelRequest(requestId, reason);
     if (result.previous_status === RequestStatus.NEEDS_CLARIFICATION) {
+      const actor = await this.getUserIdentity();
+      const failed: string[] = [];
       for (const resumeToken of await this.pendingClarificationTokens(result.trace_id)) {
-        await this.waitStateCommands.cancel(resumeToken, reason);
+        try {
+          await this.waitStateCommands.cancel(resumeToken, reason, actor);
+        } catch (error) {
+          failed.push(`'exactl approval cancel ${ApprovalKind.WAIT}:${resumeToken}' (${(error as Error).message})`);
+        }
+      }
+      if (failed.length > 0) {
+        throw new ExaCtlError(
+          ExaCtlExitCode.FAILURE,
+          `Request ${result.trace_id} is cancelled, but a clarification wait state is still pending. Run ${
+            failed.join(", ")
+          }.`,
+        );
       }
     }
     return result;
+  }
+
+  /** The cancel that the TUI reaches through the request adapter. It is the same path as `cancel`. */
+  async cancelRequest(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
+    return await this.cancel(requestId, reason);
   }
 
   /** Resume tokens of the pending clarification wait states of a trace. A missing wait directory yields none. */

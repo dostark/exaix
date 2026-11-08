@@ -95,3 +95,19 @@ Deno.test("request cancel on a needs_clarification request also cancels its pend
   assertEquals(after.code, 0, after.stderr);
   assertNotMatch(after.stdout, /wait:/);
 });
+
+Deno.test("request cancel on a request file with a path in its trace id exits 2 and leaves the file", async () => {
+  const hostile = "request-hostile.md";
+  const original = requestFile("../outside", "pending");
+  const [cancel, shown] = await runExactlSeededWorkspace(
+    async (root) => {
+      await Deno.mkdir(join(root, REQUESTS_DIR), { recursive: true });
+      await Deno.writeTextFile(join(root, REQUESTS_DIR, hostile), original);
+    },
+    [["request", "cancel", hostile], ["request", "list", "--status", "pending"]],
+  );
+  assertEquals(cancel.code, EXIT_USAGE, cancel.stderr);
+  assertStringIncludes(cancel.stderr, "no valid trace id");
+  assertEquals(shown.code, 0, shown.stderr);
+  assertStringIncludes(shown.stdout, "status: pending");
+});
