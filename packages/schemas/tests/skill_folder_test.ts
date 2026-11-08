@@ -16,9 +16,10 @@ import {
   SkillAuthoringUpdateSchema,
   SkillFrontmatterSchema,
   SkillSidecarSchema,
+  SkillToolListSchema,
 } from "@exaix/schemas/skill_folder.ts";
 import { RuntimeSkillSchema } from "@exaix/schemas/runtime_skill.ts";
-import { SkillStatus } from "@exaix/core";
+import { RETIRED_TOOL_RENAMES, SkillStatus } from "@exaix/core";
 
 const VALID_FRONTMATTER = {
   name: "code-review",
@@ -100,4 +101,11 @@ Deno.test("[skill_folder] sidecar accepts dogfood related_skills and quality cri
   });
   assertEquals(parsed.related_skills, ["test-development", "exaix-development"]);
   assertThrows(() => SkillSidecarSchema.parse({ related_skills: ["Not A Slug"] }));
+});
+
+Deno.test("[skill_folder] a sidecar tool list that names a retired control-plane tool names the replacement", () => {
+  for (const [retired, replacement] of Object.entries(RETIRED_TOOL_RENAMES)) {
+    assertThrows(() => SkillToolListSchema.parse([retired]), Error, `Use '${replacement}' instead of '${retired}'`);
+    assertEquals(SkillToolListSchema.parse([replacement]), [replacement]);
+  }
 });

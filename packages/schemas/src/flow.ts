@@ -25,6 +25,7 @@ import {
   FlowStepType,
   McpToolName,
   ProviderCostTier,
+  retiredToolRenameHint,
   StepAttemptClass,
   StepExecutionDisposition,
   StepSideEffectClass,
@@ -54,7 +55,7 @@ const ZToolCall = z.object({
    *  retired native names and native case/whitespace variants fail the enum check. */
   tool: z.preprocess(
     (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-    z.nativeEnum(McpToolName),
+    z.nativeEnum(McpToolName, { error: (issue) => retiredToolRenameHint(`${issue.input}`) }),
   ),
   args: z.record(z.string(), JSONValueSchema).optional(),
   params: z.record(z.string(), JSONValueSchema).optional(),
@@ -248,7 +249,9 @@ const FlowStepSchemaBase = z.object({
   permitted_tools: z.array(
     z.preprocess(
       (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)], {
+        error: (issue) => retiredToolRenameHint(`${issue.input}`),
+      }),
     ),
   ).optional(),
   dependsOn: z.array(z.string()).default([]),

@@ -34,7 +34,7 @@
 
 ### Removed
 
-- The four old MCP tool names stop working: a call to one returns a tool-not-found error that names the new tool, and a blueprint, agent composer option or approval rule that lists one fails to load with a message that says which name to write instead, so update `permitted_tools` and approval rules in an existing workspace.
+- The four old MCP tool names stop working: a call to one returns a tool-not-found error that names the new tool, and a blueprint, agent composer option, flow step, skill sidecar or approval rule that lists one fails to load with a message that says which name to write instead, so update `permitted_tools`, flow steps, skill `tools` lists and approval rules in an existing workspace.
 - Every exactl command path in the table below stops working: each prints the command that replaces it on one line and exits with code 2.
 
 ### exactl command path renames

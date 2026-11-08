@@ -8,7 +8,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
-import { FlowStepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode, FlowStepOnErrorAction, RETIRED_TOOL_RENAMES } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
 Deno.test("FlowStepSchema: accepts execution_mode: declared", () => {
@@ -119,4 +119,22 @@ Deno.test("FlowStepSchema: strips unknown fields", () => {
   const result = FlowStepSchema.parse(step);
 
   assertEquals("unknown_field" in result, false);
+});
+
+Deno.test("FlowStepSchema: a step that names a retired control-plane tool fails with a message naming the replacement", () => {
+  for (const [retired, replacement] of Object.entries(RETIRED_TOOL_RENAMES)) {
+    const base = { id: "test-step", name: "Test Step", agent_role: "senior-coder" };
+    const hint = `Use '${replacement}' instead of '${retired}'`;
+    assertThrows(() => FlowStepSchema.parse({ ...base, permitted_tools: [retired] }), Error, hint);
+    assertThrows(
+      () =>
+        FlowStepSchema.parse({
+          ...base,
+          onError: { action: FlowStepOnErrorAction.COMPENSATE, compensate: [{ tool: retired, args: {} }] },
+        }),
+      Error,
+      hint,
+    );
+    assertEquals(FlowStepSchema.parse({ ...base, permitted_tools: [replacement] }).permitted_tools, [replacement]);
+  }
 });

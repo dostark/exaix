@@ -13,7 +13,7 @@
 
 import { z } from "zod";
 import { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
-import { canonicalizeToolName, McpToolName, SkillStatus, ToolName } from "@exaix/core";
+import { canonicalizeToolName, McpToolName, retiredToolRenameHint, SkillStatus, ToolName } from "@exaix/core";
 import { SkillQualityCriterionSchema, SkillTriggersSchema } from "./memory_bank.ts";
 import { EffortTierSchema } from "./model_intent.ts";
 
@@ -61,7 +61,9 @@ export const DOGFOOD_FRONTMATTER_KEYS: readonly string[] = [
 export const SkillToolListSchema = z.array(
   z.preprocess(
     (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-    z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+    z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)], {
+      error: (issue) => retiredToolRenameHint(`${issue.input}`),
+    }),
   ),
 );
 
