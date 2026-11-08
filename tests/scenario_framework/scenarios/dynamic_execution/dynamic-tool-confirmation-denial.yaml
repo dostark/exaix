@@ -59,3 +59,21 @@ steps:
         score_weight: 0.7
         kind: "command-output-contains"
         contains: ["No pending approvals."]
+
+  - id: "assert-decision-journaled"
+    type: "journal-assert"
+    name: "The denial is journaled once with its reason"
+    action_type: "tool_confirmation.decided"
+    expect_count: 1
+    payload_equals:
+      - path: "confirmation_id"
+        value: "123e4567-e89b-42d3-a456-426614174000"
+      - path: "approved"
+        value: false
+      - path: "reason"
+        value: "Denied by scenario framework"
+    output_criteria:
+      - id: "decision-event-present"
+        score_weight: 0.7
+        kind: "command-exit-code"
+        equals: 0

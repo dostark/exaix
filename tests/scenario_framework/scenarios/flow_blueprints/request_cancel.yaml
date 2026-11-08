@@ -1,0 +1,40 @@
+schema_version: "1.0.0"
+id: request-cancel
+title: A pending request is cancelled and the journal records the cancel
+pack: flow_blueprints
+tags: ["requests", "entity:request.cancelled", "cancel"]
+edition: solo
+request_fixture: fixtures/requests/flow_blueprints/request_cancel.md
+mode_support: [auto]
+portals: []
+steps:
+  - id: submit
+    type: exactl
+    command: request
+    args: [create, --file, "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: cancel
+    type: exactl
+    command: request
+    args: [cancel, "$TRACE_ID", --reason, "Cancelled by scenario framework"]
+    output_criteria:
+      - id: cancelled
+        kind: command-exit-code
+        equals: 0
+  - id: assert-cancel-journaled
+    type: journal-assert
+    action_type: request.cancelled
+    trace_scoped: true
+    expect_count: 1
+    payload_equals:
+      - path: previous_status
+        value: pending
+      - path: reason
+        value: Cancelled by scenario framework
+    output_criteria:
+      - id: cancel-event-present
+        kind: command-exit-code
+        equals: 0
