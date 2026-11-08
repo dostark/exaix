@@ -9,6 +9,7 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 import { ExaCtlVerb } from "./exactl_constants.ts";
+import { MAX_HINT_ECHO_CHARS, quoteArgument, quoteForShell } from "./exactl_shell.ts";
 
 /** One removed command path and the path that replaces it. */
 export interface IExaCtlRename {
@@ -28,12 +29,6 @@ interface IExaCtlOptionRename {
   readonly canonicalOption: string;
 }
 
-/** Longest typed text that a hint echoes back. */
-export const MAX_HINT_ECHO_CHARS = 200;
-
-const SINGLE_QUOTE = "'";
-const ESCAPED_SINGLE_QUOTE = `'\\''`;
-const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const LEGACY_JOURNAL = "journal";
 const LEGACY_MEMORY = "memory";
 const LEGACY_CONFIG = "config";
@@ -48,7 +43,6 @@ const OPTION_PREFIX = "-";
 const OPTION_TERMINATOR = "--";
 const OPTION_VALUE_SEPARATOR = "=";
 const AGENT_OPTION = "--agent";
-const PLAIN_WORD = /^[\w./:=@%+,-]+$/;
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: ["blueprint", "agent-role"], canonical: "exactl blueprint" },
@@ -138,20 +132,6 @@ export function findRename(typed: readonly string[]): IExaCtlRename | null {
     if (matches && isLegacyUse(row, typed) && (best === null || row.legacy.length > best.legacy.length)) best = row;
   }
   return best;
-}
-
-/** One shell word for the text. A plain word stays as it is, any other text is single quoted, and control characters go. */
-export function quoteArgument(text: string): string {
-  const clean = text.replace(CONTROL_CHARACTERS, "");
-  return PLAIN_WORD.test(clean)
-    ? clean
-    : `${SINGLE_QUOTE}${clean.replaceAll(SINGLE_QUOTE, ESCAPED_SINGLE_QUOTE)}${SINGLE_QUOTE}`;
-}
-
-/** Quotes text for a POSIX shell. Control characters go and long text is cut. */
-export function quoteForShell(text: string): string {
-  const clean = text.replace(CONTROL_CHARACTERS, "").slice(0, MAX_HINT_ECHO_CHARS);
-  return `${SINGLE_QUOTE}${clean.replaceAll(SINGLE_QUOTE, ESCAPED_SINGLE_QUOTE)}${SINGLE_QUOTE}`;
 }
 
 /** The one-line stderr hint for a rename row. */

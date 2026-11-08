@@ -24,23 +24,6 @@ export class ToolCommands extends BaseCommand {
     return await this.db.listPendingToolConfirmations();
   }
 
-  async pending(): Promise<void> {
-    const pending = await this.listPending();
-    if (pending.length === 0) {
-      console.log("No pending tool confirmations.");
-      return;
-    }
-
-    for (const request of pending) {
-      console.log([
-        request.id,
-        request.toolName,
-        request.stepId,
-        request.expiresAt,
-      ].join("\t"));
-    }
-  }
-
   async confirm(id: string): Promise<void> {
     const request = await this.requirePendingRequest(id);
     const decidedBy = await this.getUserIdentity();

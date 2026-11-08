@@ -25,25 +25,6 @@ function createRequest(id: string): ToolConfirmationRequest {
   };
 }
 
-Deno.test("ToolCommands: pending lists queued tool confirmations", async () => {
-  const { context, db, cleanup } = await createCliTestContext();
-  try {
-    const request = createRequest(crypto.randomUUID());
-    await db.insertToolConfirmationRequest(request);
-
-    const commands = new ToolCommands(context);
-    const output = await captureConsoleOutput(async () => {
-      await commands.pending();
-    });
-
-    assertStringIncludes(output, request.id);
-    assertStringIncludes(output, request.toolName);
-    assertStringIncludes(output, request.stepId!);
-  } finally {
-    await cleanup();
-  }
-});
-
 Deno.test("ToolCommands: confirm writes approval with CLI decidedBy identity", async () => {
   const { context, db, cleanup } = await createCliTestContext();
   try {

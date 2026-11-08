@@ -10,7 +10,7 @@
  * @related-files [packages/schemas/src/skill_folder.ts, packages/schemas/src/runtime_skill.ts]
  */
 
-import { assert, assertArrayIncludes, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertNotMatch, assertThrows } from "@std/assert";
 import {
   SkillAuthoringSchema,
   SkillAuthoringUpdateSchema,
@@ -108,4 +108,9 @@ Deno.test("[skill_folder] a sidecar tool list that names a retired control-plane
     assertThrows(() => SkillToolListSchema.parse([retired]), Error, `Use '${replacement}' instead of '${retired}'`);
     assertEquals(SkillToolListSchema.parse([replacement]), [replacement]);
   }
+});
+
+Deno.test("[skill_folder] a sidecar tool name that is not retired still fails and gets no rename hint", () => {
+  const error = assertThrows(() => SkillToolListSchema.parse(["not_a_tool"]), Error);
+  assertNotMatch(error.message, /instead of/);
 });

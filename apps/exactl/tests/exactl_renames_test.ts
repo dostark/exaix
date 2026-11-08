@@ -19,12 +19,11 @@ import {
   EXACTL_RENAMES,
   findOptionRename,
   findRename,
-  MAX_HINT_ECHO_CHARS,
   optionRenameHint,
-  quoteForShell,
   renameHint,
   requestCreateHint,
 } from "../src/exactl_renames.ts";
+import { MAX_HINT_ECHO_CHARS } from "../src/exactl_shell.ts";
 
 function rowFor(legacy: readonly string[]) {
   const row = findRename(legacy);
@@ -68,17 +67,6 @@ Deno.test("renameHint appends the typed words that follow the legacy prefix", ()
 Deno.test("renameHint quotes a trailing word that is not a plain token", () => {
   const typed = ["blueprint", "rm", "$(touch pwned)"];
   assertStringIncludes(renameHint(rowFor(typed), typed), "remove '$(touch pwned)'");
-});
-
-Deno.test("quoteForShell neutralizes quotes, $(…), backticks, newlines and control characters, and truncates at MAX_HINT_ECHO_CHARS", () => {
-  assertEquals(quoteForShell("Fix bug"), "'Fix bug'");
-  assertEquals(quoteForShell("it's"), `'it'\\''s'`);
-  assertEquals(quoteForShell("$(rm -rf ~)"), "'$(rm -rf ~)'");
-  assertEquals(quoteForShell("`id`"), "'`id`'");
-  assertEquals(quoteForShell("a\nb"), "'ab'");
-  assertEquals(quoteForShell("a\u0007b\u001b[31mc"), "'ab[31mc'");
-  const long = "a".repeat(MAX_HINT_ECHO_CHARS + 10);
-  assertEquals(quoteForShell(long), `'${"a".repeat(MAX_HINT_ECHO_CHARS)}'`);
 });
 
 Deno.test("the journal paths map to log paths", () => {

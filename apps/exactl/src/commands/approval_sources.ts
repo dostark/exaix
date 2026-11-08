@@ -15,7 +15,7 @@ import type { RequestCommands } from "./request_commands.ts";
 import type { ReviewCommands } from "./review_commands.ts";
 import type { ToolCommands } from "./tool_commands.ts";
 import type { WaitStateCommands } from "./wait_state_commands.ts";
-import { quoteArgument } from "../exactl_renames.ts";
+import { quoteArgument } from "../exactl_shell.ts";
 import { ApprovalKind } from "./approval_id.ts";
 
 export interface IApprovalListEntry {

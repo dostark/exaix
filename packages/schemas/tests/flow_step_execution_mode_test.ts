@@ -6,7 +6,7 @@
  * @description Verifies FlowStepSchema supports execution_mode and permitted_tools fields for Phase 56 dynamic tool selection.
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertNotMatch, assertThrows } from "@std/assert";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { FlowStepExecutionMode, FlowStepOnErrorAction, RETIRED_TOOL_RENAMES } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -137,4 +137,10 @@ Deno.test("FlowStepSchema: a step that names a retired control-plane tool fails 
     );
     assertEquals(FlowStepSchema.parse({ ...base, permitted_tools: [replacement] }).permitted_tools, [replacement]);
   }
+});
+
+Deno.test("FlowStepSchema: a tool name that is not retired still fails and gets no rename hint", () => {
+  const step = { id: "test-step", name: "Test Step", agent_role: "senior-coder", permitted_tools: ["not_a_tool"] };
+  const error = assertThrows(() => FlowStepSchema.parse(step), Error);
+  assertNotMatch(error.message, /instead of/);
 });

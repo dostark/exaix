@@ -9,7 +9,7 @@
 
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
-import { quoteArgument, quoteForShell } from "../exactl_renames.ts";
+import { quoteArgument, quoteForShell } from "../exactl_shell.ts";
 
 /** Every source of a pending human decision. */
 export enum ApprovalKind {
