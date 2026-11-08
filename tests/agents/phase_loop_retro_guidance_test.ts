@@ -51,6 +51,16 @@ Deno.test("Agent docs: next-steps checks importers after an export changes and r
   ]);
 });
 
+Deno.test("Agent docs: next-steps scopes the duplication gate to stubs, rebuilds binaries and copies submodules into a base worktree", async () => {
+  requireAll(await skill("next-steps"), "next-steps", [
+    "adds or edits test doubles, stubs, fixtures or command handlers",
+    "`ci.ts check` does not run it",
+    "cp -a <submodule>/. <dir>/<submodule>/",
+    "Tests that run a compiled binary read `dist/bin`",
+    "A stale build fails those tests",
+  ]);
+});
+
 Deno.test("Agent docs: review-phase-code traces every enforcing layer and requires falsifiable assertions", async () => {
   requireAll(await skill("review-phase-code"), "review-phase-code", [
     "trace every layer that can enforce it",

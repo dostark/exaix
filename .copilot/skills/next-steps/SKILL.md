@@ -170,6 +170,11 @@ REFACTOR + CI gates
   21a. Run `deno task check:duplication` when the step adds integration or scenario test code.
       The integration category has a small budget. Reuse the shared harnesses under
       `tests/integration/helpers/` instead of copying setup into each test.
+      Also run it when the step adds or edits test doubles, stubs, fixtures or command handlers.
+      The gate compares exact clone content, and `ci.ts check` does not run it. A small edit
+      inside an old clone therefore reports a new clone. Share a repeated block through one
+      helper or constant. Refresh the baseline with `--update-baseline` only for old clones that
+      moved.
   21b. Stage the step's files BEFORE running `deno run -A scripts/ci.ts check`. The bare-optional,
       comment-STE and commit-message gates read only staged files and pass vacuously on an
       empty index. Write comments as sentences of at most 20 words and no semicolons. A staged
@@ -186,10 +191,15 @@ REFACTOR + CI gates
       unless subsequent changes require another run.
       A failure you want to call pre-existing must reproduce at the phase's base commit:
       `git worktree add --detach <dir> <base-commit>`, run the test there, then remove the
-      worktree. Stashing only the current step proves nothing, because earlier steps of the
+      worktree. A new worktree has empty submodule directories, and `git submodule update`
+      can fail there. Copy the checked-out contents with `cp -a <submodule>/. <dir>/<submodule>/`.
+      Stashing only the current step proves nothing, because earlier steps of the
       same phase stay in the tree. A step closed without a full run (for example by a user
       instruction to use focused suites) may own the next full run's failures. Treat them as
       its own until the base commit says otherwise, and record that commit in the validation note.
+      Tests that run a compiled binary read `dist/bin`, not the source. After a CLI or daemon
+      change, rebuild with `deno task build:solo --compile` (Team: `deno run -A scripts/ci.ts
+      build --compile --edition team`) before the full run. A stale build fails those tests.
 
 Planning doc update
   22a. **Execute every test the step implements** before marking anything done.
