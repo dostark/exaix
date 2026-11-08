@@ -7,6 +7,7 @@
  * correctly falls back to interactive modes when required parameters are missing.
  */
 
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
@@ -86,15 +87,7 @@ Deno.test("[regression] EventLogger works with empty db (no methods) - should no
     writeToolConfirmationDecision: () => Promise.resolve(true),
     getToolConfirmationDecision: () => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
-    verifyJournalIntegrity: () =>
-      Promise.resolve({
-        ok: true,
-        rows_checked: 0,
-        unhashed_prefix: 0,
-        first_broken_id: null,
-        expected_hash: null,
-        actual_hash: null,
-      }),
+    verifyJournalIntegrity: () => Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT),
     close: () => Promise.resolve(),
   };
 

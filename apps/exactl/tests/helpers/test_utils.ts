@@ -10,6 +10,9 @@
 import type { ExaCtlTestContext } from "../../src/exactl.ts";
 import type * as ExaCtlModule from "../../src/exactl.ts";
 import * as exactlModule from "../../src/exactl.ts";
+import { RequestPriority, RequestSource } from "@exaix/core";
+import type { IRequest } from "@exaix/core/request";
+import { RequestStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
@@ -139,4 +142,20 @@ export async function expectExitWithLogs(
   }
   // This should never be reached, but TypeScript requires it
   throw new Error("Unexpected code path in expectExitWithLogs");
+}
+
+/** The result of a stubbed `request create` for a request that names a flow. */
+export function createdFlowRequest(flow: string, traceId: string): IRequest {
+  return {
+    filename: "/tmp/req.md",
+    trace_id: traceId,
+    priority: RequestPriority.HIGH,
+    flow,
+    path: "/tmp",
+    source: RequestSource.CLI as const,
+    created_by: "tester",
+    created: "now",
+    status: RequestStatus.PENDING,
+    agent_role: "agent",
+  };
 }

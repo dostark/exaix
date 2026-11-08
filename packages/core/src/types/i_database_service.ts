@@ -127,3 +127,13 @@ export interface IDatabaseService {
    */
   listPendingToolConfirmations(): Promise<ToolConfirmationRequest[]>;
 }
+
+/** The result of a journal that holds no rows. Test doubles and the fallback database return it. */
+export const EMPTY_JOURNAL_INTEGRITY_RESULT: IJournalIntegrityResult = {
+  ok: true,
+  rows_checked: 0,
+  unhashed_prefix: 0,
+  first_broken_id: null,
+  expected_hash: null,
+  actual_hash: null,
+};

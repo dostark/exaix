@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 import type { AnalysisMode, IRequestOptions } from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
 import { RequestManagerTuiSession } from "../src/request_manager_view.ts";
+import { createStubCancelResult } from "../src/tui_dashboard_mocks.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequest, IRequestAnalysis, IRequestCancelResult } from "@exaix/core/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
@@ -107,12 +108,7 @@ class MockRequestService implements IRequestService {
   }
 
   cancelRequest(requestId: string, _reason: string | undefined): Promise<IRequestCancelResult> {
-    return Promise.resolve({
-      trace_id: requestId,
-      filename: `request-${requestId}.md`,
-      previous_status: RequestStatus.PENDING,
-      status: RequestStatus.CANCELLED,
-    });
+    return Promise.resolve(createStubCancelResult(requestId));
   }
 
   getAnalysis(_requestId: string): Promise<IRequestAnalysis | null> {

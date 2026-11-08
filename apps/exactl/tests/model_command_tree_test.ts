@@ -3,24 +3,13 @@
  * @path apps/exactl/tests/model_command_tree_test.ts
  * @description Verifies the model noun, its route sub-noun and the removal of the models, routing and config model paths.
  * @architectural-layer Test
- * @dependencies [@std/assert, apps/exactl/src/docs/command_tree_walk.ts]
+ * @dependencies [@std/assert, apps/exactl/tests/helpers/command_tree.ts]
  * @related-files [apps/exactl/src/command_builders/model_command.ts, apps/exactl/src/exactl.ts]
  */
 
 import { assertArrayIncludes, assertEquals } from "@std/assert";
-import { createExaCtlCommand } from "../src/exactl.ts";
-import { walkCommandTree } from "../src/docs/command_tree_walk.ts";
 import { ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb } from "../src/exactl_constants.ts";
-
-const nodes = walkCommandTree(createExaCtlCommand());
-
-function childrenOf(parent: string): string[] {
-  const depth = parent.split(" ").length + 1;
-  return nodes
-    .filter((node) => node.path.length === depth && node.path.slice(0, -1).join(" ") === parent)
-    .map((node) => node.path[depth - 1])
-    .sort();
-}
+import { childrenOf, nodes } from "./helpers/command_tree.ts";
 
 Deno.test("model exposes list, refresh, use, candidates and route", () => {
   const expected = [

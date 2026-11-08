@@ -148,27 +148,34 @@ export async function handlePlanShow(
 }
 
 /**
- * Handle plan approve action. The ids are approved in order and the first failure stops the run.
+ * Approves the ids in order with one decision call each. The first failure prints the ids already decided and exits 1.
  */
-export async function handlePlanApprove(
+async function approveInOrder(
   context: IPlanActionContext,
+  label: string,
   ids: readonly string[],
+  approveOne: (id: string) => Promise<void>,
 ): Promise<void> {
-  const { planCommands, display } = context;
   const decided: string[] = [];
-
   try {
     for (const id of ids) {
-      await planCommands.approve(id);
+      await approveOne(id);
       decided.push(id);
     }
   } catch (error) {
-    display.error("cli.error", "plan approve", {
+    context.display.error("cli.error", label, {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
       ...decidedField(decided),
     });
     Deno.exit(1);
   }
+}
+
+/**
+ * Handle plan approve action. The ids are approved in order and the first failure stops the run.
+ */
+export function handlePlanApprove(context: IPlanActionContext, ids: readonly string[]): Promise<void> {
+  return approveInOrder(context, "plan approve", ids, (id) => context.planCommands.approve(id));
 }
 
 /**
@@ -290,28 +297,13 @@ export async function handlePlanAmendmentShow(
 /**
  * Handle plan amendment approve action. The ids are approved in order and the first failure stops the run.
  */
-export async function handlePlanAmendmentApprove(
-  context: IPlanActionContext,
-  ids: readonly string[],
-): Promise<void> {
-  const { planCommands, display } = context;
-  const decided: string[] = [];
-
-  try {
-    for (const id of ids) {
-      await planCommands.approveAmendment(id);
-      display.info("plan.amendment.approved", id, {
-        message: "Amendment approved and applied. Plan status updated to 'approved'.",
-      });
-      decided.push(id);
-    }
-  } catch (error) {
-    display.error("cli.error", "plan amendment approve", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      ...decidedField(decided),
+export function handlePlanAmendmentApprove(context: IPlanActionContext, ids: readonly string[]): Promise<void> {
+  return approveInOrder(context, "plan amendment approve", ids, async (id) => {
+    await context.planCommands.approveAmendment(id);
+    context.display.info("plan.amendment.approved", id, {
+      message: "Amendment approved and applied. Plan status updated to 'approved'.",
     });
-    Deno.exit(1);
-  }
+  });
 }
 
 /**

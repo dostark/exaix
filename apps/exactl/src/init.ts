@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts", apps/exactl/src/exactl.ts]
  */
 
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import * as pathBuilders from "@exaix/shared";
 import { ExaPathDefaults } from "@exaix/shared";
 import { join } from "@std/path";
@@ -96,15 +97,7 @@ function createDatabaseStub(): IDatabaseService {
     writeToolConfirmationDecision: () => Promise.resolve(false),
     getToolConfirmationDecision: () => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
-    verifyJournalIntegrity: () =>
-      Promise.resolve({
-        ok: true,
-        rows_checked: 0,
-        unhashed_prefix: 0,
-        first_broken_id: null,
-        expected_hash: null,
-        actual_hash: null,
-      }),
+    verifyJournalIntegrity: () => Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT),
   };
 }
 

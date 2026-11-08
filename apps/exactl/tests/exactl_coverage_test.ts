@@ -35,7 +35,7 @@ import type { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
-import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { createdFlowRequest, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
@@ -1008,18 +1008,7 @@ Deno.test("request create with flow option", async () => {
       assertEquals(desc, "Code review task");
       assertEquals(opts?.flow, "code-review");
       assertEquals(opts?.priority, "high" as IRequestOptions["priority"]);
-      return Promise.resolve({
-        filename: "/tmp/req.md",
-        trace_id: "t-flow",
-        priority: RequestPriority.HIGH,
-        flow: "code-review",
-        path: "/tmp",
-        source: RequestSource.CLI as const,
-        created_by: "tester",
-        created: "now",
-        status: RequestStatus.PENDING,
-        agent_role: "agent",
-      });
+      return Promise.resolve(createdFlowRequest("code-review", "t-flow"));
     };
     await captureConsoleOutput(async () => {
       await mod.__test_command.parse([

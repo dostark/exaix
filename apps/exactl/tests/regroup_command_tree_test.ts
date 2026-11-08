@@ -3,23 +3,12 @@
  * @path apps/exactl/tests/regroup_command_tree_test.ts
  * @description Pins the git, portal, config and mcp trees after their leaves moved under sub-nouns.
  * @architectural-layer Test
- * @dependencies [@std/assert, apps/exactl/src/docs/command_tree_walk.ts]
+ * @dependencies [@std/assert, apps/exactl/tests/helpers/command_tree.ts]
  * @related-files [apps/exactl/src/command_builders/git_command.ts, apps/exactl/src/command_builders/mcp_command.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { createExaCtlCommand } from "../src/exactl.ts";
-import { walkCommandTree } from "../src/docs/command_tree_walk.ts";
-
-const nodes = walkCommandTree(createExaCtlCommand());
-
-function childrenOf(parent: string): string[] {
-  const depth = parent.split(" ").length + 1;
-  return nodes
-    .filter((node) => node.path.length === depth && node.path.slice(0, -1).join(" ") === parent)
-    .map((node) => node.path[depth - 1])
-    .sort();
-}
+import { childrenOf, nodes } from "./helpers/command_tree.ts";
 
 Deno.test("git has status, log, branch and worktree", () => {
   assertEquals(childrenOf("git"), ["branch", "log", "status", "worktree"]);

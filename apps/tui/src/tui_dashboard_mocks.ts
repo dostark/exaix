@@ -5,6 +5,7 @@
  * @architectural-layer TUI
  * @related-files ["apps/tui/src/tui_dashboard.ts"]
  */
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import {
   AgentHealth,
   ConfidenceAssessmentLevel,
@@ -271,14 +272,7 @@ export class MockLogService implements IDatabaseService, IJournalService {
   }
 
   verifyJournalIntegrity(): Promise<IJournalIntegrityResult> {
-    return Promise.resolve({
-      ok: true,
-      rows_checked: 0,
-      unhashed_prefix: 0,
-      first_broken_id: null,
-      expected_hash: null,
-      actual_hash: null,
-    });
+    return Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT);
   }
 
   getActivitiesByTrace(_traceId: string): IActivityRecord[] {
@@ -340,6 +334,16 @@ export class MockDaemonService implements IDaemonService {
   getErrors(): Promise<string[]> {
     return Promise.resolve([]);
   }
+}
+
+/** The result of a stubbed request cancel: a pending request that is now cancelled. */
+export function createStubCancelResult(requestId: string): IRequestCancelResult {
+  return {
+    trace_id: requestId,
+    filename: `request-${requestId}.md`,
+    previous_status: RequestStatus.PENDING,
+    status: RequestStatus.CANCELLED,
+  };
 }
 
 /**
@@ -408,12 +412,7 @@ export class MockRequestService implements IRequestService {
     return Promise.resolve(true);
   }
   cancelRequest(requestId: string, _reason: Opt<string, Reason.TestStub>): Promise<IRequestCancelResult> {
-    return Promise.resolve({
-      trace_id: requestId,
-      filename: `request-${requestId}.md`,
-      previous_status: RequestStatus.PENDING,
-      status: RequestStatus.CANCELLED,
-    });
+    return Promise.resolve(createStubCancelResult(requestId));
   }
   getAnalysis(_requestId: string): Promise<IRequestAnalysis | null> {
     return Promise.resolve(null);

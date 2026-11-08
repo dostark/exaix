@@ -29,7 +29,6 @@ import {
   StepAttemptClass,
   StepExecutionDisposition,
   StepSideEffectClass,
-  ToolName,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 import { VotingGroupConfigSchema } from "./voting.ts";
@@ -45,6 +44,7 @@ import {
 import { resolveConfigurableBounds } from "@exaix/core/config";
 
 import { DEFAULT_FLOW_VERSION } from "./constants.ts";
+import { DeclaredToolNameSchema } from "./tool_name.ts";
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
 });
@@ -246,14 +246,7 @@ const FlowStepSchemaBase = z.object({
   execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */
   /** Tools this step is permitted to use (from McpToolName or ToolName). */
-  permitted_tools: z.array(
-    z.preprocess(
-      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)], {
-        error: (issue) => retiredToolRenameHint(`${issue.input}`),
-      }),
-    ),
-  ).optional(),
+  permitted_tools: z.array(DeclaredToolNameSchema).optional(),
   dependsOn: z.array(z.string()).default([]),
   input: z.object({
     source: z.nativeEnum(FlowInputSource).default(FlowInputSource.REQUEST),

@@ -9,11 +9,9 @@
 
 import "./helpers/set_test_mode.ts";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { RequestPriority, RequestSource } from "@exaix/core";
-import { RequestStatus } from "@exaix/core/status";
 import type { IRequestOptions } from "@exaix/core/types";
 import { captureConsoleOutput } from "./helpers/console_utils.ts";
-import { withTestMod } from "./helpers/test_utils.ts";
+import { createdFlowRequest, withTestMod } from "./helpers/test_utils.ts";
 import { runExactlSequenceInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
 const FLOW_ID = "code-review";
@@ -30,18 +28,7 @@ async function captureCreate(argv: string[]): Promise<ICreateCall[]> {
   await withTestMod(async (mod, ctx) => {
     ctx.requestCommands.create = (description: string, options?: IRequestOptions) => {
       calls.push({ description, options });
-      return Promise.resolve({
-        filename: "/tmp/req.md",
-        trace_id: "t-flow",
-        priority: RequestPriority.HIGH,
-        flow: FLOW_ID,
-        path: "/tmp",
-        source: RequestSource.CLI as const,
-        created_by: "tester",
-        created: "now",
-        status: RequestStatus.PENDING,
-        agent_role: "agent",
-      });
+      return Promise.resolve(createdFlowRequest(FLOW_ID, "t-flow"));
     };
     await captureConsoleOutput(async () => {
       await mod.__test_command.parse(argv);

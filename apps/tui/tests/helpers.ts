@@ -7,6 +7,7 @@
  * session simulators, and assertion utilities for all terminal views.
  */
 
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
@@ -480,14 +481,7 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
     return Promise.resolve();
   }
   verifyJournalIntegrity() {
-    return Promise.resolve({
-      ok: true,
-      rows_checked: 0,
-      unhashed_prefix: 0,
-      first_broken_id: null,
-      expected_hash: null,
-      actual_hash: null,
-    });
+    return Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT);
   }
   preparedGet<T>(_query: string, _params?: SqliteParam[]) {
     return Promise.resolve({} as T);

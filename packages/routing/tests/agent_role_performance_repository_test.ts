@@ -3,6 +3,7 @@
  * @related-files []
  * @architectural-layer Services
  * @description TODO: Add description */
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import { assert, assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
@@ -25,15 +26,7 @@ const makeStubDb = (records: IActivityRecord[]): IDatabaseService => ({
   writeToolConfirmationDecision: () => Promise.resolve(true),
   getToolConfirmationDecision: () => Promise.resolve(null),
   listPendingToolConfirmations: () => Promise.resolve([]),
-  verifyJournalIntegrity: () =>
-    Promise.resolve({
-      ok: true,
-      rows_checked: 0,
-      unhashed_prefix: 0,
-      first_broken_id: null,
-      expected_hash: null,
-      actual_hash: null,
-    }),
+  verifyJournalIntegrity: () => Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT),
 });
 
 Deno.test("[AgentRolePerformanceRepository] aggregates performance by agent role", async () => {

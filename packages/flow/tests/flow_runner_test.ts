@@ -5,6 +5,7 @@
  * state propagation between steps, and fail-fast behavior during workflow interruptions.
  */
 
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
@@ -1873,14 +1874,7 @@ class MockDatabaseService {
     return Promise.resolve([]);
   }
   verifyJournalIntegrity() {
-    return Promise.resolve({
-      ok: true,
-      rows_checked: 0,
-      unhashed_prefix: 0,
-      first_broken_id: null,
-      expected_hash: null,
-      actual_hash: null,
-    });
+    return Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT);
   }
 }
 

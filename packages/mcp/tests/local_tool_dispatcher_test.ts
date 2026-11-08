@@ -5,6 +5,7 @@
  * @architectural-layer MCP
  * @description Unit tests for LocalToolDispatcher tool routing and canonical Map-based construction.
  */
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { appendToolChoiceHint, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
@@ -40,15 +41,7 @@ const mockContext: IApplicationContext = createStubContext({
     writeToolConfirmationDecision: () => Promise.resolve(true),
     getToolConfirmationDecision: () => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
-    verifyJournalIntegrity: () =>
-      Promise.resolve({
-        ok: true,
-        rows_checked: 0,
-        unhashed_prefix: 0,
-        first_broken_id: null,
-        expected_hash: null,
-        actual_hash: null,
-      }),
+    verifyJournalIntegrity: () => Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT),
     close: () => Promise.resolve(),
     preparedGet: () => Promise.resolve(null),
     preparedAll: () => Promise.resolve([]),

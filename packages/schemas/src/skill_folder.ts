@@ -7,15 +7,16 @@
  *   Agent Skills specification does not allow; the dogfood root validates the named
  *   knowledge-base exceptions separately.
  * @architectural-layer Schemas
- * @dependencies [zod, @exaix/core, ./memory_bank.ts, ./model_intent.ts]
+ * @dependencies [zod, @exaix/core, ./memory_bank.ts, ./model_intent.ts, ./tool_name.ts]
  * @related-files [packages/schemas/src/runtime_skill.ts, packages/core/src/skills/skill_snapshot.ts]
  */
 
 import { z } from "zod";
 import { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
-import { canonicalizeToolName, McpToolName, retiredToolRenameHint, SkillStatus, ToolName } from "@exaix/core";
+import { SkillStatus } from "@exaix/core";
 import { SkillQualityCriterionSchema, SkillTriggersSchema } from "./memory_bank.ts";
 import { EffortTierSchema } from "./model_intent.ts";
+import { DeclaredToolNameSchema } from "./tool_name.ts";
 
 /** Spec slug: lowercase ASCII alphanumerics in single-hyphen-separated groups, 1-64 characters. */
 export const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -58,14 +59,7 @@ export const DOGFOOD_FRONTMATTER_KEYS: readonly string[] = [
 ];
 
 /** The tools a sidecar may declare. Reuses the canonical tool-name preprocessing and union. */
-export const SkillToolListSchema = z.array(
-  z.preprocess(
-    (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-    z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)], {
-      error: (issue) => retiredToolRenameHint(`${issue.input}`),
-    }),
-  ),
-);
+export const SkillToolListSchema = z.array(DeclaredToolNameSchema);
 
 /** Compatibility projection stored in the sidecar as `applies_to`. */
 const SkillAppliesToSchema = z.object({

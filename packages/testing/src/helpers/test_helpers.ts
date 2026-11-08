@@ -8,6 +8,7 @@
  * of mock files, request factories, and common visual primitives.
  */
 
+import { EMPTY_JOURNAL_INTEGRITY_RESULT } from "@exaix/core/types";
 import { ExaPathDefaults } from "@exaix/shared";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
@@ -89,15 +90,7 @@ export function createStubDb(
       Promise.resolve(true),
     getToolConfirmationDecision: (_id: string) => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
-    verifyJournalIntegrity: () =>
-      Promise.resolve({
-        ok: true,
-        rows_checked: 0,
-        unhashed_prefix: 0,
-        first_broken_id: null,
-        expected_hash: null,
-        actual_hash: null,
-      }),
+    verifyJournalIntegrity: () => Promise.resolve(EMPTY_JOURNAL_INTEGRITY_RESULT),
     close: () => Promise.resolve(),
   };
 
