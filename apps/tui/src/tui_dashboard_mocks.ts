@@ -305,8 +305,8 @@ export class MockLogService implements IDatabaseService, IJournalService {
     return Promise.resolve();
   }
 
-  writeToolConfirmationDecision(): Promise<void> {
-    return Promise.resolve();
+  writeToolConfirmationDecision(): Promise<boolean> {
+    return Promise.resolve(true);
   }
 
   getToolConfirmationDecision(): Promise<null> {

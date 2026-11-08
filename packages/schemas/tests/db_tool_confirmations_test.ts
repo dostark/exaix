@@ -71,3 +71,20 @@ Deno.test("DatabaseService tool confirmations: get decision returns null for mis
     await cleanup();
   }
 });
+
+Deno.test("DatabaseService tool confirmations: a second decision is refused and the first one stays", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const request = createRequest(crypto.randomUUID());
+    await db.insertToolConfirmationRequest(request);
+    const first = { approved: false, reason: "Not now", decidedAt: "2026-05-18T10:01:00.000Z", decidedBy: "first" };
+    const second = { approved: true, decidedAt: "2026-05-18T10:01:05.000Z", decidedBy: "second" };
+
+    assertEquals(await db.writeToolConfirmationDecision(request.id, first), true);
+    assertEquals(await db.writeToolConfirmationDecision(request.id, second), false);
+
+    assertEquals(await db.getToolConfirmationDecision(request.id), { id: request.id, ...first });
+  } finally {
+    await cleanup();
+  }
+});

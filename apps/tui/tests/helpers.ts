@@ -516,8 +516,8 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   insertToolConfirmationRequest(): Promise<void> {
     return Promise.resolve();
   }
-  writeToolConfirmationDecision(): Promise<void> {
-    return Promise.resolve();
+  writeToolConfirmationDecision(): Promise<boolean> {
+    return Promise.resolve(true);
   }
   getToolConfirmationDecision() {
     return Promise.resolve(null);

@@ -58,7 +58,7 @@ function createStubDatabase(
     getActivitiesByActionTypeSafe: () => Promise.resolve([]),
     getRecentActivity: () => Promise.resolve([]),
     insertToolConfirmationRequest: () => Promise.resolve(),
-    writeToolConfirmationDecision: () => Promise.resolve(),
+    writeToolConfirmationDecision: () => Promise.resolve(true),
     getToolConfirmationDecision: () => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
     verifyJournalIntegrity: () =>

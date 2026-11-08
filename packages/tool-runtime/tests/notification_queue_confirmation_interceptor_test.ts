@@ -5,6 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import {
   TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT,
   TOOL_CONFIRMATION_EVENT_REQUESTED,
@@ -169,6 +170,38 @@ Deno.test("NotificationQueueConfirmationInterceptor: logs requested event exactl
     assertEquals(activityJournal.getEntries()[0].toolName, request.toolName);
     assertEquals(activityJournal.getEntries()[0].stepId, request.stepId);
     assertEquals(activityJournal.getEntries()[0].traceId, request.traceId);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("NotificationQueueConfirmationInterceptor: a human decision that lands before the timeout write wins", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const request = createToolConfirmationRequest();
+    const human = { approved: true, decidedAt: "2026-05-18T10:01:00.000Z", decidedBy: "human" };
+    const original = db.getToolConfirmationDecision.bind(db);
+    let reads = 0;
+    const staleRead = stub(db, "getToolConfirmationDecision", async (id: string) => {
+      if (reads++ > 0) return await original(id);
+      await db.writeToolConfirmationDecision(id, human);
+      return null;
+    });
+    try {
+      const interceptor = new NotificationQueueConfirmationInterceptor(
+        db,
+        new MockNotificationService(),
+        new MockActivityJournal(),
+        () => Promise.resolve(),
+        () => Date.parse(request.expiresAt) + 1,
+      );
+
+      const decision = await interceptor.requestApproval(request);
+
+      assertEquals(decision, { id: request.id, ...human });
+    } finally {
+      staleRead.restore();
+    }
   } finally {
     await cleanup();
   }

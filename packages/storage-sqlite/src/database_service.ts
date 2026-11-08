@@ -513,11 +513,11 @@ export class DatabaseService implements IDatabaseService {
   async writeToolConfirmationDecision(
     id: string,
     decision: Omit<ToolConfirmationDecision, "id">,
-  ): Promise<void> {
-    await this.preparedRun(
+  ): Promise<boolean> {
+    const changed = await this.preparedRun(
       `UPDATE pending_tool_confirmations
        SET approved = ?, reason = ?, decided_at = ?, decided_by = ?
-       WHERE id = ?`,
+       WHERE id = ? AND decided_at IS NULL`,
       [
         decision.approved ? 1 : 0,
         decision.reason ?? null,
@@ -526,6 +526,7 @@ export class DatabaseService implements IDatabaseService {
         id,
       ],
     );
+    return changed > 0;
   }
 
   async getToolConfirmationDecision(id: string): Promise<ToolConfirmationDecision | null> {

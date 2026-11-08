@@ -15,6 +15,7 @@ import { runExactlSeededWorkspace } from "./helpers/exactl_cli_process.ts";
 
 const EXIT_USAGE = 2;
 const EXIT_NOT_FOUND = 3;
+const EXIT_STATE_CONFLICT = 4;
 const TOOL_ID = "123e4567-e89b-42d3-a456-426614174000";
 const TOKEN = "550e8400-e29b-41d4-a716-446655440001";
 const WAIT_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -97,5 +98,17 @@ Deno.test("approval exits 2 for a plan ref and a wait-only verb on a tool ref, a
   assertEquals(plan.code, EXIT_USAGE, plan.stderr);
   assertStringIncludes(plan.stderr, "exactl plan approve p-42");
   assertEquals(amend.code, EXIT_USAGE, amend.stderr);
+  assertEquals(unknown.code, EXIT_NOT_FOUND, unknown.stderr);
+});
+
+Deno.test("approval approve tool:<id> twice exits 4 the second time and an unknown tool id exits 3", async () => {
+  const unknownId = "dddd4444-0000-4000-8000-000000000004";
+  const [first, second, unknown] = await runExactlSeededWorkspace(seed, [
+    ["approval", "approve", `tool:${TOOL_ID}`],
+    ["approval", "reject", `tool:${TOOL_ID}`],
+    ["approval", "approve", `tool:${unknownId}`],
+  ]);
+  assertEquals(first.code, 0, first.stderr);
+  assertEquals(second.code, EXIT_STATE_CONFLICT, second.stderr);
   assertEquals(unknown.code, EXIT_NOT_FOUND, unknown.stderr);
 });

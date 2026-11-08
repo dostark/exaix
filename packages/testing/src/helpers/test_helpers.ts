@@ -85,7 +85,8 @@ export function createStubDb(
     },
     getRecentActivity: (_limit?: Opt<number, Reason.AbstractBoundary>) => Promise.resolve([]),
     insertToolConfirmationRequest: (_request: ToolConfirmationRequest) => Promise.resolve(),
-    writeToolConfirmationDecision: (_id: string, _decision: Omit<ToolConfirmationDecision, "id">) => Promise.resolve(),
+    writeToolConfirmationDecision: (_id: string, _decision: Omit<ToolConfirmationDecision, "id">) =>
+      Promise.resolve(true),
     getToolConfirmationDecision: (_id: string) => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
     verifyJournalIntegrity: () =>

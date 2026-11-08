@@ -8,9 +8,10 @@
 
 import { z } from "zod";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { DomainEventType, type IToolConfirmationDecidedPayload } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 
 const DEFAULT_DENIAL_REASON = "User declined";
 
@@ -43,7 +44,7 @@ export class ToolCommands extends BaseCommand {
   async confirm(id: string): Promise<void> {
     const request = await this.requirePendingRequest(id);
     const decidedBy = await this.getUserIdentity();
-    await this.db.writeToolConfirmationDecision(id, {
+    await this.writeDecision(id, {
       approved: true,
       decidedAt: new Date().toISOString(),
       decidedBy,
@@ -55,7 +56,7 @@ export class ToolCommands extends BaseCommand {
   async deny(id: string, reason: string = DEFAULT_DENIAL_REASON): Promise<void> {
     const request = await this.requirePendingRequest(id);
     const decidedBy = await this.getUserIdentity();
-    await this.db.writeToolConfirmationDecision(id, {
+    await this.writeDecision(id, {
       approved: false,
       reason,
       decidedAt: new Date().toISOString(),
@@ -82,30 +83,34 @@ export class ToolCommands extends BaseCommand {
     await this.display.info(DomainEventType.ToolConfirmationDecided, request.id, { ...payload }, request.traceId);
   }
 
+  /** A confirmation is decided once. The write refuses a second decision, so a lost race exits with a state conflict. */
+  private async writeDecision(id: string, decision: Omit<ToolConfirmationDecision, "id">): Promise<void> {
+    if (!(await this.db.writeToolConfirmationDecision(id, decision))) {
+      throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, `Tool confirmation ${id} was decided meanwhile.`);
+    }
+  }
+
   private async requirePendingRequest(id: string): Promise<ToolConfirmationRequest> {
-    const parseResult = z.string().uuid().safeParse(id);
-    if (!parseResult.success) {
-      throw new Error(`Invalid confirmation ID: must be a valid UUID. Got: "${id}"`);
+    if (!z.string().uuid().safeParse(id).success) {
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, "Invalid confirmation ID: must be a valid UUID.");
     }
 
-    const pending = await this.db.listPendingToolConfirmations();
-    const request = pending.find((entry) => entry.id === id);
+    const request = (await this.db.listPendingToolConfirmations()).find((entry) => entry.id === id);
     if (!request) {
-      this.fail(`No pending tool confirmation found for ID: ${id}`);
+      const decided = await this.db.getToolConfirmationDecision(id);
+      if (decided !== null) {
+        throw new ExaCtlError(
+          ExaCtlExitCode.STATE_CONFLICT,
+          `Tool confirmation ${id} is already decided (approved: ${decided.approved}).`,
+        );
+      }
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No pending tool confirmation found for ID: ${id}`);
     }
 
     if (Date.parse(request.expiresAt) <= Date.now()) {
-      this.fail(`Tool confirmation has expired: ${id}`);
+      throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, `Tool confirmation has expired: ${id}`);
     }
 
     return request;
-  }
-
-  private fail(message: string): never {
-    if (Deno.env.get("EXA_TEST_CLI_MODE") === "1") {
-      throw new Error(message);
-    }
-    console.error(message);
-    Deno.exit(1);
   }
 }

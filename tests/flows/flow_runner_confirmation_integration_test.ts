@@ -185,13 +185,13 @@ Deno.test("FlowRunner confirmation integration: approval executes the tool and c
   try {
     await writeBlueprint(tempDir);
 
-    const notificationService = new DecisionWritingNotificationService((proposalId) =>
-      db.writeToolConfirmationDecision(proposalId, {
+    const notificationService = new DecisionWritingNotificationService(async (proposalId) => {
+      await db.writeToolConfirmationDecision(proposalId, {
         approved: true,
         decidedAt: "2026-05-18T10:00:30.000Z",
         decidedBy: "test-approver",
-      })
-    );
+      });
+    });
 
     const context = createStubContext({
       config: createStubConfig(config),
@@ -244,14 +244,14 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
   try {
     await writeBlueprint(tempDir);
 
-    const notificationService = new DecisionWritingNotificationService((proposalId) =>
-      db.writeToolConfirmationDecision(proposalId, {
+    const notificationService = new DecisionWritingNotificationService(async (proposalId) => {
+      await db.writeToolConfirmationDecision(proposalId, {
         approved: false,
         reason: "User declined",
         decidedAt: "2026-05-18T10:00:45.000Z",
         decidedBy: "test-reviewer",
-      })
-    );
+      });
+    });
 
     const context = createStubContext({
       config: createStubConfig(config),

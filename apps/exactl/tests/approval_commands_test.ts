@@ -310,3 +310,56 @@ Deno.test("a failing tool source prints a stderr notice and the wait rows still 
     await env.cleanup();
   }
 });
+
+Deno.test("a second decision on one tool confirmation is refused and journals one decided event", async () => {
+  const env = await createCliTestContext();
+  try {
+    const request = makeToolRequest(TOOL_ID);
+    await env.db.insertToolConfirmationRequest(request);
+    const commands = makeCommands(env);
+    await commands.reject(`tool:${TOOL_ID}`, { reason: "first" });
+    const stalePending = stub(env.db, "listPendingToolConfirmations", () => Promise.resolve([request]));
+    try {
+      const error = await assertRejects(() => commands.approve(`tool:${TOOL_ID}`, {}), ExaCtlError);
+      assertEquals(error.code, ExaCtlExitCode.STATE_CONFLICT);
+    } finally {
+      stalePending.restore();
+    }
+    await env.db.waitForFlush();
+    assertEquals((await env.db.getToolConfirmationDecision(TOOL_ID))?.approved, false);
+    const rows = env.db.instance.prepare("SELECT payload FROM activity WHERE action_type = ?").all(
+      DomainEventType.ToolConfirmationDecided,
+    );
+    assertEquals(rows.length, 1);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("approve after reject exits 4 and the stored decision stays denied", async () => {
+  const env = await createCliTestContext();
+  try {
+    await env.db.insertToolConfirmationRequest(makeToolRequest(TOOL_ID));
+    const commands = makeCommands(env);
+    await commands.reject(`tool:${TOOL_ID}`, { reason: "first" });
+    const error = await assertRejects(() => commands.approve(`tool:${TOOL_ID}`, {}), ExaCtlError);
+    assertEquals(error.code, ExaCtlExitCode.STATE_CONFLICT);
+    assertStringIncludes(error.message, "already");
+    assertEquals((await env.db.getToolConfirmationDecision(TOOL_ID))?.approved, false);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("an unknown or malformed tool confirmation id exits 3 or 2", async () => {
+  const env = await createCliTestContext();
+  try {
+    const commands = makeCommands(env);
+    const unknown = await assertRejects(() => commands.approve(`tool:${TOOL_ID}`, {}), ExaCtlError);
+    assertEquals(unknown.code, ExaCtlExitCode.NOT_FOUND);
+    const malformed = await assertRejects(() => commands.approve("tool:not-a-uuid", {}), ExaCtlError);
+    assertEquals(malformed.code, ExaCtlExitCode.USAGE);
+  } finally {
+    await env.cleanup();
+  }
+});

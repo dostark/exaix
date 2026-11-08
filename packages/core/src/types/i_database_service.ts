@@ -111,13 +111,11 @@ export interface IDatabaseService {
    */
   insertToolConfirmationRequest(request: ToolConfirmationRequest): Promise<void>;
 
-  /**
-   * Persist a decision for a previously queued tool confirmation request.
-   */
+  /** Persist the decision of a queued tool confirmation. It returns false when the request has a decision or is unknown. */
   writeToolConfirmationDecision(
     id: string,
     decision: Omit<ToolConfirmationDecision, "id">,
-  ): Promise<void>;
+  ): Promise<boolean>;
 
   /**
    * Retrieve a persisted tool confirmation decision.

@@ -83,7 +83,7 @@ Deno.test("[regression] EventLogger works with empty db (no methods) - should no
     getActivitiesByActionTypeSafe: () => Promise.resolve([]),
     getRecentActivity: () => Promise.resolve([]),
     insertToolConfirmationRequest: () => Promise.resolve(),
-    writeToolConfirmationDecision: () => Promise.resolve(),
+    writeToolConfirmationDecision: () => Promise.resolve(true),
     getToolConfirmationDecision: () => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
     verifyJournalIntegrity: () =>

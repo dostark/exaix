@@ -63,8 +63,10 @@ export class NotificationQueueConfirmationInterceptor implements IToolConfirmati
           decidedAt: new Date(this.clockFn()).toISOString(),
           decidedBy: TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT,
         } satisfies Omit<ToolConfirmationDecision, "id">;
-        await this.db.writeToolConfirmationDecision(request.id, timeoutDecision);
-        return { id: request.id, ...timeoutDecision };
+        if (await this.db.writeToolConfirmationDecision(request.id, timeoutDecision)) {
+          return { id: request.id, ...timeoutDecision };
+        }
+        return (await this.db.getToolConfirmationDecision(request.id)) ?? { id: request.id, ...timeoutDecision };
       }
 
       await this.delayFn(TOOL_CONFIRMATION_POLL_INTERVAL_MS);
