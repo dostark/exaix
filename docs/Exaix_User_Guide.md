@@ -1037,7 +1037,7 @@ the command that replaces it on one line. The
 [CHANGELOG](CHANGELOG.md) lists every removed path next to its replacement.
 
 **What waits for a human.** `exactl approval list` shows every pending human decision from all eight sources,
-oldest first, with the exact command that decides each row. See
+oldest first, with the exact command that decides each row. A source that takes longer than 30 seconds is skipped with a notice on stderr, and the command ends after it printed the other rows. See
 [Approval Commands](#approval-commands---resolve-wait-states-and-tool-confirmations) for the `approval` verbs.
 
 ### 4.1a Working with the TUI Dashboard
@@ -1549,7 +1549,7 @@ Any other status exits with code 4 and the file stays as it was:
 | `analyzing`, `enriching`, `refining`, `in_progress` | The request is in flight. Retry when it settles         |
 | `completed`, `failed`, `cancelled`                  | The request is already final                            |
 
-A request in `needs_clarification` also cancels its pending clarification wait states, and each one writes a `wait_state.command_resolved` row with your user identity. A wait state that cannot be cancelled makes the command exit with code 1 and print `exactl approval cancel wait:<resume-token>` for it, and the request stays cancelled. The command refuses a request that started while it ran, and it exits with code 2 for a request file whose trace id is not a plain id. The TUI cancel and delete actions use the same path.
+A request in `needs_clarification` also cancels its pending clarification wait states, and each one writes a `wait_state.command_resolved` row with your user identity. A wait state that cannot be cancelled makes the command exit with code 1 and print `exactl approval cancel wait:<resume-token>` for it, and the request stays cancelled. The command refuses a request that started while it ran, and it exits with code 2 for a request file whose trace id is not a plain id. A request file whose status is not a request status exits with code 6. The TUI cancel and delete actions use the same path.
 
 An empty, short or ambiguous id exits with code 2, and an unknown id exits with code 3. `exactl request clarify <trace-id> --cancel` is a different command: it abandons the clarification session and puts the request back in the queue.
 

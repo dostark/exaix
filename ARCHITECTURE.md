@@ -480,9 +480,20 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
   clarification, proposal, skill, wait and tool. `apps/exactl/src/commands/approval_sources.ts` defines each source
   over the command that owns the data. `ApprovalCommands.list` runs them in parallel, hides a clarification wait
   state behind the clarification row of its trace, and sorts oldest first. A failing source prints one stderr line and
-  hides no other row. Only `wait:` and `tool:` refs are decided through `exactl approval`. Any other kind exits 2 and
-  names the command of the noun that owns it. The control-plane MCP tools follow the same grammar:
-  `exaix_request_create`, `exaix_plan_list`, `exaix_plan_approve` and `exaix_log_list`.
+  hides no other row. A source has `APPROVAL_SOURCE_TIMEOUT_MS` to answer. A source that takes longer is reported and
+  skipped, and the list action then exits with code 0 after it printed, because the work of that source may hold an
+  open handle that would keep the process alive. Only `wait:` and `tool:` refs are decided through `exactl approval`.
+  Any other kind exits 2 and names the command of the noun that owns it. The control-plane MCP tools follow the same
+  grammar: `exaix_request_create`, `exaix_plan_list`, `exaix_plan_approve` and `exaix_log_list`.
+- **Decisions and cancel.** A tool confirmation is decided once: `IDatabaseService.writeToolConfirmationDecision`
+  updates only a row without a decision and returns whether a row changed, so a second decision exits 4 and a timeout
+  never overwrites a decision that a person made. A wait decision journals `wait_state.command_resolved` with the wait
+  state id and never the resume token, because an amended wait state accepts its token again. `request cancel` checks
+  the trace id, reads the status from the top-level `status:` line, writes a temporary file of the same mode, re-reads
+  the request and renames the file only when it is unchanged. It removes the temporary file in every case, and a
+  request file without a valid status exits 6. The daemon watcher reacts to `.md` files only, so it sees the rename as
+  one change of the request file and ignores the temporary file. Shell quoting of printed commands lives in
+  `apps/exactl/src/exactl_shell.ts`.
 
 ## Parsing & Schema Layer
 
