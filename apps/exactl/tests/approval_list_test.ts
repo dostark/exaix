@@ -16,9 +16,14 @@ import { PlanStatus, ReviewStatus } from "@exaix/core/status";
 import { SkillStatus } from "@exaix/core";
 import type { IWaitState } from "@exaix/flow";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import { ApprovalCommands } from "../src/commands/approval_commands.ts";
+import { APPROVAL_SOURCE_TIMEOUT_MS, ApprovalCommands } from "../src/commands/approval_commands.ts";
 import { ApprovalKind } from "../src/commands/approval_id.ts";
-import { createApprovalSources, type IApprovalReaders } from "../src/commands/approval_sources.ts";
+import {
+  createApprovalSources,
+  type IApprovalListEntry,
+  type IApprovalReaders,
+  type IApprovalSource,
+} from "../src/commands/approval_sources.ts";
 import type { IReviewMetadata } from "../src/commands/review_commands.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
@@ -40,6 +45,9 @@ const AMENDMENT_PLAN_ID = "plan-2";
 const REVIEW_ID = "feat/request-x-trace-1";
 const SKILL_NAME = "draft-skill";
 const SKILL_REVISION = "550e8400-e29b-41d4-a716-446655440099";
+const SHELL_WORD = /'(?:[^']|'\\'')*'|\S+/g;
+const SHORT_TIMEOUT_MS = 20;
+const SPACED_PLAN_ID = "my plan";
 const ALL_KINDS = Object.values(ApprovalKind).sort();
 const OLDEST = "2026-01-01T00:00:00.000Z";
 const NEWEST = "2026-12-01T00:00:00.000Z";
@@ -138,7 +146,13 @@ function makeCommands(env: CliContext, overrides: Partial<IApprovalReaders> = {}
   const waitStates = new WaitStateCommands(env.context);
   const tools = new ToolCommands(env.context);
   const readers = makeReaders(env, { waitStates, tools, ...overrides });
-  return new ApprovalCommands(env.context, waitStates, tools, createApprovalSources(readers));
+  return new ApprovalCommands(
+    env.context,
+    waitStates,
+    tools,
+    createApprovalSources(readers),
+    APPROVAL_SOURCE_TIMEOUT_MS,
+  );
 }
 
 async function seedAllSources(env: CliContext): Promise<void> {
@@ -147,9 +161,15 @@ async function seedAllSources(env: CliContext): Promise<void> {
   await env.db.insertToolConfirmationRequest(makeToolRequest());
 }
 
+/** The words of a command line. A single quoted word keeps its spaces, and `'\\''` is a quote inside it. */
+function tokenizeAct(act: string): string[] {
+  const words = act.match(SHELL_WORD) ?? [];
+  return words.map((word) => word.startsWith("'") ? word.slice(1, -1).replaceAll("'\\''", "'") : word);
+}
+
 /** Resolves the words of an act command to a tree node and checks its positionals and options. */
 function resolveAct(nodes: readonly ICommandTreeNode[], act: string): string | null {
-  const [root, ...words] = act.split(/\s+/);
+  const [root, ...words] = tokenizeAct(act);
   if (root !== "exactl") return `not an exactl command: ${act}`;
   let path: string[] = [];
   let node: ICommandTreeNode | undefined;
@@ -319,6 +339,60 @@ Deno.test("--status selects wait states of another status and lists no other kin
     await seedWaitState(env, makeWaitState(ORPHAN_TOKEN, { status: "fulfilled" }));
     const entries = await makeCommands(env).list({ status: "fulfilled" });
     assertEquals(entries.map((entry) => entry.ref), [`wait:${ORPHAN_TOKEN}`]);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("approval list prints a notice for a source that exceeds the timeout and lists the other rows", async () => {
+  const env = await createCliTestContext();
+  const notices: string[] = [];
+  const consoleError = stub(console, "error", (...parts: string[]) => {
+    notices.push(parts.join(" "));
+  });
+  try {
+    const entry: IApprovalListEntry = {
+      kind: ApprovalKind.PLAN,
+      ref: `plan:${PLAN_ID}`,
+      summary: "Add cache",
+      created_at: OLDEST,
+      trace_id: undefined,
+      act: `exactl plan approve ${PLAN_ID}`,
+    };
+    const hanging: IApprovalSource = { kind: ApprovalKind.REVIEW, list: () => new Promise(() => {}) };
+    const quick: IApprovalSource = { kind: ApprovalKind.PLAN, list: () => Promise.resolve([entry]) };
+    const commands = new ApprovalCommands(
+      env.context,
+      new WaitStateCommands(env.context),
+      new ToolCommands(env.context),
+      [hanging, quick],
+      SHORT_TIMEOUT_MS,
+    );
+
+    const entries = await commands.list({});
+
+    assertEquals(entries.map((row) => row.ref), [entry.ref]);
+    assertEquals(notices.length, 1);
+    assertStringIncludes(notices[0], ApprovalKind.REVIEW);
+    assertStringIncludes(notices[0], "timed out");
+  } finally {
+    consoleError.restore();
+    await env.cleanup();
+  }
+});
+
+Deno.test("act quotes a plan id that holds a space and parses in the live tree", async () => {
+  const env = await createCliTestContext();
+  try {
+    const commands = makeCommands(env, {
+      plans: {
+        list: (status) => Promise.resolve(status === PlanStatus.REVIEW ? [{ ...PLAN, id: SPACED_PLAN_ID }] : []),
+        listAmendments: () => Promise.resolve([]),
+      },
+    });
+    const [entry] = await commands.list({ kinds: [ApprovalKind.PLAN] });
+    assertEquals(entry.act, `exactl plan approve '${SPACED_PLAN_ID}'`);
+    assertEquals(resolveAct(walkCommandTree(createExaCtlCommand()), entry.act), null);
   } finally {
     await env.cleanup();
   }

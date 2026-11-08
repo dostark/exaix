@@ -15,6 +15,7 @@ import type { RequestCommands } from "./request_commands.ts";
 import type { ReviewCommands } from "./review_commands.ts";
 import type { ToolCommands } from "./tool_commands.ts";
 import type { WaitStateCommands } from "./wait_state_commands.ts";
+import { quoteArgument } from "../exactl_renames.ts";
 import { ApprovalKind } from "./approval_id.ts";
 
 export interface IApprovalListEntry {
@@ -114,7 +115,7 @@ function planSource(plans: IApprovalReaders["plans"]): IApprovalSource {
       summary: oneLine(plan.subject ?? plan.request_subject ?? plan.id),
       created_at: plan.created_at ?? "",
       trace_id: plan.trace_id,
-      act: `${ACT_PREFIX} plan approve ${plan.id}`,
+      act: `${ACT_PREFIX} plan approve ${quoteArgument(plan.id)}`,
     })));
 }
 
@@ -126,7 +127,7 @@ function amendmentSource(plans: IApprovalReaders["plans"]): IApprovalSource {
       summary: oneLine(plan.subject ?? plan.request_subject ?? plan.id),
       created_at: plan.created_at ?? "",
       trace_id: plan.trace_id,
-      act: `${ACT_PREFIX} plan amendment approve ${plan.id}`,
+      act: `${ACT_PREFIX} plan amendment approve ${quoteArgument(plan.id)}`,
     })));
 }
 
@@ -138,7 +139,7 @@ function reviewSource(reviews: IApprovalReaders["reviews"]): IApprovalSource {
       summary: oneLine(review.request_subject ?? review.subject ?? review.branch),
       created_at: review.created_at,
       trace_id: review.trace_id,
-      act: `${ACT_PREFIX} review approve ${review.branch}`,
+      act: `${ACT_PREFIX} review approve ${quoteArgument(review.branch)}`,
     })));
 }
 
@@ -155,7 +156,7 @@ function clarificationSource(requests: IApprovalReaders["requests"]): IApprovalS
           summary: oneLine(request.subject ?? stem),
           created_at: request.created,
           trace_id: request.trace_id,
-          act: `${ACT_PREFIX} request clarify ${stem}`,
+          act: `${ACT_PREFIX} request clarify ${quoteArgument(stem)}`,
         };
       }));
 }
@@ -168,7 +169,7 @@ function proposalSource(memory: IApprovalReaders["memory"]): IApprovalSource {
       summary: oneLine(`${proposal.operation} ${proposal.learning.title}`),
       created_at: proposal.created_at,
       trace_id: proposal.execution_id,
-      act: `${ACT_PREFIX} memory proposal approve ${proposal.id}`,
+      act: `${ACT_PREFIX} memory proposal approve ${quoteArgument(proposal.id)}`,
     })));
 }
 
@@ -181,7 +182,7 @@ function skillSource(memory: IApprovalReaders["memory"]): IApprovalSource {
       summary: oneLine(skill.title),
       created_at: "",
       trace_id: undefined,
-      act: `${ACT_PREFIX} skill approve ${skill.skill_id} --revision ${skill.id}`,
+      act: `${ACT_PREFIX} skill approve ${quoteArgument(skill.skill_id)} --revision ${quoteArgument(skill.id)}`,
     })));
 }
 

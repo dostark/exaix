@@ -23,7 +23,7 @@ import { ModelCommands } from "./commands/model_commands.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
-import { ApprovalCommands } from "./commands/approval_commands.ts";
+import { APPROVAL_SOURCE_TIMEOUT_MS, ApprovalCommands } from "./commands/approval_commands.ts";
 import { createApprovalSources } from "./commands/approval_sources.ts";
 import { MemoryApprovalReader } from "./commands/memory_approval_reader.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
@@ -109,6 +109,7 @@ const approvalCommands: ApprovalCommands = new ApprovalCommands(
     waitStates: waitStateCommands,
     tools: toolCommands,
   }),
+  APPROVAL_SOURCE_TIMEOUT_MS,
 );
 const evalCommands: EvalCommands = new EvalCommands(fullContext);
 // Solo model curation CLI. Reads the model registry floor for display and writes

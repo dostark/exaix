@@ -9,6 +9,7 @@
 
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
+import { quoteArgument, quoteForShell } from "../exactl_renames.ts";
 
 /** Every source of a pending human decision. */
 export enum ApprovalKind {
@@ -46,7 +47,7 @@ export function parseApprovalId(raw: string): IApprovalRef | IBareApprovalId {
   if (!KINDS.includes(kind)) {
     throw new ExaCtlError(
       ExaCtlExitCode.USAGE,
-      `Unknown approval kind '${kind}'. Use one of: ${KINDS.join(", ")}.`,
+      `Unknown approval kind ${quoteForShell(kind)}. Use one of: ${KINDS.join(", ")}.`,
     );
   }
   return { kind: kind as ApprovalKind, id };
@@ -57,7 +58,10 @@ export function parseApprovalKinds(raw: readonly string[]): ApprovalKind[] {
   const kinds: ApprovalKind[] = [];
   for (const value of raw.map((item) => item.trim()).filter((item) => item.length > 0)) {
     if (!KINDS.includes(value)) {
-      throw new ExaCtlError(ExaCtlExitCode.USAGE, `Unknown approval kind '${value}'. Use one of: ${KINDS.join(", ")}.`);
+      throw new ExaCtlError(
+        ExaCtlExitCode.USAGE,
+        `Unknown approval kind ${quoteForShell(value)}. Use one of: ${KINDS.join(", ")}.`,
+      );
     }
     kinds.push(value as ApprovalKind);
   }
@@ -88,5 +92,5 @@ const OWNER_COMMANDS: Partial<Record<ApprovalKind, Record<OwnedDecision, string 
 /** The command that decides a pending item of a kind owned by another noun. It is undefined when none exists. */
 export function ownerCommand(ref: IApprovalRef, decision: OwnedDecision): string | undefined {
   const base = OWNER_COMMANDS[ref.kind]?.[decision];
-  return base === undefined ? undefined : `${base} ${ref.id}`;
+  return base === undefined ? undefined : `${base} ${quoteArgument(ref.id)}`;
 }

@@ -324,3 +324,10 @@ Deno.test("the approval paths and the mcp tool path are not renames", () => {
     assertEquals(findRename(typed), null, typed.join(" "));
   }
 });
+
+Deno.test("renameHint cuts a long plain word at the echo limit", () => {
+  const row = rowFor(["journal"]);
+  const hint = renameHint(row, ["journal", "a".repeat(MAX_HINT_ECHO_CHARS * 5)]);
+  assertNotMatch(hint, new RegExp(`a{${MAX_HINT_ECHO_CHARS + 1}}`));
+  assertStringIncludes(hint, "a".repeat(MAX_HINT_ECHO_CHARS));
+});

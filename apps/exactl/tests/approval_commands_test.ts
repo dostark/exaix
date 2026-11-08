@@ -14,7 +14,7 @@ import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.t
 import { createStubGit } from "@exaix/testing";
 import { stub } from "@std/testing/mock";
 import { DomainEventType } from "@exaix/core/events";
-import { ApprovalCommands } from "../src/commands/approval_commands.ts";
+import { APPROVAL_SOURCE_TIMEOUT_MS, ApprovalCommands } from "../src/commands/approval_commands.ts";
 import { toolApprovalSource, waitApprovalSource } from "../src/commands/approval_sources.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
@@ -74,7 +74,7 @@ function makeCommands(env: CliContext): ApprovalCommands {
   return new ApprovalCommands(env.context, waitStates, tools, [
     waitApprovalSource(waitStates),
     toolApprovalSource(tools),
-  ]);
+  ], APPROVAL_SOURCE_TIMEOUT_MS);
 }
 
 async function usageError<T>(run: () => Promise<T>): Promise<ExaCtlError> {
@@ -299,7 +299,7 @@ Deno.test("a failing tool source prints a stderr notice and the wait rows still 
     const commands = new ApprovalCommands(env.context, waitStates, tools, [
       waitApprovalSource(waitStates),
       toolApprovalSource(tools),
-    ]);
+    ], APPROVAL_SOURCE_TIMEOUT_MS);
     const entries = await commands.list({});
     assertEquals(entries.map((entry) => entry.ref), [`wait:${TOKEN}`]);
     assertEquals(notices.length, 1);

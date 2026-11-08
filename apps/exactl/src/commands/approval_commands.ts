@@ -12,6 +12,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
+import { quoteForShell } from "../exactl_renames.ts";
 import { ApprovalKind, type IApprovalRef, ownerCommand, parseApprovalId, parseApprovalKinds } from "./approval_id.ts";
 import {
   APPROVAL_PENDING_STATUS,
@@ -57,6 +58,22 @@ type WaitVerb = ExaCtlVerb.AMEND | ExaCtlVerb.EXPIRE | ExaCtlVerb.CANCEL;
 const TOOL_APPROVED_STATUS = "approved";
 const TOOL_DENIED_STATUS = "denied";
 
+/** The longest time that one source may take for `approval list`. A source that takes longer is reported and skipped. */
+export const APPROVAL_SOURCE_TIMEOUT_MS = 30_000;
+
+/** Rejects when the promise has not settled within the limit. The timer is always cleared. */
+async function withTimeout<T>(work: Promise<T>, limitMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${limitMs} ms`)), limitMs);
+  });
+  try {
+    return await Promise.race([work, expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** A clarification wait state is shown once, as the clarification row of its trace. */
 function withoutShadowedClarifications(entries: IApprovalListEntry[]): IApprovalListEntry[] {
   const clarifiedTraces = new Set(
@@ -85,6 +102,7 @@ export class ApprovalCommands extends BaseCommand {
     private readonly waitStates: WaitStateCommands,
     private readonly tools: ToolCommands,
     private readonly sources: readonly IApprovalSource[],
+    private readonly sourceTimeoutMs: number,
   ) {
     super(context);
   }
@@ -94,7 +112,9 @@ export class ApprovalCommands extends BaseCommand {
     const status = options.status ?? APPROVAL_PENDING_STATUS;
     const kinds = parseApprovalKinds(options.kinds ?? []);
     const selected = this.sources.filter((source) => kinds.length === 0 || kinds.includes(source.kind));
-    const settled = await Promise.allSettled(selected.map((source) => source.list(status)));
+    const settled = await Promise.allSettled(
+      selected.map((source) => withTimeout(source.list(status), this.sourceTimeoutMs)),
+    );
     const entries: IApprovalListEntry[] = [];
     settled.forEach((result, index) => {
       if (result.status === "fulfilled") {
@@ -206,11 +226,17 @@ export class ApprovalCommands extends BaseCommand {
     }
     if ((await this.tools.listPending()).some((tool) => tool.id === id)) refs.push({ kind: ApprovalKind.TOOL, id });
     if (refs.length === 0) {
-      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No wait state or pending tool confirmation matches '${id}'.`);
+      throw new ExaCtlError(
+        ExaCtlExitCode.NOT_FOUND,
+        `No wait state or pending tool confirmation matches ${quoteForShell(id)}.`,
+      );
     }
     if (refs.length > 1) {
       const typed = refs.map((ref) => `${ref.kind}:${ref.id}`).join(", ");
-      throw new ExaCtlError(ExaCtlExitCode.USAGE, `'${id}' matches several approvals: ${typed}. Pass the typed id.`);
+      throw new ExaCtlError(
+        ExaCtlExitCode.USAGE,
+        `${quoteForShell(id)} matches several approvals: ${typed}. Pass the typed id.`,
+      );
     }
     return refs[0];
   }

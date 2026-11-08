@@ -140,6 +140,14 @@ export function findRename(typed: readonly string[]): IExaCtlRename | null {
   return best;
 }
 
+/** One shell word for the text. A plain word stays as it is, any other text is single quoted, and control characters go. */
+export function quoteArgument(text: string): string {
+  const clean = text.replace(CONTROL_CHARACTERS, "");
+  return PLAIN_WORD.test(clean)
+    ? clean
+    : `${SINGLE_QUOTE}${clean.replaceAll(SINGLE_QUOTE, ESCAPED_SINGLE_QUOTE)}${SINGLE_QUOTE}`;
+}
+
 /** Quotes text for a POSIX shell. Control characters go and long text is cut. */
 export function quoteForShell(text: string): string {
   const clean = text.replace(CONTROL_CHARACTERS, "").slice(0, MAX_HINT_ECHO_CHARS);
@@ -151,7 +159,7 @@ export function renameHint(rename: IExaCtlRename, typed: readonly string[]): str
   const isTemplate = rename.canonical.includes(USAGE_TEMPLATE_MARKER);
   const rest = isTemplate ? [] : typed
     .slice(rename.legacy.length)
-    .map((word) => PLAIN_WORD.test(word) ? word : quoteForShell(word));
+    .map((word) => quoteArgument(word.slice(0, MAX_HINT_ECHO_CHARS)));
   const replacement = [rename.canonical, ...rest].join(" ");
   return `'exactl ${rename.legacy.join(" ")}' was renamed: use '${replacement}'`;
 }
