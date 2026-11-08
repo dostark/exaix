@@ -33,7 +33,7 @@
       "scope": "dev",
       "title": "Exaix Developer Glossary",
       "short_summary": "Implementation-level glossary: journal field maps, code identifiers, naming conventions, and code-identifier tables.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "glossary",
         "implementation",
@@ -679,8 +679,8 @@
     {
       "path": "GLOSSARY.md",
       "title": "Exaix Glossary",
-      "short_summary": "Plain-language definitions of the core Exaix concepts — Agent Role, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works.",
-      "version": "1.3",
+      "short_summary": "Plain-language definitions of the core Exaix concepts — Agent Role, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works., plus the entities that exactl commands name: Approval, Daemon, Workspace, Provider, Config, Memory sub-entities, Skill lifecycle, and Evaluation.",
+      "version": "1.4",
       "topics": [
         "glossary",
         "terminology",

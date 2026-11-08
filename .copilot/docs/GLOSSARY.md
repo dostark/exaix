@@ -3,7 +3,7 @@ agent: general
 scope: dev
 title: "Exaix Developer Glossary"
 short_summary: "Implementation-level glossary: journal field maps, code identifiers, naming conventions, and code-identifier tables."
-version: "1.0"
+version: "1.1"
 topics: ["glossary", "implementation", "code-identifiers", "naming-conventions"]
 ---
 
@@ -130,8 +130,12 @@ flows. The composite form is `"Blueprints/Flows"`.
 
 ### `exactl`
 
-Primary CLI entrypoint for Exaix operations: creating and sending requests,
-managing blueprints and flows, running validations and CI checks.
+Primary CLI entrypoint for Exaix operations (`apps/exactl/`, with the command builders in
+`apps/exactl/src/command_builders/`). Every command is
+`exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]`. The 19 roots are `request`, `plan`, `review`, `flow`,
+`approval`, `blueprint`, `skill`, `portal`, `memory`, `model`, `daemon`, `log`, `git`, `mcp`, `config`, `eval`,
+`dashboard`, `version`, and `migrate`. The Team edition adds `log export-otel` through the edition command
+registration. The root-level concepts behind the nouns are defined in the root glossary.
 
 ### `--agent` (CLI flag)
 
@@ -142,6 +146,42 @@ resolves the agent role and delegates execution to the correct agent.
 
 CLI subcommands for managing agent role blueprints (list, create, validate, show,
 edit, remove, deprecate). These commands operate only on `Blueprints/Agents/`.
+
+### `ExaCtlCommandName`, `ExaCtlSubNoun`, `ExaCtlVerb`
+
+The three closed enums in `apps/exactl/src/exactl_constants.ts` that hold the command grammar: the root nouns, the
+sub-nouns, and the verbs a leaf may use. A new word is a change to its enum. The command tree test
+(`apps/exactl/tests/command_tree_lint_test.ts`) walks the live tree and fails a leaf, a root, or a sub-noun that is
+not a member, a verb glued to a noun, and two paths that share one handler.
+
+### `EXACTL_RENAMES` (rename hint)
+
+The table in `apps/exactl/src/exactl_renames.ts` of removed command paths and the command that replaced each one.
+It is data, not an alias: it runs only after the parser has rejected a path, and then the root error handler prints
+`'exactl <old>' was renamed: use '<new>'` and exits with code 2. Quoting of the text it echoes lives in
+`apps/exactl/src/exactl_shell.ts`.
+
+### `ExaCtlExitCode` and `ExaCtlError`
+
+The process exit codes of `exactl` (`apps/exactl/src/exactl_errors.ts`): 0 ok, 1 failure, 2 usage, 3 not found,
+4 state conflict, 5 daemon unavailable, 6 invalid data, 7 credentials, 124 timeout, 130 cancelled. A command throws
+`ExaCtlError` with a code, and only the root error handler turns it into an exit. Commands adopt the codes one by
+one, so an older command can still exit 1 for a case that has its own code.
+
+### `ApprovalKind` and typed approval id
+
+The eight kinds of pending human decision that `exactl approval list` merges, defined in
+`apps/exactl/src/commands/approval_id.ts`: `plan`, `amendment`, `review`, `clarification`, `proposal`, `skill`,
+`wait`, `tool`. An item is addressed as `<kind>:<id>`, for example `wait:<resume-token>` or `tool:<id>`. Only `wait`
+and `tool` are decided through `exactl approval`. `IApprovalSource` (`apps/exactl/src/commands/approval_sources.ts`)
+is one source per kind, and each source has `APPROVAL_SOURCE_TIMEOUT_MS` to answer.
+
+### `request.cancelled` and `tool_confirmation.decided`
+
+The journal events of the two human decisions that have their own typed payloads
+(`packages/core/src/events/decision_event_payloads.ts`): `IRequestCancelledPayload` and
+`IToolConfirmationDecidedPayload`. A wait decision journals `wait_state.command_resolved` with the wait state id and
+never the resume token.
 
 ---
 
@@ -205,8 +245,8 @@ interfaces, database columns and journal payloads for each core concept.
 
 ### `agent_role`
 
-| Name         | Where used                                                                               | Meaning                                                                                                      |
-| ------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Name         | Where used                                                                          | Meaning                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `agent_role` | Request frontmatter, flow YAML step, CLI flag `--agent`, DB column, journal payload | The canonical slug that selects and, once resolved, identifies an agent role blueprint (e.g. `senior-coder`) |
 
 Unlike the retired `identity`/`identity_id` pair, `agent_role` is used
