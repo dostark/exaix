@@ -106,3 +106,37 @@ Deno.test("the TUI adapter path cancels the request and its clarification wait s
     await env.cleanup();
   }
 });
+
+Deno.test("a wait scan that fails is reported with the command that lists wait states and the request stays cancelled", async () => {
+  const env = await createCliTestContext();
+  try {
+    const waitPath = await seedClarification(env);
+    await Deno.remove(join(waitPath, ".."), { recursive: true });
+    await Deno.writeTextFile(join(waitPath, ".."), "not a directory");
+    const error = await assertRejects(() => new RequestCommands(env.context).cancel(TRACE, undefined), ExaCtlError);
+    assertEquals(error.code, ExaCtlExitCode.FAILURE);
+    assertStringIncludes(error.message, "exactl approval list --kind wait");
+    const requests = join(
+      env.tempDir,
+      env.context.config.getAll().paths.workspace!,
+      env.context.config.getAll().paths.requests!,
+    );
+    assertStringIncludes(await Deno.readTextFile(join(requests, "request-cancelwait.md")), "status: cancelled");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("a wait cancel that rejects with a plain value is reported with that value", async () => {
+  const env = await createCliTestContext();
+  const failing = stub(WaitStateCommands.prototype, "cancel", () => Promise.reject("plain failure"));
+  try {
+    await seedClarification(env);
+    const error = await assertRejects(() => new RequestCommands(env.context).cancel(TRACE, undefined), ExaCtlError);
+    assertStringIncludes(error.message, "plain failure");
+    assertStringIncludes(error.message, `exactl approval cancel wait:${TOKEN}`);
+  } finally {
+    failing.restore();
+    await env.cleanup();
+  }
+});

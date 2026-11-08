@@ -34,6 +34,8 @@ import { WaitStateCommands } from "./wait_state_commands.ts";
 import { ApprovalKind } from "./approval_id.ts";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 
+const WAIT_LIST_COMMAND = `exactl approval list --kind ${ApprovalKind.WAIT}`;
+
 /** All operations are logged to activity_log with actor='human'. */
 export class RequestCommands extends BaseCommand {
   private createHandler: RequestCreateHandler;
@@ -100,15 +102,7 @@ export class RequestCommands extends BaseCommand {
   async cancel(requestId: string, reason: Opt<string, Reason.OptionalInput>): Promise<IRequestCancelResult> {
     const result = await this.requests.cancelRequest(requestId, reason);
     if (result.previous_status === RequestStatus.NEEDS_CLARIFICATION) {
-      const actor = await this.getUserIdentity();
-      const failed: string[] = [];
-      for (const resumeToken of await this.pendingClarificationTokens(result.trace_id)) {
-        try {
-          await this.waitStateCommands.cancel(resumeToken, reason, actor);
-        } catch (error) {
-          failed.push(`'exactl approval cancel ${ApprovalKind.WAIT}:${resumeToken}' (${(error as Error).message})`);
-        }
-      }
+      const failed = await this.cancelClarificationWaits(result.trace_id, reason);
       if (failed.length > 0) {
         throw new ExaCtlError(
           ExaCtlExitCode.FAILURE,
@@ -119,6 +113,33 @@ export class RequestCommands extends BaseCommand {
       }
     }
     return result;
+  }
+
+  /** The recovery commands of every wait step that failed. A scan that fails leaves the list command. */
+  private async cancelClarificationWaits(
+    traceId: string,
+    reason: Opt<string, Reason.OptionalInput>,
+  ): Promise<string[]> {
+    const actor = await this.getUserIdentity();
+    let tokens: string[];
+    try {
+      tokens = await this.pendingClarificationTokens(traceId);
+    } catch (error) {
+      return [`'${WAIT_LIST_COMMAND}' (${error instanceof Error ? error.message : String(error)})`];
+    }
+    const failed: string[] = [];
+    for (const resumeToken of tokens) {
+      try {
+        await this.waitStateCommands.cancel(resumeToken, reason, actor);
+      } catch (error) {
+        failed.push(
+          `'exactl approval cancel ${ApprovalKind.WAIT}:${resumeToken}' (${
+            error instanceof Error ? error.message : String(error)
+          })`,
+        );
+      }
+    }
+    return failed;
   }
 
   /** The cancel that the TUI reaches through the request adapter. It is the same path as `cancel`. */
