@@ -13,11 +13,16 @@
  */
 
 import { type IPlanAction, type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
-import { createOutputValidator, type IValidationMetrics, type OutputValidator } from "@exaix/tool-runtime";
+import {
+  createCoreToolSchemas,
+  createOutputValidator,
+  type IValidationMetrics,
+  type OutputValidator,
+} from "@exaix/tool-runtime";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import { EXECUTION_TOOL_NAMES } from "../types/enums.ts";
+import { EXECUTION_TOOL_NAMES, ToolName } from "../types/enums.ts";
 import { extractTomlActionBlocks } from "./toml_action_blocks.ts";
 import { tryParseXmlPlan } from "./xml_plan_parser.ts";
 
@@ -241,6 +246,10 @@ export class PlanAdapter implements IPlanAdapter {
    */
   getSchemaInstructions(): string {
     const schemaDesc = describeSchema(PlanSchema);
+    const tools = createCoreToolSchemas();
+    const command = tools.find((tool) => tool.name === ToolName.RUN_COMMAND);
+    const patch = tools.find((tool) => tool.name === ToolName.PATCH_FILE);
+    if (!command || !patch) throw new Error("Required execution tool schema is unavailable");
     return `
 You are in the PLANNING phase. Your task is to create a structured plan, not to code.
 Do NOT make code changes — you only have read-only access to the codebase.
@@ -255,6 +264,10 @@ Common Requirements:
 - "steps": array of objects (if this is an execution plan)
 - "steps[].actions[].tool" must be exactly one of these execution tool names: ${EXECUTION_TOOL_NAMES.join(", ")}.
   Choose the tool by what it does. Do not invent a tool name.
+- Planning-time tools have their own permissions. The following execution-action contracts do not grant or remove planning-time access.
+- run_command: ${command.description}
+- run_command parameters: ${JSON.stringify(command.parameters)}
+- patch_file parameters: ${JSON.stringify(patch.parameters)}
 - analysis, security, qa, performance: objects (if this is an analysis report)
 
 Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
@@ -359,18 +372,19 @@ and will fail parsing even when the JSON itself is correct.
 
     actions!.forEach((action) => {
       sections.push("```toml");
-      sections.push(`tool = "${action.tool}"`);
+      sections.push(`tool = ${JSON.stringify(action.tool)}`);
       if (action.description) {
-        sections.push(`description = "${action.description}"`);
+        sections.push(`description = ${JSON.stringify(action.description)}`);
       }
       sections.push("[params]");
       for (const [key, value] of Object.entries(action.params)) {
-        if (typeof value === "string") {
-          if (value.includes("\n")) {
-            sections.push(`${key} = '''\n${value}\n'''`);
-          } else {
-            sections.push(`${key} = "${value.replace(/"/g, '\\"')}"`);
-          }
+        if (
+          typeof value === "string" && value.includes("\n") && !value.includes("'''") && !value.endsWith("'") &&
+          !value.includes("\u007f") && [...value].every((character) =>
+            character >= " " || character === "\n" || character === "\t"
+          )
+        ) {
+          sections.push(`${key} = '''\n${value}'''`);
         } else {
           sections.push(`${key} = ${JSON.stringify(value)}`);
         }
