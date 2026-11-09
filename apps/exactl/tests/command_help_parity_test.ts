@@ -19,6 +19,7 @@ const oldOptionSets = JSON.parse(
 
 const BULK_ADDITIONS: readonly string[] = ["--all"];
 const NO_FLAGS: readonly string[] = [];
+const NOW_GLOBAL: readonly string[] = ["--json"];
 
 /** An old path, the path that replaces it, the flags the move removes and the flags it may add. */
 type Move = readonly [oldPath: string, newPath: string, removed: readonly string[], added: readonly string[]];
@@ -43,7 +44,7 @@ const MOVES: readonly Move[] = [
   ["git worktrees list", "git worktree list", NO_FLAGS, NO_FLAGS],
   ["git worktrees prune", "git worktree prune", NO_FLAGS, NO_FLAGS],
   ["portal analyze", "portal knowledge analyze", NO_FLAGS, NO_FLAGS],
-  ["portal knowledge", "portal knowledge show", NO_FLAGS, NO_FLAGS],
+  ["portal knowledge", "portal knowledge show", NOW_GLOBAL, NO_FLAGS],
   ["config lock", "config lock add", NO_FLAGS, NO_FLAGS],
   ["config unlock", "config lock remove", NO_FLAGS, NO_FLAGS],
   ["config lock-list", "config lock list", NO_FLAGS, NO_FLAGS],
@@ -51,7 +52,7 @@ const MOVES: readonly Move[] = [
   ["config list-profiles", "config profile list", NO_FLAGS, NO_FLAGS],
   ["mcp start", "mcp serve", NO_FLAGS, NO_FLAGS],
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
-  ["request", "request create", ["--agent-role", "-a"], ["--agent"]],
+  ["request", "request create", ["--agent-role", "-a", ...NOW_GLOBAL], ["--agent"]],
   ["watch", "request watch", NO_FLAGS, ["--trace"]],
   ["wait list", "approval list", NO_FLAGS, ["--kind"]],
   ["wait approve", "approval approve", NO_FLAGS, NO_FLAGS],

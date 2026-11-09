@@ -27,7 +27,7 @@ import {
 import type { IInspectCommandOptions } from "../commands/inspect_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
-import { CLI_CMD_SHOW_ID, CLI_OPTION_JSON_HELP, CLI_OPTION_WAIT_RESOLVED_BY, ExaCtlVerb } from "../exactl_constants.ts";
+import { CLI_CMD_SHOW_ID, CLI_OPTION_WAIT_RESOLVED_BY, ExaCtlVerb } from "../exactl_constants.ts";
 import { buildRequestCreateBase } from "./request_create_options.ts";
 
 function createRequestCreateCommand(runtime: IExaCtlRuntime) {
@@ -78,7 +78,6 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
           "Filter by status (pending, planned, in_progress, completed, failed, cancelled, needs_clarification, refining, enriching)",
         )
         .option("-a, --all", "Include archived and rejected requests")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options) => {
           await handleRequestList({ requestCommands, display }, options as IRequestListOptions);
         }),
@@ -119,7 +118,6 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
           default: AnalysisMode.HEURISTIC,
         })
         .option("--force", "Force fresh analysis even if results are cached")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options: IRequestAnalyzeOptions, ...id: string[]) => {
           await handleRequestAnalyze({ requestCommands, display }, id[0], options);
         }),
@@ -141,7 +139,6 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
         .option("--proceed", "Force proceed with the current best-effort request body")
         .option("--cancel", "Cancel clarification and re-queue the request as-is")
         .option(CLI_OPTION_WAIT_RESOLVED_BY, "Actor identity resolving the clarification wait state")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options: IRequestClarifyOptions, ...id: string[]) => {
           await handleRequestClarify({ requestCommands, display, provider: fullContext.provider }, id[0], options);
         }),
@@ -152,7 +149,6 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
         .description("Read-only inspection of captured dogfood-context submissions")
         .arguments("<trace_id:string>")
         .option("--record <uuid:string>", "Inspect a specific captured record")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .option(
           "--raw",
           "Export the exact post-redaction bytes (requires --record or a single-record trace; refuses TTY)",

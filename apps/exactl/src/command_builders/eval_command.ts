@@ -210,7 +210,7 @@ function addEvalCommands3(runtime: IExaCtlRuntime) {
             .option("--sample-count <n:number>", "Number of eligible artifacts to score")
             .option("--label-threshold <n:number>", "Pass/fail label threshold (0-1)")
             .option("--isolated", "Run the reference evaluator in the bwrap-sandboxed isolation profile")
-            .option("--output <dir:string>", "Directory to write the calibration report into")
+            .option("--report-file <dir:string>", "Directory to write the calibration report into")
             .action(async (options) => {
               try {
                 await evalCommands.calibrationScore({
@@ -221,7 +221,7 @@ function addEvalCommands3(runtime: IExaCtlRuntime) {
                   sampleCount: options.sampleCount,
                   labelThreshold: options.labelThreshold,
                   isolated: options.isolated,
-                  output: options.output,
+                  output: options.reportFile,
                 });
               } catch (error) {
                 console.error("eval calibration score failed:", error instanceof Error ? error.message : String(error));

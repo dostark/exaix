@@ -25,6 +25,8 @@ import {
 } from "./plan_actions.ts";
 import { selectBulkTargets } from "./bulk_targets.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
 import { CLI_CMD_LIST, CLI_CMD_SHOW_ID, CLI_OPTION_REASON } from "../exactl_constants.ts";
 
 function createPlanCommand(runtime: IExaCtlRuntime) {
@@ -37,7 +39,7 @@ function createPlanCommand(runtime: IExaCtlRuntime) {
 }
 
 function addPlanCommands1(runtime: IExaCtlRuntime) {
-  const { display, planCommands } = runtime;
+  const { display, planCommands, outputSink } = runtime;
   return [
     [
       RequestOperation.LIST,
@@ -45,7 +47,8 @@ function addPlanCommands1(runtime: IExaCtlRuntime) {
         .description("List all plans awaiting review")
         .option("-s, --status <status:string>", "Filter by status (review, needs_revision)")
         .action(async (options) => {
-          await handlePlanList({ planCommands, display }, options as IPlanListOptions);
+          const renderer = createExaCtlRenderer(readGlobalOptions(options), ExaCtlOutputFormat.TABLE, outputSink);
+          await handlePlanList({ planCommands, display }, options as IPlanListOptions, renderer);
         }),
     ],
     [

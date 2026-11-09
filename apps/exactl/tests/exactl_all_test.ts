@@ -28,6 +28,7 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
+import { withCapturedSink } from "./helpers/captured_output.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import type { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
@@ -121,10 +122,11 @@ Deno.test("daemon status prints info (calls daemonCommands.status)", async () =>
   await withTestMod(async (mod, ctx) => {
     ctx.daemonCommands.status = () =>
       Promise.resolve({ version: "v1", workspace_schema_version: "1.0.0", running: true, pid: 999, uptime: "1m" });
-    const out = await captureConsoleOutput(async () => {
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["daemon", "status"]);
     });
-    assertStringIncludes(out, "daemon");
+    assertStringIncludes(out, "Running");
+    assertStringIncludes(out, "999");
   });
 });
 
@@ -223,13 +225,14 @@ Deno.test("request show prints content when request exists", async () => {
   });
 });
 
-Deno.test("plan list shows entries and status icons", async () => {
+Deno.test("plan list shows entries with their status", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.planCommands.list = () => Promise.resolve([{ id: "p1", status: "review", trace_id: "t1" }]);
-    const out = await captureConsoleOutput(async () => {
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["plan", "list"]);
     });
-    assert(out.includes("🔍") || out.includes("p1"));
+    assertStringIncludes(out, "p1");
+    assertStringIncludes(out, "review");
   });
 });
 
@@ -707,13 +710,17 @@ Deno.test("request inline --json prints JSON output", async () => {
   });
 });
 
-Deno.test("plan list empty prints hint", async () => {
+Deno.test("plan list with no plans prints an empty JSON array with -o json and the headers otherwise", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.planCommands.list = (_s?: PlanStatusType) => Promise.resolve([]);
-    const outs = await captureAllOutputs(async () => {
+    const json = await withCapturedSink(ctx.outputSink, async () => {
+      await mod.__test_command.parse(["plan", "list", "-o", "json"]);
+    });
+    assertEquals(JSON.parse(json.out), []);
+    const table = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["plan", "list"]);
     });
-    assert(outs.logs.some((l) => l.includes("No plans found") || l.includes("plan.list")));
+    assertStringIncludes(table.out, "Status");
   });
 });
 
@@ -886,7 +893,7 @@ Deno.test("plan list passes status filter to planCommands.list", async () => {
       assertEquals(status, "review");
       return Promise.resolve([{ id: "p-filter", status: "review", trace_id: "t" }]);
     };
-    const out = await captureConsoleOutput(async () => {
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["plan", "list", "--status", "review"]);
     });
     assertStringIncludes(out, "p-filter");

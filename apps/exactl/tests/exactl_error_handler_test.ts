@@ -111,3 +111,30 @@ Deno.test("a legacy option on request create yields the option hint", () => {
   assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
   assertStringIncludes(run.stderr, "use '--agent'");
 });
+
+Deno.test("a global option before the command still yields the rename hint", () => {
+  const run = runHandler(new ValidationError('Unknown option "--bogus"'), ["-o", "json", "blueprint", "ls", "--bogus"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "use 'exactl blueprint list'");
+});
+
+Deno.test("a global option between noun and verb still yields the rename hint", () => {
+  const run = runHandler(new ValidationError('Unknown command "approve-all"'), ["plan", "-o", "json", "approve-all"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "use 'exactl plan approve --all'");
+});
+
+Deno.test("the removed calibration score output option yields the report-file hint", () => {
+  const run = runHandler(
+    new ValidationError('Option "--output" must be of type "output-format", but got "out.json".'),
+    [
+      "eval",
+      "calibration",
+      "score",
+      "--output",
+      "out.json",
+    ],
+  );
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "use '--report-file'");
+});

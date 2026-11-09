@@ -10,9 +10,9 @@ import { Command } from "@cliffy/command";
 import { ConfigOutputFormat, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import { readGlobalOptions } from "../output/exactl_output.ts";
 import {
   CLI_CMD_LIST,
-  CLI_OPTION_JSON_HELP,
   CONFIG_DIFF_LABEL,
   CONFIG_LABEL,
   CONFIG_VALIDATE_ACTION,
@@ -272,11 +272,12 @@ function addConfigCommands5(runtime: IExaCtlRuntime) {
       "show",
       new Command()
         .description("Show effective config")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .option("--sources", "Include provenance source for each key")
         .action(async (options) => {
           try {
-            const format = options.json ? ConfigOutputFormat.JSON : ConfigOutputFormat.HUMAN;
+            const format = readGlobalOptions(options).json === true
+              ? ConfigOutputFormat.JSON
+              : ConfigOutputFormat.HUMAN;
             const output = await configCommands.show(format, options.sources);
             console.log(output);
           } catch (error) {

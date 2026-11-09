@@ -7,7 +7,9 @@
  * diff colorization, and status truncation for terminal display.
  */
 
-import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { ExaCtlOutputRenderer } from "../src/output/exactl_output.ts";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import {
   handlePlanAmendmentApprove,
@@ -46,7 +48,19 @@ function createDisplay() {
   return { display, calls };
 }
 
-Deno.test("handlePlanList: displays empty result", async () => {
+function createRendererSink(format: ExaCtlOutputFormat): { renderer: ExaCtlOutputRenderer; text: () => string } {
+  let out = "";
+  const sink = {
+    out: (text: string) => {
+      out += text;
+      return Promise.resolve();
+    },
+    err: () => Promise.resolve(),
+  };
+  return { renderer: new ExaCtlOutputRenderer(sink, format, false), text: () => out };
+}
+
+Deno.test("handlePlanList: renders an empty JSON array for no plans", async () => {
   const { display, calls } = createDisplay();
   const planCommands = {
     list: () => Promise.resolve([]),
@@ -56,41 +70,40 @@ Deno.test("handlePlanList: displays empty result", async () => {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanList(context, { status: "review" });
+  const { renderer, text } = createRendererSink(ExaCtlOutputFormat.JSON);
+  await handlePlanList(context, { status: "review" }, renderer);
 
-  assertEquals(calls.length, 1);
-  assertEquals(calls[0].a, "plan.list");
-  assertEquals(calls[0].c.count, 0);
+  assertEquals(JSON.parse(text()), []);
+  assertEquals(calls, []);
 });
 
-Deno.test("handlePlanList: displays plan rows with truncation", async () => {
-  const { display, calls } = createDisplay();
+Deno.test("handlePlanList: JSON rows keep the stored fields and the table truncates the subject and trace", async () => {
+  const { display } = createDisplay();
   const longSubject = "x".repeat(60);
-  const planCommands = {
-    list: () =>
-      Promise.resolve([
-        {
-          id: "p1",
-          status: "review",
-          trace_id: "1234567890abcdef",
-          request_subject: longSubject,
-          request_agent: "agent",
-          request_portal: "portal",
-          request_priority: "p",
-        },
-      ]),
+  const plan = {
+    id: "p1",
+    status: "review",
+    trace_id: "1234567890abcdef",
+    request_subject: longSubject,
+    request_portal: "portal",
+    request_priority: "p",
   };
-
+  const planCommands = { list: () => Promise.resolve([plan]) };
   const context: IPlanActionContext = {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanList(context, { status: "review" });
 
-  assertEquals(calls.length, 2);
-  assertMatch(calls[1].a, /^🔍 p1/);
-  assertMatch(calls[1].c.request as string, /\.\.\.$/);
-  assertMatch(calls[1].c.trace as string, /\.\.\.$/);
+  const json = createRendererSink(ExaCtlOutputFormat.JSON);
+  await handlePlanList(context, { status: "review" }, json.renderer);
+  assertEquals(JSON.parse(json.text()), [plan]);
+
+  const table = createRendererSink(ExaCtlOutputFormat.TABLE);
+  await handlePlanList(context, { status: "review" }, table.renderer);
+  const rendered = table.text();
+  assertMatch(rendered, /x{40,}\.\.\./);
+  assertStringIncludes(rendered, "12345678");
+  assertFalse(rendered.includes("1234567890abcdef"));
 });
 
 Deno.test("handlePlanShow: prints metadata and content", async () => {
@@ -430,7 +443,7 @@ Deno.test("Error Handling: handlePlanList calls Deno.exit(1) on failure", async 
 
   try {
     try {
-      await handlePlanList(context, {});
+      await handlePlanList(context, {}, createRendererSink(ExaCtlOutputFormat.JSON).renderer);
     } catch (e) {
       assertEquals((e as Error).message, "Deno.exit called");
     }

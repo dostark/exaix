@@ -16,7 +16,8 @@ import {
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { CLI_OPTION_JSON_HELP, ExaCtlSubNoun } from "../exactl_constants.ts";
+import { ExaCtlSubNoun } from "../exactl_constants.ts";
+import { readGlobalOptions } from "../output/exactl_output.ts";
 
 function createPortalCommand(runtime: IExaCtlRuntime) {
   const { display, portalCommands } = runtime;
@@ -209,12 +210,11 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           "show <alias>",
           new Command()
             .description("Display gathered knowledge for a portal")
-            .option("--json", CLI_OPTION_JSON_HELP)
             .action(async (options, ...args: string[]) => {
               const alias = args[0];
               try {
                 const output = await portalCommands.knowledge(alias, {
-                  json: options.json,
+                  json: readGlobalOptions(options).json === true,
                 });
                 console.log(output);
               } catch (error) {

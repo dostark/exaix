@@ -8,11 +8,13 @@
  */
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
+import type { IExaCtlColumn, IExaCtlOutputRenderer } from "@exaix/cli";
+import { EMPTY_CELL } from "../output/exactl_output.ts";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import type { JSONValue } from "@exaix/core";
 import type { PlanStatus } from "@exaix/core/status";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
-import type { IDisplayService } from "@exaix/core/types";
+import type { IDisplayService, Opt, Reason } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
@@ -24,6 +26,38 @@ export interface IPlanActionContext {
 export interface IPlanListOptions {
   status?: PlanStatus;
 }
+
+/** One plan as the list prints it: the stored metadata fields, undefined ones dropped. */
+interface IPlanRow {
+  [key: string]: JSONValue;
+  id: string;
+  status: string;
+}
+
+const TRACE_PREFIX_CHARS = 8;
+const SUBJECT_MAX_CHARS = 50;
+const TRUNCATION_MARK = "...";
+
+function text(value: Opt<JSONValue, Reason.OptionalInput>): string {
+  return typeof value === "string" && value !== "" ? value : EMPTY_CELL;
+}
+
+function truncated(value: string, max: number): string {
+  return value.length > max ? `${value.substring(0, max - TRUNCATION_MARK.length)}${TRUNCATION_MARK}` : value;
+}
+
+const PLAN_COLUMNS: readonly IExaCtlColumn<IPlanRow>[] = [
+  { header: "ID", value: (plan) => plan.id },
+  { header: "Status", value: (plan) => plan.status },
+  { header: "Subject", value: (plan) => truncated(text(plan.request_subject ?? plan.subject), SUBJECT_MAX_CHARS) },
+  { header: "Agent", value: (plan) => text(plan.request_agent_role ?? plan.agent_role) },
+  { header: "Portal", value: (plan) => text(plan.request_portal) },
+  { header: "Priority", value: (plan) => text(plan.request_priority) },
+  {
+    header: "Trace",
+    value: (plan) => typeof plan.trace_id === "string" ? plan.trace_id.substring(0, TRACE_PREFIX_CHARS) : EMPTY_CELL,
+  },
+];
 
 /** Prints the added, updated, and removed steps of an amendment patch. */
 /** The ids decided before a failure, for the error line. */
@@ -51,46 +85,14 @@ function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendment
 export async function handlePlanList(
   context: IPlanActionContext,
   options: IPlanListOptions,
+  renderer: IExaCtlOutputRenderer,
 ): Promise<void> {
   const { planCommands, display } = context;
 
   try {
     const plans = await planCommands.list(options.status);
-    if (plans.length === 0) {
-      display.info("plan.list", "plans", { count: 0, message: "No plans found" });
-      return;
-    }
-    display.info("plan.list", "plans", { count: plans.length });
-    for (const plan of plans) {
-      const statusIcon = plan.status === "review" ? "🔍" : "⚠️";
-      const displayData: JSONObject = {
-        status: plan.status,
-        trace: plan.trace_id ? `${plan.trace_id.substring(0, 8)}...` : undefined,
-      };
-
-      // Add request information if available
-      if (plan.request_subject) {
-        displayData.request = plan.request_subject.length > 50
-          ? `${plan.request_subject.substring(0, 47)}...`
-          : plan.request_subject;
-      }
-      if (plan.request_agent_role) {
-        displayData.agent = plan.request_agent_role;
-      }
-      if (plan.request_portal) {
-        displayData.portal = plan.request_portal;
-      }
-      if (plan.request_priority) {
-        displayData.priority = plan.request_priority;
-      }
-
-      const subjectTag = plan.subject ? `[${plan.subject}] ` : "";
-      display.info(
-        `${statusIcon} ${subjectTag}${plan.id}`,
-        plan.id,
-        toSafeJson(displayData) as Record<string, JSONValue>,
-      );
-    }
+    const rows = plans.map((plan) => toSafeJson({ ...plan }) as IPlanRow);
+    await renderer.list(rows, PLAN_COLUMNS, (plan) => plan.id);
   } catch (error) {
     display.error("cli.error", "plan list", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

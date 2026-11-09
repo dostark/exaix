@@ -17,6 +17,7 @@ import {
   renameHint,
   REQUEST_NOUN,
   requestCreateHint,
+  stripGlobalOptions,
 } from "./exactl_renames.ts";
 
 /** The part of the root command the handler reads to tell a subcommand from free text. */
@@ -42,7 +43,8 @@ export function handleExaCtlError(
     exit(error.code);
   }
   if (error instanceof ValidationError) {
-    const typed = leadingWords(argv);
+    const words = stripGlobalOptions(argv);
+    const typed = leadingWords(words);
     const rename = findRename(typed);
     if (rename !== null) {
       console.error(renameHint(rename, typed));

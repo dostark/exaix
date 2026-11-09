@@ -22,6 +22,7 @@ import type { RoutingCommands } from "./commands/routing_commands.ts";
 import type { ApprovalCommands } from "./commands/approval_commands.ts";
 import type { IServiceContext } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
+import type { IExaCtlOutputSink } from "@exaix/cli";
 import type { EvalCommands } from "./commands/eval_commands.ts";
 import type { WatchCommand } from "./commands/watch.ts";
 
@@ -48,4 +49,6 @@ export interface IExaCtlRuntime {
   readonly modelCommands: ModelCommands;
   readonly watchCommandInstance: WatchCommand;
   readonly services: IServiceContext;
+  /** Where renderers write. A per-runtime copy of the process sink, so tests can capture one run's output. */
+  readonly outputSink: IExaCtlOutputSink;
 }

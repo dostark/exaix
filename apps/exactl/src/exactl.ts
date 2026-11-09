@@ -6,7 +6,9 @@
  * @related-files [apps/exactl/src/init.ts]
  */
 
-import { Command } from "@cliffy/command";
+import { Command, EnumType } from "@cliffy/command";
+import { setColorEnabled } from "@std/fmt/colors";
+import { ExaCtlOutputFormat } from "@exaix/cli";
 import { buildSkillCommand } from "./command_builders/skill_commands.ts";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
@@ -52,26 +54,19 @@ import type { IExaCtlRuntime } from "./exactl_runtime.ts";
 import { ExaCtlCommandName } from "./exactl_constants.ts";
 import { handleExaCtlError } from "./exactl_error_handler.ts";
 import { buildLogCommand } from "./command_builders/log_command.ts";
+import { defaultOutputSink, isColorDisabled, normalizeGlobalOptions } from "./output/exactl_output.ts";
+import type { IExaCtlOutputSink } from "@exaix/cli";
 
 export interface IExaCtlCommandOptions {
   registerEditionCommands?: (root: typeof baseCommand, context: ICliApplicationContext) => void;
 }
 
-type ExaCtlArgumentTypes = {
-  number: number;
-  integer: number;
-  string: string;
-  boolean: boolean;
-  file: string;
-  secret: string;
-};
-
-type ExaCtlBaseCommand = Command<void, ExaCtlArgumentTypes, void, [], void, ExaCtlArgumentTypes, void, Command>;
-
 // Allow tests to run the CLI entrypoint without initializing heavy services
 export function isTestMode(): boolean {
   return isTestModeImport();
 }
+
+if (isColorDisabled(Deno.args, Deno.env)) setColorEnabled(false);
 
 const services: IServiceContext = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -122,6 +117,8 @@ const modelCommands = new ModelCommands(
   config.model_registry?.price_staleness_max_days,
 );
 
+const outputSink: IExaCtlOutputSink = { ...defaultOutputSink };
+
 const runtime: IExaCtlRuntime = {
   context,
   fullContext,
@@ -145,6 +142,7 @@ const runtime: IExaCtlRuntime = {
   modelCommands,
   services,
   watchCommandInstance,
+  outputSink,
 };
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
@@ -170,6 +168,7 @@ export function __test_getContext(): {
   watchCommand: typeof watchCommandInstance;
   waitStateCommands: typeof waitStateCommands;
   evalCommands: typeof evalCommands;
+  outputSink: typeof outputSink;
 } {
   return {
     IN_TEST_MODE: isTestMode(),
@@ -193,6 +192,7 @@ export function __test_getContext(): {
     watchCommand: watchCommandInstance,
     waitStateCommands,
     evalCommands,
+    outputSink,
   };
 }
 
@@ -206,10 +206,20 @@ export function __test_initializeServices(
   return initializeServices(opts);
 }
 
-const baseCommand: ExaCtlBaseCommand = new Command()
+const OUTPUT_FORMAT_TYPE = "output-format";
+
+const baseCommand = new Command()
   .name("exactl")
   .version(BINARY_VERSION)
   .description("Exaix CLI - Human interface for agent orchestration")
+  .globalType(OUTPUT_FORMAT_TYPE, new EnumType(Object.values(ExaCtlOutputFormat)))
+  .globalOption(`-o, --output <format:${OUTPUT_FORMAT_TYPE}>`, "Output format: table, json, jsonl, md, text")
+  .globalOption("--json", "Output as JSON (same as -o json)")
+  .globalOption("-q, --quiet", "Print only ids in human formats")
+  .globalOption("--no-color", "Disable colored output")
+  .globalOption("--no-input", "Never prompt; fail when input is needed")
+  .globalOption("-y, --yes", "Confirm destructive actions without prompting")
+  .globalAction((options) => normalizeGlobalOptions(options))
   // Request commands (PRIMARY INTERFACE)
   .command(
     ExaCtlCommandName.REQUEST,

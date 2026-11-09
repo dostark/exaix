@@ -8,17 +8,35 @@
 
 import { Command } from "@cliffy/command";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
-import {
-  BINARY_VERSION,
-  DAEMON_AGENT_ROLE_ID,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  WORKSPACE_SCHEMA_VERSION,
-} from "@exaix/core";
+import { BINARY_VERSION, DEFAULT_UNKNOWN_ERROR_MESSAGE, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
+import type { JSONValue } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import { createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
+
+const RUNNING_LABEL = "Running ✓";
+const STOPPED_LABEL = "Stopped ✗";
+
+interface IDaemonStatusRow {
+  [key: string]: JSONValue;
+  status: string;
+  pid: number | null;
+  uptime: string | null;
+  binary_version: string;
+  workspace_schema_version: string;
+}
+
+const DAEMON_STATUS_FIELDS: readonly IExaCtlColumn<IDaemonStatusRow>[] = [
+  { header: "Status", value: (row) => row.status === "running" ? RUNNING_LABEL : STOPPED_LABEL },
+  { header: "PID", value: (row) => String(row.pid ?? "-") },
+  { header: "Uptime", value: (row) => row.uptime ?? "-" },
+  { header: "Binary", value: (row) => row.binary_version },
+  { header: "Schema", value: (row) => row.workspace_schema_version },
+];
 
 function createDaemonCommand(runtime: IExaCtlRuntime) {
-  const { display, daemonCommands } = runtime;
+  const { display, daemonCommands, outputSink } = runtime;
   return new Command()
     .description("Control the Exaix daemon")
     .command(
@@ -74,27 +92,20 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
       GIT_CMD_STATUS,
       new Command()
         .description("Check daemon status")
-        .option("--json", "Output as JSON")
         .action(async (options) => {
           try {
             const status = await daemonCommands.status();
-            if (options.json) {
-              console.log(JSON.stringify({
-                status: status.running ? "running" : "stopped",
-                pid: status.pid ?? null,
-                uptime: status.uptime ?? null,
-                binary_version: status.version,
-                workspace_schema_version: status.workspace_schema_version,
-              }));
-              return;
-            }
-            display.info("daemon.status", DAEMON_AGENT_ROLE_ID, {
-              status: status.running ? "Running ✓" : "Stopped ✗",
+            const row: IDaemonStatusRow = {
+              status: status.running ? "running" : "stopped",
               pid: status.pid ?? null,
               uptime: status.uptime ?? null,
-              binary: status.version,
-              schema: status.workspace_schema_version,
-            });
+              binary_version: status.version,
+              workspace_schema_version: status.workspace_schema_version,
+            };
+            await createExaCtlRenderer(readGlobalOptions(options), ExaCtlOutputFormat.TEXT, outputSink).item(
+              row,
+              DAEMON_STATUS_FIELDS,
+            );
           } catch (error) {
             display.error("cli.error", "daemon status", {
               message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -130,7 +141,6 @@ function createVersionCommand(runtime: IExaCtlRuntime) {
   const { services } = runtime;
   return new Command()
     .description("Show Exaix binary and workspace schema version information")
-    .option("--json", "Output as JSON")
     .action((options) => {
       const onDiskSchemaVersion = (() => {
         try {
@@ -155,7 +165,7 @@ function createVersionCommand(runtime: IExaCtlRuntime) {
         ? "❌ Binary older than workspace — update exactl"
         : "✅ OK";
 
-      if (options.json) {
+      if (readGlobalOptions(options).json === true) {
         const configPath = (() => {
           try {
             return services.config.getConfigPath();
@@ -211,9 +221,8 @@ function createMigrateCommand(runtime: IExaCtlRuntime) {
       "check",
       new Command()
         .description("Check binary vs workspace schema compatibility")
-        .option("--json", "Output as JSON")
         .action((options) => {
-          const exitCode = daemonCommands.migrate({ check: true, json: options.json });
+          const exitCode = daemonCommands.migrate({ check: true, json: readGlobalOptions(options).json === true });
           Deno.exit(exitCode);
         }),
     );

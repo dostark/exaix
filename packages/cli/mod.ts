@@ -21,6 +21,7 @@ export * from "./src/formatters/journal_formatter.ts";
 export * from "./src/formatters/memory_formatter.ts";
 export * from "./src/formatters/portal_knowledge.ts";
 export * from "./src/base/command.ts";
+export * from "./src/types/exactl_output_types.ts";
 export type * from "./src/types/cli_context.ts";
 export type * from "./src/types/memory_types.ts";
 

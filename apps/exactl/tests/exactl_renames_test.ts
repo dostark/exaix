@@ -22,6 +22,7 @@ import {
   optionRenameHint,
   renameHint,
   requestCreateHint,
+  stripGlobalOptions,
 } from "../src/exactl_renames.ts";
 import { MAX_HINT_ECHO_CHARS } from "../src/exactl_shell.ts";
 
@@ -318,4 +319,38 @@ Deno.test("renameHint cuts a long plain word at the echo limit", () => {
   const hint = renameHint(row, ["journal", "a".repeat(MAX_HINT_ECHO_CHARS * 5)]);
   assertNotMatch(hint, new RegExp(`a{${MAX_HINT_ECHO_CHARS + 1}}`));
   assertStringIncludes(hint, "a".repeat(MAX_HINT_ECHO_CHARS));
+});
+
+Deno.test("stripGlobalOptions removes every global option and its value", () => {
+  assertEquals(stripGlobalOptions(["-o", "json", "plan", "list"]), ["plan", "list"]);
+  assertEquals(stripGlobalOptions(["plan", "--output", "table", "list"]), ["plan", "list"]);
+  assertEquals(stripGlobalOptions(["plan", "list", "--output=jsonl"]), ["plan", "list"]);
+  assertEquals(stripGlobalOptions(["--json", "-q", "--quiet", "--no-color", "--no-input", "-y", "--yes", "plan"]), [
+    "plan",
+  ]);
+  assertEquals(stripGlobalOptions(["plan", "list", "--status", "review"]), ["plan", "list", "--status", "review"]);
+});
+
+Deno.test("stripGlobalOptions leaves everything after the terminator alone", () => {
+  assertEquals(stripGlobalOptions(["request", "create", "--", "--json", "-q"]), [
+    "request",
+    "create",
+    "--",
+    "--json",
+    "-q",
+  ]);
+});
+
+Deno.test("an empty-path option row matches any command and the typed option", () => {
+  const rows = [{ path: [], legacyOption: "--format", canonicalOption: "-o, --output" }] as const;
+  const row = findOptionRename(["skill", "list", "--format", "json"], rows);
+  assert(row !== null);
+  assertEquals(row.canonicalOption, "-o, --output");
+  assertEquals(findOptionRename(["skill", "list"], rows), null);
+});
+
+Deno.test("the calibration score output option points to --report-file", () => {
+  const row = findOptionRename(["eval", "calibration", "score", "--output", "out"]);
+  assert(row !== null);
+  assertStringIncludes(optionRenameHint(row), "use '--report-file'");
 });

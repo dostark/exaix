@@ -9,7 +9,8 @@
 import { Command } from "@cliffy/command";
 import { RequestOperation } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { CLI_OPTION_JSON_HELP, ExaCtlVerb } from "../exactl_constants.ts";
+import { ExaCtlVerb } from "../exactl_constants.ts";
+import { readGlobalOptions } from "../output/exactl_output.ts";
 import { handleRequestCreate, type IRequestCreateOptions } from "./request_actions.ts";
 import { buildRequestCreateBase } from "./request_create_options.ts";
 
@@ -36,19 +37,17 @@ function createFlowCommand(runtime: IExaCtlRuntime) {
       RequestOperation.LIST,
       new Command()
         .description("List all available flows")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options) => {
-          await flowCommands.listFlows(options);
+          await flowCommands.listFlows(readGlobalOptions(options));
         }),
     )
     .command(
       "show <flowId:string>",
       new Command()
         .description("Show details of a specific flow")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options, ...args: string[]) => {
           const flowId = args[0];
-          await flowCommands.showFlow(flowId, options);
+          await flowCommands.showFlow(flowId, readGlobalOptions(options));
         }),
     )
     .command(`${ExaCtlVerb.RUN} <flowId:string> <description:string>`, createFlowRunCommand(runtime))
@@ -56,10 +55,9 @@ function createFlowCommand(runtime: IExaCtlRuntime) {
       "validate <flowId:string>",
       new Command()
         .description("Validate a flow definition")
-        .option("--json", CLI_OPTION_JSON_HELP)
         .action(async (options, ...args: string[]) => {
           const flowId = args[0];
-          await flowCommands.validateFlow(flowId, options);
+          await flowCommands.validateFlow(flowId, readGlobalOptions(options));
         }),
     )
     .command(
@@ -68,7 +66,6 @@ function createFlowCommand(runtime: IExaCtlRuntime) {
         .description(
           "Resolve this flow's step bindings across all layers (model/service/transport/interface per LLM step)",
         )
-        .option("--json", CLI_OPTION_JSON_HELP)
         .option("--overlay <file:string>", "Per-run binding overlay file (repeatable)", { collect: true })
         .option(
           "--bind <spec:string>",

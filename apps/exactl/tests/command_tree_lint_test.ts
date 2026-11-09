@@ -85,3 +85,14 @@ Deno.test("the compound-leaf allow-list is empty", () => {
 Deno.test("the grammar allow-list is empty", () => {
   assertEquals(Object.values(allowlist).flat(), []);
 });
+
+const GLOBAL_OPTION_FLAGS = ["--json", "--output", "-o", "--quiet", "-q", "--yes", "-y", "--no-color", "--no-input"];
+
+Deno.test("no node defines a global option locally", () => {
+  const offenders = liveNodes.flatMap((node) =>
+    node.options
+      .filter((option) => option.flags.some((flag) => GLOBAL_OPTION_FLAGS.includes(flag)))
+      .map((option) => `${node.path.join(" ")} ${option.flags.join("|")}`)
+  );
+  assertEquals(offenders, []);
+});

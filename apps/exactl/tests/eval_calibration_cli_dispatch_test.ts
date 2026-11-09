@@ -108,3 +108,31 @@ Deno.test("eval calibration score omitting --isolated reaches evalCommands.calib
     assert(!receivedOptions?.isolated, "isolated should be falsy when --isolated is omitted");
   });
 });
+
+Deno.test("eval calibration score passes --report-file to the report directory", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let receivedOptions: { output?: string } | undefined;
+    ctx.evalCommands.calibrationScore = (options: { output?: string }) => {
+      receivedOptions = options;
+      return Promise.resolve();
+    };
+
+    await mod.__test_command.parse([
+      "eval",
+      "calibration",
+      "score",
+      "--capture-dir",
+      "/tmp/calib-capture",
+      "--target",
+      "claude-cli:claude-sonnet-5",
+      "--reference",
+      "codex-cli:gpt-5.6-sol",
+      "--seed",
+      "founding",
+      "--report-file",
+      "/tmp/calib-report",
+    ]);
+
+    assertEquals(receivedOptions?.output, "/tmp/calib-report");
+  });
+});

@@ -23,3 +23,34 @@ export function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ outpu
       console.log = originalLog;
     });
 }
+
+/** The part of a sink holder that a test replaces: the runtime's output sink. */
+interface ISinkHolder {
+  out(text: string): Promise<void>;
+  err(text: string): Promise<void>;
+}
+
+/** Runs `fn` while the runtime sink collects what renderers write. The original methods are restored afterwards. */
+export async function withCapturedSink(
+  sink: ISinkHolder,
+  fn: () => Promise<void>,
+): Promise<{ out: string; err: string }> {
+  const original = { out: sink.out, err: sink.err };
+  let out = "";
+  let err = "";
+  sink.out = (text) => {
+    out += text;
+    return Promise.resolve();
+  };
+  sink.err = (text) => {
+    err += text;
+    return Promise.resolve();
+  };
+  try {
+    await fn();
+  } finally {
+    sink.out = original.out;
+    sink.err = original.err;
+  }
+  return { out, err };
+}

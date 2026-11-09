@@ -23,7 +23,7 @@ export interface IExaCtlRename {
 
 /** One removed option of a command path and the option that replaces it. */
 interface IExaCtlOptionRename {
-  /** Command words after `exactl`, such as `["request", "create"]`. */
+  /** Command words after `exactl`, such as `["request", "create"]`. An empty path matches any command. */
   readonly path: readonly string[];
   readonly legacyOption: string;
   readonly canonicalOption: string;
@@ -40,9 +40,21 @@ const USAGE_TEMPLATE_MARKER = "<";
 export const REQUEST_NOUN = "request";
 const CREATE_VERB = "create";
 const OPTION_PREFIX = "-";
-const OPTION_TERMINATOR = "--";
+export const OPTION_TERMINATOR = "--";
 const OPTION_VALUE_SEPARATOR = "=";
 const AGENT_OPTION = "--agent";
+const REPORT_FILE_OPTION = "--report-file";
+const OUTPUT_OPTION = "--output";
+const SHORT_OUTPUT_OPTION = "-o";
+const VALUELESS_GLOBAL_OPTIONS: ReadonlySet<string> = new Set([
+  "--json",
+  "-q",
+  "--quiet",
+  "--no-color",
+  "--no-input",
+  "-y",
+  "--yes",
+]);
 
 export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: ["blueprint", "agent-role"], canonical: "exactl blueprint" },
@@ -109,7 +121,34 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
 const EXACTL_OPTION_RENAMES: readonly IExaCtlOptionRename[] = [
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "--agent-role", canonicalOption: AGENT_OPTION },
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "-a", canonicalOption: AGENT_OPTION },
+  { path: ["eval", "calibration", "score"], legacyOption: OUTPUT_OPTION, canonicalOption: REPORT_FILE_OPTION },
 ];
+
+/** True for `-o`, `--output` or an attached `-ovalue` or `--output=value`. */
+function isOutputOptionToken(token: string): boolean {
+  return token === SHORT_OUTPUT_OPTION || token === OUTPUT_OPTION ||
+    token.startsWith(`${OUTPUT_OPTION}${OPTION_VALUE_SEPARATOR}`) ||
+    (token.startsWith(SHORT_OUTPUT_OPTION) && !token.startsWith(OPTION_TERMINATOR));
+}
+
+/** The words of `argv` without the global options and their values. Words after `--` stay as typed. */
+export function stripGlobalOptions(argv: readonly string[]): readonly string[] {
+  const kept: string[] = [];
+  for (let index = 0; index < argv.length; index++) {
+    const token = argv[index];
+    if (token === OPTION_TERMINATOR) {
+      kept.push(...argv.slice(index));
+      break;
+    }
+    if (VALUELESS_GLOBAL_OPTIONS.has(token)) continue;
+    if (isOutputOptionToken(token)) {
+      if (token === SHORT_OUTPUT_OPTION || token === OUTPUT_OPTION) index++;
+      continue;
+    }
+    kept.push(token);
+  }
+  return kept;
+}
 
 /** The typed words up to the first option token. */
 export function leadingWords(argv: readonly string[]): readonly string[] {
@@ -144,14 +183,17 @@ export function renameHint(rename: IExaCtlRename, typed: readonly string[]): str
   return `'exactl ${rename.legacy.join(" ")}' was renamed: use '${replacement}'`;
 }
 
-/** The option rename whose command path leads `argv` and whose legacy option appears before any `--`. */
-export function findOptionRename(argv: readonly string[]): IExaCtlOptionRename | null {
-  const words = leadingWords(argv);
+/** The option rename whose command path leads `argv` (global options skipped) and whose legacy option appears before any `--`. */
+export function findOptionRename(
+  argv: readonly string[],
+  rows: readonly IExaCtlOptionRename[] = EXACTL_OPTION_RENAMES,
+): IExaCtlOptionRename | null {
+  const words = leadingWords(stripGlobalOptions(argv));
   const terminator = argv.indexOf(OPTION_TERMINATOR);
   const options = (terminator === -1 ? argv : argv.slice(0, terminator))
-    .slice(words.length)
+    .filter((token) => token.startsWith(OPTION_PREFIX))
     .map((token) => token.split(OPTION_VALUE_SEPARATOR)[0]);
-  return EXACTL_OPTION_RENAMES.find((row) =>
+  return rows.find((row) =>
     row.path.length <= words.length && row.path.every((word, index) => words[index] === word) &&
     options.includes(row.legacyOption)
   ) ?? null;

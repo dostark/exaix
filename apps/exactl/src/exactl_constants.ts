@@ -128,8 +128,6 @@ export const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
 
 export const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
 
-export const CLI_OPTION_JSON_HELP = "Output in JSON format";
-
 export const CONFIG_LABEL = "config";
 
 export const CONFIG_VALIDATE_ACTION = "config.validate";

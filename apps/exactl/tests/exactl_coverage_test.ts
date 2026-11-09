@@ -35,6 +35,7 @@ import type { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
+import { withCapturedSink } from "./helpers/captured_output.ts";
 import { createdFlowRequest, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
@@ -1033,16 +1034,17 @@ Deno.test("request create with flow option", async () => {
 
 // Plan List with needs_revision Status
 
-Deno.test("plan list shows needs_revision icon", async () => {
+Deno.test("plan list shows the needs_revision status", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.planCommands.list = () =>
       Promise.resolve([
         { id: "p1", status: PlanStatus.NEEDS_REVISION, trace_id: "t1" },
       ]);
-    const out = await captureConsoleOutput(async () => {
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["plan", "list"]);
     });
-    assert(out.includes("⚠️") || out.includes("p1"));
+    assertStringIncludes(out, "p1");
+    assertStringIncludes(out, PlanStatus.NEEDS_REVISION);
   });
 });
 

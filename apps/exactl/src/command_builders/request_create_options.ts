@@ -10,7 +10,7 @@
 import { Command } from "@cliffy/command";
 import { AnalysisMode } from "@exaix/core/request";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
-import { CLI_OPTION_JSON_HELP, CLI_OPTION_MODEL, CLI_PORTAL_LONG_OPTION } from "../exactl_constants.ts";
+import { CLI_OPTION_MODEL, CLI_PORTAL_LONG_OPTION } from "../exactl_constants.ts";
 
 /** A command with every create option except the target (`--agent`, `--flow`) and `--file`. */
 function createRequestCreateBase() {
@@ -67,7 +67,6 @@ function createRequestCreateBase() {
       "--dry-run-context",
       "Print a projected input-token breakdown without writing a request file or calling a real LLM",
     )
-    .option("--json", CLI_OPTION_JSON_HELP)
     .option("--analyze", "Trigger immediate intent analysis for the request")
     .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
       default: AnalysisMode.HEURISTIC,
