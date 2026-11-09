@@ -30,7 +30,7 @@ Do not fix a bug you have not reproduced. **Don't "fix" code that isn't actually
 - Rank the plausible causes. Give each cause a testable prediction.
 - Test one prediction at a time. Record the observation and reject disproved causes.
 - For intermittent failures, record attempts and failures. A sample with no failures does not prove the failure is impossible.
-- For performance defects, read the metric and acceptance threshold from the requirement. Compare identical workloads in a controlled environment. Record uncertainty instead of asserting causality from an unmatched comparison.
+- For performance defects, read the metric and acceptance threshold from the requirement. Compare identical workloads in a controlled environment. Record uncertainty instead of asserting causality from an unmatched comparison. When workloads or environments differ, explicitly withhold the improvement verdict until an equivalent controlled comparison is available; normalization alone does not establish comparability.
 
 If the symptom cannot be reproduced, record the commands, results, and missing evidence. State what evidence is missing. Do not apply a speculative fix.
 

@@ -29,6 +29,8 @@ Use this loop for material uncertainty:
    Record the agreed meaning before specifying its behavior.
 1. Ask one concise question for a choice only the user can make. Give a
    recommendation and meaningful tradeoffs when evidence supports them.
+   Combine dependent aspects of one product decision into a single question.
+   Do not ask the user for an implementation detail that can be resolved during design.
 1. Record the answer and update dependent assumptions and acceptance criteria.
    Mark any invalidated assumption or criterion as stale until revised.
 1. Stop discovery when the remaining uncertainty cannot change the required
