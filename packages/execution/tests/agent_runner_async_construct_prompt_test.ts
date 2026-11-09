@@ -15,8 +15,9 @@
 import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
-import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
+import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator, ToolName } from "@exaix/core";
 import { PlanAdapter } from "@exaix/core/planning";
+import { createCoreToolSchemas } from "@exaix/tool-runtime";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 import { ContextBudgetManager } from "@exaix/execution";
@@ -399,4 +400,25 @@ Deno.test("[IAgentRunner] the 3-arg form with a real PlanAdapter injects the pla
   assert(schemaSeg, "schema-instructions segment must exist in the planning call");
   assertEquals(schemaSeg.content.length > 0, true, "a real PlanAdapter must inject its schema instructions");
   assertStringIncludes(schemaSeg.content, "PLANNING phase", "instructions must describe the planning phase");
+});
+
+Deno.test("[IAgentRunner] sends command policy guidance to the planning provider", async () => {
+  class CapturingProvider extends MockProvider {
+    prompt = "";
+    override generate(prompt: string) {
+      this.prompt = prompt;
+      return super.generate(prompt);
+    }
+  }
+  const provider = new CapturingProvider(WELL_FORMED_RESPONSE);
+  const { manager } = makeCapturingManager();
+  const runner = new AgentRunner(new PlanAdapter(), provider, { contextBudgetManager: manager });
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+  const command = createCoreToolSchemas().find((tool) => tool.name === ToolName.RUN_COMMAND);
+  const patch = createCoreToolSchemas().find((tool) => tool.name === ToolName.PATCH_FILE);
+  assert(command);
+  assert(patch);
+  assertStringIncludes(provider.prompt, command.description);
+  assertStringIncludes(provider.prompt, JSON.stringify(command.parameters));
+  assertStringIncludes(provider.prompt, JSON.stringify(patch.parameters));
 });
