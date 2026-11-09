@@ -61,10 +61,19 @@ const CaptureSchema = z.object({
   revision: z.string().min(1),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
   prompt: z.string().min(1),
+  requestId: z.string().regex(/^request-[a-f0-9]{8}$/).optional(),
+  callId: z.string().min(1).optional(),
 }).strict();
 const CASE_ID = /^p234-s([1-6])-c[1-5]$/;
 const REQUEST_ID = /^request-[a-f0-9]{8}$/;
 const FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
+
+/** A retained prompt, with optional call binding extracted from the provider session. */
+interface ICaptureRecord {
+  prompt: string;
+  requestId?: string;
+  callId?: string;
+}
 
 interface IUsageRow {
   call_id: string;
@@ -84,6 +93,7 @@ interface IUsageRow {
 interface IUsageRead {
   expected: (typeof approvedSkills)[number];
   rows: IUsageRow[];
+  callIds: string[];
   result: IEvidenceResult;
 }
 
@@ -129,7 +139,12 @@ async function readValidatedUsage(root: string, caseId: string, requestId: strin
     await Deno.stat(path);
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      return { expected, rows: [], result: { status: "pending", reasons: ["Skill usage journal unavailable"] } };
+      return {
+        expected,
+        rows: [],
+        callIds: [],
+        result: { status: "pending", reasons: ["Skill usage journal unavailable"] },
+      };
     }
     throw error;
   }
@@ -146,7 +161,9 @@ async function readValidatedUsage(root: string, caseId: string, requestId: strin
   } finally {
     db.close();
   }
-  if (rows.length === 0) return { expected, rows, result: { status: "pending", reasons: ["Skill usage unavailable"] } };
+  if (rows.length === 0) {
+    return { expected, rows, callIds, result: { status: "pending", reasons: ["Skill usage unavailable"] } };
+  }
   for (const row of rows) {
     if (
       !row.call_id || row.trace_id.slice(0, 8) !== requestId.slice(-8) || row.root_kind !== expected.root ||
@@ -155,11 +172,12 @@ async function readValidatedUsage(root: string, caseId: string, requestId: strin
       return {
         expected,
         rows,
+        callIds,
         result: failed(["Recorded skill usage has unexpected request, root, or submission identity"]),
       };
     }
     if (row.revision_id !== expected.revision || row.content_sha256 !== expected.sha256) {
-      return { expected, rows, result: failed(["Recorded skill revision is not the approved revision"]) };
+      return { expected, rows, callIds, result: failed(["Recorded skill revision is not the approved revision"]) };
     }
     try {
       const snapshot = {
@@ -169,20 +187,13 @@ async function readValidatedUsage(root: string, caseId: string, requestId: strin
       };
       const hash = await computeSkillContentSha256(snapshot);
       if (hash !== row.content_sha256 || await computeRevisionId(hash) !== row.revision_id) {
-        return { expected, rows, result: failed(["Recorded skill snapshot does not match its revision"]) };
+        return { expected, rows, callIds, result: failed(["Recorded skill snapshot does not match its revision"]) };
       }
     } catch {
-      return { expected, rows, result: failed(["Recorded skill snapshot is malformed"]) };
+      return { expected, rows, callIds, result: failed(["Recorded skill snapshot is malformed"]) };
     }
   }
-  if (callIds.length > 1) {
-    return {
-      expected,
-      rows,
-      result: { status: "pending", reasons: ["Request has multiple skill submissions; one call identity is needed"] },
-    };
-  }
-  return { expected, rows, result: { status: "passed", reasons: [] } };
+  return { expected, rows, callIds, result: { status: "passed", reasons: [] } };
 }
 
 /** A valid usage row is only partial evidence. It does not capture the provider prompt. */
@@ -200,7 +211,8 @@ function instructionsFor(row: IUsageRow): string {
 async function readCapture(
   root: string,
   expected: (typeof approvedSkills)[number],
-): Promise<string | undefined> {
+  requestId: string,
+): Promise<ICaptureRecord | undefined> {
   const resolver = new PathResolver(createMockConfig(root));
   const path = await resolver.validatePath(
     join(root, ".exa", "phase234-evidence", `${expected.name}-provider-prompt.json`),
@@ -223,10 +235,13 @@ async function readCapture(
     !parsed.success || parsed.data.skill !== expected.name || parsed.data.root !== expected.root ||
     parsed.data.revision !== expected.revision || parsed.data.sha256 !== expected.sha256
   ) throw new Error("Provider capture does not match the approved revision");
-  return parsed.data.prompt;
+  if (parsed.data.requestId !== undefined && parsed.data.requestId !== requestId) {
+    throw new Error("Provider capture identifies another request");
+  }
+  return { prompt: parsed.data.prompt, requestId: parsed.data.requestId, callId: parsed.data.callId };
 }
 
-/** Binds a retained prompt to the request's unique journal submission. */
+/** Binds a retained prompt to the request's journal submission. */
 export async function bindRecordedSkillSubmission(
   root: string,
   caseId: string,
@@ -234,7 +249,36 @@ export async function bindRecordedSkillSubmission(
 ): Promise<ISkillSubmissionBinding> {
   const read = await readValidatedUsage(root, caseId, requestId);
   if (read.result.status !== "passed") return { expected: undefined, result: read.result };
-  const row = read.rows[0];
+  let captureRecord: ICaptureRecord | undefined;
+  try {
+    captureRecord = await readCapture(root, read.expected, requestId);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Provider capture")) {
+      return { expected: undefined, result: failed([error.message]) };
+    }
+    throw error;
+  }
+  if (captureRecord === undefined) {
+    return { expected: undefined, result: { status: "pending", reasons: ["Provider submission capture unavailable"] } };
+  }
+  let row: IUsageRow | undefined;
+  if (captureRecord.callId !== undefined) {
+    row = read.rows.find((candidate) => candidate.call_id === captureRecord.callId);
+    if (!row) {
+      return {
+        expected: undefined,
+        result: failed(["Provider capture call identity is not a recorded submission"]),
+      };
+    }
+  } else {
+    if (read.callIds.length !== 1) {
+      return {
+        expected: undefined,
+        result: { status: "pending", reasons: ["Request has multiple skill submissions; one call identity is needed"] },
+      };
+    }
+    row = read.rows[0];
+  }
   const expected: IExpectedSubmission = {
     requestId,
     skill: read.expected.name,
@@ -253,18 +297,6 @@ export async function bindRecordedSkillSubmission(
     submissionKind: row.submission_kind,
     matchSource: row.match_source,
   };
-  let prompt: string | undefined;
-  try {
-    prompt = await readCapture(root, read.expected);
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Provider capture")) {
-      return { expected, usage, result: failed([error.message]) };
-    }
-    throw error;
-  }
-  if (prompt === undefined) {
-    return { expected, usage, result: { status: "pending", reasons: ["Provider submission capture unavailable"] } };
-  }
-  const capture: ISubmissionCapture = { requestId, callId: row.call_id, prompt };
+  const capture: ISubmissionCapture = { requestId, callId: row.call_id, prompt: captureRecord.prompt };
   return { expected, usage, capture, result: verifySkillSubmission(expected, usage, capture) };
 }

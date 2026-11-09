@@ -94,6 +94,8 @@ async function writeCapture(
       revision: overrides.revision ?? "",
       sha256: overrides.sha256 ?? "",
       prompt,
+      ...(overrides.requestId === undefined ? {} : { requestId: overrides.requestId }),
+      ...(overrides.callId === undefined ? {} : { callId: overrides.callId }),
     }),
     { mode: 0o600 },
   );
@@ -161,6 +163,66 @@ Deno.test("binding rejects malformed captures instead of crashing evaluation", a
       join(env.tempDir, ".exa", "phase234-evidence", "fix-bug-provider-prompt.json"),
       "{not json",
     );
+    const binding = await bindRecordedSkillSubmission(env.tempDir, "p234-s2-c1", REQUEST_ID);
+    assertEquals(binding.result.status, "failed");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("binding accepts an explicit capture call identity when the request has several submissions", async () => {
+  const env = await initTestDbService();
+  try {
+    const loaded = await loadFixBug();
+    const { revision, hash } = await seedRevision(env.db, loaded.snapshot);
+    await seedUsage(env.db, "call-1", revision);
+    await seedUsage(env.db, "call-2", revision);
+    await writeCapture(env.tempDir, `**Instructions:**\n${bodyOf(loaded.snapshot.skill_md)}\n`, {
+      revision,
+      sha256: hash,
+      requestId: REQUEST_ID,
+      callId: "call-2",
+    });
+    const binding = await bindRecordedSkillSubmission(env.tempDir, "p234-s2-c1", REQUEST_ID);
+    assertEquals(binding.result.status, "passed");
+    assertEquals(binding.capture?.callId, "call-2");
+    assertEquals(binding.usage?.callId, "call-2");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("binding rejects an explicit call identity that is not in the journal", async () => {
+  const env = await initTestDbService();
+  try {
+    const loaded = await loadFixBug();
+    const { revision, hash } = await seedRevision(env.db, loaded.snapshot);
+    await seedUsage(env.db, "call-1", revision);
+    await writeCapture(env.tempDir, `**Instructions:**\n${bodyOf(loaded.snapshot.skill_md)}\n`, {
+      revision,
+      sha256: hash,
+      requestId: REQUEST_ID,
+      callId: "call-missing",
+    });
+    const binding = await bindRecordedSkillSubmission(env.tempDir, "p234-s2-c1", REQUEST_ID);
+    assertEquals(binding.result.status, "failed");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("binding rejects a capture that names another request", async () => {
+  const env = await initTestDbService();
+  try {
+    const loaded = await loadFixBug();
+    const { revision, hash } = await seedRevision(env.db, loaded.snapshot);
+    await seedUsage(env.db, "call-1", revision);
+    await writeCapture(env.tempDir, `**Instructions:**\n${bodyOf(loaded.snapshot.skill_md)}\n`, {
+      revision,
+      sha256: hash,
+      requestId: "request-89abcdef",
+      callId: "call-1",
+    });
     const binding = await bindRecordedSkillSubmission(env.tempDir, "p234-s2-c1", REQUEST_ID);
     assertEquals(binding.result.status, "failed");
   } finally {
