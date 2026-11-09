@@ -1,0 +1,62 @@
+schema_version: "1.0.0"
+id: skill-evaluation-evidence
+title: "Observe independent skill evaluation evidence"
+pack: skill_eval
+tags: ["smoke", "subsystem:skills"]
+request_fixture: fixtures/requests/skill_eval/phase234/p234-s6-c1.md
+mode_support: [auto]
+portals:
+  - alias: planning-fixture
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/p234_s6_c1"
+    target_path: "$WORKSPACE_ROOT/p234-s6-c1"
+    git_init: true
+steps:
+  - id: capture-baseline
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts",
+      baseline,
+      "$WORKSPACE_ROOT",
+      p234-s6-c1,
+    ]
+    output_criteria:
+      - id: baseline-created
+        kind: command-exit-code
+        equals: 0
+  - id: observe-effects
+    type: run-script
+    command: deno
+    args:
+      - eval
+      - --config
+      - "$REPO_ROOT/deno.json"
+      - |
+          const evidence = await import(Deno.args[0]);
+          const root = Deno.args[1];
+          const before = await evidence.observeWorkspaceChanges(root, "p234-s6-c1");
+          if (before.status !== "pending") throw new Error("Incomplete workspace inspection must remain pending");
+          await Deno.writeTextFile(`${root}/p234-s6-c1/notes.md`, "Actual file");
+          const after = await evidence.observeWorkspaceChanges(root, "p234-s6-c1");
+          if (after.status !== "pending" || !after.reasons.includes("added: notes.md")) {
+            throw new Error("Unexpected file was not observed");
+          }
+          const report = evidence.evaluatePhase234({
+            delivery: { status: "pending", reasons: ["No capture"] },
+            behavior: { status: "pending", reasons: ["No review"] },
+            artifact: { status: "passed", reasons: [] },
+            workspace: before,
+            commands: { status: "pending", reasons: ["No command observation"] },
+          });
+          if (report.overall !== "pending") throw new Error("Missing evidence passed");
+          console.log("Independent evidence observations verified");
+      - "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts"
+      - "$WORKSPACE_ROOT"
+    output_criteria:
+      - id: effects-observed
+        kind: command-exit-code
+        equals: 0

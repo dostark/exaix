@@ -1,0 +1,28 @@
+{
+  "caseId": "p234-s2-c2",
+  "approvedBy": "user",
+  "approvedAt": "2026-11-09",
+  "freezeTiming": "after skill amendment and previous observed run; not comparable with the original fixture",
+  "files": {
+    "tests/scenario_framework/fixtures/portals/p234_s2_c2_corrected/README.md": {
+      "sha256": "f521120700b484286b38489856ff96d029f09e6e494824aff9abb15ab09d09f2",
+      "mode": 420
+    },
+    "tests/scenario_framework/fixtures/portals/p234_s2_c2_corrected/count.sh": {
+      "sha256": "001aaf8703f94a83752ec147d5518f48505fa8b9fc2ebc832d4466dfd9802f5f",
+      "mode": 493
+    },
+    "tests/scenario_framework/fixtures/portals/p234_s2_c2_corrected/race.sh": {
+      "sha256": "18bda5071070d57ce3216a2d886bc20ec330bd3dd8a28f9429927e9771bfa38e",
+      "mode": 493
+    },
+    "tests/scenario_framework/fixtures/portals/p234_s2_c2_corrected/run-tests.sh": {
+      "sha256": "de5febd27eb8f5946e23eca0e2e410bc3c72295d70576c2294b382c84d3f8585",
+      "mode": 493
+    },
+    "tests/scenario_framework/fixtures/requests/skill_eval/phase234/p234-s2-c2.md": {
+      "sha256": "5d219ce1cac461a5ee1c03c10b3ddae8ed1550a2d5c28cf7654f5e69d6096d6e",
+      "mode": 420
+    }
+  }
+}

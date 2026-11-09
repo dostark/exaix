@@ -1,0 +1,112 @@
+schema_version: "1.0.0"
+id: p234-s6-c4
+title: "Planning decision case 4 — structured record"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:plan"]
+request_fixture: fixtures/requests/skill_eval/phase234/p234-s6-c4.md
+mode_support: [auto]
+portals:
+  - alias: exaix-self
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/p234_s6_c4"
+    target_path: "$WORKSPACE_ROOT/p234-s6-c4"
+    git_init: true
+steps:
+  - id: prepare-dogfood-workspace
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/planning_workspace.ts",
+      "$WORKSPACE_ROOT",
+      "p234-s6-c4",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: workspace-prepared
+        kind: command-exit-code
+        equals: 0
+  - id: prepare-request-context
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_eval_request_context.ts",
+      "$WORKSPACE_ROOT",
+      "p234-s6-c4",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: request-context-prepared
+        kind: command-exit-code
+        equals: 0
+  - id: capture-workspace-baseline
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts",
+      baseline,
+      "$WORKSPACE_ROOT",
+      "p234-s6-c4",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: baseline-captured
+        kind: command-exit-code
+        equals: 0
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: [
+      "--effort",
+      "high",
+      "--agent-role",
+      "senior-coder",
+      "--file",
+      "$WORKSPACE_ROOT/p234-s6-c4-request.md",
+      "--portal",
+      "exaix-self",
+    ]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 600
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+  - id: check-planning-record
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/planning_decisions_check.ts",
+      "p234-s6-c4",
+      "$WORKSPACE_ROOT",
+      "$REQUEST_ID",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: structured-record-matches
+        kind: command-exit-code
+        equals: 0

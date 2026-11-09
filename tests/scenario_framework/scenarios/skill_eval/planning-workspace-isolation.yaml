@@ -1,0 +1,29 @@
+schema_version: "1.0.0"
+id: planning-workspace-isolation
+title: "Prepare an isolated planning skill workspace"
+pack: skill_eval
+tags: ["subsystem:skills", "entity:plan"]
+request_fixture: fixtures/requests/skill_eval/phase234/p234-s6-c1.md
+mode_support: [auto]
+portals:
+  - alias: planning-fixture
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/p234_s6_c1"
+    target_path: "$WORKSPACE_ROOT/p234-s6-c1"
+    git_init: true
+steps:
+  - id: prepare-isolated-planning-workspace
+    type: run-script
+    command: deno
+    args:
+      - run
+      - -A
+      - --config
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/runner/planning_workspace.ts"
+      - "$WORKSPACE_ROOT"
+      - p234-s6-c1
+    timeout_sec: 90
+    output_criteria:
+      - id: fixture-prepared
+        kind: command-exit-code
+        equals: 0

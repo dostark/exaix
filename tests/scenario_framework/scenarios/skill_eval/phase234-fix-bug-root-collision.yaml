@@ -1,0 +1,23 @@
+schema_version: "1.0.0"
+id: phase234-fix-bug-root-collision
+title: "Reject a shadowed Blueprint fix-bug revision"
+pack: skill_eval
+tags: ["subsystem:skills", "entity:fix-bug"]
+request_fixture: fixtures/requests/skill_eval/phase234/p234-s2-c1.md
+mode_support: [auto]
+portals: []
+steps:
+  - id: verify-root-collision
+    type: run-script
+    command: deno
+    args:
+      - run
+      - -A
+      - --config
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/runner/skill_root_collision.ts"
+    timeout_sec: 90
+    output_criteria:
+      - id: blueprint-accepted-shadow-rejected
+        kind: command-exit-code
+        equals: 0

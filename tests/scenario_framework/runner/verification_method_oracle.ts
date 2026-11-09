@@ -38,7 +38,9 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
         [/malformed|invalid|reject|throw\b/, "covers malformed input"],
         [/\bcontract\b|\bproperty\b/, "derives the expectation from the contract"],
       ]);
-      const copied = /expected\s*=\s*encode|copy[\s\S]{0,40}\boutput\b|implementation output\b/.test(plan);
+      const claim = plan.replace(/\bnot\s+(?:from\s+)?(?:the\s+)?(?:observed\s+)?implementation output\b/g, "")
+        .replace(/do not derive[^.\n]{0,60}from implementation output/g, "");
+      const copied = /expected\s*=\s*encode|copy[\s\S]{0,40}\boutput\b|implementation output\b/.test(claim);
       return copied ? { ok: false, reasons: [...base.reasons, "copies implementation output as the oracle"] } : base;
     }
     case "p234-s3-c2": {
@@ -47,7 +49,7 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
         [/disagree|disagreement|differs?\b/, "names the disagreement"],
         [/investigate|explain|decide\b/, "investigates the disagreement"],
       ]);
-      const parserOracle = /(?:old|new|either) parser[\s\S]{0,40}\b(?:oracle|expected)\b/.test(plan);
+      const parserOracle = /(?:old|new|either) parser[^.\n]{0,40}\b(?:oracle|expected)\b/.test(plan);
       return parserOracle ? { ok: false, reasons: [...base.reasons, "treats a parser as the oracle"] } : base;
     }
     case "p234-s3-c3": {
@@ -69,8 +71,13 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
         [/\bpublic\b|observable|contract\b/, "keeps the public contract"],
         [/unchanged|same output|no private|not[\s\S]{0,20}private\b/, "leaves the public output unchanged"],
       ]);
-      const privateAssert = /assert[^.]{0,40}(?:joinparts|private helper|internal call)\b/.test(plan) &&
-        !/do not assert|not assert|no private\b/.test(plan);
+      const privateAssert = plan.split(/[.\n]/).some((sentence) =>
+        /assert[^.]{0,40}(?:joinparts|private helper|internal call)\b/.test(sentence) &&
+        !/\bif\b[^.]*\b(?:may|might|could) fail\b|do not assert|not assert|not inspect or assert|no tests? assert|no private\b|no reference to/
+          .test(
+            sentence,
+          )
+      );
       return privateAssert
         ? { ok: false, reasons: [...base.reasons, "asserts a private helper or internal call"] }
         : base;

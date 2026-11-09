@@ -8,6 +8,7 @@
  */
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
+import { readRequirementsArtifact } from "./requirements_artifact.ts";
 
 interface ITextOracleResult {
   ok: boolean;
@@ -41,16 +42,26 @@ async function newestPlan(root: string): Promise<string> {
 
 /** Retains the legacy CLI contract while newer cases use explicit request binding. */
 export async function runTextOracle(evaluate: TextOracle, scriptName: string): Promise<void> {
-  const [caseId, workspaceRoot] = Deno.args;
+  const [caseId, workspaceRoot, requestId, mode] = Deno.args;
   if (!caseId || !workspaceRoot) {
     console.error(`Usage: ${scriptName} <case-id> <workspace-root>`);
     Deno.exit(2);
   }
   try {
-    const planPath = await newestPlan(workspaceRoot);
-    const result = evaluate(caseId, await Deno.readTextFile(planPath));
-    console.log(JSON.stringify({ caseId, planPath, ...result }));
-    Deno.exit(result.ok ? 0 : 1);
+    if (mode === "diagnostic" && !requestId) throw new Error("Diagnostic requires a request identity");
+    const planPath = requestId ? `Workspace/Plans/${requestId}_plan.md` : await newestPlan(workspaceRoot);
+    const artifact = requestId
+      ? await readRequirementsArtifact(workspaceRoot, requestId)
+      : await Deno.readTextFile(planPath);
+    const result = evaluate(caseId, artifact);
+    console.log(JSON.stringify(
+      mode === "diagnostic" ? { caseId, planPath, legacyDiagnostic: result } : {
+        caseId,
+        planPath,
+        ...result,
+      },
+    ));
+    Deno.exit(mode === "diagnostic" || result.ok ? 0 : 1);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     Deno.exit(2);

@@ -12,12 +12,29 @@ portals:
     git_init: true
 matrix:
   cells:
-    - tool: live
-      provider: openai-chat
-      config: configs/subsystem-live.toml
-      requires_bin: "true"
-      requires_key: DEEPSEEK_API_KEY
+    - tool: codex
+      provider: codex-cli
+      config: configs/codex-terra-61-skill-eval.toml
+      requires_bin: "codex"
 steps:
+  - id: capture-workspace-baseline
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts",
+      baseline,
+      "$WORKSPACE_ROOT",
+      "p234-s4-c4",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: baseline-captured
+        kind: command-exit-code
+        equals: 0
   - id: start-daemon
     type: exactl
     command: daemon
@@ -25,11 +42,11 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: ["--agent-role", "general", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s4"]
+    args: ["--effort", "high", "--agent-role", "test-engineer", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s4"]
   - id: await-plan
     type: wait-for-file
     args: ["Workspace/Plans/*_plan.md"]
-    timeout_sec: 120
+    timeout_sec: 600
     output_criteria:
       - id: plan-produced
         kind: file-found
@@ -45,6 +62,8 @@ steps:
       - "$FRAMEWORK_HOME/runner/runtime_verification_oracle.ts"
       - "p234-s4-c4"
       - "$WORKSPACE_ROOT"
+      - "$REQUEST_ID"
+      - diagnostic
     timeout_sec: 60
     output_criteria:
       - id: plan-matches
@@ -54,3 +73,22 @@ steps:
     type: exactl
     command: daemon
     args: [stop]
+  - id: evaluate-evidence
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts",
+      evaluate,
+      "$WORKSPACE_ROOT",
+      "p234-s4-c4",
+      "$REQUEST_ID",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: independent-evidence-complete
+        kind: command-exit-code
+        equals: 0

@@ -61,21 +61,27 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
     }
     case "p234-s1-c4": {
       const base = requireAll(plan, [
-        [/\bexit(?:s|ed)?\s*(?:code\s*)?0\b|exit-zero\b/, "names the exit-zero check"],
-        [/\bnot (?:proof|evidence|sufficient)\b|\breject\b|\binsufficient\b|does not assert|no symptom assertion\b/, "rejects exit zero"],
+        [/\bexit(?:s|ed)?\s*(?:code\s*)?(?:0|zero)\b|exit-zero\b/, "names the exit-zero check"],
+        [
+          /\bnot (?:proof|evidence|sufficient)\b|\breject\b|\binsufficient\b|does not assert|no symptom assertion\b|\bexit(?:s|ed)?\s*(?:code\s*)?(?:0|zero)\b[^.\n]{0,80}\bwithout (?:verifying|asserting|checking)\b[^.\n]{0,80}\b(?:duplicate|symptom)\b/,
+          "rejects exit zero",
+        ],
       ]);
-      const accepted = /\bexit(?:s|ed)?\s*(?:code\s*)?0\b[^.]{0,60}\b(?:proves|confirms|means|fixed)\b/.test(plan);
+      const accepted = /\bexit(?:s|ed)?\s*(?:code\s*)?(?:0|zero)\b[^.]{0,60}\b(?:proves|confirms|means|fixed)\b/.test(
+        plan,
+      );
       return accepted
         ? { ok: false, reasons: [...base.reasons, "accepts exit zero as proof"] }
         : base;
     }
     case "p234-s1-c5": {
-      const base = requireAll(plan, [
+      const verdict = normalizeOracleText(text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, ""));
+      const base = requireAll(verdict, [
         [/\b2\b[\s\S]{0,80}\b8\b|\b8\b[\s\S]{0,80}\b2\b/, "names both worker counts"],
         [/same workload|identical workload|comparable|not comparable|withhold|unverified|no (?:valid )?improvement\b/, "withholds the improvement verdict"],
       ]);
-      const claimed = /\b(?:is|shows?|confirms?)\s+(?:a\s+)?(?:speedup|improvement)\b|\bfaster\b/.test(plan) &&
-        !/\b(?:not|no|without|withhold)\s+(?:a\s+)?(?:speedup|improvement)\b|\bnot faster\b/.test(plan);
+      const claimed = /\b(?:is|shows?|confirms?)\s+(?:a\s+)?(?:speedup|improvement)\b|\bfaster\b/.test(verdict) &&
+        !/\b(?:not|no|without|withhold)\s+(?:a\s+)?(?:speedup|improvement)\b|\bnot faster\b/.test(verdict);
       return claimed
         ? { ok: false, reasons: [...base.reasons, "claims a speedup from unequal runs"] }
         : base;

@@ -9,9 +9,12 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
+import { REPO_ROOT } from "@exaix/testing";
 import { BUG_DIAGNOSIS_RUNTIME_CASES, evaluatePlan } from "../../runner/bug_diagnosis_runtime_oracle.ts";
 
 import { registerOracleControls } from "../helpers/oracle_controls.ts";
+import raceManifest from "../../fixtures/skill_eval/phase234/p234-s2-c2-corrected-manifest.json" with { type: "json" };
 
 interface ICaseSample {
   id: string;
@@ -53,6 +56,39 @@ Deno.test("every announced runtime case has a sample", () => {
 });
 
 registerOracleControls(SAMPLES, evaluatePlan, "accepts the project-appropriate diagnosis");
+
+Deno.test("corrected two-caller fixture isolates the duplicate to concurrent callers", async () => {
+  const cwd = join(REPO_ROOT, "tests/scenario_framework/fixtures/portals/p234_s2_c2_corrected");
+  const single = await new Deno.Command("sh", {
+    args: ["-c", "printf 'row\\n' | ./count.sh"],
+    cwd,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(single.code, 0);
+  assertEquals(new TextDecoder().decode(single.stdout), "row\n");
+  const race = await new Deno.Command("sh", { args: ["race.sh"], cwd, stdout: "piped", stderr: "piped" }).output();
+  assertEquals(race.code, 0);
+  assertEquals(JSON.parse(new TextDecoder().decode(race.stdout)), { callers: 2, rows: 2, expected: 1 });
+  const regression = await new Deno.Command("sh", {
+    args: ["run-tests.sh"],
+    cwd,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(regression.code, 1);
+  assertStringIncludes(new TextDecoder().decode(regression.stderr), "expected 1 row, got 2");
+});
+
+Deno.test("corrected two-caller fixture matches the pre-run frozen manifest", async () => {
+  for (const [path, expected] of Object.entries(raceManifest.files)) {
+    const file = join(REPO_ROOT, path);
+    const digest = await crypto.subtle.digest("SHA-256", await Deno.readFile(file));
+    const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    assertEquals(hash, expected.sha256, path);
+    assertEquals((await Deno.stat(file)).mode! & 0o777, expected.mode, path);
+  }
+});
 
 Deno.test("an unknown runtime case id is rejected", () => {
   let message = "";

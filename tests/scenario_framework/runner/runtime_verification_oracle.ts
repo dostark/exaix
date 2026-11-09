@@ -62,10 +62,12 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
     case "p234-s4-c4": {
       const base = requireAll(plan, [
         [/\bpublic\b|observable|contract\b/, "keeps the public contract"],
-        [/unchanged|same output|no private\b/, "leaves the public output unchanged"],
+        [/unchanged|same output|output stable|no private\b/, "leaves the public output unchanged"],
       ]);
-      const privateAssert = /private call|call graph|internal[\s\S]{0,20}assert\b/.test(plan) &&
-        !/no private call|not[\s\S]{0,20}private call|assert no private\b/.test(plan);
+      const privateAssert = plan.split(/[.\n]/).some((sentence) =>
+        /private call|call graph|internal[^.\n]{0,20}assert\b/.test(sentence) &&
+        !/no private call|not[^.\n]{0,60}(?:private call|call graph)|assert no private\b/.test(sentence)
+      );
       return privateAssert ? { ok: false, reasons: [...base.reasons, "asserts the private call graph"] } : base;
     }
     case "p234-s4-c5": {

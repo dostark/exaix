@@ -54,6 +54,52 @@ Deno.test("every announced verification-method case has a sample", () => {
 
 registerOracleControls(SAMPLES, evaluatePlan, "accepts the selected method");
 
+Deno.test("verification oracle distinguishes rejecting implementation output from copying it", () => {
+  const good =
+    "The round-trip contract rejects malformed input. Expectations come from the contract, not implementation output.";
+  const bad = `${good} Set expected = encode(value).`;
+  assertEquals(evaluatePlan("p234-s3-c1", good).ok, true);
+  assertEquals(evaluatePlan("p234-s3-c1", bad).ok, false);
+  assertEquals(
+    evaluatePlan(
+      "p234-s3-c1",
+      "Round-trip contract rejects malformed input; expected comes from contract, not from observed implementation output.",
+    ).ok,
+    true,
+  );
+  const negative =
+    "Round-trip contract rejects malformed input. Tests do not derive expected errors from implementation output.";
+  assertEquals(evaluatePlan("p234-s3-c1", negative).ok, true);
+  assertEquals(evaluatePlan("p234-s3-c1", `${negative} Copy implementation output.`).ok, false);
+});
+
+Deno.test("independent parser oracle does not join sentences into a false assertion", () => {
+  const good = "Investigate disagreement against the grammar, not either parser.\nfunction expected(input) {}";
+  assertEquals(evaluatePlan("p234-s3-c2", good).ok, true);
+  assertEquals(evaluatePlan("p234-s3-c2", `${good}\nUse the old parser as the oracle.`).ok, false);
+});
+
+Deno.test("private-helper checks distinguish conditional risk from a required assertion", () => {
+  const good = "Keep the public output unchanged.\n" +
+    "If any test explicitly asserts on the joinParts function name, it may fail.\n" +
+    "Ensure no tests assert on private implementation details.";
+  assertEquals(evaluatePlan("p234-s3-c4", good).ok, true);
+  assertEquals(
+    evaluatePlan("p234-s3-c4", `${good}\nCreate test asserting buildLabel output; no reference to joinParts.`).ok,
+    true,
+  );
+  assertEquals(
+    evaluatePlan("p234-s3-c4", `${good}\nThe test does not inspect or assert the private helper name.`).ok,
+    true,
+  );
+  assertEquals(evaluatePlan("p234-s3-c4", `${good}\nAssert the private helper joinParts is called.`).ok, false);
+  assertEquals(
+    evaluatePlan("p234-s3-c4", "Keep public output unchanged. If running tests, assert the private helper is called.")
+      .ok,
+    false,
+  );
+});
+
 Deno.test("an unknown verification-method case id is rejected", () => {
   let message = "";
   try {

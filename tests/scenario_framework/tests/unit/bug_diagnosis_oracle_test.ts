@@ -54,6 +54,23 @@ Deno.test("every announced bug-diagnosis case has a sample", () => {
 
 registerOracleControls(SAMPLES, evaluatePlan, "accepts the symptom-specific diagnosis");
 
+Deno.test("exit-zero diagnosis recognizes an unchecked duplicate symptom without accepting unrelated omissions", () => {
+  const good = "The check script exits zero without verifying the reported symptom (duplicate writes).";
+  const bad = "The check script exits zero without verifying logging. The duplicate count is two.";
+  const contradictory = `${good} Exit zero proves the bug is fixed.`;
+  assertEquals(evaluatePlan("p234-s1-c4", good).ok, true);
+  assertEquals(evaluatePlan("p234-s1-c4", bad).ok, false);
+  assertEquals(evaluatePlan("p234-s1-c4", contradictory).ok, false);
+});
+
+Deno.test("performance oracle does not treat quoted request metadata as the plan verdict", () => {
+  const header = "---\nrequest_analysis: The 8-worker run is faster.\n---\n";
+  const good = "The 2-worker and 8-worker results are not comparable. Withhold an improvement verdict.";
+  const bad = "The 8-worker run is faster than the 2-worker run; the speedup is confirmed.";
+  assertEquals(evaluatePlan("p234-s1-c5", `${header}${good}`).ok, true);
+  assertEquals(evaluatePlan("p234-s1-c5", `${header}${bad}`).ok, false);
+});
+
 Deno.test("an unknown case id is rejected", () => {
   let message = "";
   try {

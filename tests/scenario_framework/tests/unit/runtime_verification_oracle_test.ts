@@ -54,6 +54,15 @@ Deno.test("every announced runtime verification case has a sample", () => {
 
 registerOracleControls(SAMPLES, evaluatePlan, "accepts the selected method");
 
+Deno.test("private refactor accepts a stable public output without allowing private call assertions", () => {
+  const good = "Keep the public buildLabel output stable and anchored by a contract test.";
+  assertEquals(evaluatePlan("p234-s4-c4", good).ok, true);
+  assertEquals(evaluatePlan("p234-s4-c4", `${good} Assert the private call graph.`).ok, false);
+  const negative = `${good} Tests must not depend on the private helper or its call graph.`;
+  assertEquals(evaluatePlan("p234-s4-c4", negative).ok, true);
+  assertEquals(evaluatePlan("p234-s4-c4", `${negative} Assert the private call graph.`).ok, false);
+});
+
 Deno.test("an unknown runtime verification case id is rejected", () => {
   let message = "";
   try {

@@ -50,40 +50,62 @@ function complete(record: Artifact): boolean {
 }
 
 function countOutcome(record: Artifact): boolean {
-  return complete(record) && record.decisions.length === 0 && record.acceptance.length === COUNT_EXAMPLES.length &&
+  const decisionsAgree = record.decisions.every((entry) =>
+    typeof entry.decision === "string" && /\b0\b/.test(entry.decision) && /0 items/i.test(entry.decision) &&
+    !/\bnot\s+(?:return\s+)?["']?0 items/i.test(entry.decision)
+  );
+  return complete(record) && decisionsAgree && record.acceptance.length === COUNT_EXAMPLES.length &&
     COUNT_EXAMPLES.every(([input, expected]) =>
       record.acceptance.some((criterion) => criterion.input === input && criterion.expected === expected)
     );
 }
 
 function pendingRetention(record: Artifact): boolean {
-  const deletion = named(record.acceptance, "AC-delete");
-  const active = named(record.acceptance, "AC-active");
-  return record.status === "PENDING USER DECISION" && record.questions.length === 1 && record.decisions.length === 0 &&
-    has(record.questions, [/retention/, /period/, /clock|basis/]) && deletion?.status === "PENDING" &&
-    text(deletion).includes("q-retention") && active?.status === "RESOLVED" &&
-    has(active, [/active/, /never delete|do not delete/]);
+  const question = record.questions[0];
+  const deletion = record.acceptance.find((entry) =>
+    entry.status === "PENDING" && has(entry, [/completed/, /delet/]) &&
+    question !== undefined && text(entry).includes(question.id.toLowerCase())
+  );
+  const active = record.acceptance.find((entry) =>
+    entry.status === "RESOLVED" && has(entry, [/active/, /never delet|do not delet|remains? present/])
+  );
+  const inventedChoice = /\b\d+\s*(?:days?|hours?|weeks?)\b|created_at|completed_at/.test(text(record.decisions));
+  return record.status === "PENDING USER DECISION" && record.questions.length === 1 && !inventedChoice &&
+    has(record.questions, [/retention/, /period/, /clock|basis|timestamp/]) && deletion !== undefined &&
+    active !== undefined;
 }
 
 function answeredRetention(record: Artifact, prior: string): boolean {
   const previous = parseArtifact(prior);
   if (!previous || previous.case_id !== record.case_id || !pendingRetention(previous)) return false;
-  const deletion = named(record.acceptance, "AC-delete");
-  const active = named(record.acceptance, "AC-active");
-  return complete(record) && text(record.supersedes).includes(record.case_id) &&
-    has(record.decisions, [/\b45\b/, /completed_at/]) && !has(record.decisions, [/\b30\b/]) &&
-    deletion !== undefined && has(deletion, [/completed_at\s*(?:<=|at or before)/, /\b45\b/]) &&
-    !text(deletion).includes("created_at") && active !== undefined &&
-    has(active, [/active/, /never delete|do not delete/]);
+  const identified = text(record.supersedes).includes(record.case_id) ||
+    (text(record.questions).includes(record.case_id) && has(record.questions, [/earlier|prior/]));
+  const resolved = record.status === "RESOLVED" &&
+    record.questions.every((question) => question.status === "RESOLVED") &&
+    record.acceptance.every((criterion) => criterion.status === "RESOLVED");
+  const active = record.acceptance.some((criterion) =>
+    has(criterion, [/active/, /never delet|do not delet|not delet|remains? present/])
+  );
+  const directBoundary = record.acceptance.some((criterion) =>
+    has(criterion, [/completed_at\s*(?:<=|at or before)/, /\b45\b/])
+  );
+  const splitBoundary = record.acceptance.some((criterion) => has(criterion, [/completed_at/, /equal/, /\b45\b/])) &&
+    record.acceptance.some((criterion) => has(criterion, [/completed_at/, /earlier than/, /\b45\b/]));
+  return resolved && identified && has(record.decisions, [/\b45\b/, /completed_at/]) &&
+    !has(record.decisions, [/\b30\b/]) && !text(record.acceptance).includes("created_at") && active &&
+    (directBoundary || splitBoundary);
 }
 
 function changedPrerequisite(record: Artifact): boolean {
   const assumption = named(record.assumptions, "A-local-delete");
   const purge = named(record.acceptance, "AC-local-purge");
-  const expiry = named(record.acceptance, "AC-expiry");
+  const expiry = record.acceptance.find((entry) =>
+    entry.status === "PENDING" && has(entry, [/logical expiry|retention/])
+  );
   const storage = named(record.decisions, "D-storage");
   return record.status === "PENDING USER DECISION" && storage !== undefined &&
-    has(storage, [/external/, /immutable/, /adr-007/]) && assumption?.status === "INVALIDATED" &&
+    has(storage, [/external/, /immutable/, /adr-007/]) &&
+    (assumption?.status === "INVALIDATED" || assumption?.status === "STALE") &&
     text(assumption).includes("d-storage") && purge?.status === "STALE" && text(purge).includes("d-storage") &&
     expiry?.status === "PENDING" && has(record.questions, [/logical expiry/, /physical deletion/]) &&
     record.adr_proposals.length === 0;

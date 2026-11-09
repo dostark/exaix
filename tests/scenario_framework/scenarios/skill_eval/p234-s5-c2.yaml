@@ -12,12 +12,63 @@ portals:
     git_init: true
 matrix:
   cells:
-    - tool: live
-      provider: openai-chat
-      config: configs/subsystem-live.toml
-      requires_bin: "true"
-      requires_key: DEEPSEEK_API_KEY
+    - tool: codex
+      provider: codex-cli
+      config: configs/codex-terra-61-skill-eval.toml
+      requires_bin: "codex"
 steps:
+  - id: prepare-request-context
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_eval_request_context.ts",
+      "$WORKSPACE_ROOT",
+      "p234-s5-c2",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: request-context-prepared
+        kind: command-exit-code
+        equals: 0
+  - id: prepare-answer-context
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_eval_request_context.ts",
+      "$WORKSPACE_ROOT",
+      "p234-s5-c2-answer",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: answer-context-prepared
+        kind: command-exit-code
+        equals: 0
+  - id: capture-workspace-baseline
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/skill_evaluation_evidence.ts",
+      baseline,
+      "$WORKSPACE_ROOT",
+      "p234-s5-c2",
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: baseline-captured
+        kind: command-exit-code
+        equals: 0
   - id: start-daemon
     type: exactl
     command: daemon
@@ -25,11 +76,20 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: ["--agent-role", "general", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s5-c2"]
+    args: [
+      "--effort",
+      "high",
+      "--agent-role",
+      "product-manager",
+      "--file",
+      "$WORKSPACE_ROOT/p234-s5-c2-request.md",
+      "--portal",
+      "p234-s5-c2",
+    ]
   - id: await-plan
     type: wait-for-file
     args: ["Workspace/Plans/*_plan.md"]
-    timeout_sec: 90
+    timeout_sec: 600
   - id: assert-plan
     type: run-script
     command: deno
@@ -42,6 +102,8 @@ steps:
       "p234-s5-c2",
       "$WORKSPACE_ROOT",
       "$REQUEST_ID",
+      initial,
+      diagnostic,
     ]
     timeout_sec: 90
     output_criteria:
@@ -52,10 +114,12 @@ steps:
     type: exactl
     command: request
     args: [
+      "--effort",
+      "high",
       "--agent-role",
-      "general",
+      "product-manager",
       "--file",
-      "$FRAMEWORK_HOME/fixtures/requests/skill_eval/phase234/p234-s5-c2-answer.md",
+      "$WORKSPACE_ROOT/p234-s5-c2-answer-request.md",
       "--portal",
       "p234-s5-c2",
     ]
@@ -63,7 +127,7 @@ steps:
     type: wait-for-file
     args: ["Workspace/Plans/*_plan.md"]
     min_matches: 2
-    timeout_sec: 90
+    timeout_sec: 600
   - id: assert-answer
     type: run-script
     command: deno
@@ -77,6 +141,7 @@ steps:
       "$WORKSPACE_ROOT",
       "$REQUEST_ID",
       answered,
+      diagnostic,
     ]
     timeout_sec: 90
     output_criteria:
@@ -87,3 +152,23 @@ steps:
     type: exactl
     command: daemon
     args: [stop]
+  - id: evaluate-evidence
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/runner/requirements_discovery_check.ts",
+      "p234-s5-c2",
+      "$WORKSPACE_ROOT",
+      "$REQUEST_ID",
+      answered,
+      evaluate,
+    ]
+    timeout_sec: 90
+    output_criteria:
+      - id: independent-evidence-complete
+        kind: command-exit-code
+        equals: 0

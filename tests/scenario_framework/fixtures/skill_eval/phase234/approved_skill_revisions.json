@@ -1,0 +1,8 @@
+[
+  {"name":"fix-bug","root":"dogfood","revision":"4b35b045-0e67-579c-b969-7cd3a7e74cb4","sha256":"58435ae42cc9733a040aad8637b17e9589f5e1c0188c3642eb7408c0f93e04fe"},
+  {"name":"fix-bug","root":"blueprint","revision":"e7edc536-38cb-5e69-bf8a-250758f48466","sha256":"84590eab75f7461b0f6d4fe37cda7f896c04cf15e815a1bb30d2f73156a461ff"},
+  {"name":"test-development","root":"dogfood","revision":"a1fd7319-d5a4-5e2f-adde-5cd0a9710674","sha256":"4a714116340f66f1cbd958e5fef51ccdf496591ca8b61497cb047c5a1c1873e3"},
+  {"name":"tdd-methodology","root":"blueprint","revision":"f6a8d028-3d2d-5073-ab70-83950754fd9a","sha256":"4ee3d2fa2ab786da66909f0b9f4b0ad2322a0ae0722f7982f220e17c21f5bd72"},
+  {"name":"requirements-analysis","root":"blueprint","revision":"635240f3-049b-52c0-bac9-5147f1fc0d81","sha256":"6db2a0c827c961946d2e24ac3c9119179b5d975d8388f24f302c2e43952e734d"},
+  {"name":"plan","root":"dogfood","revision":"2f94d4e3-7726-5876-b35e-47b30e23af1e","sha256":"122e7c1aab3dbf5348f6931c9e689b8b2f4b5a72224e2f56512164dac8a46d3f"}
+]
