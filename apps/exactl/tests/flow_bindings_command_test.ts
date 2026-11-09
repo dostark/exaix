@@ -11,39 +11,9 @@ import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
-import { createCliTestContext } from "./helpers/test_setup.ts";
-import { createMockProvider } from "@exaix/testing";
-
-async function createMockContext(
-  exit?: (code?: number) => never,
-): Promise<ICliApplicationContext & { exit?: (code?: number) => never; cleanup: () => Promise<void> }> {
-  const { context, cleanup } = await createCliTestContext();
-  return {
-    ...context,
-    provider: createMockProvider([]),
-    exit,
-    cleanup,
-  };
-}
-
-function getFlowDir(ctx: ICliApplicationContext) {
-  const cfg = ctx.config.getAll();
-  return join(cfg.system.root, cfg.paths.flows);
-}
-
-async function captureConsole(kind: "log" | "error", fn: () => Promise<void>) {
-  let output = "";
-  const original = console[kind];
-  console[kind] = (...args: string[]) => {
-    output += args.map((a) => String(a)).join(" ") + "\n";
-  };
-  try {
-    await fn();
-  } finally {
-    console[kind] = original;
-  }
-  return output;
-}
+import { captureConsole, createMockContext, getFlowDir } from "./helpers/flow_test_context.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
 function installCatalog(ctx: ICliApplicationContext): void {
   const config = ctx.config.getAll();
@@ -90,7 +60,7 @@ Deno.test("FlowBindings: prints resolution table and hosts, exits zero on a clea
     installCatalog(ctx);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.bindingsFlow("bound-flow");
+      await commands.bindingsFlow("bound-flow", {}, createConsoleRenderer());
     });
     assertStringIncludes(output, "Step");
     assertStringIncludes(output, "composer");
@@ -118,7 +88,7 @@ Deno.test("FlowBindings: json includes step rows, issues and hosts; no key value
       output += args.map((a) => String(a)).join(" ") + "\n";
     };
     try {
-      await commands.bindingsFlow("bound-flow", { json: true });
+      await commands.bindingsFlow("bound-flow", {}, createConsoleRenderer(ExaCtlOutputFormat.JSON));
     } finally {
       console.log = original;
     }
@@ -168,7 +138,7 @@ Deno.test("FlowBindings: a per-run --bind override wins over the flow binding", 
     const output = await captureConsole("log", async () => {
       await commands.bindingsFlow("bound-flow", {
         bind: ["flow:bound-flow/step:s1=service=other,model=other/code-model"],
-      });
+      }, createConsoleRenderer());
     });
     assertStringIncludes(output, "other");
     assertStringIncludes(output, "other/code-model");
@@ -210,7 +180,7 @@ Deno.test("FlowBindings: exits non-zero on an issue and never prints a key value
       try {
         await commands.bindingsFlow("bound-flow", {
           bind: ["flow:bound-flow/step:s1=service=does-not-exist"],
-        });
+        }, createConsoleRenderer());
       } catch (error) {
         if (error instanceof Error && !error.message.startsWith("exit:")) throw error;
       }

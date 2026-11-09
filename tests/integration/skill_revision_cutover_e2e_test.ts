@@ -450,7 +450,7 @@ Deno.test({
       await Deno.writeTextFile(join(evidenceDir, "evidence.json"), JSON.stringify(evidence, null, 2));
       verifyCutoverEvidence(evidence);
 
-      const revisions = await exactl(run, ["skill", "revisions", SKILL, "--format", "json"]);
+      const revisions = await exactl(run, ["skill", "revisions", SKILL, "--json"]);
       assertEquals(revisions.code, 0, revisions.err);
       const history = jsonOf<Array<{ revisionId: string; useCount: number }>>(revisions.out);
       assertEquals(history.map((entry) => entry.revisionId).sort(), [evidence.revisionA, evidence.revisionB].sort());
@@ -461,14 +461,13 @@ Deno.test({
         SKILL,
         "--revision",
         evidence.revisionA,
-        "--format",
-        "json",
+        "--json",
       ]);
       assertEquals(shown.code, 0, shown.err);
       const shownJson = jsonOf<{ skillMd: string }>(shown.out);
       assertFalse(shownJson.skillMd.includes(B_MARKER), "the historical A revision never carries the edit");
-      const usageA = await exactl(run, ["skill", "usage", "--trace", state.traceA, "--format", "json"]);
-      const usageB = await exactl(run, ["skill", "usage", "--trace", state.traceB, "--format", "json"]);
+      const usageA = await exactl(run, ["skill", "usage", "--trace", state.traceA, "--json"]);
+      const usageB = await exactl(run, ["skill", "usage", "--trace", state.traceB, "--json"]);
       assertEquals([usageA.code, usageB.code], [0, 0], usageA.err + usageB.err);
       await Deno.writeTextFile(join(evidenceDir, "cli.json"), JSON.stringify({ revisions, shown, usageA, usageB }));
       assertStringIncludes(usageA.out, evidence.revisionA);

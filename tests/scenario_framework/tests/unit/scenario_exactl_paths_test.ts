@@ -14,7 +14,11 @@ import { parse } from "@std/yaml";
 import { createExaCtlCommand } from "@exaix/app-exactl/exactl";
 import type { JSONValue } from "@exaix/core/types";
 import { readFixtureTextSync } from "@exaix/testing";
-import { type ICommandTreeNode, walkCommandTree } from "../../../../apps/exactl/src/docs/command_tree_walk.ts";
+import {
+  globalOptionsOf,
+  type ICommandTreeNode,
+  walkCommandTree,
+} from "../../../../apps/exactl/src/docs/command_tree_walk.ts";
 
 const FRAMEWORK_HOME = fromFileUrl(new URL("../../", import.meta.url));
 const EXACTL_STEP_TYPE = "exactl";
@@ -26,6 +30,9 @@ const CREATE_SUBCOMMAND = "create";
 const RENAMED_AGENT_OPTION = "--agent-role";
 const DROPPED_AGENT_ALIAS = "-a";
 const ALWAYS_VALID_OPTIONS: ReadonlySet<string> = new Set(["--help", "--version"]);
+const rootCommand = createExaCtlCommand();
+/** The global options every exactl command accepts, such as --json and --output. */
+const GLOBAL_OPTIONS: ReadonlySet<string> = new Set(globalOptionsOf(rootCommand).flatMap((option) => option.flags));
 
 interface IExaCtlStep {
   file: string;
@@ -86,11 +93,11 @@ function resolveStep(
   const unknownOptions = checked
     .filter((arg) => arg.startsWith(LONG_OPTION_PREFIX))
     .map((arg) => arg.split("=")[0])
-    .filter((flag) => !known.has(flag) && !ALWAYS_VALID_OPTIONS.has(flag));
+    .filter((flag) => !known.has(flag) && !ALWAYS_VALID_OPTIONS.has(flag) && !GLOBAL_OPTIONS.has(flag));
   return { node, unknownOptions };
 }
 
-const liveNodes = walkCommandTree(createExaCtlCommand());
+const liveNodes = walkCommandTree(rootCommand);
 
 /** Option uses that already failed before the command grammar phase. The list may only shrink. */
 const knownStaleOptions = JSON.parse(

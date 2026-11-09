@@ -24,7 +24,7 @@ steps:
   - id: "validate-catalog"
     type: "exactl"
     command: "skill"
-    args: ["validate", "--format", "json"]
+    args: ["validate", "--json"]
     output_criteria:
       - id: "catalog-valid"
         kind: "command-exit-code"

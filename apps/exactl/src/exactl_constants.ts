@@ -92,6 +92,18 @@ export enum ExaCtlVerb {
   COST = "cost",
 }
 
+/** The status a definition-noun mutation reports for the entity it changed. */
+export enum MutationStatus {
+  CREATED = "created",
+  ADDED = "added",
+  EDITED = "edited",
+  REMOVED = "removed",
+  DEPRECATED = "deprecated",
+  DERIVED = "derived",
+  REFRESHED = "refreshed",
+  ANALYZED = "analyzed",
+}
+
 /** Sub-nouns: a command that owns verbs but is not a root. */
 export enum ExaCtlSubNoun {
   AMENDMENT = "amendment",
@@ -111,17 +123,6 @@ export enum ExaCtlSubNoun {
   CALIBRATION = "calibration",
 }
 
-export interface IBlueprintCliLabels {
-  createDescription: string;
-  nameOption: string;
-  listDescription: string;
-  listHint: string;
-  showDescription: string;
-  editDescription: string;
-  removeDescription: string;
-  deprecateDescription: string;
-}
-
 export const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
 
 export const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
@@ -139,19 +140,6 @@ export const DEFAULT_CAPABILITIES_LABEL = "general";
 export const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 
 export const CLI_LIMIT_HELP = "Maximum results";
-
-export const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
-
-export const BLUEPRINT_CLI_LABELS: IBlueprintCliLabels = {
-  createDescription: "Create a new agent blueprint",
-  nameOption: "Agent name (required)",
-  listDescription: "List all agent blueprints",
-  listHint: 'Create a blueprint with: exactl blueprint create <agent-id> --name "Name" --model "provider:model"',
-  showDescription: "Show blueprint details",
-  editDescription: "Edit blueprint in $EDITOR",
-  removeDescription: "Remove a blueprint",
-  deprecateDescription: "Mark a blueprint as deprecated (retires it without deleting the file)",
-};
 
 export const CLI_CMD_LIST = "list";
 

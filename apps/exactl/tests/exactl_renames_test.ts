@@ -354,3 +354,18 @@ Deno.test("the calibration score output option points to --report-file", () => {
   assert(row !== null);
   assertStringIncludes(optionRenameHint(row), "use '--report-file'");
 });
+
+Deno.test("the removed short flags of flow, blueprint, skill and portal have no rename row", () => {
+  for (
+    const argv of [
+      ["blueprint", "create", "agent", "-n", "Name"],
+      ["portal", "knowledge", "analyze", "api", "-f"],
+      ["portal", "knowledge", "analyze", "api", "-m", "quick"],
+      ["skill", "create", "Name", "-d", "Text"],
+      ["skill", "match", "request", "-t", "task"],
+      ["skill", "list", "-c", "learned"],
+    ]
+  ) {
+    assertEquals(findOptionRename(argv), null, argv.join(" "));
+  }
+});

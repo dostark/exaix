@@ -12,220 +12,217 @@ import {
   type PortalAnalysisMode,
   PortalExecutionStrategy,
   PortalStatus,
-  RequestOperation,
 } from "@exaix/core";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IPortalDetails, IPortalInfo, Opt, Reason } from "@exaix/core/types";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
+import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlSubNoun } from "../exactl_constants.ts";
-import { readGlobalOptions } from "../output/exactl_output.ts";
+import { ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
+import { actionOutput, cellText, ColumnHeader, type IJsonRow, toRow } from "../output/exactl_output.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
+
+const ALIAS_ARGUMENT = "<alias>";
+const NOT_FOUND_SUFFIX = " (not found)";
+const ACTIVE_LABEL = "Active ✓";
+const BROKEN_LABEL = "Broken ⚠";
+
+const PORTAL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Alias", value: (portal) => cellText(portal.alias) },
+  { header: "Symlink", value: (portal) => cellText(portal.symlinkPath) },
+  {
+    header: ColumnHeader.STATUS,
+    value: (portal) => portal.status === PortalStatus.ACTIVE ? ACTIVE_LABEL : BROKEN_LABEL,
+  },
+  {
+    header: "Target",
+    value: (portal) => cellText(portal.targetPath) + (portal.status === PortalStatus.ACTIVE ? "" : NOT_FOUND_SUFFIX),
+  },
+  { header: "Context card", value: (portal) => cellText(portal.contextCardPath) },
+];
+
+const VERIFY_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Alias", value: (result) => cellText(result.alias) },
+  {
+    header: ColumnHeader.STATUS,
+    value: (result) => Array.isArray(result.issues) && result.issues.length > 0 ? "FAILED" : "OK",
+  },
+  {
+    header: "Issues",
+    value: (result) => Array.isArray(result.issues) && result.issues.length > 0 ? result.issues.join("; ") : "",
+  },
+];
+
+function portalFields(portal: IPortalDetails): readonly IExaCtlColumn<IJsonRow>[] {
+  return [
+    { header: "Alias", value: () => portal.alias },
+    { header: "Target path", value: () => portal.targetPath },
+    { header: "Symlink", value: () => portal.symlinkPath },
+    { header: ColumnHeader.STATUS, value: () => portal.status === PortalStatus.ACTIVE ? ACTIVE_LABEL : BROKEN_LABEL },
+    { header: "Context card", value: () => portal.contextCardPath },
+    { header: "Permissions", value: () => portal.permissions ?? "" },
+    { header: ColumnHeader.CREATED, value: () => portal.created ?? "" },
+    { header: "Last verified", value: () => portal.lastVerified ?? "" },
+    { header: "Default branch", value: () => portal.defaultBranch ?? "" },
+    { header: "Execution strategy", value: () => portal.executionStrategy ?? "" },
+  ];
+}
+
+function parseExecutionStrategy(strategy: Opt<string, Reason.OptionalInput>): PortalExecutionStrategy | undefined {
+  if (!strategy) return undefined;
+  if (strategy === PortalExecutionStrategy.BRANCH) return PortalExecutionStrategy.BRANCH;
+  if (strategy === PortalExecutionStrategy.WORKTREE) return PortalExecutionStrategy.WORKTREE;
+  throw new Error(
+    `Invalid execution strategy. Must be one of: ${PortalExecutionStrategy.BRANCH}, ${PortalExecutionStrategy.WORKTREE}`,
+  );
+}
 
 function createPortalCommand(runtime: IExaCtlRuntime) {
   const { display, portalCommands } = runtime;
-  return new Command()
-    .description("Manage external project portals")
-    .command(
-      "add <target-path> <alias>",
-      new Command()
-        .description("Add a new portal (symlink to external project)")
-        .option("--default-branch <branch:string>", "Default base branch for this portal")
-        .option(
-          "--execution-strategy <strategy:string>",
-          "Execution strategy: branch (default) or worktree",
-        )
-        .action(async (options, ...args: string[]) => {
-          const targetPath = args[0];
-          const alias = args[1];
-          try {
-            const strategy = options.executionStrategy as string | undefined;
-            const parsedStrategy = strategy
-              ? (strategy === PortalExecutionStrategy.BRANCH
-                ? PortalExecutionStrategy.BRANCH
-                : strategy === PortalExecutionStrategy.WORKTREE
-                ? PortalExecutionStrategy.WORKTREE
-                : undefined)
-              : undefined;
-            if (strategy && !parsedStrategy) {
-              throw new Error(
-                `Invalid execution strategy. Must be one of: ${PortalExecutionStrategy.BRANCH}, ${PortalExecutionStrategy.WORKTREE}`,
-              );
-            }
+  function failed(action: string, error: Error): never {
+    display.error("cli.error", action, {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    return Deno.exit(1);
+  }
+  const listCommand = new Command().action(async (options) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+    try {
+      const portals: IPortalInfo[] = await portalCommands.list();
+      if (portals.length === 0 && !renderer.machine) {
+        display.info("portal.list", "portals", {
+          count: 0,
+          hint: "Add a portal with: exactl portal add <path> <alias>",
+        });
+        return;
+      }
+      await renderer.list(portals.map(toRow), PORTAL_COLUMNS, (portal) => cellText(portal.alias));
+    } catch (error) {
+      failed("portal list", error as Error);
+    }
+  });
+  const addCommand = new Command()
+    .option("--default-branch <branch:string>", "Default base branch for this portal")
+    .option(
+      "--execution-strategy <strategy:string>",
+      "Execution strategy: branch (default) or worktree",
+    )
+    .action(async (options, ...args: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        await portalCommands.add(args[0], args[1], {
+          defaultBranch: options.defaultBranch,
+          executionStrategy: parseExecutionStrategy(options.executionStrategy),
+        });
+        await renderer.mutation(
+          [{ id: args[1], action: ExaCtlVerb.ADD, status: MutationStatus.ADDED, target: args[0] }],
+          false,
+        );
+      } catch (error) {
+        failed("portal add", error as Error);
+      }
+    });
+  const showCommand = new Command().action(async (options, ...args: string[]) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+    try {
+      const portal = await portalCommands.show(args[0]);
+      await renderer.item(toRow(portal), portalFields(portal));
+    } catch (error) {
+      failed("portal show", error as Error);
+    }
+  });
+  const removeCommand = new Command()
+    .option("--keep-card", "Keep context card instead of archiving")
+    .action(async (options, ...args: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        await portalCommands.remove(args[0], { keepCard: options.keepCard });
+        await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
+      } catch (error) {
+        failed("portal remove", error as Error);
+      }
+    });
+  const verifyCommand = new Command()
+    .arguments("[alias:string]")
+    .action(async (options, alias?: Opt<string, Reason.OptionalInput>) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+      try {
+        const results = await portalCommands.verify(alias);
+        const broken = results.filter((result) => result.issues && result.issues.length > 0).length;
+        await renderer.list(results.map(toRow), VERIFY_COLUMNS, (result) => cellText(result.alias));
+        if (!renderer.machine) {
+          display.info("portal.verify.summary", "portals", { healthy: results.length - broken, broken });
+        }
+      } catch (error) {
+        failed("portal verify", error as Error);
+      }
+    });
+  const refreshCommand = new Command().action(async (options, ...args: string[]) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+    try {
+      await portalCommands.refresh(args[0]);
+      await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REFRESH, status: MutationStatus.REFRESHED }], false);
+    } catch (error) {
+      failed("portal refresh", error as Error);
+    }
+  });
+  const analyzeCommand = new Command()
+    .option("--mode <mode:string>", "Analysis mode: quick, standard, deep")
+    .option("--force", "Force re-analysis even if fresh knowledge exists")
+    .action(async (options, ...args: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        const summary = await portalCommands.analyze(args[0], {
+          mode: options.mode as PortalAnalysisMode,
+          force: options.force,
+        });
+        if (renderer.machine) {
+          await renderer.mutation(
+            [{ id: args[0], action: ExaCtlVerb.ANALYZE, status: MutationStatus.ANALYZED, summary }],
+            false,
+          );
+        } else {
+          await renderer.text(summary);
+        }
+      } catch (error) {
+        failed("portal knowledge analyze", error as Error);
+      }
+    });
+  const knowledgeShowCommand = new Command().action(async (options, ...args: string[]) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+    try {
+      const knowledge = await portalCommands.knowledgeData(args[0]);
+      if (knowledge === null) {
+        display.warn("portal.knowledge", args[0], {
+          hint: `No knowledge available. Run: exactl portal knowledge analyze ${args[0]}`,
+        });
+        if (renderer.machine) await renderer.item(null, []);
+        return;
+      }
+      if (renderer.machine) await renderer.item(toRow(knowledge), []);
+      else await renderer.text(formatKnowledge(knowledge).join("\n"));
+    } catch (error) {
+      failed("portal knowledge show", error as Error);
+    }
+  });
 
-            await portalCommands.add(targetPath, alias, {
-              defaultBranch: options.defaultBranch,
-              executionStrategy: parsedStrategy,
-            });
-          } catch (error) {
-            display.error("cli.error", "portal add", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      RequestOperation.LIST,
-      new Command()
-        .description("List all configured portals")
-        .action(async () => {
-          try {
-            const portals = await portalCommands.list();
-            if (portals.length === 0) {
-              display.info("portal.list", "portals", {
-                count: 0,
-                hint: "Add a portal with: exactl portal add <path> <alias>",
-              });
-              return;
-            }
-            display.info("portal.list", "portals", { count: portals.length });
-            for (const portal of portals) {
-              display.info(portal.alias, portal.symlinkPath, {
-                status: portal.status === PortalStatus.ACTIVE ? "Active ✓" : "Broken ⚠",
-                target: portal.targetPath + (portal.status === "broken" ? " (not found)" : ""),
-                context: portal.contextCardPath,
-              });
-            }
-          } catch (error) {
-            display.error("cli.error", "portal list", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      "show <alias>",
-      new Command()
-        .description("Show detailed information about a portal")
-        .action(async (_options, ...args: string[]) => {
-          const alias = args[0];
-          try {
-            const portal = await portalCommands.show(alias);
-            display.info("portal.show", portal.alias, {
-              target_path: portal.targetPath,
-              symlink: portal.symlinkPath,
-              status: portal.status === "active" ? "Active ✓" : "Broken ⚠",
-              context_card: portal.contextCardPath,
-              permissions: portal.permissions ?? null,
-              created: portal.created ?? null,
-              last_verified: portal.lastVerified ?? null,
-              default_branch: portal.defaultBranch ?? null,
-              execution_strategy: portal.executionStrategy ?? null,
-            });
-          } catch (error) {
-            display.error("cli.error", "portal show", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      "remove <alias>",
-      new Command()
-        .description("Remove a portal (archives context card)")
-        .option("--keep-card", "Keep context card instead of archiving")
-        .action(async (options, ...args: string[]) => {
-          const alias = args[0];
-          try {
-            await portalCommands.remove(alias, { keepCard: options.keepCard });
-          } catch (error) {
-            display.error("cli.error", "portal remove", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      "verify",
-      new Command()
-        .description("Verify portal integrity")
-        .arguments("[alias:string]")
-        .action(async (_options, alias?: Opt<string, Reason.OptionalInput>) => {
-          try {
-            const results = await portalCommands.verify(alias);
-            let healthy = 0;
-            let broken = 0;
-            for (const result of results) {
-              if (result.issues && result.issues.length > 0) {
-                display.warn("portal.verify", result.alias, { status: "FAILED", issues: result.issues });
-                broken++;
-              } else {
-                display.info("portal.verify", result.alias, { status: "OK" });
-                healthy++;
-              }
-            }
-            display.info("portal.verify.summary", "portals", { healthy, broken });
-          } catch (error) {
-            display.error("cli.error", "portal verify", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      "refresh <alias>",
-      new Command()
-        .description("Refresh portal context card (re-scan project)")
-        .action(async (_options, ...args: string[]) => {
-          const alias = args[0];
-          try {
-            await portalCommands.refresh(alias);
-          } catch (error) {
-            display.error("cli.error", "portal refresh", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command(
-      ExaCtlSubNoun.KNOWLEDGE,
-      new Command()
-        .description("Analyze and display the codebase knowledge of a portal")
-        .command(
-          "analyze <alias>",
-          new Command()
-            .description("Trigger codebase knowledge analysis for a portal")
-            .option("-m, --mode <mode:string>", "Analysis mode: quick, standard, deep")
-            .option("-f, --force", "Force re-analysis even if fresh knowledge exists")
-            .action(async (options, ...args: string[]) => {
-              const alias = args[0];
-              try {
-                const summary = await portalCommands.analyze(alias, {
-                  mode: options.mode as PortalAnalysisMode,
-                  force: options.force,
-                });
-                console.log(summary);
-              } catch (error) {
-                display.error("cli.error", "portal knowledge analyze", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        )
-        .command(
-          "show <alias>",
-          new Command()
-            .description("Display gathered knowledge for a portal")
-            .action(async (options, ...args: string[]) => {
-              const alias = args[0];
-              try {
-                const output = await portalCommands.knowledge(alias, {
-                  json: readGlobalOptions(options).json === true,
-                });
-                console.log(output);
-              } catch (error) {
-                display.error("cli.error", "portal knowledge show", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        ),
-    );
+  const noun = nounDocFor(ExaCtlCommandName.PORTAL);
+  const knowledge = new Command()
+    .description("Analyze and display the codebase knowledge of a portal")
+    .command(`${ExaCtlVerb.ANALYZE} ${ALIAS_ARGUMENT}`, analyzeCommand)
+    .command(`${ExaCtlVerb.SHOW} ${ALIAS_ARGUMENT}`, knowledgeShowCommand);
+  const command = documentedNoun(new Command(), noun)
+    .command(`${ExaCtlVerb.ADD} <target-path> ${ALIAS_ARGUMENT}`, addCommand)
+    .command(ExaCtlVerb.LIST, listCommand)
+    .command(`${ExaCtlVerb.SHOW} ${ALIAS_ARGUMENT}`, showCommand)
+    .command(`${ExaCtlVerb.REMOVE} ${ALIAS_ARGUMENT}`, removeCommand)
+    .command(ExaCtlVerb.VERIFY, verifyCommand)
+    .command(`${ExaCtlVerb.REFRESH} ${ALIAS_ARGUMENT}`, refreshCommand)
+    .command(ExaCtlSubNoun.KNOWLEDGE, knowledge);
+  documentLeaves(command, [ExaCtlCommandName.PORTAL], noun.lifecycle);
+  documentLeaves(knowledge, [ExaCtlCommandName.PORTAL, ExaCtlSubNoun.KNOWLEDGE], noun.lifecycle);
+  return command;
 }
 
 export function buildPortalCommand(runtime: IExaCtlRuntime): ReturnType<typeof createPortalCommand> {

@@ -7,51 +7,90 @@
  */
 
 import { Command } from "@cliffy/command";
-import { type BlueprintStatus, DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation } from "@exaix/core";
+import { type BlueprintStatus, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IBlueprintMetadata, IBlueprintValidationResult } from "@exaix/schemas/blueprint.ts";
+import type { IBlueprintValidationResult } from "@exaix/schemas/blueprint.ts";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
-  BLUEPRINT_CLI_LABELS,
+  CLI_OPTION_MODEL,
   DEFAULT_CAPABILITIES_LABEL,
-  DISPLAY_CATEGORY_BLUEPRINTS,
-  type IBlueprintCliLabels,
+  ExaCtlCommandName,
+  ExaCtlVerb,
+  MutationStatus,
 } from "../exactl_constants.ts";
+import {
+  actionOutput,
+  cellText,
+  ColumnHeader,
+  type ExaCtlOutputRenderer,
+  type IJsonRow,
+  toRow,
+} from "../output/exactl_output.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
 
-function blueprintSummary(blueprint: IBlueprintMetadata) {
-  return {
-    model: blueprint.model,
-    capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-  };
-}
+const AGENT_ID_ARGUMENT = "<agent-id>";
+const LIST_HINT = 'Create a blueprint with: exactl blueprint create <agent-id> --name "Name" --model "provider:model"';
+
+const BLUEPRINT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Agent", value: (blueprint) => cellText(blueprint.agent_role) },
+  { header: ColumnHeader.SUBJECT, value: (blueprint) => cellText(blueprint.name) },
+  { header: "Model", value: (blueprint) => cellText(blueprint.model) },
+  {
+    header: "Capabilities",
+    value: (blueprint) =>
+      Array.isArray(blueprint.capabilities) && blueprint.capabilities.length > 0
+        ? blueprint.capabilities.join(", ")
+        : DEFAULT_CAPABILITIES_LABEL,
+  },
+  { header: ColumnHeader.STATUS, value: (blueprint) => cellText(blueprint.status) },
+  { header: ColumnHeader.CREATED, value: (blueprint) => cellText(blueprint.created) },
+];
 
 function createBlueprintCommand(runtime: IExaCtlRuntime) {
-  const { display, blueprintCommands } = runtime;
-  function reportValidation(label: string, result: IBlueprintValidationResult): void {
-    if (result.valid) {
+  const { blueprintCommands } = runtime;
+  function failed(action: string, error: Error): never {
+    runtime.display.error("cli.error", action, {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    return Deno.exit(1);
+  }
+  async function reportValidation(
+    label: string,
+    result: IBlueprintValidationResult,
+    renderer: ExaCtlOutputRenderer,
+    display: IExaCtlRuntime["display"],
+  ): Promise<void> {
+    if (renderer.machine) {
+      await renderer.item(
+        toRow({ valid: result.valid, errors: result.errors ?? [], warnings: result.warnings ?? [] }),
+        [],
+      );
+    } else if (result.valid) {
       display.info("blueprint.valid", label, { status: "Valid ✓", warnings: result.warnings?.length || 0 });
     } else {
       display.error("blueprint.invalid", label, { status: "Invalid ✗", errors: result.errors });
-      Deno.exit(1);
     }
+    if (!result.valid) Deno.exit(1);
   }
-  function blueprintCreateCommand(labels: IBlueprintCliLabels) {
+  function blueprintCreateCommand() {
     return new Command()
-      .description(labels.createDescription)
-      .option("-n, --name <name:string>", labels.nameOption)
-      .option("-m, --model <model:string>", "Model in provider:model format (required)")
-      .option("-d, --description <description:string>", "Brief description")
-      .option("-c, --capabilities <capabilities:string>", "Comma-separated capabilities")
-      .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
-      .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
+      .option("--name <name:string>", "Agent name (required)")
+      .option(CLI_OPTION_MODEL, "Model in provider:model format (required)")
+      .option("--description <description:string>", "Brief description")
+      .option("--capabilities <capabilities:string>", "Comma-separated capabilities")
+      .option("--system-prompt <prompt:string>", "Inline system prompt")
+      .option("--system-prompt-file <file:string>", "Load system prompt from file")
       .option(
         "--from <agent-role-id:string>",
         "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
       )
       .action(async (options, ...args: string[]) => {
-        const agentRole = args[0];
+        const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
         try {
-          const result = await blueprintCommands.create(agentRole, {
+          const result = await blueprintCommands.create(args[0], {
             name: options.name,
             model: options.model,
             description: options.description,
@@ -65,164 +104,142 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
             model: result.model,
             path: result.path,
           });
+          await renderer.mutation(
+            [{ id: result.agent_role, action: ExaCtlVerb.CREATE, status: MutationStatus.CREATED, path: result.path }],
+            false,
+          );
         } catch (error) {
-          display.error("cli.error", "blueprint create", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
+          failed("blueprint create", error as Error);
         }
       });
   }
 
-  function blueprintListCommand(labels: IBlueprintCliLabels) {
+  function blueprintListCommand() {
     return new Command()
-      .description(labels.listDescription)
       .option("--capability <capability:string>", "Only show blueprints that declare this capability")
       .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
       .action(
         async (
           options: { capability?: Opt<string, Reason.OptionalInput>; status?: Opt<string, Reason.OptionalInput> },
         ) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
           try {
             const blueprints = await blueprintCommands.list({
               capability: options.capability,
               status: options.status as BlueprintStatus | undefined,
             });
-            if (blueprints.length === 0) {
-              display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
-                count: 0,
-                hint: labels.listHint,
-              });
+            if (blueprints.length === 0 && !renderer.machine) {
+              runtime.display.info("blueprint.list", "blueprints", { count: 0, hint: LIST_HINT });
               return;
             }
-            display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
-            for (const blueprint of blueprints) {
-              display.info(blueprint.agent_role, blueprint.name, {
-                ...blueprintSummary(blueprint),
-                status: blueprint.status,
-                created: blueprint.created,
-              });
-            }
+            await renderer.list(
+              blueprints.map(toRow),
+              BLUEPRINT_COLUMNS,
+              (blueprint) => cellText(blueprint.agent_role),
+            );
           } catch (error) {
-            display.error("cli.error", "blueprint list", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            failed("blueprint list", error as Error);
           }
         },
       );
   }
 
-  function blueprintShowCommand(labels: IBlueprintCliLabels) {
-    return new Command()
-      .description(labels.showDescription)
-      .action(async (_options, ...args: string[]) => {
-        const agentRole = args[0];
-        try {
-          const blueprint = await blueprintCommands.show(agentRole);
-          display.info("blueprint.show", blueprint.agent_role, {
-            name: blueprint.name,
-            model: blueprint.model,
-            capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-            version: blueprint.version,
-            created: blueprint.created,
-            created_by: blueprint.created_by,
-            content_preview: blueprint.content.substring(0, 200) + "...",
-          });
-        } catch (error) {
-          display.error("cli.error", "blueprint show", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
+  function blueprintShowCommand() {
+    return new Command().action(async (options, ...args: string[]) => {
+      const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        const blueprint = await blueprintCommands.show(args[0]);
+        if (renderer.machine) {
+          await renderer.item(toRow(blueprint), []);
+          return;
         }
-      });
+        display.info("blueprint.show", blueprint.agent_role, {
+          name: blueprint.name,
+          model: blueprint.model,
+          capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+          version: blueprint.version,
+          created: blueprint.created,
+          created_by: blueprint.created_by,
+          content_preview: blueprint.content.substring(0, 200) + "...",
+        });
+      } catch (error) {
+        failed("blueprint show", error as Error);
+      }
+    });
   }
 
-  function blueprintEditCommand(labels: IBlueprintCliLabels) {
-    return new Command()
-      .description(labels.editDescription)
-      .action(async (_options, ...args: string[]) => {
-        const agentRole = args[0];
-        try {
-          await blueprintCommands.edit(agentRole);
-        } catch (error) {
-          display.error("cli.error", "blueprint edit", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
-        }
-      });
+  function blueprintEditCommand() {
+    return new Command().action(async (options, ...args: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        await blueprintCommands.edit(args[0]);
+        await renderer.mutation([{ id: args[0], action: ExaCtlVerb.EDIT, status: MutationStatus.EDITED }], false);
+      } catch (error) {
+        failed("blueprint edit", error as Error);
+      }
+    });
   }
 
-  function blueprintRemoveCommand(labels: IBlueprintCliLabels) {
+  function blueprintRemoveCommand() {
     return new Command()
-      .description(labels.removeDescription)
       .option("--force", "Skip confirmation")
       .action(async (options, ...args: string[]) => {
-        const agentRole = args[0];
+        const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
         try {
-          await blueprintCommands.remove(agentRole, { force: options.force });
-          display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
+          await blueprintCommands.remove(args[0], { force: options.force });
+          display.info("blueprint.removed", args[0], { status: "Removed ✓" });
+          await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
         } catch (error) {
-          display.error("cli.error", "blueprint remove", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
+          failed("blueprint remove", error as Error);
         }
       });
   }
 
-  function blueprintDeprecateCommand(labels: IBlueprintCliLabels) {
+  function blueprintDeprecateCommand() {
+    return new Command().action(async (options, ...args: string[]) => {
+      const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+      try {
+        await blueprintCommands.deprecate(args[0]);
+        display.info("blueprint.deprecated", args[0], { status: "Deprecated ✓" });
+        await renderer.mutation(
+          [{ id: args[0], action: ExaCtlVerb.DEPRECATE, status: MutationStatus.DEPRECATED }],
+          false,
+        );
+      } catch (error) {
+        failed("blueprint deprecate", error as Error);
+      }
+    });
+  }
+
+  function blueprintValidateCommand() {
     return new Command()
-      .description(labels.deprecateDescription)
-      .action(async (_options, ...args: string[]) => {
-        const agentRole = args[0];
+      .option("--file <path:string>", "Validate a blueprint file by path")
+      .action(async (options: { file?: Opt<string, Reason.OptionalInput> }, ...args: string[]) => {
+        const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
         try {
-          await blueprintCommands.deprecate(agentRole);
-          display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
+          if (options.file) {
+            await reportValidation(options.file, await blueprintCommands.validateFile(options.file), renderer, display);
+            return;
+          }
+          if (!args[0]) throw new Error("Either <agent-id> or --file <path> is required");
+          await reportValidation(args[0], await blueprintCommands.validate(args[0]), renderer, display);
         } catch (error) {
-          display.error("cli.error", "blueprint deprecate", {
-            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-          });
-          Deno.exit(1);
+          failed("blueprint validate", error as Error);
         }
       });
   }
-  return new Command()
-    .description("Manage agent blueprints")
-    .command("create <agent-id>", blueprintCreateCommand(BLUEPRINT_CLI_LABELS))
-    .command(RequestOperation.LIST, blueprintListCommand(BLUEPRINT_CLI_LABELS))
-    .command("show <agent-id>", blueprintShowCommand(BLUEPRINT_CLI_LABELS))
-    .command(
-      "validate [agent-id]",
-      new Command()
-        .description("Validate blueprint format")
-        .option("--file <path:string>", "Validate a blueprint file by path")
-        .action(async (options: { file?: Opt<string, Reason.OptionalInput> }, ...args: string[]) => {
-          try {
-            if (options.file) {
-              const result = await blueprintCommands.validateFile(options.file);
-              const label = options.file;
-              reportValidation(label, result);
-            } else {
-              const agentRole = args[0];
-              if (!agentRole) {
-                throw new Error("Either <agent-id> or --file <path> is required");
-              }
-              const result = await blueprintCommands.validate(agentRole);
-              reportValidation(agentRole, result);
-            }
-          } catch (error) {
-            display.error("cli.error", "blueprint validate", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    )
-    .command("edit <agent-id>", blueprintEditCommand(BLUEPRINT_CLI_LABELS))
-    .command("remove <agent-id>", blueprintRemoveCommand(BLUEPRINT_CLI_LABELS))
-    .command("deprecate <agent-id>", blueprintDeprecateCommand(BLUEPRINT_CLI_LABELS));
+
+  const noun = nounDocFor(ExaCtlCommandName.BLUEPRINT);
+  const command = documentedNoun(new Command(), noun)
+    .command(`${ExaCtlVerb.CREATE} ${AGENT_ID_ARGUMENT}`, blueprintCreateCommand())
+    .command(ExaCtlVerb.LIST, blueprintListCommand())
+    .command(`${ExaCtlVerb.SHOW} ${AGENT_ID_ARGUMENT}`, blueprintShowCommand())
+    .command(`${ExaCtlVerb.VALIDATE} [agent-id]`, blueprintValidateCommand())
+    .command(`${ExaCtlVerb.EDIT} ${AGENT_ID_ARGUMENT}`, blueprintEditCommand())
+    .command(`${ExaCtlVerb.REMOVE} ${AGENT_ID_ARGUMENT}`, blueprintRemoveCommand())
+    .command(`${ExaCtlVerb.DEPRECATE} ${AGENT_ID_ARGUMENT}`, blueprintDeprecateCommand());
+  documentLeaves(command, [ExaCtlCommandName.BLUEPRINT], noun.lifecycle);
+  return command;
 }
 
 export function buildBlueprintCommand(runtime: IExaCtlRuntime): ReturnType<typeof createBlueprintCommand> {

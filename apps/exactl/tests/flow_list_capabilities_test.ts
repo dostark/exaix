@@ -7,6 +7,8 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
 for (const edition of ["solo", "team", "enterprise", "unknown"]) {
   Deno.test(`[cli] flow list reports capability eligibility for ${edition}`, async () => {
@@ -32,7 +34,7 @@ output: { from: first }
 `,
       );
       const commands = new FlowCommands({ ...context, edition });
-      await commands.listFlows({ json: true });
+      await commands.listFlows(createConsoleRenderer(ExaCtlOutputFormat.JSON));
       const eligible = edition === "team" || edition === "enterprise";
       const rows = JSON.parse(output.join(""));
       assertEquals(rows.length, 1);
@@ -40,7 +42,7 @@ output: { from: first }
       assertEquals(rows[0].tierEligible, eligible);
       assertEquals(rows[0].runtimeAvailability, "unknown");
       output.length = 0;
-      await commands.listFlows();
+      await commands.listFlows(createConsoleRenderer());
       assertStringIncludes(output.join(""), eligible ? "eligible (runtime unverified)" : "unavailable (needs voting)");
     } finally {
       console.log = original;

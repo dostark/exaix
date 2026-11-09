@@ -6,6 +6,9 @@
  * @related-files [packages/flow/mod.ts, "apps/daemon/main.ts"]
  */
 
+import { cellText, type ExaCtlOutputRenderer, toRow } from "../output/exactl_output.ts";
+import type { IExaCtlColumn } from "@exaix/cli";
+import type { IJsonRow } from "../output/exactl_output.ts";
 import { Table } from "@cliffy/table";
 import { join } from "@std/path";
 import { FlowLoader } from "@exaix/flow";
@@ -25,22 +28,25 @@ import {
   resolveFlowForAudit,
 } from "@exaix/ai";
 
-interface FlowListOptions {
-  json?: boolean;
-}
-
-interface FlowShowOptions {
-  json?: boolean;
-}
-
-interface FlowValidateOptions {
-  json?: boolean;
-}
-
 interface FlowBindingsOptions {
-  json?: boolean;
   overlay?: string[];
   bind?: string[];
+}
+
+const FLOW_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "ID", value: (row) => cellText(row.id) },
+  { header: "Name", value: (row) => cellText(row.name) },
+  { header: "Version", value: (row) => cellText(row.version) },
+  { header: "Steps", value: (row) => String(row.steps) },
+  { header: "Description", value: (row) => cellText(row.description) },
+  { header: "Capabilities", value: (row) => capabilityLabel(row) },
+];
+
+/** The capability column of a flow row: none, eligible in this edition, or unavailable with the missing names. */
+function capabilityLabel(row: IJsonRow): string {
+  const required = Array.isArray(row.requiresCapabilities) ? row.requiresCapabilities.map(String) : [];
+  if (required.length === 0) return DEFAULT_NONE_LABEL;
+  return row.tierEligible === true ? "eligible (runtime unverified)" : `unavailable (needs ${required.join(", ")})`;
 }
 
 export class FlowCommands extends BaseCommand {
@@ -60,80 +66,49 @@ export class FlowCommands extends BaseCommand {
     return Deno.exit(code);
   }
 
-  async listFlows(options: FlowListOptions = {}): Promise<void> {
+  async listFlows(renderer: ExaCtlOutputRenderer): Promise<void> {
     try {
       const flows = await this.flowLoader.loadAllFlows();
-
-      if (options.json) {
-        console.log(JSON.stringify(
-          flows.map((flow) => ({
-            id: flow.id,
-            name: flow.name,
-            description: flow.description,
-            version: flow.version,
-            steps: flow.steps.length,
-            requiresCapabilities: flow.requires_capabilities ?? [],
-            tierEligible: (flow.requires_capabilities ?? []).every((capability) =>
-              isCapabilityEligible(capability, this.context.edition)
-            ),
-            runtimeAvailability: "unknown",
-          })),
-          null,
-          2,
-        ));
-        return;
-      }
-
-      if (flows.length === 0) {
-        console.log("No flows found");
-        return;
-      }
-
-      const table = new Table()
-        .header(["ID", "Name", "Version", "Steps", "Description", "Capabilities"])
-        .border(true);
-
-      for (const flow of flows) {
-        table.push([
-          flow.id,
-          flow.name,
-          flow.version,
-          flow.steps.length.toString(),
-          flow.description,
-          (flow.requires_capabilities ?? []).length === 0
-            ? DEFAULT_NONE_LABEL
-            : flow.requires_capabilities!.every((capability) => isCapabilityEligible(capability, this.context.edition))
-            ? "eligible (runtime unverified)"
-            : `unavailable (needs ${flow.requires_capabilities!.join(", ")})`,
-        ]);
-      }
-
-      table.render();
+      const rows = flows.map((flow) =>
+        toRow({
+          id: flow.id,
+          name: flow.name,
+          description: flow.description,
+          version: flow.version,
+          steps: flow.steps.length,
+          requiresCapabilities: flow.requires_capabilities ?? [],
+          tierEligible: (flow.requires_capabilities ?? []).every((capability) =>
+            isCapabilityEligible(capability, this.context.edition)
+          ),
+          runtimeAvailability: "unknown",
+        })
+      );
+      await renderer.list(rows, FLOW_COLUMNS, (row) => cellText(row.id));
     } catch (error) {
       console.error("Error listing flows:", error instanceof Error ? error.message : String(error));
       this.exit(1);
     }
   }
 
-  async showFlow(flowId: string, options: FlowShowOptions = {}): Promise<void> {
+  async showFlow(flowId: string, renderer: ExaCtlOutputRenderer): Promise<void> {
     try {
       const flow = await this.flowLoader.loadFlow(flowId);
 
-      if (options.json) {
-        console.log(JSON.stringify(flow, null, 2));
+      if (renderer.machine) {
+        await renderer.item(toRow(flow), []);
         return;
       }
 
-      console.log(`Flow: ${flow.name} (${flow.id})`);
-      console.log(`Version: ${flow.version}`);
-      console.log(`Description: ${flow.description}`);
-      console.log();
+      await renderer.text(`Flow: ${flow.name} (${flow.id})`);
+      await renderer.text(`Version: ${flow.version}`);
+      await renderer.text(`Description: ${flow.description}`);
+      await renderer.text("");
 
       // Display dependency graph
-      console.log("Dependency Graph:");
+      await renderer.text("Dependency Graph:");
       const graph = this.renderDependencyGraph(flow);
-      console.log(graph);
-      console.log();
+      await renderer.text(graph);
+      await renderer.text("");
 
       // Display steps table
       const stepsTable = new Table()
@@ -149,14 +124,14 @@ export class FlowCommands extends BaseCommand {
         ]);
       }
 
-      stepsTable.render();
+      await renderer.text(stepsTable.toString());
 
       // Display flow settings
-      console.log();
-      console.log("Settings:");
-      console.log(`  Max Parallelism: ${flow.settings?.maxParallelism || "unlimited"}`);
-      console.log(`  Fail Fast: ${flow.settings?.failFast !== false}`);
-      console.log(`  Output Format: ${flow.output?.format || "markdown"}`);
+      await renderer.text("");
+      await renderer.text("Settings:");
+      await renderer.text(`  Max Parallelism: ${flow.settings?.maxParallelism || "unlimited"}`);
+      await renderer.text(`  Fail Fast: ${flow.settings?.failFast !== false}`);
+      await renderer.text(`  Output Format: ${flow.output?.format || "markdown"}`);
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
         console.error(`Flow '${flowId}' not found`);
@@ -167,7 +142,7 @@ export class FlowCommands extends BaseCommand {
     }
   }
 
-  async validateFlow(flowId: string, options: FlowValidateOptions = {}): Promise<void> {
+  async validateFlow(flowId: string, renderer: ExaCtlOutputRenderer): Promise<void> {
     try {
       const filePath = join(
         this.config.system.root,
@@ -178,24 +153,20 @@ export class FlowCommands extends BaseCommand {
         ? await this.context.flowValidator.validateFile(filePath)
         : await this.validateFlowWithoutService(flowId);
 
-      if (options.json) {
-        console.log(JSON.stringify(
-          {
-            valid: validation.isValid,
-            errors: validation.errors,
-            warnings: validation.warnings,
-          },
-          null,
-          2,
-        ));
+      if (renderer.machine) {
+        await renderer.item(
+          toRow({ valid: validation.isValid, errors: validation.errors, warnings: validation.warnings }),
+          [],
+        );
+        if (!validation.isValid) this.exit(1);
         return;
       }
 
       if (validation.isValid) {
-        console.log(`✅ Flow '${flowId}' is valid`);
+        await renderer.text(`✅ Flow '${flowId}' is valid`);
       } else {
-        console.log(`❌ Flow '${flowId}' validation failed:`);
-        console.log(validation.errors.join("\n"));
+        await renderer.text(`❌ Flow '${flowId}' validation failed:`);
+        await renderer.text(validation.errors.join("\n"));
         this.exit(1);
       }
     } catch (error) {
@@ -266,7 +237,7 @@ export class FlowCommands extends BaseCommand {
   /** `exactl flow bindings <flowId>`: resolve and print each LLM step's binding across all
    *  layers (config, daemon overlays, per-run inputs). Pure resolution. No key values.
    *  Non-zero exit on any issue. */
-  async bindingsFlow(flowId: string, options: FlowBindingsOptions = {}): Promise<void> {
+  async bindingsFlow(flowId: string, options: FlowBindingsOptions, renderer: ExaCtlOutputRenderer): Promise<void> {
     try {
       const flow = await this.flowLoader.loadFlow(flowId);
       const run = await this.auditRunBindings(flowId, options);
@@ -300,8 +271,8 @@ export class FlowCommands extends BaseCommand {
         entry.issues.map((element) => ({ step_id: entry.stepId, code: element.code, detail: element.detail }))
       );
 
-      if (options.json) {
-        console.log(JSON.stringify({ layers, flow_id: flowId, steps: rows, issues, hosts }, null, 2));
+      if (renderer.machine) {
+        await renderer.item(toRow({ layers, flow_id: flowId, steps: rows, issues, hosts }), []);
       } else {
         const table = new Table()
           .header(["Step", "Role", "Service", MODEL_COLUMN_LABEL, "Service model id", "Transport", "Interface"])
@@ -329,14 +300,16 @@ export class FlowCommands extends BaseCommand {
             ]);
           }
         }
-        table.render();
-        console.log();
-        console.log(`Hosts (start-time network grant): ${hosts.length > 0 ? hosts.join(", ") : DEFAULT_NONE_LABEL}`);
+        await renderer.text(table.toString());
+        await renderer.text("");
+        await renderer.text(
+          `Hosts (start-time network grant): ${hosts.length > 0 ? hosts.join(", ") : DEFAULT_NONE_LABEL}`,
+        );
         if (issues.length > 0) {
-          console.log();
-          console.log("Issues:");
+          await renderer.text("");
+          await renderer.text("Issues:");
           for (const issue of issues) {
-            console.log(`  [${issue.code}] step=${issue.step_id} ${issue.detail}`);
+            await renderer.text(`  [${issue.code}] step=${issue.step_id} ${issue.detail}`);
           }
         }
       }

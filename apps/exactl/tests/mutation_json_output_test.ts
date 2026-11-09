@@ -1,7 +1,7 @@
 /**
  * @module MutationJsonOutputTest
  * @path apps/exactl/tests/mutation_json_output_test.ts
- * @description Runs every MUTATION leaf of request, plan, review and approval with --json against stubbed command classes and checks the JSON on stdout.
+ * @description Runs every MUTATION leaf of request, plan, review, approval, flow, blueprint, portal and skill with --json against stubbed command classes and checks the JSON on stdout.
  * @architectural-layer Test
  * @dependencies [@std/assert, apps/exactl/tests/helpers/test_utils.ts, apps/exactl/src/command_docs/mod.ts]
  * @related-files [apps/exactl/src/output/exactl_output.ts, apps/exactl/src/command_docs/mod.ts]
@@ -11,12 +11,13 @@ import "./helpers/set_test_mode.ts";
 import { assertEquals } from "@std/assert";
 import { ExaCtlOutputKind } from "@exaix/cli";
 import { PlanStatus, RequestStatus, ReviewStatus } from "@exaix/core/status";
+import { RequestPriority, RequestSource } from "@exaix/core";
 import type { ExaCtlTestContext } from "../src/exactl.ts";
 import { EXACTL_COMMAND_DOCS } from "../src/command_docs/mod.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
 
-const WORK_NOUNS = ["request", "plan", "review", "approval"];
+const MUTATION_NOUNS = ["request", "plan", "review", "approval", "flow", "blueprint", "portal", "skill"];
 const WAIT_REF = "wait:tok-1";
 const WAIT_STATUS = "fulfilled";
 
@@ -45,7 +46,98 @@ function resolved(): Promise<void> {
   return Promise.resolve();
 }
 
+type SkillResult = Awaited<ReturnType<ExaCtlTestContext["memoryCommands"]["skillCreate"]>>;
+
+function createdSkill(): ReturnType<ExaCtlTestContext["memoryCommands"]["skillCreate"]> {
+  return Promise.resolve(
+    { skill_id: "s-1", root_kind: "learned", path: "s-1", id: "rev-1", title: "S" } as SkillResult,
+  );
+}
+
+function blueprintCreated(): ReturnType<ExaCtlTestContext["blueprintCommands"]["create"]> {
+  return Promise.resolve({
+    agent_role: "a-1",
+    name: "A",
+    model: "mock:test",
+    path: "/tmp/a-1.md",
+    capabilities: [],
+    created: "now",
+    created_by: "tester",
+    version: "1.0.0",
+  });
+}
+
 const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>([
+  ["blueprint create", {
+    args: ["blueprint", "create", "a-1", "--name", "A", "--model", "mock:test"],
+    stub: (ctx) => void (ctx.blueprintCommands.create = blueprintCreated),
+    expected: { id: "a-1", action: "create", status: "created", path: "/tmp/a-1.md" },
+  }],
+  ["blueprint edit", {
+    args: ["blueprint", "edit", "a-1"],
+    stub: (ctx) => void (ctx.blueprintCommands.edit = resolved),
+    expected: { id: "a-1", action: "edit", status: "edited" },
+  }],
+  ["blueprint remove", {
+    args: ["blueprint", "remove", "a-1", "--force"],
+    stub: (ctx) => void (ctx.blueprintCommands.remove = resolved),
+    expected: { id: "a-1", action: "remove", status: "removed" },
+  }],
+  ["blueprint deprecate", {
+    args: ["blueprint", "deprecate", "a-1"],
+    stub: (ctx) => void (ctx.blueprintCommands.deprecate = resolved),
+    expected: { id: "a-1", action: "deprecate", status: "deprecated" },
+  }],
+  ["portal add", {
+    args: ["portal", "add", "/tmp/target", "p-1"],
+    stub: (ctx) => void (ctx.portalCommands.add = resolved),
+    expected: { id: "p-1", action: "add", status: "added", target: "/tmp/target" },
+  }],
+  ["portal remove", {
+    args: ["portal", "remove", "p-1"],
+    stub: (ctx) => void (ctx.portalCommands.remove = resolved),
+    expected: { id: "p-1", action: "remove", status: "removed" },
+  }],
+  ["portal refresh", {
+    args: ["portal", "refresh", "p-1"],
+    stub: (ctx) => void (ctx.portalCommands.refresh = resolved),
+    expected: { id: "p-1", action: "refresh", status: "refreshed" },
+  }],
+  ["portal knowledge analyze", {
+    args: ["portal", "knowledge", "analyze", "p-1"],
+    stub: (ctx) => void (ctx.portalCommands.analyze = () => Promise.resolve("Analysis complete")),
+    expected: { id: "p-1", action: "analyze", status: "analyzed", summary: "Analysis complete" },
+  }],
+  ["skill create", {
+    args: ["skill", "create", "S"],
+    stub: (ctx) => void (ctx.memoryCommands.skillCreate = createdSkill),
+    expected: { id: "s-1", action: "create", status: "created", revision: "rev-1", path: "learned/s-1" },
+  }],
+  ["skill derive", {
+    args: ["skill", "derive", "--learning-ids", "l-1", "--name", "S"],
+    stub: (ctx) => void (ctx.memoryCommands.skillDerive = createdSkill),
+    expected: { id: "s-1", action: "derive", status: "derived", revision: "rev-1", path: "learned/s-1" },
+  }],
+  ["skill approve", {
+    args: ["skill", "approve", "s-1", "--revision", "rev-1"],
+    stub: (ctx) =>
+      void (ctx.memoryCommands.skillApprove = () =>
+        Promise.resolve({ name: "s-1", reviewedRevisionId: "rev-1", activeRevisionId: "rev-2", status: "active" })),
+    expected: {
+      id: "s-1",
+      action: "approve",
+      status: "active",
+      reviewedRevisionId: "rev-1",
+      activeRevisionId: "rev-2",
+    },
+  }],
+  ["skill deprecate", {
+    args: ["skill", "deprecate", "s-1"],
+    stub: (ctx) =>
+      void (ctx.memoryCommands.skillDeprecate = () =>
+        Promise.resolve({ name: "s-1", revisionId: "rev-2", status: "deprecated" })),
+    expected: { id: "s-1", action: "deprecate", status: "deprecated", revisionId: "rev-2" },
+  }],
   ["request cancel", {
     args: ["request", "cancel", "req-1"],
     stub: (ctx) => void (ctx.requestCommands.cancel = cancelled),
@@ -117,13 +209,14 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
 const ENTITY_LEAVES: ReadonlyMap<string, string> = new Map([
   ["request create", "request_actions_test.ts and exactl_all_test.ts (create prints the created request with --json)"],
   ["request clarify", "request_actions_test.ts (clarify prints the clarification result with --json)"],
+  ["flow run", "mutation_json_output_test.ts (flow run prints the created request with --json)"],
 ]);
 
 const mutationLeaves = EXACTL_COMMAND_DOCS
-  .filter((doc) => WORK_NOUNS.includes(doc.path[0]) && doc.output === ExaCtlOutputKind.MUTATION)
+  .filter((doc) => MUTATION_NOUNS.includes(doc.path[0]) && doc.output === ExaCtlOutputKind.MUTATION)
   .map((doc) => doc.path.join(" "));
 
-Deno.test("every MUTATION leaf of the work nouns has a case or a named entity test", () => {
+Deno.test("every MUTATION leaf of the work and definition nouns has a case or a named entity test", () => {
   const known = new Set([...CASES.keys(), ...ENTITY_LEAVES.keys()]);
   assertEquals(mutationLeaves.filter((leaf) => !known.has(leaf)), []);
   assertEquals([...known].filter((leaf) => !mutationLeaves.includes(leaf)), []);
@@ -151,5 +244,26 @@ Deno.test("a bulk plan approve prints one result per id as a JSON array", async 
       { id: "p-1", action: "approve", status: PlanStatus.APPROVED },
       { id: "p-2", action: "approve", status: PlanStatus.APPROVED },
     ]);
+  });
+});
+
+Deno.test("flow run prints the created request as JSON with --json", async () => {
+  await withTestMod(async (mod, ctx) => {
+    ctx.requestCommands.create = () =>
+      Promise.resolve({
+        filename: "/tmp/r.md",
+        trace_id: "t-flow",
+        priority: RequestPriority.NORMAL,
+        agent_role: "a",
+        path: "/tmp",
+        source: RequestSource.CLI as const,
+        created_by: "tester",
+        created: "now",
+        status: RequestStatus.PENDING,
+      });
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
+      await mod.__test_command.parse(["flow", "run", "my-flow", "Do the thing", "--json"]);
+    });
+    assertEquals(JSON.parse(out).trace_id, "t-flow");
   });
 });

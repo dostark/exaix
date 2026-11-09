@@ -9,6 +9,7 @@
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult, Opt, Reason } from "@exaix/core/types";
+import type { IPortalKnowledge } from "@exaix/schemas";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 
 /** CLI command handler for portal operations; delegates business logic to PortalService. */
@@ -74,12 +75,17 @@ export class PortalCommands extends BaseCommand {
     return await this.portals.analyze(alias, options);
   }
 
+  /** The gathered knowledge of a portal, or null when none has been gathered. */
+  async knowledgeData(alias: string): Promise<IPortalKnowledge | null> {
+    return await this.portals.getKnowledge(alias);
+  }
+
   /** Returns formatted Markdown by default, or raw JSON when `options.json` is set. */
   async knowledge(
     alias: string,
     options?: Opt<{ json?: boolean }, Reason.OptionalInput>,
   ): Promise<string> {
-    const data = await this.portals.getKnowledge(alias);
+    const data = await this.knowledgeData(alias);
 
     if (!data) {
       return `No knowledge available for '${alias}'.\nRun \`exactl portal knowledge analyze ${alias}\` to gather it.`;

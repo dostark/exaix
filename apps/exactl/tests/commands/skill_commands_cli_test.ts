@@ -20,6 +20,8 @@ import { readConfigFixture } from "../../../../tests/integration/helpers/config_
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 const EXACTL = join(REPO_ROOT, "apps", "exactl", "src", "exactl.ts");
 const SKILL_COMMAND = "skill";
+// deno-lint-ignore no-control-regex
+const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
 
 interface ICliResult {
   code: number;
@@ -63,20 +65,16 @@ function jsonOf(out: string): ReturnType<typeof JSON.parse> {
   return JSON.parse(lines.slice(start).join("\n"));
 }
 
-function revisionOf(out: string): string {
-  const match = out.match(/Revision: ([0-9a-f-]{36})/);
-  assert(match, `no revision in output: ${out}`);
-  return match[1];
-}
-
 Deno.test("[cli skill] create, review-bound approve, deprecate and history through real processes", async () => {
   const ws = await workspace();
   try {
     const slug = "cli-skill-a";
-    const created = await ws.run(["create", slug, "--instructions", "CLI body one."]);
+    const created = await ws.run(["create", slug, "--instructions", "CLI body one.", "--json"]);
     assertEquals(created.code, 0, created.err);
-    assertStringIncludes(created.out, `Draft path: learned/${slug}`);
-    const reviewed = revisionOf(created.out);
+    const draft = jsonOf(created.out);
+    assertEquals([draft.id, draft.action, draft.status], [slug, "create", "created"]);
+    assertStringIncludes(draft.path, `learned/${slug}`);
+    const reviewed = draft.revision;
 
     const wrong = await ws.run(["approve", slug, "--revision", crypto.randomUUID()]);
     assertEquals(wrong.code, 1);
@@ -89,25 +87,25 @@ Deno.test("[cli skill] create, review-bound approve, deprecate and history throu
     const missingOption = await ws.run(["approve", slug]);
     assertEquals(missingOption.code, 2, "a missing required option is an argument error");
 
-    const approved = await ws.run(["approve", slug, "--revision", reviewed, "--format", "json"]);
+    const approved = await ws.run(["approve", slug, "--revision", reviewed, "--json"]);
     assertEquals(approved.code, 0, approved.err);
     const active = jsonOf(approved.out);
-    assertEquals([active.name, active.reviewedRevisionId, active.status], [slug, reviewed, "active"]);
+    assertEquals([active.id, active.reviewedRevisionId, active.status], [slug, reviewed, "active"]);
 
     const again = await ws.run(["approve", slug, "--revision", active.activeRevisionId]);
     assertEquals(again.code, 1, "approving an active skill is refused");
 
-    const listed = await ws.run(["list", "--format", "json"]);
+    const listed = await ws.run(["list", "--json"]);
     assertEquals(listed.code, 0, listed.err);
     assertStringIncludes(listed.out, slug);
 
-    const valid = await ws.run(["validate", "--format", "json"]);
+    const valid = await ws.run(["validate", "--json"]);
     assertEquals(valid.code, 0, valid.err);
     assertEquals(jsonOf(valid.out).valid, true);
 
-    const deprecated = await ws.run(["deprecate", slug]);
+    const deprecated = await ws.run(["deprecate", slug, "--json"]);
     assertEquals(deprecated.code, 0, deprecated.err);
-    assertStringIncludes(deprecated.out, "deprecated");
+    assertEquals(jsonOf(deprecated.out).status, "deprecated");
     const unknown = await ws.run(["deprecate", "no-such-skill"]);
     assertEquals(unknown.code, 1);
 
@@ -116,12 +114,12 @@ Deno.test("[cli skill] create, review-bound approve, deprecate and history throu
     });
     const missing = await ws.run(["validate", slug]);
     assertEquals(missing.code, 1, "a deleted skill is unknown to validate");
-    const revisions = await ws.run(["revisions", slug, "--format", "json"]);
+    const revisions = await ws.run(["revisions", slug, "--json"]);
     assertEquals(revisions.code, 0, revisions.err);
     assertEquals(jsonOf(revisions.out), [], "revisions are stored on first use, and this skill was never used");
-    const unknownTrace = await ws.run(["usage", "--trace", crypto.randomUUID()]);
+    const unknownTrace = await ws.run(["usage", "--trace", crypto.randomUUID(), "--json"]);
     assertEquals(unknownTrace.code, 0);
-    assertStringIncludes(unknownTrace.out, "No skill usage recorded");
+    assertEquals(jsonOf(unknownTrace.out), []);
     const noTrace = await ws.run(["usage"]);
     assertEquals(noTrace.code, 2);
   } finally {
@@ -135,14 +133,14 @@ Deno.test("[cli] validate reports a broken folder with typed reasons and exits 1
     const broken = pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "broken-skill");
     await Deno.mkdir(broken, { recursive: true });
     await Deno.writeTextFile(join(broken, "SKILL.md"), "no frontmatter SECRET_CONTENT");
-    const result = await ws.run(["validate", "--format", "json"]);
+    const result = await ws.run(["validate", "--json"]);
     assertEquals(result.code, 1);
     const report = jsonOf(result.out);
     assertEquals(report.valid, false);
     assertEquals(report.diagnostics.some((d: { name: string }) => d.name === "broken-skill"), true);
     assert(!result.out.includes("SECRET_CONTENT") && !result.err.includes("SECRET_CONTENT"));
     assert(!result.out.includes(ws.root), "no host path in the report");
-    const listed = await ws.run(["list", "--all", "--format", "json"]);
+    const listed = await ws.run(["list", "--all", "--json"]);
     assertEquals(listed.code, 0, listed.err);
     assertEquals(jsonOf(listed.out).diagnostics.length > 0, true);
   } finally {
@@ -157,6 +155,32 @@ Deno.test("[cli] skill advertises its commands in its help", async () => {
     assertEquals(help.code, 0, help.err);
     for (const command of ["approve", "deprecate", "revisions", "usage", "validate", "show", "list"]) {
       assertStringIncludes(help.out, command);
+    }
+  } finally {
+    await ws.cleanup();
+  }
+});
+
+Deno.test("[cli security] a hostile draft prints no control byte on stdout in any human format", async () => {
+  const ws = await workspace();
+  const hostile = "Body \x1b]0;pwned\x07 and \x1b[2J end";
+  try {
+    const folder = pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "hostile-draft");
+    await Deno.mkdir(folder, { recursive: true });
+    await Deno.writeTextFile(
+      join(folder, "SKILL.md"),
+      `---\nname: hostile-draft\ndescription: ${JSON.stringify(hostile)}\n---\n${hostile}\n`,
+    );
+    for (const format of ["table", "md", "text"]) {
+      for (const args of [["list"], ["show", "hostile-draft"]]) {
+        const result = await ws.run([...args, "-o", format]);
+        assertEquals(result.code, 0, result.err);
+        assertEquals(
+          controlByte.test(result.out),
+          false,
+          `${args.join(" ")} -o ${format}: ${JSON.stringify(result.out)}`,
+        );
+      }
     }
   } finally {
     await ws.cleanup();

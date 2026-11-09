@@ -16,22 +16,15 @@ import {
   SkillMutationError,
   SkillUnavailableError,
 } from "@exaix/core/skills";
-import { stripTerminalControlBytes } from "@exaix/core/func";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { MemoryAutoApprovalAdapter } from "../../../../apps/common/adapters/memory_auto_approval_adapter.ts";
-import {
-  DEFAULT_NONE_VALUE,
-  type MemoryBankSource,
-  MemoryScope,
-  MemoryType,
-  SkillDiagnosticSeverity,
-} from "@exaix/core";
+import { type MemoryBankSource, MemoryScope, MemoryType, SkillDiagnosticSeverity } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest, ISkillsService, Opt, Reason } from "@exaix/core/types";
-import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
+import type { ILearning, IMemorySearchResult, ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
 import {
   type ISkillRevisionRow,
@@ -39,6 +32,14 @@ import {
   MemoryFormatter,
 } from "@exaix/cli/formatters/memory_formatter.ts";
 import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_types.ts";
+import type {
+  ISkillApproveResult,
+  ISkillDeprecateResult,
+  ISkillListResult,
+  ISkillRevisionDetail,
+  ISkillShowResult,
+  ISkillValidateResult,
+} from "./skill_results.ts";
 
 const CLI_AGENT_ROLE = "cli";
 
@@ -50,7 +51,6 @@ export class SkillCommandError extends Error {
   constructor(
     message: string,
     readonly exitCode: SkillExitCode = 1,
-    readonly output?: Opt<string, Reason.OptionalInput>,
   ) {
     super(message);
     this.name = "SkillCommandError";
@@ -532,62 +532,23 @@ export class MemoryCommands extends BaseCommand {
 
   async skillList(options: {
     category?: MemoryBankSource;
-    format?: OutputFormat;
     portal?: Opt<string, Reason.OptionalInput>;
     /** Also report diagnostics for folders that did not load. */
     all?: boolean;
-  } = {}): Promise<string> {
-    const format = options.format || UIOutputFormat.TABLE;
-
+  } = {}): Promise<ISkillListResult> {
     return await this.skillOperation(async () => {
       await this.skills.initialize();
-      // Map category to source for the API
-      const sourceFilter = options.category as MemoryBankSource | undefined;
       const operation = cliSkillContext(this.skills, options.portal);
-      const skills = await this.skills.listSkills({ source: sourceFilter }, operation);
-      if (options.all) {
-        const diagnostics = await this.skills.listDiagnostics(operation);
-        if (format === UIOutputFormat.JSON) return JSON.stringify({ skills, diagnostics }, null, 2);
-        const listing = skills.length === 0 ? "No skills found." : this.formatter.formatSkillListTable(skills);
-        return `${listing}\n\n${this.formatter.formatSkillDiagnostics(diagnostics)}`;
-      }
-
-      if (skills.length === 0) {
-        return options.category ? `No ${options.category} skills found.` : "No skills found.";
-      }
-
-      switch (format) {
-        case UIOutputFormat.JSON:
-          return JSON.stringify(
-            skills.map((s) => ({
-              skill_id: s.skill_id,
-              name: s.title,
-              source: s.source,
-              scope: s.scope,
-              revision_id: s.id,
-              status: s.status,
-            })),
-            null,
-            2,
-          );
-
-        case UIOutputFormat.MARKDOWN:
-          return this.formatter.formatSkillListMarkdown(skills);
-
-        case UIOutputFormat.TABLE:
-        default:
-          return this.formatter.formatSkillListTable(skills);
-      }
+      const skills = await this.skills.listSkills({ source: options.category }, operation);
+      if (!options.all) return { skills };
+      return { skills, diagnostics: await this.skills.listDiagnostics(operation) };
     });
   }
 
   async skillShow(
     skillId: string,
-    format: OutputFormat = UIOutputFormat.TABLE,
     portal?: Opt<string, Reason.OptionalInput>,
-    revision?: Opt<string, Reason.OptionalInput>,
-  ): Promise<string> {
-    if (revision !== undefined) return await this.skillShowRevision(skillId, revision, format, portal);
+  ): Promise<ISkillShowResult> {
     return await this.skillOperation(async () => {
       await this.skills.initialize();
       // `getSkill` resolves active skills only. A draft awaiting review must still be shown.
@@ -600,27 +561,16 @@ export class MemoryCommands extends BaseCommand {
         throw new SkillCommandError(`Skill not found: ${skillId}`, 1);
       }
 
-      const usage = await this.skills.getUsageSummary(skill.skill_id, operation);
-      switch (format) {
-        case UIOutputFormat.JSON:
-          return JSON.stringify({ ...skill, usage }, null, 2);
-
-        case UIOutputFormat.MARKDOWN:
-          return `${this.formatter.formatSkillShowMarkdown(skill)}\n\n${this.formatter.formatSkillUsage(usage)}`;
-        case UIOutputFormat.TABLE:
-        default:
-          return `${this.formatter.formatSkillShowTable(skill)}\n\n${this.formatter.formatSkillUsage(usage)}`;
-      }
+      return { skill, usage: await this.skills.getUsageSummary(skill.skill_id, operation) };
     });
   }
 
   /** Historical content of one stored revision. It never grants injection authority. */
-  private async skillShowRevision(
+  async skillShowRevision(
     skillId: string,
     revisionId: string,
-    format: OutputFormat,
     portal: Opt<string, Reason.OptionalInput>,
-  ): Promise<string> {
+  ): Promise<ISkillRevisionDetail> {
     if (!SKILL_REVISION_ID_PATTERN.test(revisionId)) {
       throw new SkillCommandError(`Argument error: --revision must be a revision UUID, got "${revisionId}"`, 2);
     }
@@ -633,7 +583,7 @@ export class MemoryCommands extends BaseCommand {
       const usage = (await this.skills.getUsageSummary(skillId, operation)).revisions.find((entry) =>
         entry.revisionId === revisionId
       );
-      const dto = {
+      return {
         revisionId: record.revisionId,
         skillName: record.skillName,
         contentSha256: await computeSkillContentSha256(record.snapshot),
@@ -644,22 +594,6 @@ export class MemoryCommands extends BaseCommand {
         origin: usage ? { rootKind: usage.rootKind, sourcePath: usage.sourcePath } : null,
         summary: { useCount: usage?.useCount ?? 0, lastUsedAt: usage?.lastUsedAt ?? null },
       };
-      if (format === UIOutputFormat.JSON) return JSON.stringify(dto, null, 2);
-      const lines = [
-        `Skill ${dto.skillName} revision ${dto.revisionId}`,
-        `  sha256 ${dto.contentSha256}`,
-        `  first seen ${dto.firstSeenAt}`,
-        `  origin ${dto.origin ? `${dto.origin.rootKind}/${dto.origin.sourcePath}` : "never used"}`,
-        `  ${dto.summary.useCount} use(s), last used ${dto.summary.lastUsedAt ?? "never"}`,
-        "",
-        "SKILL.md:",
-        dto.skillMd,
-        "",
-        "exaix.yaml:",
-        dto.exaixYaml ?? DEFAULT_NONE_VALUE,
-      ];
-      for (const reference of dto.references) lines.push("", `${reference.path}:`, reference.content);
-      return stripTerminalControlBytes(lines.join("\n"));
     });
   }
 
@@ -667,8 +601,8 @@ export class MemoryCommands extends BaseCommand {
   async skillApprove(
     name: string,
     revisionId: string,
-    options: { portal?: Opt<string, Reason.OptionalInput>; format?: OutputFormat } = {},
-  ): Promise<string> {
+    options: { portal?: Opt<string, Reason.OptionalInput> } = {},
+  ): Promise<ISkillApproveResult> {
     this.requireSkillName(name);
     if (!SKILL_REVISION_ID_PATTERN.test(revisionId)) {
       throw new SkillCommandError(`Argument error: --revision must be a revision UUID, got "${revisionId}"`, 2);
@@ -677,49 +611,34 @@ export class MemoryCommands extends BaseCommand {
       await this.skills.initialize();
       const operation = cliSkillContext(this.skills, options.portal);
       const active = await this.skills.approveSkill(name, revisionId, operation);
-      if (options.format === UIOutputFormat.JSON) {
-        return JSON.stringify(
-          {
-            name,
-            reviewedRevisionId: revisionId,
-            activeRevisionId: active.id,
-            status: active.status,
-          },
-          null,
-          2,
-        );
-      }
-      return `Approved skill: ${name}\nReviewed revision: ${revisionId}\nActive revision: ${active.id}`;
+      return { name, reviewedRevisionId: revisionId, activeRevisionId: active.id, status: active.status };
     });
   }
 
   /** Takes an active or draft skill out of matching. Repeating it is a no-op. */
   async skillDeprecate(
     name: string,
-    options: { portal?: Opt<string, Reason.OptionalInput>; format?: OutputFormat } = {},
-  ): Promise<string> {
+    options: { portal?: Opt<string, Reason.OptionalInput> } = {},
+  ): Promise<ISkillDeprecateResult> {
     this.requireSkillName(name);
     return await this.skillOperation(async () => {
       await this.skills.initialize();
       const deprecated = await this.skills.deprecateSkill(name, cliSkillContext(this.skills, options.portal));
-      if (options.format === UIOutputFormat.JSON) {
-        return JSON.stringify({ name, revisionId: deprecated.id, status: deprecated.status }, null, 2);
-      }
-      return `Skill ${name} is deprecated (revision ${deprecated.id}). Approve a reviewed revision to reactivate it.`;
+      return { name, revisionId: deprecated.id, status: deprecated.status };
     });
   }
 
   /** Every stored revision of one skill, including ones whose folder was deleted. */
   async skillRevisions(
     name: string,
-    options: { portal?: Opt<string, Reason.OptionalInput>; format?: OutputFormat } = {},
-  ): Promise<string> {
+    options: { portal?: Opt<string, Reason.OptionalInput> } = {},
+  ): Promise<ISkillRevisionRow[]> {
     this.requireSkillName(name);
     return await this.skillOperation(async () => {
       const operation = cliSkillContext(this.skills, options.portal);
       const records = await this.skills.listRevisions(name, operation);
       const usage = await this.skills.getUsageSummary(name, operation);
-      const rows: ISkillRevisionRow[] = await Promise.all(records.map(async (record) => {
+      return await Promise.all(records.map(async (record) => {
         const used = usage.revisions.find((entry) => entry.revisionId === record.revisionId);
         return {
           revisionId: record.revisionId,
@@ -729,21 +648,18 @@ export class MemoryCommands extends BaseCommand {
           lastUsedAt: used?.lastUsedAt ?? null,
         };
       }));
-      return options.format === UIOutputFormat.JSON
-        ? JSON.stringify(rows, null, 2)
-        : this.formatter.formatSkillRevisions(name, rows);
     });
   }
 
   /** Per-call skill usage on one trace, joined to the snapshot each call used. */
   async skillUsageByTrace(
     traceId: string,
-    options: { portal?: Opt<string, Reason.OptionalInput>; format?: OutputFormat } = {},
-  ): Promise<string> {
+    options: { portal?: Opt<string, Reason.OptionalInput> } = {},
+  ): Promise<ISkillTraceRow[]> {
     if (traceId.trim().length === 0) throw new SkillCommandError("Argument error: --trace needs a trace id", 2);
     return await this.skillOperation(async () => {
       const records = await this.skills.usageByTrace(traceId, cliSkillContext(this.skills, options.portal));
-      const rows: ISkillTraceRow[] = await Promise.all(records.map(async (record) => ({
+      return await Promise.all(records.map(async (record) => ({
         callId: record.callId,
         skillName: record.skillName,
         revisionId: record.revisionId,
@@ -762,17 +678,14 @@ export class MemoryCommands extends BaseCommand {
         agentRole: record.agentRole,
         configGeneration: record.configGeneration,
       })));
-      return options.format === UIOutputFormat.JSON
-        ? JSON.stringify(rows, null, 2)
-        : this.formatter.formatSkillTrace(traceId, rows);
     });
   }
 
   /** Typed validation outcomes over the current runtime roots. Writes nothing. Errors fail the exit code. */
   async skillValidate(
     name: Opt<string, Reason.OptionalInput> = undefined,
-    options: { portal?: Opt<string, Reason.OptionalInput>; format?: OutputFormat } = {},
-  ): Promise<string> {
+    options: { portal?: Opt<string, Reason.OptionalInput> } = {},
+  ): Promise<ISkillValidateResult> {
     if (name !== undefined) this.requireSkillName(name);
     return await this.skillOperation(async () => {
       const operation = cliSkillContext(this.skills, options.portal);
@@ -784,13 +697,7 @@ export class MemoryCommands extends BaseCommand {
       }
       const diagnostics = name === undefined ? all : all.filter((diagnostic) => diagnostic.name === name);
       const valid = !diagnostics.some((diagnostic) => diagnostic.severity === SkillDiagnosticSeverity.ERROR);
-      const output = options.format === UIOutputFormat.JSON
-        ? JSON.stringify({ valid, diagnostics }, null, 2)
-        : `${valid ? "Catalog is valid." : "Catalog has errors."}\n${
-          this.formatter.formatSkillDiagnostics(diagnostics)
-        }`;
-      if (!valid) throw new SkillCommandError("Skill validation failed", 1, output);
-      return output;
+      return { valid, diagnostics };
     });
   }
 
@@ -804,7 +711,7 @@ export class MemoryCommands extends BaseCommand {
   }
 
   /** Runs one skill operation, mapping service failures to the command's exit code and a generic message. */
-  private async skillOperation(run: () => Promise<string>): Promise<string> {
+  private async skillOperation<T>(run: () => Promise<T>): Promise<T> {
     try {
       return await run();
     } catch (error) {
@@ -824,12 +731,9 @@ export class MemoryCommands extends BaseCommand {
       taskType?: string;
       tags?: string[];
       limit?: number;
-      format?: OutputFormat;
       portal?: Opt<string, Reason.OptionalInput>;
     } = {},
-  ): Promise<string> {
-    const format = options.format || UIOutputFormat.TABLE;
-
+  ): Promise<ISkillMatch[]> {
     return await this.skillOperation(async () => {
       await this.skills.initialize();
 
@@ -840,30 +744,7 @@ export class MemoryCommands extends BaseCommand {
       };
 
       const { matches } = await this.skills.matchSkills(matchRequest, cliSkillContext(this.skills, options.portal));
-      const limitedMatches = options.limit ? matches.slice(0, options.limit) : matches;
-
-      if (limitedMatches.length === 0) {
-        return "No matching skills found.";
-      }
-
-      switch (format) {
-        case UIOutputFormat.JSON:
-          return JSON.stringify(
-            limitedMatches.map((m) => ({
-              skillId: m.skillId,
-              confidence: m.confidence,
-              matchedTriggers: m.matchedTriggers,
-            })),
-            null,
-            2,
-          );
-
-        case "md":
-          return this.formatter.formatSkillMatchMarkdown(limitedMatches);
-        case UIOutputFormat.TABLE:
-        default:
-          return this.formatter.formatSkillMatchTable(limitedMatches);
-      }
+      return options.limit ? matches.slice(0, options.limit) : matches;
     });
   }
 
@@ -873,11 +754,8 @@ export class MemoryCommands extends BaseCommand {
     name?: string;
     description?: string;
     instructions?: string;
-    format?: OutputFormat;
     portal?: Opt<string, Reason.OptionalInput>;
-  } = {}): Promise<string> {
-    const format = options.format || UIOutputFormat.TABLE;
-
+  } = {}): Promise<ISkill> {
     return await this.skillOperation(async () => {
       await this.skills.initialize();
 
@@ -899,26 +777,11 @@ export class MemoryCommands extends BaseCommand {
         instructions: options.instructions,
         learningIds: options.learningIds,
       }, skillId);
-      const derivedSkill = await this.skills.deriveSkillFromLearnings(
+      return await this.skills.deriveSkillFromLearnings(
         options.learningIds,
         skillDef,
         cliSkillContext(this.skills, options.portal),
       );
-
-      switch (format) {
-        case UIOutputFormat.JSON:
-          return JSON.stringify(derivedSkill, null, 2);
-
-        case "md":
-          return this.formatter.formatSkillShowMarkdown(derivedSkill);
-        case UIOutputFormat.TABLE:
-        default:
-          return stripTerminalControlBytes(
-            `Derived draft skill:\n${
-              this.formatter.formatSkillShowTable(derivedSkill)
-            }\nDraft path: ${derivedSkill.root_kind}/${derivedSkill.path}\nRevision: ${derivedSkill.id}`,
-          );
-      }
     });
   }
 
@@ -954,30 +817,15 @@ export class MemoryCommands extends BaseCommand {
       instructions?: string;
       triggersKeywords?: string[];
       triggersTaskTypes?: string[];
-      format?: OutputFormat;
       portal?: Opt<string, Reason.OptionalInput>;
     } = {},
-  ): Promise<string> {
-    const format = options.format || UIOutputFormat.TABLE;
-
+  ): Promise<ISkill> {
     return await this.skillOperation(async () => {
       await this.skills.initialize();
 
       const skillId = toSkillSlug(name);
       const skillDef = this.buildSkillDefinition(name, skillId, options);
-      const skill = await this.skills.createSkill(skillDef, cliSkillContext(this.skills, options.portal));
-
-      switch (format) {
-        case UIOutputFormat.JSON:
-          return JSON.stringify(skill, null, 2);
-
-        case UIOutputFormat.MARKDOWN:
-        case UIOutputFormat.TABLE:
-        default:
-          return stripTerminalControlBytes(
-            `Created draft skill: ${skill.skill_id} (${skill.title})\nDraft path: ${skill.root_kind}/${skill.path}\nRevision: ${skill.id}\nReview it, then approve this revision to activate it.`,
-          );
-      }
+      return await this.skills.createSkill(skillDef, cliSkillContext(this.skills, options.portal));
     });
   }
 

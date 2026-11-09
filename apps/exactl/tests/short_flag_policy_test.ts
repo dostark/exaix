@@ -18,7 +18,7 @@ const allowlist = JSON.parse(
   readFixtureTextSync(import.meta.url, "cli", "command_tree_lint_test", "command_tree_lint_allowlist.json"),
 ) as IGrammarAllowlist;
 
-const FOLLOWED_NOUNS = ["request", "plan", "review", "approval"];
+const FOLLOWED_NOUNS = ["request", "plan", "review", "approval", "flow", "blueprint", "skill", "portal"];
 
 function unlisted() {
   return findShortFlagViolations(walkCommandTree(createExaCtlCommand())).filter((violation) =>

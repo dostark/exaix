@@ -7,19 +7,21 @@
  */
 
 import { Command } from "@cliffy/command";
-import { RequestOperation } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlVerb } from "../exactl_constants.ts";
-import { actionOutput, readGlobalOptions } from "../output/exactl_output.ts";
+import { ExaCtlCommandName, ExaCtlVerb } from "../exactl_constants.ts";
+import { actionOutput } from "../output/exactl_output.ts";
 import { ExaCtlOutputFormat } from "@exaix/cli";
 import { handleRequestCreate, type IRequestCreateOptions } from "./request_actions.ts";
 import { buildRequestCreateBase } from "./request_create_options.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
+
+const FLOW_ID_ARGUMENT = "<flow-id:string>";
 
 function createFlowRunCommand(runtime: IExaCtlRuntime) {
   const { context, requestCommands } = runtime;
   return buildRequestCreateBase()
-    .description("Create a request that runs a flow")
-    .example("Run a flow", 'exactl flow run code-review "Review the auth module"')
     .action(async (options, ...args: string[]) => {
       const [flowId, description] = args;
       const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
@@ -33,41 +35,30 @@ function createFlowRunCommand(runtime: IExaCtlRuntime) {
 
 function createFlowCommand(runtime: IExaCtlRuntime) {
   const { flowCommands } = runtime;
-  return new Command()
-    .description("Manage and execute Exaix flows")
+  const noun = nounDocFor(ExaCtlCommandName.FLOW);
+  const command = documentedNoun(new Command(), noun)
     .command(
-      RequestOperation.LIST,
-      new Command()
-        .description("List all available flows")
-        .action(async (options) => {
-          await flowCommands.listFlows(readGlobalOptions(options));
-        }),
+      ExaCtlVerb.LIST,
+      new Command().action(async (options) => {
+        await flowCommands.listFlows(actionOutput(runtime, options, ExaCtlOutputFormat.TABLE).renderer);
+      }),
     )
     .command(
-      "show <flowId:string>",
-      new Command()
-        .description("Show details of a specific flow")
-        .action(async (options, ...args: string[]) => {
-          const flowId = args[0];
-          await flowCommands.showFlow(flowId, readGlobalOptions(options));
-        }),
+      `${ExaCtlVerb.SHOW} ${FLOW_ID_ARGUMENT}`,
+      new Command().action(async (options, ...args: string[]) => {
+        await flowCommands.showFlow(args[0], actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer);
+      }),
     )
-    .command(`${ExaCtlVerb.RUN} <flowId:string> <description:string>`, createFlowRunCommand(runtime))
+    .command(`${ExaCtlVerb.RUN} ${FLOW_ID_ARGUMENT} <description:string>`, createFlowRunCommand(runtime))
     .command(
-      "validate <flowId:string>",
-      new Command()
-        .description("Validate a flow definition")
-        .action(async (options, ...args: string[]) => {
-          const flowId = args[0];
-          await flowCommands.validateFlow(flowId, readGlobalOptions(options));
-        }),
+      `${ExaCtlVerb.VALIDATE} ${FLOW_ID_ARGUMENT}`,
+      new Command().action(async (options, ...args: string[]) => {
+        await flowCommands.validateFlow(args[0], actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer);
+      }),
     )
     .command(
-      "bindings <flowId:string>",
+      `${ExaCtlVerb.BINDINGS} ${FLOW_ID_ARGUMENT}`,
       new Command()
-        .description(
-          "Resolve this flow's step bindings across all layers (model/service/transport/interface per LLM step)",
-        )
         .option("--overlay <file:string>", "Per-run binding overlay file (repeatable)", { collect: true })
         .option(
           "--bind <spec:string>",
@@ -75,10 +66,15 @@ function createFlowCommand(runtime: IExaCtlRuntime) {
           { collect: true },
         )
         .action(async (options, ...args: string[]) => {
-          const flowId = args[0];
-          await flowCommands.bindingsFlow(flowId, options);
+          await flowCommands.bindingsFlow(
+            args[0],
+            options,
+            actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer,
+          );
         }),
     );
+  documentLeaves(command, [ExaCtlCommandName.FLOW], noun.lifecycle);
+  return command;
 }
 
 export function buildFlowCommand(runtime: IExaCtlRuntime): ReturnType<typeof createFlowCommand> {

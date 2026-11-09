@@ -12,6 +12,8 @@ import { join } from "@std/path";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
 const TOML_OVERLAY = 'schema = 1\n\n[bindings."flow:research/step:compose"]\nservice = "alpha"\n';
 
@@ -101,7 +103,11 @@ Deno.test("[cli] exactl flow bindings --overlay accepts a TOML overlay", async (
     };
     try {
       // The preview exits 1 for an unresolvable binding, but the parsed run layer is still printed.
-      await new FlowCommands(context).bindingsFlow("research", { overlay: [overlayPath], json: true }).catch(() => {});
+      await new FlowCommands(context).bindingsFlow(
+        "research",
+        { overlay: [overlayPath] },
+        createConsoleRenderer(ExaCtlOutputFormat.JSON),
+      ).catch(() => {});
     } finally {
       console.log = original;
       Deno.exitCode = 0;

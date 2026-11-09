@@ -45,7 +45,7 @@ const MOVES: readonly Move[] = [
   ["git worktrees", "git worktree", NO_FLAGS, NO_FLAGS],
   ["git worktrees list", "git worktree list", NO_FLAGS, NO_FLAGS],
   ["git worktrees prune", "git worktree prune", NO_FLAGS, NO_FLAGS],
-  ["portal analyze", "portal knowledge analyze", NO_FLAGS, NO_FLAGS],
+  ["portal analyze", "portal knowledge analyze", ["-f", "-m"], NO_FLAGS],
   ["portal knowledge", "portal knowledge show", NOW_GLOBAL, NO_FLAGS],
   ["config lock", "config lock add", NO_FLAGS, NO_FLAGS],
   ["config unlock", "config lock remove", NO_FLAGS, NO_FLAGS],

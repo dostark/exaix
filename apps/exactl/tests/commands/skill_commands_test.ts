@@ -12,7 +12,6 @@
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { UIOutputFormat } from "@exaix/tui";
 import { SkillStatus } from "@exaix/core";
 import { policySkillSubmission, SkillsService } from "@exaix/core/skills";
 import { SkillCommandError } from "../../src/commands/memory_commands.ts";
@@ -30,17 +29,11 @@ Deno.test("[skills show] prints total, per-revision and last-use counts read fro
     await service.recordSubmission(policySkillSubmission(draft), ctx);
     await service.recordSubmission(policySkillSubmission(draft), ctx);
 
-    const table = await commands.skillShow("usage-skill");
-    assertStringIncludes(table, "Total uses: 2");
-    assertStringIncludes(table, `Revision ${draft.id.slice(0, 8)}: 2 use(s)`);
-    assertStringIncludes(table, "Last used:");
-
-    const markdown = await commands.skillShow("usage-skill", UIOutputFormat.MARKDOWN);
-    assertStringIncludes(markdown, "Total uses: 2");
-
-    const json = JSON.parse(await commands.skillShow("usage-skill", UIOutputFormat.JSON));
-    assertEquals(json.usage.totalUses, 2);
-    assertEquals(json.usage.revisions[0].useCount, 2);
+    const { usage } = await commands.skillShow("usage-skill");
+    assertEquals(usage.totalUses, 2);
+    assertEquals(usage.revisions[0].revisionId, draft.id);
+    assertEquals(usage.revisions[0].useCount, 2);
+    assertEquals(typeof usage.lastUsedAt, "string");
   } finally {
     await cleanup();
   }
@@ -50,9 +43,9 @@ Deno.test("[skills show] an unused skill shows zero uses", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await commands.skillCreate("Idle Skill", { instructions: "Body." });
-    const output = await commands.skillShow("idle-skill");
-    assertStringIncludes(output, "Total uses: 0");
-    assertEquals(JSON.parse(await commands.skillShow("idle-skill", UIOutputFormat.JSON)).usage.revisions, []);
+    const { usage } = await commands.skillShow("idle-skill");
+    assertEquals(usage.totalUses, 0);
+    assertEquals(usage.revisions, []);
   } finally {
     await cleanup();
   }
@@ -71,18 +64,18 @@ Deno.test("[skills --portal] project skills show only for their portal and are g
       instructions: "Alpha body.",
       sidecar: { status: SkillStatus.ACTIVE },
     });
-    assertStringIncludes(await commands.skillList({ portal: "Alpha" }), "alpha-guide");
-    assertFalse((await commands.skillList({ portal: "Beta" })).includes("alpha-guide"));
-    assertFalse((await commands.skillList()).includes("alpha-guide"));
-    assertStringIncludes(await commands.skillShow("alpha-guide", UIOutputFormat.TABLE, "Alpha"), "alpha-guide");
+    assertEquals(await skillIds(commands.skillList({ portal: "Alpha" })), ["alpha-guide"]);
+    assertEquals(await skillIds(commands.skillList({ portal: "Beta" })), []);
+    assertEquals(await skillIds(commands.skillList()), []);
+    assertEquals((await commands.skillShow("alpha-guide", "Alpha")).skill.skill_id, "alpha-guide");
     const hidden = await assertRejects(() => commands.skillShow("alpha-guide"), SkillCommandError);
     assertEquals(hidden.exitCode, 1);
     assertStringIncludes(hidden.message, "Skill not found");
 
     const created = await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
-    assertStringIncludes(created, "beta-note");
-    assertStringIncludes(await commands.skillList({ portal: "Beta" }), "beta-note");
-    assertFalse((await commands.skillList({ portal: "Alpha" })).includes("beta-note"));
+    assertEquals(created.skill_id, "beta-note");
+    assertEquals(await skillIds(commands.skillList({ portal: "Beta" })), ["beta-note"]);
+    assertEquals(await skillIds(commands.skillList({ portal: "Alpha" })), ["alpha-guide"]);
   } finally {
     await cleanup();
   }
@@ -110,6 +103,10 @@ Deno.test("[listDraftSkills] returns drafts only and a portal draft only for its
   }
 });
 
+async function skillIds(listing: Promise<{ skills: { skill_id: string }[] }>): Promise<string[]> {
+  return (await listing).skills.map((skill) => skill.skill_id).sort();
+}
+
 async function draftOf(service: SkillsService, name: string) {
   return (await service.listSkills({ status: SkillStatus.DRAFT })).find((skill) => skill.name === name)!;
 }
@@ -118,11 +115,10 @@ Deno.test("[skills approve] approval is bound to the reviewed revision and activ
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const created = await commands.skillCreate("Review Me", { instructions: "Body one." });
-    assertStringIncludes(created, "Revision:");
-    assertStringIncludes(created, "Draft path: learned/review-me");
+    assertStringIncludes(`${created.root_kind}/${created.path}`, "learned/review-me");
     const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     const reviewed = await draftOf(service, "review-me");
-    assertStringIncludes(created, reviewed.id);
+    assertEquals(created.id, reviewed.id);
 
     const stale = await assertRejects(
       () => commands.skillApprove("review-me", crypto.randomUUID()),
@@ -132,8 +128,9 @@ Deno.test("[skills approve] approval is bound to the reviewed revision and activ
     assertStringIncludes(stale.message, "skill_revision_mismatch");
 
     const approved = await commands.skillApprove("review-me", reviewed.id);
-    assertStringIncludes(approved, "review-me");
-    assertStringIncludes(approved, reviewed.id);
+    assertEquals(approved.name, "review-me");
+    assertEquals(approved.reviewedRevisionId, reviewed.id);
+    assertEquals(approved.status, SkillStatus.ACTIVE);
     assertEquals((await service.getSkill("review-me"))?.status, SkillStatus.ACTIVE);
 
     const again = await assertRejects(() => commands.skillApprove("review-me", reviewed.id), SkillCommandError);
@@ -152,7 +149,7 @@ Deno.test("[skills deprecate] a deprecated skill leaves matching and needs a fre
     const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     const reviewed = await draftOf(service, "retire-me");
     await commands.skillApprove("retire-me", reviewed.id);
-    assertStringIncludes(await commands.skillDeprecate("retire-me"), "deprecated");
+    assertEquals((await commands.skillDeprecate("retire-me")).status, SkillStatus.DEPRECATED);
     assertEquals(await service.getSkill("retire-me"), null);
     const error = await assertRejects(() => commands.skillDeprecate("never-was"), SkillCommandError);
     assertEquals(error.exitCode, 1);
@@ -174,22 +171,21 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
     await service.recordSubmission(policySkillSubmission(active), ctx);
     await service.deleteSkill("historic", ctx);
 
-    const revisions = JSON.parse(await commands.skillRevisions("historic", { format: UIOutputFormat.JSON }));
+    const revisions = await commands.skillRevisions("historic");
     assertEquals(revisions.length, 1);
     assertEquals(revisions[0].revisionId, active.id);
     assertEquals(revisions[0].useCount, 2);
     assertEquals(typeof revisions[0].contentSha256, "string");
     assertEquals(typeof revisions[0].firstSeenAt, "string");
-    assertStringIncludes(await commands.skillRevisions("historic"), active.id);
 
-    const shown = JSON.parse(await commands.skillShow("historic", UIOutputFormat.JSON, undefined, active.id));
+    const shown = await commands.skillShowRevision("historic", active.id, undefined);
     assertEquals(shown.revisionId, active.id);
     assertStringIncludes(shown.skillMd, "Historic body.");
-    assertEquals(shown.origin.rootKind, "learned");
+    assertEquals(shown.origin?.rootKind, "learned");
     assertEquals(shown.summary.useCount, 2);
     assertFalse(JSON.stringify(shown).includes(config.system.root), "no host paths in the output");
 
-    const trace = JSON.parse(await commands.skillUsageByTrace(ctx.traceId, { format: UIOutputFormat.JSON }));
+    const trace = await commands.skillUsageByTrace(ctx.traceId);
     assertEquals(trace.length, 2);
     assertEquals(trace[0].skillName, "historic");
     assertEquals(trace[0].revisionId, active.id);
@@ -197,12 +193,12 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
     assertFalse(JSON.stringify(trace).includes("Historic body."), "trace rows carry no skill bodies");
 
     const wrongName = await assertRejects(
-      () => commands.skillShow("other-name", UIOutputFormat.JSON, undefined, active.id),
+      () => commands.skillShowRevision("other-name", active.id, undefined),
       SkillCommandError,
     );
     assertEquals(wrongName.exitCode, 1);
     const unknownRevision = await assertRejects(
-      () => commands.skillShow("historic", UIOutputFormat.JSON, undefined, crypto.randomUUID()),
+      () => commands.skillShowRevision("historic", crypto.randomUUID(), undefined),
       SkillCommandError,
     );
     assertEquals(unknownRevision.exitCode, 1);
@@ -211,7 +207,7 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
   }
 });
 
-Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing and fail the exit code on errors", async () => {
+Deno.test("[skills validate/list --all] diagnostics are typed and mutate nothing", async () => {
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
@@ -220,29 +216,24 @@ Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing an
       instructions: "Fine.",
       sidecar: { status: SkillStatus.ACTIVE },
     });
-    const clean = JSON.parse(await commands.skillValidate(undefined, { format: UIOutputFormat.JSON }));
+    const clean = await commands.skillValidate();
     assertEquals(clean.valid, true);
 
     await Deno.mkdir(join(learned, "broken-skill"), { recursive: true });
     await Deno.writeTextFile(join(learned, "broken-skill", "SKILL.md"), "no frontmatter at all");
     const before = await db.preparedAll("SELECT revision_id FROM skill_revisions");
-    const error = await assertRejects(
-      () => commands.skillValidate(undefined, { format: UIOutputFormat.JSON }),
-      SkillCommandError,
-    );
-    assertEquals(error.exitCode, 1);
-    const report = JSON.parse(error.output!);
+    const report = await commands.skillValidate();
     assertEquals(report.valid, false);
-    assertEquals(report.diagnostics.some((d: { name: string; reason: string }) => d.name === "broken-skill"), true);
+    assertEquals(report.diagnostics.some((d) => d.name === "broken-skill"), true);
     assertFalse(JSON.stringify(report).includes("no frontmatter"), "no raw file content");
     assertEquals(await db.preparedAll("SELECT revision_id FROM skill_revisions"), before, "validate writes nothing");
 
-    const named = JSON.parse(await commands.skillValidate("fine-skill", { format: UIOutputFormat.JSON }));
+    const named = await commands.skillValidate("fine-skill");
     assertEquals(named.valid, true);
 
-    const listed = JSON.parse(await commands.skillList({ all: true, format: UIOutputFormat.JSON }));
-    assertEquals(listed.skills.map((s: { name: string }) => s.name), ["fine-skill"]);
-    assertEquals(listed.diagnostics.length > 0, true);
+    const listed = await commands.skillList({ all: true });
+    assertEquals(listed.skills.map((s) => s.name), ["fine-skill"]);
+    assertEquals((listed.diagnostics ?? []).length > 0, true);
   } finally {
     await cleanup();
   }
@@ -268,11 +259,9 @@ Deno.test("[skills] older commands fail with exit codes instead of returning err
   }
 });
 
-Deno.test("[security] a hostile draft prints no control byte in table or markdown output and stays exact in JSON", async () => {
+Deno.test("[security] a hostile draft stays exact in the revision data", async () => {
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   const hostile = "Body \x1b]0;pwned\x07 and \x1b[2J end";
-  // deno-lint-ignore no-control-regex
-  const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
   try {
     const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
     await writeSkillFolder(learned, { name: "hostile-draft", instructions: hostile });
@@ -280,19 +269,8 @@ Deno.test("[security] a hostile draft prints no control byte in table or markdow
     const draft = await draftOf(service, "hostile-draft");
     await service.ensureRevisions([draft.id], testSkillContext());
 
-    for (const format of [UIOutputFormat.TABLE, UIOutputFormat.MARKDOWN]) {
-      for (
-        const output of [
-          await commands.skillShow("hostile-draft", format),
-          await commands.skillShow("hostile-draft", format, undefined, draft.id),
-          await commands.skillList({ format }),
-        ]
-      ) {
-        assertEquals(controlByte.test(output), false, JSON.stringify(output));
-      }
-    }
-    const json = JSON.parse(await commands.skillShow("hostile-draft", UIOutputFormat.JSON, undefined, draft.id));
-    assertStringIncludes(json.skillMd, hostile);
+    const revision = await commands.skillShowRevision("hostile-draft", draft.id, undefined);
+    assertStringIncludes(revision.skillMd, hostile);
   } finally {
     await cleanup();
   }
@@ -312,19 +290,16 @@ Deno.test("[security] a project skill's stored revision is refused to another po
     const skill = (await service.getSkill("alpha-guide", alpha))!;
     await service.recordSubmission(policySkillSubmission(skill), alpha);
 
-    const own = JSON.parse(await commands.skillShow("alpha-guide", UIOutputFormat.JSON, "Alpha", skill.id));
+    const own = await commands.skillShowRevision("alpha-guide", skill.id, "Alpha");
     assertStringIncludes(own.skillMd, "Alpha only guidance.");
     for (const portal of ["Beta", undefined]) {
       const refused = await assertRejects(
-        () => commands.skillShow("alpha-guide", UIOutputFormat.JSON, portal, skill.id),
+        () => commands.skillShowRevision("alpha-guide", skill.id, portal),
         SkillCommandError,
       );
       assertEquals(refused.exitCode, 1);
       assertFalse(refused.message.includes("Alpha only guidance."));
-      assertEquals(
-        JSON.parse(await commands.skillRevisions("alpha-guide", { format: UIOutputFormat.JSON, portal })),
-        [],
-      );
+      assertEquals(await commands.skillRevisions("alpha-guide", { portal }), []);
     }
   } finally {
     await cleanup();

@@ -41,7 +41,9 @@ Deno.test("the skills root and the memory skill group no longer exist", () => {
   assertArrayIncludes(paths, [ExaCtlCommandName.SKILL]);
 });
 
-Deno.test("the bare skill command keeps its list options", () => {
-  const root = nodes.find((node) => node.path.join(" ") === ExaCtlCommandName.SKILL);
-  assertArrayIncludes((root?.options ?? []).flatMap((option) => option.flags), ["--format", "--portal"]);
+Deno.test("no skill command defines --format", () => {
+  const flags = nodes
+    .filter((node) => node.path[0] === ExaCtlCommandName.SKILL)
+    .flatMap((node) => node.options.flatMap((option) => option.flags));
+  assertEquals(flags.filter((flag) => flag === "--format"), []);
 });

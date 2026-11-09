@@ -54,6 +54,7 @@ export enum ColumnHeader {
   REQUEST = "Request",
   SUMMARY = "Summary",
   ACTION = "Action",
+  REVISION = "Revision",
 }
 
 const MUTATION_COLUMNS: readonly IExaCtlColumn<IMutationResult>[] = [

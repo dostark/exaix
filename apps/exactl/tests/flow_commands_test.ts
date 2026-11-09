@@ -9,30 +9,19 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
-import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
-import { createCliTestContext } from "./helpers/test_setup.ts";
-import { createMockProvider } from "@exaix/testing";
-
-async function createMockContext(
-  exit?: (code?: number) => never,
-): Promise<ICliApplicationContext & { exit?: (code?: number) => never; cleanup: () => Promise<void> }> {
-  const { context, cleanup } = await createCliTestContext();
-  return {
-    ...context,
-    provider: createMockProvider([]),
-    exit,
-    cleanup,
-  };
-}
-
-function getFlowDir(ctx: ICliApplicationContext) {
-  const cfg = ctx.config.getAll();
-  return join(cfg.system.root, cfg.paths.flows);
-}
+import {
+  captureConsole,
+  captureErrorsAndExit,
+  createMockContext,
+  type FlowTestContext,
+  getFlowDir,
+} from "./helpers/flow_test_context.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
 async function withFlowsDir(
-  ctx: ICliApplicationContext & { cleanup: () => Promise<void> },
+  ctx: FlowTestContext,
   fn: (flowDir: string) => Promise<void>,
 ) {
   const flowDir = getFlowDir(ctx);
@@ -44,28 +33,14 @@ async function withFlowsDir(
   }
 }
 
-async function captureConsole(kind: "log" | "error", fn: () => Promise<void>) {
-  let output = "";
-  const original = console[kind];
-  console[kind] = (...args: string[]) => {
-    output += args.map((a) => String(a)).join(" ") + "\n";
-  };
-  try {
-    await fn();
-  } finally {
-    console[kind] = original;
-  }
-  return output;
-}
-
-Deno.test("FlowCommands: listFlows returns empty when no flows", async () => {
+Deno.test("FlowCommands: listFlows returns no rows when no flows", async () => {
   const ctx = await createMockContext();
   await withFlowsDir(ctx, async (_flowDir) => {
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.listFlows();
+      await commands.listFlows(createConsoleRenderer(ExaCtlOutputFormat.JSON));
     });
-    assertStringIncludes(output, "No flows found");
+    assertEquals(JSON.parse(output), []);
   });
 });
 
@@ -82,7 +57,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(`${flowDir}/cli-flow.flow.yaml`, validFlow);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.listFlows();
+      await commands.listFlows(createConsoleRenderer());
     });
     assertStringIncludes(output, "CLI Flow");
     assertStringIncludes(output, "Flow for CLI test");
@@ -103,7 +78,7 @@ output: { from: "s1", format: "markdown" }
 
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.listFlows({ json: true });
+      await commands.listFlows(createConsoleRenderer(ExaCtlOutputFormat.JSON));
     });
 
     assertStringIncludes(output, '"id": "json-flow"');
@@ -123,7 +98,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(`${flowDir}/valid-cli-flow.flow.yaml`, validFlow);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.validateFlow("valid-cli-flow");
+      await commands.validateFlow("valid-cli-flow", createConsoleRenderer());
     });
     assertStringIncludes(output, "is valid");
   });
@@ -143,7 +118,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(join(flowDir, "fallback-flow.flow.yaml"), validFlow);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.validateFlow("fallback-flow");
+      await commands.validateFlow("fallback-flow", createConsoleRenderer());
     });
     assertStringIncludes(output, "is valid");
   });
@@ -162,7 +137,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(`${flowDir}/show-flow.flow.yaml`, flowDef);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.showFlow("show-flow", { json: true });
+      await commands.showFlow("show-flow", createConsoleRenderer(ExaCtlOutputFormat.JSON));
     });
     const parsed = JSON.parse(output.trim());
     assertEquals(parsed.id, "show-flow");
@@ -182,7 +157,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(`${flowDir}/show-flow-2.flow.yaml`, flowModule);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.showFlow("show-flow-2", { json: true });
+      await commands.showFlow("show-flow-2", createConsoleRenderer(ExaCtlOutputFormat.JSON));
     });
     assertStringIncludes(output, '"id": "show-flow-2"');
     assertStringIncludes(output, '"name": "Show Flow 2"');
@@ -212,7 +187,7 @@ output: { from: "b", format: "markdown" }
     await Deno.writeTextFile(`${flowDir}/full-flow.flow.yaml`, flowModule);
     const commands = new FlowCommands(ctx);
     const output = await captureConsole("log", async () => {
-      await commands.showFlow("full-flow");
+      await commands.showFlow("full-flow", createConsoleRenderer());
     });
     assertStringIncludes(output, "Dependency Graph:");
     assertStringIncludes(output, "Settings:");
@@ -238,31 +213,21 @@ Deno.test({ name: "FlowCommands: listFlows handles loader errors and exits", san
       };
     };
 
-    let errOut = "";
-    const origErr = console.error;
-    console.error = (...args: string[]) => {
-      errOut += args.join(" ") + "\n";
-    };
-
-    ctx.exit = (_c?: number) => {
-      throw new Error("DENO_EXIT");
-    };
-
+    const errors = captureErrorsAndExit(ctx);
     try {
       let threw = false;
       try {
-        await commands.listFlows();
+        await commands.listFlows(createConsoleRenderer());
       } catch (_e) {
         threw = true;
-        if (!errOut.includes("Error listing flows: boom")) {
-          throw new Error(`Expected error log not found. got: ${errOut}`);
+        if (!errors.text().includes("Error listing flows: boom")) {
+          throw new Error(`Expected error log not found. got: ${errors.text()}`);
         }
       }
       if (!threw) throw new Error("Expected Deno.exit to be called");
       Deno.readDir = originalReadDir;
     } finally {
-      console.error = origErr;
-      ctx.exit = undefined;
+      errors.restore();
     }
   });
 });
@@ -286,7 +251,7 @@ output: { from: "s1", format: "markdown" }
       out += msg + "\n";
     };
     try {
-      await commands.validateFlow("valid-for-json", { json: true });
+      await commands.validateFlow("valid-for-json", createConsoleRenderer(ExaCtlOutputFormat.JSON));
     } finally {
       console.log = origLog;
     }
@@ -311,20 +276,11 @@ Deno.test("FlowCommands: validateFlow throws on validator error", async () => {
       out += msg + "\n";
     };
 
-    let errOut = "";
-    const origErr = console.error;
-    console.error = (...args: string[]) => {
-      errOut += args.join(" ") + "\n";
-    };
-
-    ctx.exit = (_c?: number) => {
-      throw new Error("DENO_EXIT");
-    };
-
+    const errors = captureErrorsAndExit(ctx);
     try {
       let threw = false;
       try {
-        await commands.validateFlow("bad");
+        await commands.validateFlow("bad", createConsoleRenderer());
       } catch (_e) {
         threw = true;
       }
@@ -332,9 +288,8 @@ Deno.test("FlowCommands: validateFlow throws on validator error", async () => {
       assertStringIncludes(out, "uh-oh");
     } finally {
       console.log = origLog;
-      console.error = origErr;
+      errors.restore();
       Deno.readTextFile = origReadText;
-      ctx.exit = undefined;
     }
   });
 });
@@ -358,7 +313,7 @@ output: { from: "s1", format: "markdown" }
     try {
       let caught = false;
       try {
-        await commands.validateFlow("bad");
+        await commands.validateFlow("bad", createConsoleRenderer());
       } catch (e) {
         caught = true;
         assertStringIncludes((e as Error).message, "EXIT");

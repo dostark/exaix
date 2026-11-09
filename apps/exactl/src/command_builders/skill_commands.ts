@@ -5,247 +5,402 @@
  *   approve, deprecate, revisions, usage and validate. A failed command prints its message and exits
  *   with 1, or with 2 for a malformed argument.
  * @architectural-layer CLI
- * @dependencies [@cliffy/command, @exaix/tui, ../commands/memory_commands.ts]
+ * @dependencies [@cliffy/command, @exaix/cli, ../commands/memory_commands.ts]
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
 import { Command } from "@cliffy/command";
 import { MemoryScope } from "@exaix/core";
 import type { MemoryBankSource } from "@exaix/core";
-import { UIOutputFormat } from "@exaix/tui";
+import { DEFAULT_NONE_VALUE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
+import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+import { CLI_LAYOUT_SKILL_HASH_WIDTH, CLI_LAYOUT_SKILL_REVISION_WIDTH, ExaCtlOutputFormat } from "@exaix/cli";
+import type { IExaCtlColumn } from "@exaix/cli";
 import { type MemoryCommands, SkillCommandError } from "../commands/memory_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import { ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
+import { actionOutput, cellText, ColumnHeader, EMPTY_CELL, type IJsonRow, toRow } from "../output/exactl_output.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
 
-const FORMAT_OPTION = "--format <format:string>";
-const FORMAT_HELP = "Output format: table, json, md";
-const FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
 const PORTAL_OPTION = "--portal <portal:string>";
 const PORTAL_HELP = "Portal whose project skills apply. Without it only global skills apply";
 const REVISION_OPTION = "--revision <revision:string>";
-const LIMIT_OPTION = "-l, --limit <limit:number>";
+const LIMIT_OPTION = "-n, --limit <limit:number>";
 const LIMIT_DEFAULT = 10;
 const COMMA_SEPARATOR = ",";
+const NAME_ARGUMENT = "<name:string>";
+
+const SKILL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Skill ID", value: (skill) => cellText(skill.skill_id) },
+  { header: "Name", value: (skill) => cellText(skill.title) },
+  { header: "Source", value: (skill) => cellText(skill.source) },
+  { header: ColumnHeader.REVISION, value: (skill) => cellText(skill.id).slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH) },
+  { header: ColumnHeader.STATUS, value: (skill) => cellText(skill.status) },
+];
+
+const DIAGNOSTIC_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Severity", value: (row) => cellText(row.severity) },
+  { header: "Name", value: (row) => cellText(row.name) },
+  { header: "Reason", value: (row) => cellText(row.reason) },
+  { header: "Path", value: (row) => `${cellText(row.root_kind)}/${cellText(row.safe_path)}` },
+];
+
+const MATCH_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Skill ID", value: (row) => cellText(row.skillId) },
+  { header: "Confidence", value: (row) => Number(row.confidence).toFixed(2) },
+  { header: "Matched triggers", value: (row) => cellText(row.summary) },
+];
+
+const REVISION_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.REVISION, value: (row) => cellText(row.revisionId) },
+  { header: "SHA-256", value: (row) => cellText(row.contentSha256).slice(0, CLI_LAYOUT_SKILL_HASH_WIDTH) },
+  { header: "First seen", value: (row) => cellText(row.firstSeenAt) },
+  { header: "Uses", value: (row) => String(row.useCount) },
+  { header: "Last used", value: (row) => cellText(row.lastUsedAt) },
+];
+
+const TRACE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Used at", value: (row) => cellText(row.usedAt) },
+  { header: "Skill", value: (row) => cellText(row.skillName) },
+  { header: ColumnHeader.REVISION, value: (row) => cellText(row.revisionId) },
+  { header: "Match", value: (row) => `${cellText(row.matchSource)}/${cellText(row.renderMode)}` },
+  {
+    header: "Submission",
+    value: (row) => `${cellText(row.submissionKind)} round ${row.round} attempt ${row.attempt}`,
+  },
+  { header: "Origin", value: (row) => `${cellText(row.rootKind)}/${cellText(row.sourcePath)}` },
+];
+
+const VALIDATION_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Valid", value: (row) => String(row.valid) },
+];
+
+function listText(values: Opt<readonly string[], Reason.OptionalInput>): string {
+  return values && values.length > 0 ? values.join(", ") : DEFAULT_NONE_VALUE;
+}
+
+function skillFields(skill: ISkill): readonly IExaCtlColumn<IJsonRow>[] {
+  return [
+    { header: "Skill ID", value: () => skill.skill_id },
+    { header: "Title", value: () => skill.title },
+    { header: "Source", value: () => skill.source },
+    { header: "Scope", value: () => skill.scope },
+    { header: ColumnHeader.REVISION, value: () => skill.id },
+    { header: ColumnHeader.STATUS, value: () => skill.status },
+    { header: "Description", value: () => skill.description },
+    { header: "Keywords", value: () => listText(skill.triggers.keywords) },
+    { header: "Task types", value: () => listText(skill.triggers.task_types) },
+    { header: "Tags", value: () => listText(skill.triggers.tags) },
+    { header: "Instructions", value: () => skill.instructions },
+  ];
+}
+
+function matchSummary(match: ISkillMatch): string {
+  const parts: string[] = [];
+  const { keywords, task_types: taskTypes, tags } = match.matchedTriggers;
+  if (keywords?.length) parts.push(`keywords: ${keywords.join(", ")}`);
+  if (taskTypes?.length) parts.push(`task types: ${taskTypes.join(", ")}`);
+  if (tags?.length) parts.push(`tags: ${tags.join(", ")}`);
+  return parts.length > 0 ? parts.join("; ") : EMPTY_CELL;
+}
 
 function splitList(value: Opt<string, Reason.OptionalInput>): string[] | undefined {
   return value ? value.split(COMMA_SEPARATOR).map((entry) => entry.trim()) : undefined;
 }
 
-/** Prints the result. A failure prints its output or message and ends the process with its exit code. */
-async function run(action: () => Promise<string>): Promise<void> {
-  try {
-    console.log(await action());
-  } catch (error) {
-    if (error instanceof SkillCommandError) {
-      if (error.output) console.log(error.output);
-      console.error(error.message);
-      Deno.exit(error.exitCode);
-    }
-    throw error;
-  }
-}
-
 /** Fills one command group with the skill commands. */
-function registerSkillCommands(group: Command, memory: MemoryCommands): void {
+function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
+  const memory: MemoryCommands = runtime.memoryCommands;
+  /** Runs one action. A failure prints its message and ends the process with its exit code. */
+  async function run(action: string, work: () => Promise<void>): Promise<void> {
+    try {
+      await work();
+    } catch (error) {
+      runtime.display.error("cli.error", action, {
+        message: error instanceof Error ? error.message : "Skill command failed",
+      });
+      Deno.exit(error instanceof SkillCommandError ? error.exitCode : 1);
+    }
+  }
+  const out = <T extends object>(options: T) => actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+
   group
-    .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
-    .option(PORTAL_OPTION, PORTAL_HELP)
-    .action((options) =>
-      run(() =>
-        memory.skillList({ format: options.format as OutputFormat, portal: options.portal as string | undefined })
-      )
-    )
     .command(
-      "list",
+      ExaCtlVerb.LIST,
       new Command()
-        .description("List skills. --all also reports folders that did not load")
-        .option("-c, --category <category:string>", "Filter by category: core, project, learned")
+        .option("--category <category:string>", "Filter by category: core, project, learned")
         .option("--all", "Include diagnostics for folders that did not load")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options) =>
-          run(() =>
-            memory.skillList({
+          run("skill list", async () => {
+            const { renderer } = out(options);
+            const result = await memory.skillList({
               category: options.category as MemoryBankSource | undefined,
               all: options.all === true,
-              format: options.format as OutputFormat,
-              portal: options.portal as string | undefined,
-            })
-          )
+              portal: options.portal,
+            });
+            if (result.diagnostics !== undefined && renderer.machine) {
+              await renderer.item(
+                toRow({ skills: result.skills.map(toRow), diagnostics: result.diagnostics.map(toRow) }),
+                [],
+              );
+              return;
+            }
+            await renderer.list(result.skills.map(toRow), SKILL_COLUMNS, (skill) => cellText(skill.skill_id));
+            if (result.diagnostics !== undefined) {
+              await renderer.list(result.diagnostics.map(toRow), DIAGNOSTIC_COLUMNS, (row) => cellText(row.name));
+            }
+          })
         ),
     )
     .command(
-      "show <skillId:string>",
+      `${ExaCtlVerb.SHOW} <skill-id:string>`,
       new Command()
-        .description("Show a skill, or one stored revision of it with --revision")
         .option(REVISION_OPTION, "Show this stored revision instead of the current skill")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillShow(
-              args[0],
-              options.format as OutputFormat,
-              options.portal as string | undefined,
-              options.revision as string | undefined,
-            )
-          )
+          run("skill show", async () => {
+            const { renderer } = out(options);
+            if (options.revision !== undefined) {
+              const detail = await memory.skillShowRevision(args[0], options.revision, options.portal);
+              const fields: IExaCtlColumn<IJsonRow>[] = [
+                { header: "Skill", value: () => detail.skillName },
+                { header: ColumnHeader.REVISION, value: () => detail.revisionId },
+                { header: "SHA-256", value: () => detail.contentSha256 },
+                { header: "First seen", value: () => detail.firstSeenAt },
+                {
+                  header: "Origin",
+                  value: () => detail.origin ? `${detail.origin.rootKind}/${detail.origin.sourcePath}` : "never used",
+                },
+                {
+                  header: "Uses",
+                  value: () => `${detail.summary.useCount}, last used ${detail.summary.lastUsedAt ?? "never"}`,
+                },
+                { header: "SKILL.md", value: () => detail.skillMd },
+                { header: "exaix.yaml", value: () => detail.exaixYaml ?? DEFAULT_NONE_VALUE },
+                ...detail.references.map((reference) => ({
+                  header: reference.path,
+                  value: () => reference.content,
+                })),
+              ];
+              await renderer.item(toRow(detail), fields);
+              return;
+            }
+            const { skill, usage } = await memory.skillShow(args[0], options.portal);
+            await renderer.item(toRow({ ...skill, usage }), [
+              ...skillFields(skill),
+              { header: "Total uses", value: () => String(usage.totalUses) },
+              { header: "Last used", value: () => usage.lastUsedAt ?? DEFAULT_NONE_VALUE },
+            ]);
+          })
         ),
     )
     .command(
-      "match <request:string>",
+      `${ExaCtlVerb.MATCH} <request:string>`,
       new Command()
-        .description("Match skills for a given request")
-        .option("-t, --task-type <taskType:string>", "Task type filter")
+        .option("--task-type <taskType:string>", "Task type filter")
         .option("--tags <tags:string>", "Comma-separated tags filter")
         .option(LIMIT_OPTION, "Maximum results", { default: LIMIT_DEFAULT })
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillMatch(args[0], {
-              taskType: options.taskType as string | undefined,
-              tags: splitList(options.tags as string | undefined),
-              limit: options.limit as number,
-              format: options.format as OutputFormat,
-              portal: options.portal as string | undefined,
-            })
-          )
+          run("skill match", async () => {
+            const { renderer } = out(options);
+            const matches = await memory.skillMatch(args[0], {
+              taskType: options.taskType,
+              tags: splitList(options.tags),
+              limit: options.limit,
+              portal: options.portal,
+            });
+            await renderer.list(
+              matches.map((match) => toRow({ ...match, summary: matchSummary(match) })),
+              MATCH_COLUMNS,
+              (row) => cellText(row.skillId),
+            );
+          })
         ),
     )
     .command(
-      "derive",
+      ExaCtlVerb.DERIVE,
       new Command()
-        .description("Derive a draft skill from learnings")
-        .option("-l, --learning-ids <ids:string>", "Comma-separated learning IDs to derive from", { required: true })
-        .option("-n, --name <name:string>", "Name for the derived skill", { required: true })
-        .option("-d, --description <desc:string>", "Skill description")
+        .option("--learning-ids <ids:string>", "Comma-separated learning IDs to derive from", { required: true })
+        .option("--name <name:string>", "Name for the derived skill", { required: true })
+        .option("--description <desc:string>", "Skill description")
         .option("-i, --instructions <instructions:string>", "Skill instructions")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options) =>
-          run(() =>
-            memory.skillDerive({
-              learningIds: splitList(options.learningIds as string | undefined),
-              name: options.name as string,
-              description: options.description as string | undefined,
-              instructions: options.instructions as string | undefined,
-              format: options.format as OutputFormat,
-              portal: options.portal as string | undefined,
-            })
-          )
+          run("skill derive", async () => {
+            const { renderer, display } = out(options);
+            const skill = await memory.skillDerive({
+              learningIds: splitList(options.learningIds),
+              name: options.name,
+              description: options.description,
+              instructions: options.instructions,
+              portal: options.portal,
+            });
+            display.info("cli.skill.derived", skill.skill_id, {
+              draft_path: `${skill.root_kind}/${skill.path}`,
+              revision: skill.id,
+            });
+            await renderer.mutation(
+              [{
+                id: skill.skill_id,
+                action: ExaCtlVerb.DERIVE,
+                status: MutationStatus.DERIVED,
+                revision: skill.id,
+                path: `${skill.root_kind}/${skill.path}`,
+              }],
+              false,
+            );
+          })
         ),
     )
     .command(
-      "create <name:string>",
+      `${ExaCtlVerb.CREATE} ${NAME_ARGUMENT}`,
       new Command()
-        .description("Create a draft skill. Review it, then approve its revision")
-        .option("-d, --description <desc:string>", "Skill description")
-        .option("-c, --category <category:string>", "Category: core, project, learned", {
+        .option("--description <desc:string>", "Skill description")
+        .option("--category <category:string>", "Category: core, project, learned", {
           default: MemoryScope.PROJECT,
         })
         .option("-i, --instructions <instructions:string>", "Skill instructions")
         .option("-k, --keywords <keywords:string>", "Comma-separated trigger keywords")
-        .option("-t, --task-types <taskTypes:string>", "Comma-separated trigger task types")
+        .option("--task-types <taskTypes:string>", "Comma-separated trigger task types")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillCreate(args[0], {
-              description: options.description as string | undefined,
+          run("skill create", async () => {
+            const { renderer, display } = out(options);
+            const skill = await memory.skillCreate(args[0], {
+              description: options.description,
               category: options.category as MemoryBankSource,
-              instructions: options.instructions as string | undefined,
-              triggersKeywords: splitList(options.keywords as string | undefined),
-              triggersTaskTypes: splitList(options.taskTypes as string | undefined),
-              format: options.format as OutputFormat,
-              portal: options.portal as string | undefined,
-            })
-          )
+              instructions: options.instructions,
+              triggersKeywords: splitList(options.keywords),
+              triggersTaskTypes: splitList(options.taskTypes),
+              portal: options.portal,
+            });
+            display.info("cli.skill.created", skill.skill_id, {
+              title: skill.title,
+              draft_path: `${skill.root_kind}/${skill.path}`,
+              revision: skill.id,
+              next: "Review it, then approve this revision to activate it.",
+            });
+            await renderer.mutation(
+              [{
+                id: skill.skill_id,
+                action: ExaCtlVerb.CREATE,
+                status: MutationStatus.CREATED,
+                revision: skill.id,
+                path: `${skill.root_kind}/${skill.path}`,
+              }],
+              false,
+            );
+          })
         ),
     )
     .command(
-      "approve <name:string>",
+      `${ExaCtlVerb.APPROVE} ${NAME_ARGUMENT}`,
       new Command()
-        .description("Activate a reviewed draft. The revision must be the one that was reviewed")
         .option(REVISION_OPTION, "Revision UUID that was reviewed", { required: true })
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillApprove(args[0], options.revision as string, {
-              portal: options.portal as string | undefined,
-              format: options.format as OutputFormat,
-            })
-          )
+          run("skill approve", async () => {
+            const { renderer, display } = out(options);
+            const approved = await memory.skillApprove(args[0], options.revision, { portal: options.portal });
+            display.info("cli.skill.approved", approved.name, {
+              reviewed_revision: approved.reviewedRevisionId,
+              active_revision: approved.activeRevisionId,
+            });
+            await renderer.mutation(
+              [{
+                id: approved.name,
+                action: ExaCtlVerb.APPROVE,
+                status: approved.status,
+                reviewedRevisionId: approved.reviewedRevisionId,
+                activeRevisionId: approved.activeRevisionId,
+              }],
+              false,
+            );
+          })
         ),
     )
     .command(
-      "deprecate <name:string>",
+      `${ExaCtlVerb.DEPRECATE} ${NAME_ARGUMENT}`,
       new Command()
-        .description("Take a skill out of matching. A reviewed revision must be approved to bring it back")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillDeprecate(args[0], {
-              portal: options.portal as string | undefined,
-              format: options.format as OutputFormat,
-            })
-          )
+          run("skill deprecate", async () => {
+            const { renderer, display } = out(options);
+            const deprecated = await memory.skillDeprecate(args[0], { portal: options.portal });
+            display.info("cli.skill.deprecated", deprecated.name, {
+              revision: deprecated.revisionId,
+              next: "Approve a reviewed revision to reactivate it.",
+            });
+            await renderer.mutation(
+              [{
+                id: deprecated.name,
+                action: ExaCtlVerb.DEPRECATE,
+                status: deprecated.status,
+                revisionId: deprecated.revisionId,
+              }],
+              false,
+            );
+          })
         ),
     )
     .command(
-      "revisions <name:string>",
+      `${ExaCtlVerb.REVISIONS} ${NAME_ARGUMENT}`,
       new Command()
-        .description("List every stored revision of a skill with its hash, first sighting and use counts")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillRevisions(args[0], {
-              portal: options.portal as string | undefined,
-              format: options.format as OutputFormat,
-            })
-          )
+          run("skill revisions", async () => {
+            const { renderer } = out(options);
+            const rows = await memory.skillRevisions(args[0], { portal: options.portal });
+            await renderer.list(rows.map(toRow), REVISION_COLUMNS, (row) => cellText(row.revisionId));
+          })
         ),
     )
     .command(
-      "usage",
+      ExaCtlVerb.USAGE,
       new Command()
-        .description("Show per-call skill usage for one trace, joined to the snapshots used")
         .option("--trace <trace:string>", "Trace id to read", { required: true })
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options) =>
-          run(() =>
-            memory.skillUsageByTrace(options.trace as string, {
-              portal: options.portal as string | undefined,
-              format: options.format as OutputFormat,
-            })
-          )
+          run("skill usage", async () => {
+            const { renderer } = out(options);
+            const rows = await memory.skillUsageByTrace(options.trace, { portal: options.portal });
+            await renderer.list(rows.map(toRow), TRACE_COLUMNS, (row) => cellText(row.callId));
+          })
         ),
     )
     .command(
-      "validate [name:string]",
+      `${ExaCtlVerb.VALIDATE} [name:string]`,
       new Command()
-        .description("Report typed validation reasons for the current skill roots. Exits 1 when a skill is invalid")
         .option(PORTAL_OPTION, PORTAL_HELP)
-        .option(FORMAT_OPTION, FORMAT_HELP, FORMAT_DEFAULT)
         .action((options, ...args: string[]) =>
-          run(() =>
-            memory.skillValidate(args[0], {
-              portal: options.portal as string | undefined,
-              format: options.format as OutputFormat,
-            })
-          )
+          run("skill validate", async () => {
+            const { renderer, display } = out(options);
+            const result = await memory.skillValidate(args[0], { portal: options.portal });
+            if (renderer.machine) {
+              await renderer.item(toRow({ valid: result.valid, diagnostics: result.diagnostics.map(toRow) }), []);
+            } else {
+              await renderer.item(toRow({ valid: result.valid }), VALIDATION_COLUMNS);
+              await renderer.list(result.diagnostics.map(toRow), DIAGNOSTIC_COLUMNS, (row) => cellText(row.name));
+            }
+            if (!result.valid) {
+              display.error("cli.skill.invalid", "skills", { errors: result.diagnostics.length });
+              Deno.exit(1);
+            }
+          })
         ),
     );
 }
 
 /** The root skill command over the memory skill handlers. */
 export function buildSkillCommand(runtime: IExaCtlRuntime): Command {
-  const command = new Command().description("Manage procedural skills");
-  registerSkillCommands(command, runtime.memoryCommands);
+  const noun = nounDocFor(ExaCtlCommandName.SKILL);
+  const command = documentedNoun(new Command(), noun);
+  registerSkillCommands(command, runtime);
+  documentLeaves(command, [ExaCtlCommandName.SKILL], noun.lifecycle);
   return command;
 }

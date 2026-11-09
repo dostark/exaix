@@ -10,6 +10,8 @@ import { join } from "@std/path";
 import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
 const OVERLAY = JSON.stringify({ schema: 1, bindings: { "flow:research/step:compose": { service: "alpha" } } });
 
@@ -29,7 +31,11 @@ async function previewErrors(overlayPath: (dir: string) => Promise<string>): Pro
       'id: "research"\nname: "Research"\ndescription: "d"\nsteps:\n  - id: "compose"\n    name: "Compose"\n    agent_role: "composer"\noutput: { from: "compose", format: "markdown" }\n',
     );
     const path = await overlayPath(tempDir);
-    await new FlowCommands(context).bindingsFlow("research", { overlay: [path], json: true }).catch(() => {});
+    await new FlowCommands(context).bindingsFlow(
+      "research",
+      { overlay: [path] },
+      createConsoleRenderer(ExaCtlOutputFormat.JSON),
+    ).catch(() => {});
     return errors;
   } finally {
     console.error = original;

@@ -372,11 +372,16 @@ Deno.test("portal verify logs warnings and summary", async () => {
         { alias: "Broken", status: VerificationStatus.FAILED, issues: ["missing"] },
       ]);
 
-    const { logs, warns } = await captureAllOutputs(async () => {
-      await mod.__test_command.parse(["portal", "verify"]);
+    let listing = "";
+    const { logs } = await captureAllOutputs(async () => {
+      listing = (await withCapturedSink(ctx.outputSink, async () => {
+        await mod.__test_command.parse(["portal", "verify"]);
+      })).out;
     });
 
-    assert(warns.length >= 1);
+    assertStringIncludes(listing, "Broken");
+    assertStringIncludes(listing, "FAILED");
+    assertStringIncludes(listing, "missing");
     assertStringIncludes(logs.join(" "), "portal.verify.summary");
   });
 });
@@ -903,10 +908,10 @@ Deno.test("flow show calls flowCommands.showFlow", async () => {
 Deno.test("flow validate calls flowCommands.validateFlow", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.flowCommands.validateFlow = (flowId: string, opts: Parameters<FlowCommands["validateFlow"]>[1]) => {
+    ctx.flowCommands.validateFlow = (flowId: string, renderer: Parameters<FlowCommands["validateFlow"]>[1]) => {
       called = true;
       assertEquals(flowId, "my-flow");
-      assertEquals(opts?.json, true);
+      assertEquals(renderer.machine, true);
       return Promise.resolve();
     };
     await mod.__test_command.parse(["flow", "validate", "my-flow", "--json"]);

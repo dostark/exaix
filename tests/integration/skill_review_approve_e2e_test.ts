@@ -102,6 +102,14 @@ async function cli(
   return { code: result.code, out: decode(result.stdout), err: decode(result.stderr) };
 }
 
+/** The CLI echoes journal events as plain lines before the result, so the JSON document starts at its own line. */
+function jsonOf(out: string): ReturnType<typeof JSON.parse> {
+  const lines = out.split("\n");
+  const start = lines.findIndex((line) => line === "{");
+  assert(start >= 0, `no JSON document in output: ${out}`);
+  return JSON.parse(lines.slice(start).join("\n"));
+}
+
 Deno.test({
   name: "[skill_review_approve_e2e] a derived draft is injected only after its reviewed revision is approved",
   ignore: Deno.env.get("CI") === "true",
@@ -162,11 +170,11 @@ Add a hello world function.
             "Review Flow",
             "--instructions",
             `${MARKER} body.`,
+            "--json",
           ]);
           assertEquals(derived.code, 0, derived.err);
-          const match = derived.out.match(/Revision: ([0-9a-f-]{36})/);
-          assert(match, `no revision in derive output: ${derived.out}`);
-          state.derived = match[1];
+          const derivedRevision: string = jsonOf(derived.out).revision;
+          state.derived = derivedRevision;
 
           state.draftTrace = await submit(daemon);
 
@@ -174,13 +182,11 @@ Add a hello world function.
             "approve",
             SKILL,
             "--revision",
-            state.derived,
-            "--format",
-            "json",
+            derivedRevision,
+            "--json",
           ]);
           assertEquals(approved.code, 0, approved.err);
-          const lines = approved.out.split("\n");
-          state.active = JSON.parse(lines.slice(lines.findIndex((line) => line === "{")).join("\n")).activeRevisionId;
+          state.active = jsonOf(approved.out).activeRevisionId;
 
           state.activeTrace = await submit(daemon);
         },

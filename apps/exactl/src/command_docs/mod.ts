@@ -12,9 +12,13 @@ import type { IExaCtlNounDoc } from "../docs/exactl_noun_doc.ts";
 import type { ExaCtlCommandName } from "../exactl_constants.ts";
 import { DAEMON_DOCS, DAEMON_NOUN_DOC } from "./daemon_docs.ts";
 import { APPROVAL_DOCS, APPROVAL_NOUN_DOC } from "./approval_docs.ts";
+import { BLUEPRINT_DOCS, BLUEPRINT_NOUN_DOC } from "./blueprint_docs.ts";
+import { FLOW_DOCS, FLOW_NOUN_DOC } from "./flow_docs.ts";
 import { PLAN_DOCS, PLAN_NOUN_DOC } from "./plan_docs.ts";
+import { PORTAL_DOCS, PORTAL_NOUN_DOC } from "./portal_docs.ts";
 import { REQUEST_DOCS, REQUEST_NOUN_DOC } from "./request_docs.ts";
 import { REVIEW_DOCS, REVIEW_NOUN_DOC } from "./review_docs.ts";
+import { SKILL_DOCS, SKILL_NOUN_DOC } from "./skill_docs.ts";
 
 export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   REQUEST_NOUN_DOC,
@@ -22,6 +26,10 @@ export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   REVIEW_NOUN_DOC,
   APPROVAL_NOUN_DOC,
   DAEMON_NOUN_DOC,
+  FLOW_NOUN_DOC,
+  BLUEPRINT_NOUN_DOC,
+  SKILL_NOUN_DOC,
+  PORTAL_NOUN_DOC,
 ];
 
 export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
@@ -30,6 +38,10 @@ export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
   ...REVIEW_DOCS,
   ...APPROVAL_DOCS,
   ...DAEMON_DOCS,
+  ...FLOW_DOCS,
+  ...BLUEPRINT_DOCS,
+  ...SKILL_DOCS,
+  ...PORTAL_DOCS,
 ];
 
 const PATH_SEPARATOR = " ";

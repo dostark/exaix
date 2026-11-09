@@ -620,12 +620,12 @@ Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async
 
 // Skills Commands Coverage
 
-Deno.test("MemoryCommands: skillList returns empty message when no skills exist", async () => {
+Deno.test("MemoryCommands: skillList returns no skills when none exist", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const result = await commands.skillList();
 
-    assertStringIncludes(result, "No skills found");
+    assertEquals(result.skills, []);
   } finally {
     await cleanup();
   }
@@ -642,14 +642,13 @@ Deno.test("MemoryCommands: skillCreate, skillShow, and skillList (json) work", a
       triggersTaskTypes: [TEST_SKILL_TASK_TYPE],
     });
 
-    assertStringIncludes(createResult, TEST_SKILL_ID);
+    assertEquals(createResult.skill_id, TEST_SKILL_ID);
 
-    const listJson = await commands.skillList({ category: MemoryBankSource.LEARNED, format: UIOutputFormat.JSON });
-    const parsed = JSON.parse(listJson) as Array<{ skill_id: string }>;
-    assertEquals(parsed[0].skill_id, TEST_SKILL_ID);
+    const listed = await commands.skillList({ category: MemoryBankSource.LEARNED });
+    assertEquals(listed.skills[0].skill_id, TEST_SKILL_ID);
 
-    const showResult = await commands.skillShow(TEST_SKILL_ID, UIOutputFormat.MARKDOWN);
-    assertStringIncludes(showResult, TEST_SKILL_NAME);
+    const showResult = await commands.skillShow(TEST_SKILL_ID);
+    assertEquals(showResult.skill.title, TEST_SKILL_NAME);
   } finally {
     await cleanup();
   }
@@ -673,16 +672,15 @@ Deno.test("MemoryCommands: skillMatch returns matches for active skill", async (
 
     const result = await commands.skillMatch(TEST_SKILL_REQUEST_TEXT, {
       taskType: TEST_SKILL_TASK_TYPE,
-      format: UIOutputFormat.TABLE,
     });
 
-    assertStringIncludes(result, TEST_SKILL_ID);
+    assertEquals(result[0].skillId, TEST_SKILL_ID);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: skillDerive returns derived skill JSON", async () => {
+Deno.test("MemoryCommands: skillDerive returns the derived skill", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const result = await commands.skillDerive({
@@ -690,11 +688,9 @@ Deno.test("MemoryCommands: skillDerive returns derived skill JSON", async () => 
       name: TEST_DERIVED_SKILL_NAME,
       description: TEST_DERIVED_SKILL_DESCRIPTION,
       instructions: TEST_DERIVED_SKILL_INSTRUCTIONS,
-      format: UIOutputFormat.JSON,
     });
 
-    const parsed = JSON.parse(result) as { skill_id: string };
-    assertEquals(parsed.skill_id, TEST_DERIVED_SKILL_ID);
+    assertEquals(result.skill_id, TEST_DERIVED_SKILL_ID);
   } finally {
     await cleanup();
   }
