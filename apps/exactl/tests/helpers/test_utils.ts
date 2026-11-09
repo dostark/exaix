@@ -52,7 +52,17 @@ export async function withTestMod<T>(
     } else {
       ctx = loadedMod.__test_getContext();
     }
-    return await fn(loadedMod, ctx);
+    const originalOut = ctx.outputSink.out;
+    // Renderer output goes through console.log here, so tests that capture console output still see it.
+    ctx.outputSink.out = (text) => {
+      console.log(text.replace(/\n$/, ""));
+      return Promise.resolve();
+    };
+    try {
+      return await fn(loadedMod, ctx);
+    } finally {
+      ctx.outputSink.out = originalOut;
+    }
   } finally {
     // Attempt to close db and underlying dynamic library if present
     if (ctx && ctx.db) {

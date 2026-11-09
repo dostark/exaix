@@ -21,8 +21,27 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
-import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { IJournalFilterOptions, Opt, Reason } from "@exaix/core/types";
+import { type ExaCtlOutputRenderer, type IJsonRow, stripTerminalControls, toRow } from "../output/exactl_output.ts";
+import type { JSONValue } from "@exaix/core";
+
+const HISTORICAL_RULE_WIDTH = 60;
+
+function cleanJson(value: JSONValue): JSONValue {
+  if (typeof value === "string") return stripTerminalControls(value);
+  if (Array.isArray(value)) return value.map(cleanJson);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cleanJson(entry)]));
+  }
+  return value;
+}
+
+/** The payload with terminal control characters removed from every string. */
+function cleanPayload(payload: IStreamingEvent["payload"]): IJsonRow {
+  return cleanJson(toRow(payload)) as IJsonRow;
+}
+const CLOCK_START = 11;
+const CLOCK_END = 19;
 
 /**
  * WatchCommand provides real-time execution tailing via SSE or historical fallback.
@@ -35,7 +54,11 @@ export class WatchCommand extends BaseCommand {
   /**
    * Watch a trace by ID. Tries SSE stream first; falls back to DB query.
    */
-  async watch(traceId: string, testMode?: Opt<boolean, Reason.TestOverride>): Promise<void> {
+  async watch(
+    traceId: string,
+    renderer: ExaCtlOutputRenderer,
+    testMode?: Opt<boolean, Reason.TestOverride>,
+  ): Promise<void> {
     // Validate traceId
     const parseResult = z.string().uuid().safeParse(traceId);
     if (!parseResult.success) {
@@ -65,7 +88,7 @@ export class WatchCommand extends BaseCommand {
         clearTimeout(timeoutId);
 
         if (response.ok && response.body) {
-          await this.streamSse(response);
+          await this.streamSse(response, renderer);
           return;
         }
       } catch {
@@ -76,13 +99,13 @@ export class WatchCommand extends BaseCommand {
     }
 
     // Fallback: query historical events from DB
-    await this.showHistoricalEvents(traceId);
+    await this.showHistoricalEvents(traceId, renderer);
   }
 
   /**
    * Stream and pretty-print SSE events from the server.
    */
-  private async streamSse(response: Response): Promise<void> {
+  private async streamSse(response: Response, renderer: ExaCtlOutputRenderer): Promise<void> {
     const reader = response.body?.getReader();
     if (!reader) {
       console.error(colors.red("No response body from SSE stream"));
@@ -105,7 +128,7 @@ export class WatchCommand extends BaseCommand {
       for (const eventText of events) {
         const event = this.parseSseEvent(eventText.trim());
         if (event) {
-          WatchCommand.printSseEvent(event);
+          await WatchCommand.emitSseEvent(event, renderer);
         }
       }
     }
@@ -124,21 +147,28 @@ export class WatchCommand extends BaseCommand {
     }
   }
 
-  /** Pretty-prints a streaming event with color-coded output by event category. */
-  static printSseEvent(event: IStreamingEvent): void {
-    const timestamp = colors.dim(new Date(event.timestamp).toISOString().slice(11, 19));
-    const type = event.type;
+  /** Prints one streaming event: JSON for a machine format, a color-coded line for humans. */
+  static async emitSseEvent(event: IStreamingEvent, renderer: ExaCtlOutputRenderer): Promise<void> {
+    if (renderer.machine) await renderer.event(toRow(event));
+    else await renderer.text(WatchCommand.formatSseEvent(event));
+  }
+
+  /** Formats a streaming event as one color-coded line by event category. Untrusted text is stripped of terminal controls. */
+  static formatSseEvent(event: IStreamingEvent): string {
+    const timestamp = colors.dim(new Date(event.timestamp).toISOString().slice(CLOCK_START, CLOCK_END));
+    const type = stripTerminalControls(event.type);
+    const clean = cleanPayload(event.payload);
 
     let formatted: string;
 
     switch (type) {
       case STREAMING_EVENT_HEARTBEAT:
         formatted = colors.dim(
-          `[${timestamp}] ♥ heartbeat step="${event.payload.step}" elapsed=${event.payload.elapsed_ms}ms`,
+          `[${timestamp}] ♥ heartbeat step="${clean.step}" elapsed=${clean.elapsed_ms}ms`,
         );
         break;
       case STREAMING_EVENT_MILESTONE: {
-        const payload = event.payload;
+        const payload = clean;
         const milestoneType = String(payload.milestoneType ?? "");
         const summary = String(payload.summary ?? "");
         const requiresAttention = payload.requiresAttention === true;
@@ -170,48 +200,55 @@ export class WatchCommand extends BaseCommand {
       }
       case STREAMING_EVENT_TOOL_START:
         formatted = colors.cyan(
-          `[${timestamp}] ▶ tool.start tool="${event.payload.tool}"`,
+          `[${timestamp}] ▶ tool.start tool="${clean.tool}"`,
         );
         break;
       case STREAMING_EVENT_TOOL_END:
         formatted = colors.cyan(
-          `[${timestamp}] ◀ tool.end tool="${event.payload.tool}"`,
+          `[${timestamp}] ◀ tool.end tool="${clean.tool}"`,
         );
         break;
       case STREAMING_EVENT_LLM_STREAM:
         formatted = colors.white(
-          `[${timestamp}] ◈ llm.stream ${event.payload.text ?? ""}`,
+          `[${timestamp}] ◈ llm.stream ${clean.text ?? ""}`,
         );
         break;
       case STREAMING_EVENT_FLOW_STATUS:
         formatted = colors.green(
-          `[${timestamp}] ◆ flow.status status="${event.payload.status ?? "unknown"}"`,
+          `[${timestamp}] ◆ flow.status status="${clean.status ?? "unknown"}"`,
         );
         break;
       default:
-        formatted = `[${timestamp}] ${type} ${JSON.stringify(event.payload)}`;
+        formatted = `[${timestamp}] ${type} ${JSON.stringify(clean)}`;
     }
 
-    console.log(formatted);
+    return formatted;
   }
 
   /**
    * Query and display historical events for a completed trace.
    */
-  private async showHistoricalEvents(traceId: string): Promise<void> {
-    const { db } = this;
+  private async showHistoricalEvents(traceId: string, renderer: ExaCtlOutputRenderer): Promise<void> {
     const filterOptions: IJournalFilterOptions = { traceId };
+    const results = await this.db.queryActivity(filterOptions);
 
-    const results = await db.queryActivity(filterOptions);
-
-    if (results.length === 0) {
-      console.log(colors.yellow(`No events found for trace: ${traceId}`));
+    if (renderer.machine) {
+      for (const row of results) await renderer.event(toRow(row));
       return;
     }
-
-    console.log(colors.bold(colors.cyan(`Historical events for trace: ${traceId}`)));
-    console.log(colors.dim("─".repeat(60)));
-
-    JournalFormatter.render(results, { traceId });
+    if (results.length === 0) {
+      await renderer.text(colors.yellow(`No events found for trace: ${traceId}`));
+      return;
+    }
+    await renderer.text(colors.bold(colors.cyan(`Historical events for trace: ${traceId}`)));
+    await renderer.text(colors.dim("─".repeat(HISTORICAL_RULE_WIDTH)));
+    for (const row of results) {
+      const clock = new Date(row.timestamp).toISOString().slice(CLOCK_START, CLOCK_END);
+      const target = stripTerminalControls(row.target ?? "");
+      const payload = stripTerminalControls(row.payload);
+      await renderer.text(
+        `${colors.dim(clock)} ${stripTerminalControls(row.action_type)} ${target} ${payload}`.trimEnd(),
+      );
+    }
   }
 }

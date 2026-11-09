@@ -150,7 +150,7 @@ Deno.test("request list shows 'No requests found' when empty", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "list"]);
     });
-    assert(out.includes("No requests found") || out.includes("count: 0"));
+    assertStringIncludes(out, "Trace");
   });
 });
 
@@ -254,7 +254,7 @@ Deno.test("review list prints entries when present", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["review", "list"]);
     });
-    assert(out.includes("feat/x") || out.includes("req-1"));
+    assertStringIncludes(out, "feat/x");
   });
 });
 
@@ -627,7 +627,7 @@ Deno.test("plan revise passes comments to planCommands.revise", async () => {
       assertEquals(comments, ["c1", "c2"]);
       return Promise.resolve();
     };
-    await mod.__test_command.parse(["plan", "revise", "p-1", "-c", "c1", "-c", "c2"]);
+    await mod.__test_command.parse(["plan", "revise", "p-1", "--comment", "c1", "--comment", "c2"]);
     assert(called);
   });
 });
@@ -882,8 +882,8 @@ Deno.test("request inline --dry-run with --json prefers dry-run", async () => {
     const outs = await captureAllOutputs(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "create", "Do something", "--dry-run", "--json"]);
     });
-    const joined = [...outs.logs, ...outs.warns, ...outs.errs].join("\n");
-    assert(joined.includes("cli.dry_run") && !joined.includes('"trace_id"'));
+    const joined = outs.logs.join("\n");
+    assertEquals(JSON.parse(joined), { would_create: "/tmp/req.md" });
   });
 });
 
@@ -942,7 +942,7 @@ Deno.test("approval approve calls waitStateCommands.approve with token and messa
       assertEquals(message, "Approved");
       return Promise.resolve({ waitStateId: "ws-1", status: "fulfilled" } as any);
     };
-    await mod.__test_command.parse(["approval", "approve", "wait:tok-123", "-m", "Approved"]);
+    await mod.__test_command.parse(["approval", "approve", "wait:tok-123", "--message", "Approved"]);
     assert(called);
   });
 });
@@ -970,7 +970,7 @@ Deno.test("approval amend calls waitStateCommands.amend with token and message",
       assertEquals(message, "Revise approach");
       return Promise.resolve({ waitStateId: "ws-3", status: "amended" } as any);
     };
-    await mod.__test_command.parse(["approval", "amend", "wait:tok-789", "-m", "Revise approach"]);
+    await mod.__test_command.parse(["approval", "amend", "wait:tok-789", "--message", "Revise approach"]);
     assert(called);
   });
 });
@@ -984,7 +984,7 @@ Deno.test("approval expire calls waitStateCommands.expire with token and message
       assertEquals(message, "Timed out");
       return Promise.resolve({ waitStateId: "ws-4", status: "expired" } as any);
     };
-    await mod.__test_command.parse(["approval", "expire", "wait:tok-000", "-m", "Timed out"]);
+    await mod.__test_command.parse(["approval", "expire", "wait:tok-000", "--message", "Timed out"]);
     assert(called);
   });
 });
@@ -998,7 +998,7 @@ Deno.test("approval cancel calls waitStateCommands.cancel with token and message
       assertEquals(message, "Cancel it");
       return Promise.resolve({ waitStateId: "ws-5", status: "cancelled" } as any);
     };
-    await mod.__test_command.parse(["approval", "cancel", "wait:tok-cancel", "-m", "Cancel it"]);
+    await mod.__test_command.parse(["approval", "cancel", "wait:tok-cancel", "--message", "Cancel it"]);
     assert(called);
   });
 });
@@ -1017,7 +1017,7 @@ Deno.test("approval approve --resolved-by passes the actor through to waitStateC
       "approval",
       "approve",
       "wait:tok-123",
-      "-m",
+      "--message",
       "Approved",
       "--resolved-by",
       "user-simulator:cooperative",

@@ -11,11 +11,26 @@ import type { IExaCtlCommandDoc } from "@exaix/cli";
 import type { IExaCtlNounDoc } from "../docs/exactl_noun_doc.ts";
 import type { ExaCtlCommandName } from "../exactl_constants.ts";
 import { DAEMON_DOCS, DAEMON_NOUN_DOC } from "./daemon_docs.ts";
+import { APPROVAL_DOCS, APPROVAL_NOUN_DOC } from "./approval_docs.ts";
 import { PLAN_DOCS, PLAN_NOUN_DOC } from "./plan_docs.ts";
+import { REQUEST_DOCS, REQUEST_NOUN_DOC } from "./request_docs.ts";
+import { REVIEW_DOCS, REVIEW_NOUN_DOC } from "./review_docs.ts";
 
-export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [PLAN_NOUN_DOC, DAEMON_NOUN_DOC];
+export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
+  REQUEST_NOUN_DOC,
+  PLAN_NOUN_DOC,
+  REVIEW_NOUN_DOC,
+  APPROVAL_NOUN_DOC,
+  DAEMON_NOUN_DOC,
+];
 
-export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [...PLAN_DOCS, ...DAEMON_DOCS];
+export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
+  ...REQUEST_DOCS,
+  ...PLAN_DOCS,
+  ...REVIEW_DOCS,
+  ...APPROVAL_DOCS,
+  ...DAEMON_DOCS,
+];
 
 const PATH_SEPARATOR = " ";
 

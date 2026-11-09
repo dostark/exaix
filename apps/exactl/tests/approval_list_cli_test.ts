@@ -103,11 +103,11 @@ async function seed(root: string): Promise<void> {
 const CREATE_DRAFT = ["skill", "create", SKILL_NAME, "--instructions", "Draft body."];
 
 Deno.test("approval list prints one row per source with the typed refs", async () => {
-  const [created, list] = await runExactlSeededWorkspace(seed, [CREATE_DRAFT, ["approval", "list"]]);
+  const [created, list] = await runExactlSeededWorkspace(seed, [CREATE_DRAFT, ["approval", "list", "-o", "json"]]);
   assertEquals(created.code, 0, created.stderr);
   assertEquals(list.code, 0, list.stderr);
-  const rows = list.stdout.split("\n").filter((line) => line.includes("\t"));
-  assertEquals(rows.map((row) => row.split("\t")[1]).sort(), KINDS, list.stdout);
+  const rows = JSON.parse(list.stdout) as Array<{ kind: string }>;
+  assertEquals(rows.map((row) => row.kind).sort(), KINDS, list.stdout);
   for (const ref of [`plan:${PLAN_ID}`, `amendment:${AMENDMENT_ID}`, `review:${REVIEW_BRANCH}`]) {
     assertStringIncludes(list.stdout, ref);
   }
@@ -121,11 +121,11 @@ Deno.test("approval list prints one row per source with the typed refs", async (
 
 Deno.test("approval list --kind filters and an unknown kind exits 2", async () => {
   const [filtered, unknown] = await runExactlSeededWorkspace(seed, [
-    ["approval", "list", "--kind", "plan,tool"],
+    ["approval", "list", "--kind", "plan,tool", "-o", "json"],
     ["approval", "list", "--kind", "nope"],
   ]);
   assertEquals(filtered.code, 0, filtered.stderr);
-  const kinds = filtered.stdout.split("\n").filter((line) => line.includes("\t")).map((row) => row.split("\t")[1]);
+  const kinds = (JSON.parse(filtered.stdout) as Array<{ kind: string }>).map((row) => row.kind);
   assertEquals(kinds.sort(), ["plan", "tool"]);
   assertEquals(unknown.code, EXIT_USAGE, unknown.stderr);
   assertStringIncludes(unknown.stderr, "nope");

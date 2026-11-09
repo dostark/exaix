@@ -1,7 +1,7 @@
 /**
  * @module WatchCommandMilestoneTest
  * @path apps/exactl/tests/commands/watch_milestone_test.ts
- * @description Tests milestone rendering in the CLI watch command's printSseEvent
+ * @description Tests milestone rendering in the CLI watch command's formatSseEvent
  * @architectural-layer Testing
  * @ungrounded
  */
@@ -31,26 +31,12 @@ function makeMilestoneEvent(overrides: Partial<IStreamingEvent> = {}): IStreamin
   };
 }
 
-function captureConsole(fn: () => void): string {
-  const chunks: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => {
-    chunks.push(args.map(String).join(" "));
-  };
-  try {
-    fn();
-  } finally {
-    console.log = originalLog;
-  }
-  return chunks.join("\n");
-}
-
 Deno.test("WatchCommand: renders milestone type in output", () => {
   const event = makeMilestoneEvent({
     payload: { milestoneType: MILESTONE_FLOW_STARTED, summary: "Flow started" },
   });
 
-  const output = captureConsole(() => WatchCommand.printSseEvent(event));
+  const output = WatchCommand.formatSseEvent(event);
   assertStringIncludes(output, MILESTONE_FLOW_STARTED);
   assertStringIncludes(output, "Flow started");
 });
@@ -64,7 +50,7 @@ Deno.test("WatchCommand: renders progressHint steps in milestone output", () => 
     },
   });
 
-  const output = captureConsole(() => WatchCommand.printSseEvent(event));
+  const output = WatchCommand.formatSseEvent(event);
   assertStringIncludes(output, "2");
   assertStringIncludes(output, "5");
   assertStringIncludes(output, "Build feature");
@@ -80,7 +66,7 @@ Deno.test("WatchCommand: renders attention indicator when requiresAttention is t
     },
   });
 
-  const output = captureConsole(() => WatchCommand.printSseEvent(event));
+  const output = WatchCommand.formatSseEvent(event);
   assertStringIncludes(output, "ATTENTION");
   assertStringIncludes(output, "Operator approval needed");
 });
@@ -94,7 +80,7 @@ Deno.test("WatchCommand: renders flow.completed milestone", () => {
     },
   });
 
-  const output = captureConsole(() => WatchCommand.printSseEvent(event));
+  const output = WatchCommand.formatSseEvent(event);
   assertStringIncludes(output, MILESTONE_FLOW_COMPLETED);
   assertStringIncludes(output, "[3/3]");
 });
@@ -108,7 +94,7 @@ Deno.test("WatchCommand: existing non-milestone events still render correctly", 
     payload: { status: "running" },
   };
 
-  const output = captureConsole(() => WatchCommand.printSseEvent(event));
+  const output = WatchCommand.formatSseEvent(event);
   assertStringIncludes(output, "flow.status");
   assertStringIncludes(output, "running");
 });

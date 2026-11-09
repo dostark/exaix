@@ -125,7 +125,7 @@ Deno.test("[dispatch] request inspect is registered under the real `request` com
   await withTestMod((mod) => {
     const requestCmd = mod.__test_command.getCommand("request");
     const inspectCmd = requestCmd?.getCommand("inspect");
-    assertStringIncludes(inspectCmd?.getDescription() ?? "", "captured dogfood-context");
+    assertStringIncludes(inspectCmd?.getDescription() ?? "", "captured for a trace");
     assertStringIncludes(inspectCmd?.getOption("record")?.flags.join(",") ?? "", "--record");
     assertStringIncludes(inspectCmd?.getOption("raw")?.flags.join(",") ?? "", "--raw");
   });

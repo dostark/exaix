@@ -22,6 +22,8 @@ type IReviewJournalFixture = Awaited<ReturnType<typeof createCliTestContext>> & 
 };
 
 /** Creates one persisted failed review whose snapshot can be replaced by the test. */
+const TEST_ENV_PREFIX = "EXA_TEST";
+
 export async function createReviewJournalFixture(): Promise<IReviewJournalFixture> {
   const ctx = await createCliTestContext();
   const trace = crypto.randomUUID();
@@ -76,7 +78,9 @@ export async function createReviewJournalFixture(): Promise<IReviewJournalFixtur
       EXA_CONFIG_PATH: join(ctx.tempDir, "exa.config.toml"),
       NO_COLOR: "1",
     };
-    delete env.EXA_TEST_MODE;
+    for (const key of Object.keys(env)) {
+      if (key.startsWith(TEST_ENV_PREFIX)) delete env[key];
+    }
     const result = await new Deno.Command(Deno.execPath(), {
       args: [
         "run",
@@ -89,6 +93,7 @@ export async function createReviewJournalFixture(): Promise<IReviewJournalFixtur
         branch,
       ],
       cwd: ctx.tempDir,
+      clearEnv: true,
       env,
       stdout: "piped",
       stderr: "piped",

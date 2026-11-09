@@ -9,7 +9,7 @@
 
 import { assertEquals, assertFalse, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { ExaCtlOutputFormat } from "@exaix/cli";
-import { ExaCtlOutputRenderer } from "../src/output/exactl_output.ts";
+import { createTestRenderer } from "./helpers/captured_output.ts";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import {
   handlePlanAmendmentApprove,
@@ -33,6 +33,17 @@ import { LogLevel } from "@exaix/core";
 import type { IPlanDetails } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 
+function planActionContext<TStub extends object>(
+  planCommands: TStub,
+  display: IPlanActionContext["display"],
+): IPlanActionContext {
+  return {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+    renderer: createTestRenderer().renderer,
+  };
+}
+
 function createDisplay() {
   const calls: Array<{ level: LogLevel; a: string; b: string; c: LogMetadata }> = [];
   const display = Object.assign(Object.create(EventLogger.prototype), {
@@ -48,30 +59,15 @@ function createDisplay() {
   return { display, calls };
 }
 
-function createRendererSink(format: ExaCtlOutputFormat): { renderer: ExaCtlOutputRenderer; text: () => string } {
-  let out = "";
-  const sink = {
-    out: (text: string) => {
-      out += text;
-      return Promise.resolve();
-    },
-    err: () => Promise.resolve(),
-  };
-  return { renderer: new ExaCtlOutputRenderer(sink, format, false), text: () => out };
-}
-
 Deno.test("handlePlanList: renders an empty JSON array for no plans", async () => {
   const { display, calls } = createDisplay();
   const planCommands = {
     list: () => Promise.resolve([]),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
-  const { renderer, text } = createRendererSink(ExaCtlOutputFormat.JSON);
-  await handlePlanList(context, { status: "review" }, renderer);
+  const context = planActionContext(planCommands, display);
+  const { renderer, text } = createTestRenderer(ExaCtlOutputFormat.JSON);
+  await handlePlanList({ ...context, renderer }, { status: "review" });
 
   assertEquals(JSON.parse(text()), []);
   assertEquals(calls, []);
@@ -89,17 +85,14 @@ Deno.test("handlePlanList: JSON rows keep the stored fields and the table trunca
     request_priority: "p",
   };
   const planCommands = { list: () => Promise.resolve([plan]) };
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
 
-  const json = createRendererSink(ExaCtlOutputFormat.JSON);
-  await handlePlanList(context, { status: "review" }, json.renderer);
+  const json = createTestRenderer(ExaCtlOutputFormat.JSON);
+  await handlePlanList({ ...context, renderer: json.renderer }, { status: "review" });
   assertEquals(JSON.parse(json.text()), [plan]);
 
-  const table = createRendererSink(ExaCtlOutputFormat.TABLE);
-  await handlePlanList(context, { status: "review" }, table.renderer);
+  const table = createTestRenderer(ExaCtlOutputFormat.TABLE);
+  await handlePlanList({ ...context, renderer: table.renderer }, { status: "review" });
   const rendered = table.text();
   assertMatch(rendered, /x{40,}\.\.\./);
   assertStringIncludes(rendered, "12345678");
@@ -128,10 +121,7 @@ Deno.test("handlePlanShow: prints metadata and content", async () => {
       } as IPlanDetails),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanShow(context, "p1");
 
   assertEquals(calls.length, 2);
@@ -156,10 +146,7 @@ Deno.test("handlePlanApprove: delegates to approve with the plan id only", async
     },
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanApprove(context, ["p1"]);
   assertEquals(calls, [["p1"]]);
 });
@@ -173,10 +160,7 @@ Deno.test("handlePlanApprove: approves several ids in order", async () => {
       return Promise.resolve();
     },
   };
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanApprove(context, ["p1", "p2", "p3"]);
   assertEquals(calls, ["p1", "p2", "p3"]);
 });
@@ -191,10 +175,7 @@ Deno.test("handlePlanApprove: stops at the first failure and reports the decided
       return Promise.resolve();
     },
   };
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   const exit = stub(Deno, "exit", (code?: number) => {
     throw new Error(`exit ${code}`);
   });
@@ -218,10 +199,7 @@ Deno.test("handlePlanAmendmentApprove: approves several ids in order", async () 
       return Promise.resolve();
     },
   };
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentApprove(context, ["a1", "a2"]);
   assertEquals(calls, ["a1", "a2"]);
 });
@@ -240,10 +218,7 @@ Deno.test("handlePlanAmendmentShow: shows several ids in order", async () => {
         removes: [],
       }),
   };
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentShow(context, ["a1", "a2"]);
   assertEquals(calls.filter((call) => call.a === "plan.amendment.show").map((call) => call.b), ["a1", "a2"]);
 });
@@ -262,10 +237,7 @@ Deno.test("handlePlanReject/Revise: delegates", async () => {
     },
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanReject(context, "p", "r");
   await handlePlanRevise(context, "p", ["c"]);
 
@@ -282,16 +254,14 @@ Deno.test("handlePlanApproveAll: delegates to approveAll", async () => {
     },
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanApproveAll(context);
   assertEquals(calls, [[]]);
 });
 
-Deno.test("handlePlanAmendmentList: displays amendments", async () => {
+Deno.test("handlePlanAmendmentList: renders the amendments", async () => {
   const { display, calls } = createDisplay();
+  const rendered = createTestRenderer();
   const planCommands = {
     listAmendments: () =>
       Promise.resolve([
@@ -302,29 +272,26 @@ Deno.test("handlePlanAmendmentList: displays amendments", async () => {
   const context: IPlanActionContext = {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
+    renderer: rendered.renderer,
   };
   await handlePlanAmendmentList(context);
 
-  assertEquals(calls.length, 2);
-  assertEquals(calls[0].a, "plan.amendment.list");
-  assertStringIncludes(calls[1].a, "amendment_pending: a1");
+  assertEquals(calls, []);
+  const text = rendered.text();
+  assertStringIncludes(text, "a1");
+  assertStringIncludes(text, "trace123");
 });
 
-Deno.test("handlePlanAmendmentList: handles empty list", async () => {
+Deno.test("handlePlanAmendmentList: an empty list prints only the headers", async () => {
   const { display, calls } = createDisplay();
   const planCommands = {
     listAmendments: () => Promise.resolve([]),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentList(context);
 
-  assertEquals(calls.length, 1);
-  assertEquals(calls[0].a, "plan.amendment.list");
-  assertEquals(calls[0].c.count, 0);
+  assertEquals(calls, []);
 });
 
 Deno.test("handlePlanAmendmentShow: displays patch details", async () => {
@@ -342,10 +309,7 @@ Deno.test("handlePlanAmendmentShow: displays patch details", async () => {
       }),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentShow(context, ["a1"]);
 
   assertEquals(calls.some((c) => c.a === "Adds"), true);
@@ -367,10 +331,7 @@ Deno.test("handlePlanAmendmentApprove/Reject: delegates", async () => {
     },
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentApprove(context, ["a1"]);
   await handlePlanAmendmentReject(context, "a1", "reason");
 
@@ -389,10 +350,7 @@ Deno.test("handlePlanAmendmentApproveAll: delegates", async () => {
     },
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentApproveAll(context);
   assertEquals(called, true);
 });
@@ -416,10 +374,7 @@ Deno.test("handlePlanAmendmentShowAll: displays all amendments", async () => {
       ]),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
   await handlePlanAmendmentShowAll(context);
 
   assertEquals(calls.length > 1, true);
@@ -432,10 +387,7 @@ Deno.test("Error Handling: handlePlanList calls Deno.exit(1) on failure", async 
     list: () => Promise.reject(new Error("Failure")),
   };
 
-  const context: IPlanActionContext = {
-    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
-    display,
-  };
+  const context = planActionContext(planCommands, display);
 
   const exitStub = stub(Deno, "exit", () => {
     throw new Error("Deno.exit called");
@@ -443,7 +395,7 @@ Deno.test("Error Handling: handlePlanList calls Deno.exit(1) on failure", async 
 
   try {
     try {
-      await handlePlanList(context, {}, createRendererSink(ExaCtlOutputFormat.JSON).renderer);
+      await handlePlanList(context, {});
     } catch (e) {
       assertEquals((e as Error).message, "Deno.exit called");
     }

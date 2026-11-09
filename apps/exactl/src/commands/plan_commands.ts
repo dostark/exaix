@@ -712,8 +712,6 @@ export class PlanCommands extends BaseCommand {
 
       const updatedContent = this.serializePlan(finalFm as PlanFrontmatter, updatedBody);
       await Deno.writeTextFile(planPath, updatedContent);
-
-      console.log(`[PlanCommands] Amendment ${patch.amendmentId} approved and applied to ${planId}`);
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approveAmendment",

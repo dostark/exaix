@@ -17,7 +17,7 @@ import { ExaCtlCommandName } from "../exactl_constants.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
 import { documentLeaves } from "./documented_children.ts";
-import { createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
+import { ColumnHeader, createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
 
 const RUNNING_LABEL = "Running ✓";
 const STOPPED_LABEL = "Stopped ✗";
@@ -32,7 +32,7 @@ interface IDaemonStatusRow {
 }
 
 const DAEMON_STATUS_FIELDS: readonly IExaCtlColumn<IDaemonStatusRow>[] = [
-  { header: "Status", value: (row) => row.status === "running" ? RUNNING_LABEL : STOPPED_LABEL },
+  { header: ColumnHeader.STATUS, value: (row) => row.status === "running" ? RUNNING_LABEL : STOPPED_LABEL },
   { header: "PID", value: (row) => String(row.pid ?? "-") },
   { header: "Uptime", value: (row) => row.uptime ?? "-" },
   { header: "Binary", value: (row) => row.binary_version },

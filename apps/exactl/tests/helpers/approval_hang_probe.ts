@@ -7,6 +7,7 @@
  * @related-files [apps/exactl/tests/approval_list_exit_test.ts]
  */
 
+import { defaultOutputSink } from "../../src/output/exactl_output.ts";
 import { ApprovalCommands } from "../../src/commands/approval_commands.ts";
 import { ApprovalKind } from "../../src/commands/approval_id.ts";
 import type { IApprovalListEntry, IApprovalSource } from "../../src/commands/approval_sources.ts";
@@ -48,5 +49,7 @@ const approvalCommands = new ApprovalCommands(
   [hanging, quick],
   SOURCE_TIMEOUT_MS,
 );
-await buildApprovalCommand({ approvalCommands, display: env.context.display }).parse(["list"]);
+await buildApprovalCommand({ approvalCommands, display: env.context.display, outputSink: defaultOutputSink }).parse([
+  "list",
+]);
 console.log(PROBE_DONE_MARKER);

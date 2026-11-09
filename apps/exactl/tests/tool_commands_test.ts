@@ -6,11 +6,10 @@
  * @description Focused tests for the Phase 79 tool confirmation CLI commands.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { captureConsoleOutput } from "./helpers/console_utils.ts";
 import { createStubGit } from "@exaix/testing";
 
 function createRequest(id: string): ToolConfirmationRequest {
@@ -25,7 +24,12 @@ function createRequest(id: string): ToolConfirmationRequest {
   };
 }
 
-Deno.test("ToolCommands: confirm writes approval with CLI decidedBy identity", async () => {
+type ToolDecisionDb = Awaited<ReturnType<typeof createCliTestContext>>["db"];
+
+/** Runs `decide` on a stored pending confirmation and returns the decision the database holds afterwards. */
+async function decideOnPendingRequest(
+  decide: (commands: ToolCommands, id: string) => Promise<void>,
+): Promise<Awaited<ReturnType<ToolDecisionDb["getToolConfirmationDecision"]>>> {
   const { context, db, cleanup } = await createCliTestContext();
   try {
     context.git = createStubGit({
@@ -33,45 +37,24 @@ Deno.test("ToolCommands: confirm writes approval with CLI decidedBy identity", a
     });
     const request = createRequest(crypto.randomUUID());
     await db.insertToolConfirmationRequest(request);
-
-    const commands = new ToolCommands(context);
-    const output = await captureConsoleOutput(async () => {
-      await commands.confirm(request.id);
-    });
-
-    const decision = await db.getToolConfirmationDecision(request.id);
-    assertEquals(decision?.approved, true);
-    assertEquals(decision?.decidedBy, "cli-user");
-    assertStringIncludes(output, request.id);
-    assertStringIncludes(output, "approved");
+    await decide(new ToolCommands(context), request.id);
+    return await db.getToolConfirmationDecision(request.id);
   } finally {
     await cleanup();
   }
+}
+
+Deno.test("ToolCommands: confirm writes approval with CLI decidedBy identity", async () => {
+  const decision = await decideOnPendingRequest((commands, id) => commands.confirm(id));
+  assertEquals(decision?.approved, true);
+  assertEquals(decision?.decidedBy, "cli-user");
 });
 
 Deno.test("ToolCommands: deny writes denial reason with CLI decidedBy identity", async () => {
-  const { context, db, cleanup } = await createCliTestContext();
-  try {
-    context.git = createStubGit({
-      getCurrentBranch: () => Promise.resolve("main"),
-    });
-    const request = createRequest(crypto.randomUUID());
-    await db.insertToolConfirmationRequest(request);
-
-    const commands = new ToolCommands(context);
-    const output = await captureConsoleOutput(async () => {
-      await commands.deny(request.id, "User declined");
-    });
-
-    const decision = await db.getToolConfirmationDecision(request.id);
-    assertEquals(decision?.approved, false);
-    assertEquals(decision?.reason, "User declined");
-    assertEquals(decision?.decidedBy, "cli-user");
-    assertStringIncludes(output, request.id);
-    assertStringIncludes(output, "denied");
-  } finally {
-    await cleanup();
-  }
+  const decision = await decideOnPendingRequest((commands, id) => commands.deny(id, "User declined"));
+  assertEquals(decision?.approved, false);
+  assertEquals(decision?.reason, "User declined");
+  assertEquals(decision?.decidedBy, "cli-user");
 });
 
 Deno.test("ToolCommands: confirm rejects invalid confirmation UUID", async () => {

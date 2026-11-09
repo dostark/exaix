@@ -16,14 +16,69 @@ import {
   type IExaCtlOutputSink,
 } from "@exaix/cli";
 import type { JSONValue } from "@exaix/core";
+import { type IDisplayService, type Opt, type Reason, toSafeJson } from "@exaix/core/types";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { OPTION_TERMINATOR } from "../exactl_renames.ts";
+
+/** A JSON object whose values the renderer can print. */
+export interface IJsonRow {
+  [key: string]: JSONValue;
+}
+
+/** What a state-changing verb reports with --json: the entity id, the verb and the status the verb set. */
+export interface IMutationResult {
+  [key: string]: JSONValue;
+  id: string;
+  action: string;
+  status: string;
+}
+
+/** The JSON form of a stored entity: its own fields, with `undefined` ones dropped. */
+export function toRow<T extends object>(value: T): IJsonRow {
+  return toSafeJson(Object.fromEntries(Object.entries(value))) as IJsonRow;
+}
+
+/** Column headers shared by the list and item renderings of several nouns. */
+export enum ColumnHeader {
+  ID = "ID",
+  STATUS = "Status",
+  TRACE = "Trace",
+  SUBJECT = "Subject",
+  KIND = "Kind",
+  AGENT = "Agent",
+  PORTAL = "Portal",
+  PRIORITY = "Priority",
+  CREATED = "Created",
+  BRANCH = "Branch",
+  TYPE = "Type",
+  REQUEST = "Request",
+  SUMMARY = "Summary",
+  ACTION = "Action",
+}
+
+const MUTATION_COLUMNS: readonly IExaCtlColumn<IMutationResult>[] = [
+  { header: ColumnHeader.ID, value: (result) => result.id },
+  { header: ColumnHeader.ACTION, value: (result) => result.action },
+  { header: ColumnHeader.STATUS, value: (result) => result.status },
+];
+
+/** How many leading characters of a trace id a table cell shows. */
+export const TRACE_PREFIX_CHARS = 8;
 
 /** The cell text for a value that is absent. */
 export const EMPTY_CELL = "-";
 
+/** The text of a string cell value, or the empty-cell mark for anything else. */
+export function cellText(value: Opt<JSONValue, Reason.OptionalInput>): string {
+  return typeof value === "string" && value !== "" ? value : EMPTY_CELL;
+}
+
 const NO_COLOR_FLAG = "--no-color";
 const NO_COLOR_ENV = "NO_COLOR";
+const JSON_FLAG = "--json";
+const OUTPUT_FLAGS: ReadonlySet<string> = new Set(["-o", "--output"]);
+const OUTPUT_ATTACHED = /^(?:--output=|-o)/;
+const MACHINE_FORMATS: ReadonlySet<string> = new Set([ExaCtlOutputFormat.JSON, ExaCtlOutputFormat.JSONL]);
 const JSON_INDENT = 2;
 const LINE_END = "\n";
 const TAB = "\t";
@@ -71,6 +126,21 @@ export function stripTerminalControls(text: string): string {
     .replace(CONTROL_CHARACTER, (character) => KEPT_CONTROLS.has(character) ? character : "");
 }
 
+function attachedFormat(word: string): string {
+  const match = OUTPUT_ATTACHED.exec(word);
+  return match === null ? "" : word.slice(match[0].length);
+}
+
+/** True when argv asks for JSON output: `--json`, or `-o`/`--output` with `json` or `jsonl`, in any spelling. */
+export function isJsonOutputRequested(argv: readonly string[]): boolean {
+  const terminator = argv.indexOf(OPTION_TERMINATOR);
+  const words = terminator === -1 ? argv : argv.slice(0, terminator);
+  return words.some((word, index) =>
+    word === JSON_FLAG || MACHINE_FORMATS.has(attachedFormat(word)) ||
+    (OUTPUT_FLAGS.has(word) && MACHINE_FORMATS.has(words[index + 1] ?? ""))
+  );
+}
+
 /** True for `--no-color` before the option terminator and for a non-empty `NO_COLOR`. */
 export function isColorDisabled(argv: readonly string[], env: IEnvironmentReader): boolean {
   const terminator = argv.indexOf(OPTION_TERMINATOR);
@@ -79,7 +149,7 @@ export function isColorDisabled(argv: readonly string[], env: IEnvironmentReader
 }
 
 /** The global options of a command action. Cliffy merges them into every action's options object. */
-export function readGlobalOptions(options: object | void): IExaCtlGlobalOptions {
+export function readGlobalOptions<T extends object | void>(options: T): IExaCtlGlobalOptions {
   return (typeof options === "object" ? options : {}) as IExaCtlGlobalOptions;
 }
 
@@ -181,6 +251,23 @@ export class ExaCtlOutputRenderer implements IExaCtlOutputRenderer {
     await this.sink.out(JSON.stringify(event) + LINE_END);
   }
 
+  /** Writes one pre-formatted line of human text. The caller has already sanitized any untrusted part of it. */
+  async text(line: string): Promise<void> {
+    await this.sink.out(line + LINE_END);
+  }
+
+  /** True when stdout carries JSON, so human messages must stay off it. */
+  get machine(): boolean {
+    return isMachineFormat(this.format);
+  }
+
+  /** The result of a state change. A machine format prints it, a human format prints nothing beyond the verb's own message. */
+  async mutation(results: readonly IMutationResult[], bulk: boolean): Promise<void> {
+    if (!this.machine) return;
+    if (bulk) await this.list(results, MUTATION_COLUMNS, (result) => result.id);
+    else await this.item(results[0], MUTATION_COLUMNS);
+  }
+
   private renderRows(headers: readonly string[], rows: readonly (readonly string[])[]): string {
     if (this.format === ExaCtlOutputFormat.MD) return markdownTable(headers, rows) + LINE_END;
     if (this.format === ExaCtlOutputFormat.TEXT) return rows.map((row) => row.join(TAB) + LINE_END).join("");
@@ -196,4 +283,14 @@ export function createExaCtlRenderer(
 ): ExaCtlOutputRenderer {
   const format = resolveOutputFormat(options, verbDefault);
   return new ExaCtlOutputRenderer(sink, format, options.quiet === true && !isMachineFormat(format));
+}
+
+/** The renderer and the display of one action, built from its merged options. */
+export function actionOutput<TOptions extends object | void>(
+  runtime: { readonly display: IDisplayService; readonly outputSink: IExaCtlOutputSink },
+  options: TOptions,
+  verbDefault: ExaCtlOutputFormat,
+): { renderer: ExaCtlOutputRenderer; display: IDisplayService } {
+  const renderer = createExaCtlRenderer(readGlobalOptions(options), verbDefault, runtime.outputSink);
+  return { renderer, display: runtime.display };
 }

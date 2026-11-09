@@ -6,6 +6,9 @@
  * @related-files [apps/exactl/tests/helpers/console_utils.ts]
  */
 
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { ExaCtlOutputRenderer } from "../../src/output/exactl_output.ts";
+
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
 /** Runs `fn` and returns the lines it logged with its result. `console.log` is restored afterwards. */
@@ -22,6 +25,33 @@ export function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ outpu
     .finally(() => {
       console.log = originalLog;
     });
+}
+
+/** A renderer over an array sink, and the text it wrote so far. */
+export function createTestRenderer(
+  format: ExaCtlOutputFormat = ExaCtlOutputFormat.TEXT,
+): { renderer: ExaCtlOutputRenderer; text: () => string } {
+  let out = "";
+  const sink = {
+    out: (text: string) => {
+      out += text;
+      return Promise.resolve();
+    },
+    err: () => Promise.resolve(),
+  };
+  return { renderer: new ExaCtlOutputRenderer(sink, format, false), text: () => out };
+}
+
+/** A renderer whose text goes through `console.log`, for tests that capture console output. */
+export function createConsoleRenderer(format: ExaCtlOutputFormat = ExaCtlOutputFormat.TEXT): ExaCtlOutputRenderer {
+  const sink = {
+    out: (text: string) => {
+      console.log(text.replace(/\n$/, ""));
+      return Promise.resolve();
+    },
+    err: () => Promise.resolve(),
+  };
+  return new ExaCtlOutputRenderer(sink, format, false);
 }
 
 /** The part of a sink holder that a test replaces: the runtime's output sink. */

@@ -11,7 +11,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { WatchCommand } from "../src/commands/watch.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { ActivityActor } from "@exaix/core";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { createConsoleRenderer, withCapturedOutput } from "./helpers/captured_output.ts";
 
 // Helpers
 
@@ -56,7 +56,7 @@ Deno.test("WatchCommand: watch should display historical events for completed tr
 
     const cmd = new WatchCommand(context);
     const { output } = await withCapturedOutput(async () => {
-      await cmd.watch(VALID_TRACE_ID);
+      await cmd.watch(VALID_TRACE_ID, createConsoleRenderer());
     });
 
     // Should show historical events
@@ -75,7 +75,7 @@ Deno.test("WatchCommand: watch should show message for trace with no events", as
     const unknownTraceId = "00000000-0000-4000-8000-000000000000";
     const cmd = new WatchCommand(context);
     const { output } = await withCapturedOutput(async () => {
-      await cmd.watch(unknownTraceId);
+      await cmd.watch(unknownTraceId, createConsoleRenderer());
     });
 
     // Should show some message about no events found
@@ -95,7 +95,7 @@ Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
 
     let threw = false;
     try {
-      await cmd.watch("not-a-uuid", true);
+      await cmd.watch("not-a-uuid", createConsoleRenderer(), true);
     } catch {
       threw = true;
     }
@@ -110,13 +110,13 @@ Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
 
 Deno.test("WatchCommand: formatSseEvent formats heartbeat as dim", async () => {
   const { output } = await withCapturedOutput(() =>
-    WatchCommand.printSseEvent({
+    WatchCommand.emitSseEvent({
       eventId: crypto.randomUUID(),
       traceId: VALID_TRACE_ID,
       timestamp: new Date().toISOString(),
       type: "agent.heartbeat",
       payload: { step: "Step 1", elapsed_ms: 5000 },
-    })
+    }, createConsoleRenderer())
   );
 
   assertEquals(output.length > 0, true);
@@ -124,13 +124,13 @@ Deno.test("WatchCommand: formatSseEvent formats heartbeat as dim", async () => {
 
 Deno.test("WatchCommand: formatSseEvent formats tool events as cyan", async () => {
   const { output } = await withCapturedOutput(() =>
-    WatchCommand.printSseEvent({
+    WatchCommand.emitSseEvent({
       eventId: crypto.randomUUID(),
       traceId: VALID_TRACE_ID,
       timestamp: new Date().toISOString(),
       type: "tool.start",
       payload: { tool: "read_file", path: "hello.txt" },
-    })
+    }, createConsoleRenderer())
   );
 
   assertEquals(output.length > 0, true);
@@ -140,13 +140,13 @@ Deno.test("WatchCommand: formatSseEvent formats tool events as cyan", async () =
 
 Deno.test("WatchCommand: formatSseEvent formats LLM events as white", async () => {
   const { output } = await withCapturedOutput(() =>
-    WatchCommand.printSseEvent({
+    WatchCommand.emitSseEvent({
       eventId: crypto.randomUUID(),
       traceId: VALID_TRACE_ID,
       timestamp: new Date().toISOString(),
       type: "llm.stream",
       payload: { text: "Thinking about..." },
-    })
+    }, createConsoleRenderer())
   );
 
   assertEquals(output.length > 0, true);
@@ -156,13 +156,13 @@ Deno.test("WatchCommand: formatSseEvent formats LLM events as white", async () =
 
 Deno.test("WatchCommand: formatSseEvent formats flow status as green", async () => {
   const { output } = await withCapturedOutput(() =>
-    WatchCommand.printSseEvent({
+    WatchCommand.emitSseEvent({
       eventId: crypto.randomUUID(),
       traceId: VALID_TRACE_ID,
       timestamp: new Date().toISOString(),
       type: "flow.status",
       payload: { status: "running", step: "analyze" },
-    })
+    }, createConsoleRenderer())
   );
 
   assertEquals(output.length > 0, true);

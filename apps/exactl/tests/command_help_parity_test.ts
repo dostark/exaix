@@ -20,6 +20,8 @@ const oldOptionSets = JSON.parse(
 const BULK_ADDITIONS: readonly string[] = ["--all"];
 const NO_FLAGS: readonly string[] = [];
 const NOW_GLOBAL: readonly string[] = ["--json"];
+const SHORT_MESSAGE: readonly string[] = ["-m"];
+const SHORT_FLAGS_DROPPED: readonly string[] = ["-p", "-s", "-e", "-f"];
 
 /** An old path, the path that replaces it, the flags the move removes and the flags it may add. */
 type Move = readonly [oldPath: string, newPath: string, removed: readonly string[], added: readonly string[]];
@@ -52,14 +54,14 @@ const MOVES: readonly Move[] = [
   ["config list-profiles", "config profile list", NO_FLAGS, NO_FLAGS],
   ["mcp start", "mcp serve", NO_FLAGS, NO_FLAGS],
   ["mcp connect", "mcp tool call", ["--list-tools", "--call-tool"], ["--server"]],
-  ["request", "request create", ["--agent-role", "-a", ...NOW_GLOBAL], ["--agent"]],
+  ["request", "request create", ["--agent-role", "-a", ...NOW_GLOBAL, ...SHORT_FLAGS_DROPPED], ["--agent"]],
   ["watch", "request watch", NO_FLAGS, ["--trace"]],
   ["wait list", "approval list", NO_FLAGS, ["--kind"]],
-  ["wait approve", "approval approve", NO_FLAGS, NO_FLAGS],
+  ["wait approve", "approval approve", SHORT_MESSAGE, NO_FLAGS],
   ["wait reject", "approval reject", ["--message", "-m"], NO_FLAGS],
-  ["wait amend", "approval amend", NO_FLAGS, NO_FLAGS],
-  ["wait expire", "approval expire", NO_FLAGS, NO_FLAGS],
-  ["wait cancel", "approval cancel", NO_FLAGS, NO_FLAGS],
+  ["wait amend", "approval amend", SHORT_MESSAGE, NO_FLAGS],
+  ["wait expire", "approval expire", SHORT_MESSAGE, NO_FLAGS],
+  ["wait cancel", "approval cancel", SHORT_MESSAGE, NO_FLAGS],
   ["tool pending", "approval list", NO_FLAGS, NO_FLAGS],
   ["tool confirm", "approval approve", NO_FLAGS, NO_FLAGS],
   ["tool deny", "approval reject", NO_FLAGS, NO_FLAGS],

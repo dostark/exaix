@@ -196,3 +196,40 @@ export function findDocViolations(input: IDocLintInput): IGrammarViolation[] {
   }
   return violations.sort((a, b) => a.rule.localeCompare(b.rule) || a.path.localeCompare(b.path));
 }
+
+const SHORT_FLAG_POLICY: ReadonlyMap<string, string> = new Map([
+  ["-o", "--output"],
+  ["-q", "--quiet"],
+  ["-y", "--yes"],
+  ["-n", "--limit"],
+  ["-s", "--status"],
+  ["-r", "--reason"],
+  ["-m", "--model"],
+  ["-f", "--follow"],
+  ["-P", "--pack"],
+  ["-i", "--instructions"],
+  ["-k", "--keywords"],
+  ["-v", "--verbose"],
+]);
+const LONG_FLAG_PREFIX = "--";
+const SHORT_FLAG_LENGTH = 2;
+
+/** Every short flag whose letter is not assigned to that long option by the short-flag policy. */
+export function findShortFlagViolations(nodes: readonly ICommandTreeNode[]): IGrammarViolation[] {
+  const violations: IGrammarViolation[] = [];
+  for (const node of nodes) {
+    for (const option of node.options) {
+      const long = option.flags.find((flag) => flag.startsWith(LONG_FLAG_PREFIX));
+      for (
+        const short of option.flags.filter((flag) =>
+          !flag.startsWith(LONG_FLAG_PREFIX) && flag.length === SHORT_FLAG_LENGTH
+        )
+      ) {
+        if (SHORT_FLAG_POLICY.get(short) !== long) {
+          violations.push({ rule: "short-flag", path: `${pathKey(node)} ${short}` });
+        }
+      }
+    }
+  }
+  return violations.sort((a, b) => a.path.localeCompare(b.path));
+}

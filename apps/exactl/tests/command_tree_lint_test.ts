@@ -19,6 +19,7 @@ import {
   findDocViolations,
   findGrammarViolations,
   findLegacyPaths,
+  findShortFlagViolations,
   findStaleAllowlistEntries,
   type IGrammarAllowlist,
   isAllowlisted,
@@ -63,7 +64,11 @@ Deno.test("a seeded valid verb leaf passes the lint", () => {
 });
 
 Deno.test("allow-list entries that no longer occur fail the lint", () => {
-  const violations = [...findGrammarViolations(liveNodes), ...liveDocViolations()];
+  const violations = [
+    ...findGrammarViolations(liveNodes),
+    ...liveDocViolations(),
+    ...findShortFlagViolations(liveNodes),
+  ];
   assertEquals(findStaleAllowlistEntries(violations, allowlist), []);
   const withStale: IGrammarAllowlist = { ...allowlist, "leaf-verb": [...allowlist["leaf-verb"], "plan gone-leaf"] };
   assertEquals(findStaleAllowlistEntries(violations, withStale), [
@@ -115,7 +120,7 @@ Deno.test("no node defines a global option locally", () => {
 });
 
 const DOC_RULES = ["doc-record", "doc-example", "doc-see-also", "doc-noun", "doc-output-kind"] as const;
-const DOCUMENTED_NOUNS = ["plan", "daemon"];
+const DOCUMENTED_NOUNS = ["request", "plan", "review", "approval", "daemon"];
 
 function unlisted(rule: (typeof DOC_RULES)[number], violations = liveDocViolations()) {
   return violations.filter((violation) => violation.rule === rule && !isAllowlisted(violation, allowlist));

@@ -33,7 +33,6 @@ export class ToolCommands extends BaseCommand {
       decidedBy,
     });
     await this.logDecision(request, true, undefined, decidedBy);
-    console.log(`Tool confirmation approved: ${request.id}`);
   }
 
   async deny(id: string, reason: string = DEFAULT_DENIAL_REASON): Promise<void> {
@@ -46,7 +45,6 @@ export class ToolCommands extends BaseCommand {
       decidedBy,
     });
     await this.logDecision(request, false, reason, decidedBy);
-    console.log(`Tool confirmation denied: ${request.id}`);
   }
 
   private async logDecision(

@@ -28,6 +28,9 @@ import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
 import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
+import type { IExaCtlColumn } from "@exaix/cli";
+import { ExaCtlVerb } from "../exactl_constants.ts";
+import { cellText, ColumnHeader, type ExaCtlOutputRenderer, type IJsonRow, toRow } from "../output/exactl_output.ts";
 import {
   RequestCancelNotAllowedError,
   RequestIdError,
@@ -63,6 +66,7 @@ import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
   display: IDisplayService;
+  renderer: ExaCtlOutputRenderer;
   /** Real model provider — only needed by `handleRequestClarify` to construct a live
    *  `ClarificationEngine` when answers are supplied. Absent in every other action. */
   provider?: Opt<IModelProvider, Reason.OptionalDependency>;
@@ -90,7 +94,6 @@ export interface IRequestCreateOptions {
   flow?: string;
   skills?: string;
   subject?: string;
-  json?: boolean;
   dryRun?: boolean;
   /** Non-mutating projected input-token breakdown — distinct from `dryRun` (which still
    *  writes a request file today; see `printRequestResult`). Never writes a file, never
@@ -111,12 +114,10 @@ export interface IRequestCreateOptions {
 export interface IRequestListOptions {
   status?: RequestStatus;
   all?: boolean;
-  json?: boolean;
 }
 
 export interface IRequestAnalyzeOptions {
   engine?: string;
-  json?: boolean;
   force?: boolean;
 }
 
@@ -126,8 +127,20 @@ export interface IRequestClarifyOptions {
   proceed?: boolean;
   cancel?: boolean;
   resolvedBy?: string;
-  json?: boolean;
 }
+
+const REQUEST_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.TRACE, value: (request) => cellText(request.trace_id) },
+  { header: ColumnHeader.STATUS, value: (request) => cellText(request.status) },
+  { header: ColumnHeader.PRIORITY, value: (request) => cellText(request.priority) },
+  { header: ColumnHeader.SUBJECT, value: (request) => cellText(request.subject) },
+  { header: "Agent or flow", value: (request) => cellText(request.flow ?? request.agent_role) },
+  { header: ColumnHeader.BRANCH, value: (request) => cellText(request.target_branch) },
+  {
+    header: ColumnHeader.CREATED,
+    value: (request) => `${cellText(request.created_by)} @ ${cellText(request.created)}`,
+  },
+];
 
 /** Availability of a portal's cached knowledge for a read-only dry-run preview. */
 type IPortalKnowledgeStatus = "available" | "stale" | "unavailable";
@@ -140,14 +153,14 @@ export async function handleRequestAnalyze(
   id: string,
   options: IRequestAnalyzeOptions,
 ): Promise<void> {
-  const { requestCommands, display } = context;
+  const { requestCommands, display, renderer } = context;
 
   try {
     const mode = (options.engine as AnalysisMode) ?? AnalysisMode.HYBRID;
     const analysis = await requestCommands.analyze(id, mode, options.force);
 
-    if (options.json) {
-      console.log(JSON.stringify(analysis, null, 2));
+    if (renderer.machine) {
+      await renderer.item(toRow(analysis), []);
     } else {
       const analysisData: JSONObject = {
         trace_id: id,
@@ -281,7 +294,7 @@ async function handleRequestCreateDryRunContext(
   options: IRequestCreateOptions,
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
-  const { display, appContext } = context;
+  const { display, appContext, renderer } = context;
 
   try {
     if (!appContext) {
@@ -338,9 +351,13 @@ async function handleRequestCreateDryRunContext(
 
     const preview = await runner.previewPrompt(blueprint, { userPrompt, context: requestContext });
 
-    console.log(formatPromptPreviewTable(preview));
+    if (renderer.machine) {
+      await renderer.item(toRow({ preview, portal_knowledge: portalKnowledgeStatus ?? null }), []);
+      return;
+    }
+    await renderer.text(formatPromptPreviewTable(preview));
     if (portalKnowledgeStatus && portalKnowledgeStatus !== "available") {
-      console.log(`Portal knowledge: ${portalKnowledgeStatus}`);
+      await renderer.text(`Portal knowledge: ${portalKnowledgeStatus}`);
     }
 
     // When planning read-only tools are enabled, print the same preview the daemon
@@ -351,7 +368,7 @@ async function handleRequestCreateDryRunContext(
       const toolNames = planningToolsCatalogNames(appContext.toolRegistry);
       const nativeTools = providerSupportsNativeTools(providerInfo.id);
       const inactiveSuffix = nativeTools ? "" : ` (inactive: provider ${providerInfo.id} lacks native tools)`;
-      console.log(`Available read-only planning tools: ${toolNames.join(", ")}${inactiveSuffix}`);
+      await renderer.text(`Available read-only planning tools: ${toolNames.join(", ")}${inactiveSuffix}`);
 
       const maxRounds = planning.max_tool_rounds ?? DEFAULT_PLANNING_MAX_TOOL_ROUNDS;
       const maxResultTokens = planning.max_tool_result_tokens ?? DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS;
@@ -366,7 +383,7 @@ async function handleRequestCreateDryRunContext(
       const costLabel = extraCostUsd === undefined ? "cost n/a" : `+$${extraCostUsd.toFixed(6)}`;
       // maxRounds generate calls per run() — with the processor's up-to-2 plan-validation
       // feedback retries, worst case is 3 run() calls, hence "(×3 …)".
-      console.log(
+      await renderer.text(
         `Planning tools worst case: +${extraTokens} tokens, ${costLabel} per run (×3 with plan-validation retries)`,
       );
     }
@@ -386,7 +403,7 @@ export async function handleRequestCreate(
   options: IRequestCreateOptions,
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
-  const { requestCommands, display } = context;
+  const { requestCommands, display, renderer } = context;
 
   if (options.dryRunContext) {
     await handleRequestCreateDryRunContext(context, options, description);
@@ -428,7 +445,7 @@ export async function handleRequestCreate(
     // Handle file input
     if (options.file) {
       const result = await requestCommands.createFromFile(options.file, createOptions);
-      printRequestResult(context, result, !!options.json, !!options.dryRun);
+      await printRequestResult(context, result);
       return;
     }
 
@@ -444,11 +461,12 @@ export async function handleRequestCreate(
     const result = await requestCommands.create(description, createOptions);
 
     if (options.dryRun) {
-      display.info("cli.dry_run", FlowInputSource.REQUEST, { would_create: result.filename });
+      if (renderer.machine) await renderer.item({ would_create: result.filename }, []);
+      else display.info("cli.dry_run", FlowInputSource.REQUEST, { would_create: result.filename });
       return;
     }
 
-    printRequestResult(context, result, !!options.json, false);
+    await printRequestResult(context, result);
   } catch (error) {
     display.error("cli.error", FlowInputSource.REQUEST, {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -464,7 +482,7 @@ export async function handleRequestList(
   context: IRequestActionContext,
   options: IRequestListOptions,
 ): Promise<void> {
-  const { requestCommands, display } = context;
+  const { requestCommands, display, renderer } = context;
 
   if (options.status !== undefined && !isRequestStatus(options.status)) {
     display.error("cli.error", "request list", {
@@ -475,31 +493,7 @@ export async function handleRequestList(
 
   try {
     const requests = await requestCommands.list(options.status, options.all);
-    if (options.json) {
-      display.info("cli.output", "requests", { data: JSON.stringify(requests, null, 2) });
-    } else {
-      if (requests.length === 0) {
-        display.info("request.list", "requests", { count: 0, message: "No requests found" });
-        return;
-      }
-      display.info("request.list", "requests", { count: requests.length });
-      for (const req of requests) {
-        const priorityIcon = PRIORITY_ICONS[req.priority] || PRIORITY_ICONS.default;
-        const subjectTag = req.subject ? `[${req.subject}] ` : "";
-        display.info(
-          `${priorityIcon} ${subjectTag}${req.trace_id.slice(0, 8)}`,
-          req.trace_id,
-          toSafeJson({
-            status: req.status,
-            subject: req.subject,
-            agent_role: req.flow ? undefined : req.agent_role,
-            flow: req.flow,
-            target_branch: req.target_branch,
-            created: `${req.created_by} @ ${req.created}`,
-          }) as Record<string, JSONValue>,
-        );
-      }
-    }
+    await renderer.list(requests.map(toRow), REQUEST_COLUMNS, (request) => String(request.trace_id));
   } catch (error) {
     display.error("cli.error", "request list", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -515,10 +509,14 @@ export async function handleRequestShow(
   context: IRequestActionContext,
   id: string,
 ): Promise<void> {
-  const { requestCommands, display } = context;
+  const { requestCommands, display, renderer } = context;
 
   try {
-    const { metadata, content } = await requestCommands.show(id);
+    const { metadata, content, analysis: shownAnalysis } = await requestCommands.show(id);
+    if (renderer.machine) {
+      await renderer.item(toRow({ ...metadata, analysis: shownAnalysis ?? null, content }), []);
+      return;
+    }
     const displayData: JSONObject = {
       trace_id: metadata.trace_id,
       status: metadata.status,
@@ -569,7 +567,7 @@ export async function handleRequestShow(
 /**
  * Print request result (helper function)
  */
-function printRequestResult(
+async function printRequestResult(
   context: IRequestActionContext,
   result: {
     priority: RequestPriority;
@@ -586,13 +584,11 @@ function printRequestResult(
     preferred_provider?: string;
     analysis?: IRequestAnalysis;
   },
-  json: boolean,
-  _dryRun: boolean,
-): void {
-  const { display } = context;
+): Promise<void> {
+  const { display, renderer } = context;
 
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
+  if (renderer.machine) {
+    await renderer.item(toRow(result), []);
   } else {
     const priorityIcon = PRIORITY_ICONS[result.priority] || PRIORITY_ICONS.default;
     display.info(
@@ -652,7 +648,7 @@ export async function handleRequestClarify(
   id: string,
   options: IRequestClarifyOptions,
 ): Promise<void> {
-  const { requestCommands, display, provider } = context;
+  const { requestCommands, display, provider, renderer } = context;
 
   try {
     const answers = options.answer ? parseAnswerPairs(options.answer) : undefined;
@@ -668,8 +664,8 @@ export async function handleRequestClarify(
       engine,
     });
 
-    if (options.json) {
-      console.log(JSON.stringify(result, null, 2));
+    if (renderer.machine) {
+      await renderer.item(toRow(result), []);
       return;
     }
 
@@ -709,7 +705,16 @@ export async function handleRequestCancel(
   reason: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
   try {
-    await context.requestCommands.cancel(requestId, reason);
+    const cancelled = await context.requestCommands.cancel(requestId, reason);
+    await context.renderer.mutation(
+      [{
+        id: cancelled.trace_id,
+        action: ExaCtlVerb.CANCEL,
+        status: cancelled.status,
+        previous_status: cancelled.previous_status,
+      }],
+      false,
+    );
   } catch (error) {
     if (error instanceof RequestCancelNotAllowedError) {
       throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, error.message);

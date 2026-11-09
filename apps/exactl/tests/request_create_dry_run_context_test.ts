@@ -13,6 +13,7 @@
  */
 
 import { readFixtureTextSync } from "@exaix/testing";
+import { createConsoleRenderer } from "./helpers/captured_output.ts";
 import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
@@ -53,7 +54,7 @@ async function withDryRunContextFixture(
     );
     const requestCommands = new RequestCommands(context);
     await fn({
-      context: { requestCommands, display: context.display, appContext: context },
+      context: { requestCommands, display: context.display, renderer: createConsoleRenderer(), appContext: context },
       requestsDir: pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH),
       tempDir,
     });
@@ -213,7 +214,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
     const { output, restore } = captureConsoleLog();
     try {
       await handleRequestCreate(
-        { requestCommands, display: context.display, appContext: context },
+        { requestCommands, display: context.display, renderer: createConsoleRenderer(), appContext: context },
         { agent: "mock-agent", dryRunContext: true, portal: "mock-portal" } as IRequestCreateOptions,
         "Add a Greeter to the mock portal's services.",
       );
@@ -266,7 +267,7 @@ Deno.test("[exactl request create --dry-run-context] a cold portal never trigger
     const { output, restore } = captureConsoleLog();
     try {
       await handleRequestCreate(
-        { requestCommands, display: context.display, appContext: context },
+        { requestCommands, display: context.display, renderer: createConsoleRenderer(), appContext: context },
         { agent: "mock-agent", dryRunContext: true, portal: "cold-portal" },
         "Inspect the cold portal.",
       );

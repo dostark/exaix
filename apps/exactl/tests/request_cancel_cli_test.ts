@@ -110,7 +110,7 @@ Deno.test("request cancel on a request file with a path in its trace id exits 2 
   assertEquals(cancel.code, EXIT_USAGE, cancel.stderr);
   assertStringIncludes(cancel.stderr, "no valid trace id");
   assertEquals(shown.code, 0, shown.stderr);
-  assertStringIncludes(shown.stdout, "status: pending");
+  assertStringIncludes(shown.stdout, "pending");
 });
 
 Deno.test("request cancel on a request file with an invalid status exits 6 and leaves the file", async () => {

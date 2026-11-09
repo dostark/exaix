@@ -10,19 +10,21 @@ import { Command } from "@cliffy/command";
 import { RequestOperation } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
-import { readGlobalOptions } from "../output/exactl_output.ts";
+import { actionOutput, readGlobalOptions } from "../output/exactl_output.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
 import { handleRequestCreate, type IRequestCreateOptions } from "./request_actions.ts";
 import { buildRequestCreateBase } from "./request_create_options.ts";
 
 function createFlowRunCommand(runtime: IExaCtlRuntime) {
-  const { context, display, requestCommands } = runtime;
+  const { context, requestCommands } = runtime;
   return buildRequestCreateBase()
     .description("Create a request that runs a flow")
     .example("Run a flow", 'exactl flow run code-review "Review the auth module"')
     .action(async (options, ...args: string[]) => {
       const [flowId, description] = args;
+      const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       await handleRequestCreate(
-        { requestCommands, display, appContext: context },
+        { requestCommands, display, renderer, appContext: context },
         { ...(options as IRequestCreateOptions), flow: flowId },
         description,
       );

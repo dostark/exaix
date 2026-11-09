@@ -15,7 +15,7 @@ import { CLI_OPTION_MODEL, CLI_PORTAL_LONG_OPTION } from "../exactl_constants.ts
 /** A command with every create option except the target (`--agent`, `--flow`) and `--file`. */
 function createRequestCreateBase() {
   return new Command()
-    .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
+    .option("--priority <priority:string>", "Priority: low, normal, high, critical", {
       default: CLI_DEFAULTS.PRIORITY,
     })
     .option(CLI_PORTAL_LONG_OPTION, "Portal alias for context")
@@ -40,7 +40,7 @@ function createRequestCreateBase() {
       "Narrow candidates to specific provider (skips cross-provider scoring)",
     )
     .option("--skills <skills:string>", "Comma-separated list of skills to inject")
-    .option("-s, --subject <subject:string>", "Human-readable subject for the request")
+    .option("--subject <subject:string>", "Human-readable subject for the request")
     .option(
       "--acceptance-criteria <criteria:string>",
       "Acceptance criterion (repeatable: --acceptance-criteria 'A' --acceptance-criteria 'B')",
@@ -68,7 +68,7 @@ function createRequestCreateBase() {
       "Print a projected input-token breakdown without writing a request file or calling a real LLM",
     )
     .option("--analyze", "Trigger immediate intent analysis for the request")
-    .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
+    .option("--engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
       default: AnalysisMode.HEURISTIC,
     });
 }

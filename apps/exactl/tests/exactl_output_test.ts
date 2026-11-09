@@ -14,6 +14,7 @@ import {
   createExaCtlRenderer,
   ExaCtlOutputRenderer,
   isColorDisabled,
+  isJsonOutputRequested,
   resolveOutputFormat,
   stripTerminalControls,
 } from "../src/output/exactl_output.ts";
@@ -208,4 +209,24 @@ Deno.test("isColorDisabled is true for --no-color and for a non-empty NO_COLOR",
   assertFalse(isColorDisabled(["plan", "list"], env({ [NO_COLOR_ENV]: "" })));
   assertFalse(isColorDisabled(["plan", "list"], env({})));
   assertFalse(isColorDisabled(["request", "create", "--", "--no-color"], env({})));
+});
+
+Deno.test("isJsonOutputRequested is true for --json, -o json, -ojson, --output json and --output=jsonl", () => {
+  for (
+    const argv of [["plan", "list", "--json"], ["-o", "json", "plan"], ["plan", "-ojson"], ["--output", "json"], [
+      "--output=jsonl",
+    ]]
+  ) {
+    assert(isJsonOutputRequested(argv), argv.join(" "));
+  }
+});
+
+Deno.test("isJsonOutputRequested is false for -o table, no option and words after the terminator", () => {
+  for (
+    const argv of [["plan", "list", "-o", "table"], ["plan", "list"], ["request", "create", "--", "--json"], [
+      "--output=md",
+    ]]
+  ) {
+    assertFalse(isJsonOutputRequested(argv), argv.join(" "));
+  }
 });

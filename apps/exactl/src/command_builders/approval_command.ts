@@ -7,8 +7,20 @@
  */
 
 import { Command } from "@cliffy/command";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IDisplayService } from "@exaix/core/types";
+import { ExaCtlOutputFormat, type IExaCtlColumn, type IExaCtlOutputSink } from "@exaix/cli";
+import {
+  actionOutput,
+  cellText,
+  ColumnHeader,
+  type ExaCtlOutputRenderer,
+  type IJsonRow,
+  toRow,
+} from "../output/exactl_output.ts";
 import type { ApprovalCommands, IApprovalDecision } from "../commands/approval_commands.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import {
@@ -20,6 +32,7 @@ import {
   CLI_OPTION_WAIT_RESOLVED_BY,
   CLI_OPTION_WAIT_RESOLVED_BY_DESC,
   CLI_OPTION_WAIT_STATUS,
+  ExaCtlCommandName,
   ExaCtlVerb,
 } from "../exactl_constants.ts";
 
@@ -28,11 +41,23 @@ import {
 export interface IApprovalCommandRuntime {
   readonly approvalCommands: ApprovalCommands;
   readonly display: IDisplayService;
+  readonly outputSink: IExaCtlOutputSink;
 }
 
-const EMPTY_LIST_MESSAGE = "No pending approvals.";
-const ID_ARGUMENT = "<approvalId:string>";
-const LIST_COLUMN_SEPARATOR = "\t";
+const ID_ARGUMENT = "<approval-id:string>";
+
+const APPROVAL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Ref", value: (entry) => cellText(entry.ref) },
+  { header: ColumnHeader.KIND, value: (entry) => cellText(entry.kind) },
+  { header: ColumnHeader.SUMMARY, value: (entry) => cellText(entry.summary) },
+  { header: ColumnHeader.CREATED, value: (entry) => cellText(entry.created_at) },
+  { header: "Decide with", value: (entry) => cellText(entry.act) },
+];
+
+const APPROVAL_DETAIL_FIELDS: readonly IExaCtlColumn<IJsonRow>[] = [{
+  header: ColumnHeader.KIND,
+  value: (detail) => cellText(detail.kind),
+}];
 
 interface IDecisionOptions {
   message?: string;
@@ -42,15 +67,20 @@ interface IDecisionOptions {
 
 /** Runs one decision and reports a wait decision through the same display action as before. */
 async function report(
-  display: IDisplayService,
+  output: { display: IDisplayService; renderer: ExaCtlOutputRenderer },
   verb: ExaCtlVerb,
+  ref: string,
   run: () => Promise<IApprovalDecision>,
 ): Promise<void> {
+  const { display, renderer } = output;
   try {
     const decision = await run();
     if (decision.waitStateId !== null) {
       display.info(`wait.${verb}`, decision.waitStateId.slice(0, 8), { status: decision.status });
+    } else {
+      display.info(`tool.${verb}`, decision.id, { status: decision.status });
     }
+    await renderer.mutation([{ id: ref, action: verb, status: decision.status }], false);
   } catch (error) {
     if (error instanceof ExaCtlError) throw error;
     display.error("cli.error", `approval ${verb}`, {
@@ -60,27 +90,38 @@ async function report(
   }
 }
 
-function createApprovalCommand(runtime: IApprovalCommandRuntime) {
-  const { approvalCommands, display } = runtime;
+/** A decision verb that takes an optional message and the actor that decides. */
+function decisionCommand(
+  runtime: IApprovalCommandRuntime,
+  verb: ExaCtlVerb,
+  decide: (ref: string, options: IDecisionOptions) => Promise<IApprovalDecision>,
+) {
   return new Command()
-    .description("List every pending human decision and decide wait states and tool confirmations")
+    .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+    .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
+    .action(async (options: IDecisionOptions, ...args: string[]) => {
+      await report(
+        actionOutput(runtime, options, ExaCtlOutputFormat.TEXT),
+        verb,
+        args[0],
+        () => decide(args[0], options),
+      );
+    });
+}
+
+function createApprovalCommand(runtime: IApprovalCommandRuntime) {
+  const { approvalCommands } = runtime;
+  const noun = nounDocFor(ExaCtlCommandName.APPROVAL);
+  const command = documentedNoun(new Command(), noun)
     .command(
       ExaCtlVerb.LIST,
       new Command()
-        .description(
-          "List pending human decisions from every source with the command that decides each. " +
-            "Draft skills show only for the portal of EXA_PORTAL, and for no portal when it is unset: use 'exactl skill list --portal <alias>' for another portal",
-        )
         .option(CLI_OPTION_APPROVAL_KIND, CLI_OPTION_APPROVAL_KIND_DESC)
         .option(CLI_OPTION_WAIT_STATUS, "Select wait states of another status (default: pending); lists no other kind")
         .action(async (options) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
           const entries = await approvalCommands.list({ status: options.status, kinds: options.kind });
-          if (entries.length === 0) console.log(EMPTY_LIST_MESSAGE);
-          for (const entry of entries) {
-            console.log(
-              [entry.ref, entry.kind, entry.summary, entry.created_at, entry.act].join(LIST_COLUMN_SEPARATOR),
-            );
-          }
+          await renderer.list(entries.map(toRow), APPROVAL_COLUMNS, (entry) => cellText(entry.ref));
           // A source that timed out may still run, and its work would keep the process alive.
           if (approvalCommands.sourceTimedOut) Deno.exit(ExaCtlExitCode.OK);
         }),
@@ -88,63 +129,48 @@ function createApprovalCommand(runtime: IApprovalCommandRuntime) {
     .command(
       `${ExaCtlVerb.SHOW} ${ID_ARGUMENT}`,
       new Command()
-        .description("Show one pending approval: wait:<resume-token> or tool:<confirmation-id>")
-        .action(async (_options, ...args: string[]) => {
+        .action(async (options, ...args: string[]) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
           const detail = await approvalCommands.show(args[0]);
-          console.log(`kind: ${detail.kind}`);
-          for (const [key, value] of Object.entries(detail.fields)) console.log(`${key}: ${value}`);
+          const fields = Object.entries(detail.fields).map(([key, value]): IExaCtlColumn<IJsonRow> => ({
+            header: key,
+            value: () => String(value),
+          }));
+          await renderer.item(toRow(detail), [...APPROVAL_DETAIL_FIELDS, ...fields]);
         }),
     )
     .command(
       `${ExaCtlVerb.APPROVE} ${ID_ARGUMENT}`,
-      new Command()
-        .description("Approve a wait state or a tool confirmation")
-        .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
-        .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
-        .action(async (options: IDecisionOptions, ...args: string[]) => {
-          await report(display, ExaCtlVerb.APPROVE, () => approvalCommands.approve(args[0], options));
-        }),
+      decisionCommand(runtime, ExaCtlVerb.APPROVE, (ref, options) => approvalCommands.approve(ref, options)),
     )
     .command(
       `${ExaCtlVerb.REJECT} ${ID_ARGUMENT}`,
       new Command()
-        .description("Reject a wait state or deny a tool confirmation")
         .option(CLI_OPTION_REASON, "Why the item is rejected (a tool denial defaults to 'User declined')")
         .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
         .action(async (options: IDecisionOptions, ...args: string[]) => {
-          await report(display, ExaCtlVerb.REJECT, () => approvalCommands.reject(args[0], options));
+          await report(
+            actionOutput(runtime, options, ExaCtlOutputFormat.TEXT),
+            ExaCtlVerb.REJECT,
+            args[0],
+            () => approvalCommands.reject(args[0], options),
+          );
         }),
     )
     .command(
       `${ExaCtlVerb.AMEND} ${ID_ARGUMENT}`,
-      new Command()
-        .description("Mark a wait state as amended")
-        .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
-        .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
-        .action(async (options: IDecisionOptions, ...args: string[]) => {
-          await report(display, ExaCtlVerb.AMEND, () => approvalCommands.amend(args[0], options));
-        }),
+      decisionCommand(runtime, ExaCtlVerb.AMEND, (ref, options) => approvalCommands.amend(ref, options)),
     )
     .command(
       `${ExaCtlVerb.EXPIRE} ${ID_ARGUMENT}`,
-      new Command()
-        .description("Expire a pending wait state")
-        .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
-        .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
-        .action(async (options: IDecisionOptions, ...args: string[]) => {
-          await report(display, ExaCtlVerb.EXPIRE, () => approvalCommands.expire(args[0], options));
-        }),
+      decisionCommand(runtime, ExaCtlVerb.EXPIRE, (ref, options) => approvalCommands.expire(ref, options)),
     )
     .command(
       `${ExaCtlVerb.CANCEL} ${ID_ARGUMENT}`,
-      new Command()
-        .description("Cancel a pending wait state")
-        .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
-        .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
-        .action(async (options: IDecisionOptions, ...args: string[]) => {
-          await report(display, ExaCtlVerb.CANCEL, () => approvalCommands.cancel(args[0], options));
-        }),
+      decisionCommand(runtime, ExaCtlVerb.CANCEL, (ref, options) => approvalCommands.cancel(ref, options)),
     );
+  documentLeaves(command, [ExaCtlCommandName.APPROVAL], noun.lifecycle);
+  return command;
 }
 
 export function buildApprovalCommand(runtime: IApprovalCommandRuntime): ReturnType<typeof createApprovalCommand> {

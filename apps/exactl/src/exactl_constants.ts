@@ -153,8 +153,6 @@ export const BLUEPRINT_CLI_LABELS: IBlueprintCliLabels = {
   deprecateDescription: "Mark a blueprint as deprecated (retires it without deleting the file)",
 };
 
-export const CLI_CMD_SHOW_ID = "show <id>";
-
 export const CLI_CMD_LIST = "list";
 
 export const CLI_OPTION_REASON = "-r, --reason <reason:string>";
@@ -170,7 +168,7 @@ export const CLI_OPTION_APPROVAL_KIND = "--kind <kinds:string[]>";
 export const CLI_OPTION_APPROVAL_KIND_DESC =
   "Only these kinds, comma-separated: plan, amendment, review, clarification, proposal, skill, wait, tool";
 
-export const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
+export const CLI_OPTION_WAIT_MESSAGE = "--message <message:string>";
 
 export const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
 

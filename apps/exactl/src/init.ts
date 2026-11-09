@@ -16,7 +16,8 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
-import { ActivityActor, EDITION_SOLO } from "@exaix/core";
+import { ActivityActor, ConsoleStream, EDITION_SOLO } from "@exaix/core";
+import { isJsonOutputRequested } from "./output/exactl_output.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -102,6 +103,11 @@ function createDatabaseStub(): IDatabaseService {
 }
 
 // Allow tests to run the CLI entrypoint without initializing heavy services
+/** Display lines go to stderr when the command asks for JSON, so stdout carries only data. */
+function displayStream(): ConsoleStream {
+  return isJsonOutputRequested(Deno.args) ? ConsoleStream.STDERR : ConsoleStream.STDOUT;
+}
+
 export function isTestMode(): boolean {
   return Deno.env.get("EXA_TEST_MODE") === "1" || Deno.args.includes("--test");
 }
@@ -147,7 +153,7 @@ export async function initializeServices(
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     // Dynamic import keeps @exaix-team/* out of the Solo build (edition separation).
     const _editionComposer = await createEditionComposer(editionType);
-    const displayLogger = new EventLogger({ db: dbLocal });
+    const displayLogger = new EventLogger({ db: dbLocal, consoleStream: displayStream() });
     // Reading the journal or printing config needs no model.
     // Build the provider defensively, so a failed credential degrades only the provider.
     // Every other command then keeps the real database, git service and adapters.
@@ -314,7 +320,7 @@ export async function initializeServices(
       providerLocal = createProviderStub();
     }
 
-    const displayLocal = new EventLogger({});
+    const displayLocal = new EventLogger({ consoleStream: displayStream() });
     displayLocal.warn("cli.config_missing", ActivityActor.SYSTEM, {
       message: `Configuration failed to load (${err}). Running in degraded mode (read-only/stub).`,
       hint: "Ensure 'exa.config.toml' exists in current directory or root.",

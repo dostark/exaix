@@ -98,7 +98,7 @@ Deno.test("plan revise error exits with message", async () => {
       return Promise.reject(new Error("revision failed"));
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse(["plan", "revise", "p-1", "-c", "comment"]);
+      await mod.__test_command.parse(["plan", "revise", "p-1", "--comment", "comment"]);
     });
     assert(errors.some((e: string) => e.includes("revision failed")));
   });
@@ -619,7 +619,7 @@ Deno.test("review list empty prints message", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse(["review", "list"]);
     });
-    assert(out.includes("No reviews found") || out.includes("review.list"));
+    assertStringIncludes(out, "Request");
   });
 });
 
@@ -988,7 +988,7 @@ Deno.test("request create with all options", async () => {
         "Do task",
         "--agent",
         "custom-agent",
-        "-p",
+        "--priority",
         "high",
         "--portal",
         "my-portal",
@@ -1018,7 +1018,7 @@ Deno.test("request create with flow option", async () => {
         "Code review task",
         "--flow",
         "code-review",
-        "-p",
+        "--priority",
         "high",
       ]);
     });
@@ -1091,8 +1091,9 @@ Deno.test("request list shows different priority icons", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([FlowInputSource.REQUEST, "list"]);
     });
-    // Should show different icons for different priorities
-    assert(out.includes("🔴") || out.includes("🟠") || out.includes("⚪") || out.includes("count: 3"));
+    for (const priority of [RequestPriority.CRITICAL, RequestPriority.HIGH, RequestPriority.LOW]) {
+      assertStringIncludes(out, priority);
+    }
   });
 });
 

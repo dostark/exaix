@@ -38,14 +38,14 @@ async function captureCreate(argv: string[]): Promise<ICreateCall[]> {
 }
 
 Deno.test("flow run X and request create --flow X write identical request frontmatter", async () => {
-  const viaFlow = await captureCreate(["flow", "run", FLOW_ID, DESCRIPTION, "-p", "high", "--portal", "p1"]);
+  const viaFlow = await captureCreate(["flow", "run", FLOW_ID, DESCRIPTION, "--priority", "high", "--portal", "p1"]);
   const viaRequest = await captureCreate([
     "request",
     "create",
     DESCRIPTION,
     "--flow",
     FLOW_ID,
-    "-p",
+    "--priority",
     "high",
     "--portal",
     "p1",

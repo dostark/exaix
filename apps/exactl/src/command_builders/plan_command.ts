@@ -21,23 +21,25 @@ import {
   handlePlanReject,
   handlePlanRevise,
   handlePlanShow,
+  type IPlanActionContext,
   type IPlanListOptions,
 } from "./plan_actions.ts";
 import { selectBulkTargets } from "./bulk_targets.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlOutputFormat } from "@exaix/cli";
-import { createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
-import {
-  CLI_CMD_LIST,
-  CLI_CMD_SHOW_ID,
-  CLI_OPTION_REASON,
-  ExaCtlCommandName,
-  ExaCtlSubNoun,
-} from "../exactl_constants.ts";
+import { actionOutput } from "../output/exactl_output.ts";
+import { CLI_CMD_LIST, CLI_OPTION_REASON, ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb } from "../exactl_constants.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
 import { PLAN_AMENDMENT_SUMMARY } from "../command_docs/plan_docs.ts";
+
+const PLAN_ID_ARGUMENT = "<plan-id>";
+
+function planContext(runtime: IExaCtlRuntime, options: object | void, format: ExaCtlOutputFormat): IPlanActionContext {
+  const { renderer, display } = actionOutput(runtime, options, format);
+  return { planCommands: runtime.planCommands, display, renderer };
+}
 
 function createPlanCommand(runtime: IExaCtlRuntime) {
   const noun = nounDocFor(ExaCtlCommandName.PLAN);
@@ -54,22 +56,20 @@ function createPlanCommand(runtime: IExaCtlRuntime) {
 }
 
 function addPlanCommands1(runtime: IExaCtlRuntime) {
-  const { display, planCommands, outputSink } = runtime;
   return [
     [
       RequestOperation.LIST,
       new Command()
         .option("-s, --status <status:string>", "Filter by status (review, needs_revision)")
         .action(async (options) => {
-          const renderer = createExaCtlRenderer(readGlobalOptions(options), ExaCtlOutputFormat.TABLE, outputSink);
-          await handlePlanList({ planCommands, display }, options as IPlanListOptions, renderer);
+          await handlePlanList(planContext(runtime, options, ExaCtlOutputFormat.TABLE), options as IPlanListOptions);
         }),
     ],
     [
-      CLI_CMD_SHOW_ID,
+      `${ExaCtlVerb.SHOW} ${PLAN_ID_ARGUMENT}`,
       new Command()
-        .action(async (_options, ...args: string[]) => {
-          await handlePlanShow({ planCommands, display }, args[0] as string);
+        .action(async (options, ...args: string[]) => {
+          await handlePlanShow(planContext(runtime, options, ExaCtlOutputFormat.TEXT), args[0] as string);
         }),
     ],
     [
@@ -79,36 +79,43 @@ function addPlanCommands1(runtime: IExaCtlRuntime) {
         .action(async (options, ...ids: string[]) => {
           const targets = selectBulkTargets(ids, options.all === true, "plan");
           if (targets.all) {
-            await handlePlanApproveAll({ planCommands, display });
+            await handlePlanApproveAll(planContext(runtime, options, ExaCtlOutputFormat.TEXT));
           } else {
-            await handlePlanApprove({ planCommands, display }, targets.ids);
+            await handlePlanApprove(planContext(runtime, options, ExaCtlOutputFormat.TEXT), targets.ids);
           }
         }),
     ],
     [
-      "reject <id>",
+      `${ExaCtlVerb.REJECT} ${PLAN_ID_ARGUMENT}`,
       new Command()
         .option(CLI_OPTION_REASON, "Rejection reason (required)", { required: true })
         .action(async (options, ...args: string[]) => {
-          await handlePlanReject({ planCommands, display }, args[0] as string, options.reason);
+          await handlePlanReject(
+            planContext(runtime, options, ExaCtlOutputFormat.TEXT),
+            args[0] as string,
+            options.reason,
+          );
         }),
     ],
     [
-      "revise <id>",
+      `${ExaCtlVerb.REVISE} ${PLAN_ID_ARGUMENT}`,
       new Command()
-        .option("-c, --comment <comment:string>", "Review comment (can be specified multiple times)", {
+        .option("--comment <comment:string>", "Review comment (can be specified multiple times)", {
           collect: true,
           required: true,
         })
         .action(async (options, ...args: string[]) => {
-          await handlePlanRevise({ planCommands, display }, args[0] as string, options.comment);
+          await handlePlanRevise(
+            planContext(runtime, options, ExaCtlOutputFormat.TEXT),
+            args[0] as string,
+            options.comment,
+          );
         }),
     ],
   ] as const;
 }
 
 function addPlanCommands2(runtime: IExaCtlRuntime) {
-  const { display, planCommands } = runtime;
   return [
     [
       "amendment",
@@ -117,8 +124,8 @@ function addPlanCommands2(runtime: IExaCtlRuntime) {
         .command(
           CLI_CMD_LIST,
           new Command()
-            .action(async () => {
-              await handlePlanAmendmentList({ planCommands, display });
+            .action(async (options) => {
+              await handlePlanAmendmentList(planContext(runtime, options, ExaCtlOutputFormat.TABLE));
             }),
         )
         .command(
@@ -128,9 +135,9 @@ function addPlanCommands2(runtime: IExaCtlRuntime) {
             .action(async (options, ...ids: string[]) => {
               const targets = selectBulkTargets(ids, options.all === true, "amendment");
               if (targets.all) {
-                await handlePlanAmendmentShowAll({ planCommands, display });
+                await handlePlanAmendmentShowAll(planContext(runtime, options, ExaCtlOutputFormat.TEXT));
               } else {
-                await handlePlanAmendmentShow({ planCommands, display }, targets.ids);
+                await handlePlanAmendmentShow(planContext(runtime, options, ExaCtlOutputFormat.TEXT), targets.ids);
               }
             }),
         )
@@ -141,18 +148,22 @@ function addPlanCommands2(runtime: IExaCtlRuntime) {
             .action(async (options, ...ids: string[]) => {
               const targets = selectBulkTargets(ids, options.all === true, "amendment");
               if (targets.all) {
-                await handlePlanAmendmentApproveAll({ planCommands, display });
+                await handlePlanAmendmentApproveAll(planContext(runtime, options, ExaCtlOutputFormat.TEXT));
               } else {
-                await handlePlanAmendmentApprove({ planCommands, display }, targets.ids);
+                await handlePlanAmendmentApprove(planContext(runtime, options, ExaCtlOutputFormat.TEXT), targets.ids);
               }
             }),
         )
         .command(
-          "reject <id>",
+          `${ExaCtlVerb.REJECT} ${PLAN_ID_ARGUMENT}`,
           new Command()
             .option(CLI_OPTION_REASON, "Rejection reason (required)", { required: true })
             .action(async (options, ...args: string[]) => {
-              await handlePlanAmendmentReject({ planCommands, display }, args[0] as string, options.reason);
+              await handlePlanAmendmentReject(
+                planContext(runtime, options, ExaCtlOutputFormat.TEXT),
+                args[0] as string,
+                options.reason,
+              );
             }),
         ),
     ],

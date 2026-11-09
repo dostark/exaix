@@ -21,6 +21,7 @@ import { ClarifyResultStatus } from "@exaix/core";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy } from "@exaix/core";
 import type { IClarifyOptions } from "../src/handlers/request_clarify_handler.ts";
+import { createTestRenderer } from "./helpers/captured_output.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { EventLogger, type IEventLoggerConfig } from "@exaix/core/logger";
 
@@ -66,6 +67,17 @@ function createDisplay() {
   return { display, calls: display.calls };
 }
 
+function requestActionContext<TStub extends object>(
+  requestCommands: TStub,
+  display: IRequestActionContext["display"],
+): IRequestActionContext {
+  return {
+    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
+    display,
+    renderer: createTestRenderer().renderer,
+  };
+}
+
 Deno.test("handleRequestShow: includes token stats when present", async () => {
   const { display, calls } = createDisplay();
   const requestCommands = {
@@ -89,10 +101,7 @@ Deno.test("handleRequestShow: includes token stats when present", async () => {
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
   await handleRequestShow(context, "trace-1");
 
   assertEquals(calls.length, 2);
@@ -140,10 +149,7 @@ Deno.test("handleRequestShow: includes analysis when present", async () => {
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
   await handleRequestShow(context, "trace-2");
 
   // Should have 3 calls: request.show, request.analysis, request.content
@@ -179,10 +185,7 @@ Deno.test("handleRequestAnalyze: trigger and display analysis", async () => {
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestAnalyze(context, "trace-3", { engine: "llm" });
 
@@ -215,10 +218,7 @@ Deno.test("handleRequestAnalyze: default to hybrid (DEFAULT_ANALYZER_MODE)", asy
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestAnalyze(context, "trace-4", {});
 
@@ -253,10 +253,7 @@ Deno.test("handleRequestCreate: displays analysis when analyze=true", async () =
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestCreate(context, { analyze: true }, "Build an app");
 
@@ -292,10 +289,7 @@ Deno.test("handleRequestAnalyze: hybrid engine routes to HYBRID mode", async () 
       }),
   };
 
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestAnalyze(context, "trace-5", { engine: "hybrid" });
 
@@ -318,6 +312,7 @@ Deno.test("handleRequestClarify: parses --answer pairs and constructs a real eng
   const context: IRequestActionContext = {
     requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
     display,
+    renderer: createTestRenderer().renderer,
     provider: new MockLLMProvider(MockStrategy.SCRIPTED, { responses: ["ok"] }),
   };
 
@@ -344,10 +339,7 @@ Deno.test("handleRequestClarify: proceed/cancel need no engine and no answers", 
       return Promise.resolve({ status: ClarifyResultStatus.COMPLETE });
     },
   };
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestClarify(context, "trace-7", { proceed: true });
 
@@ -366,10 +358,7 @@ Deno.test("handleRequestClarify: default displays pending questions", async () =
         questions: [{ id: "r1q1", question: "What component needs fixing?" }],
       }),
   };
-  const context: IRequestActionContext = {
-    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
-    display,
-  };
+  const context = requestActionContext(requestCommands, display);
 
   await handleRequestClarify(context, "trace-8", {});
 

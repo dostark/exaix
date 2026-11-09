@@ -7,7 +7,7 @@
  * @related-files [apps/exactl/main.ts, apps/exactl/src/exactl_error_handler.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertNotMatch, assertStringIncludes } from "@std/assert";
 import { runExactlInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
 const USAGE_EXIT_CODE = 2;
@@ -110,8 +110,14 @@ Deno.test("`request create -a x` names `--agent`", async () => {
   assertStringIncludes(run.stderr, "use '--agent'");
 });
 
-Deno.test("`request list -a` is still the --all option and prints no hint", async () => {
+Deno.test("`request list -a` was removed, exits 2 and prints no rename hint", async () => {
   const run = await runExactlInTempWorkspace(["request", "list", "-a"]);
+  assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
+  assertNotMatch(run.stderr, /was renamed/);
+});
+
+Deno.test("`request list --all` is accepted", async () => {
+  const run = await runExactlInTempWorkspace(["request", "list", "--all"]);
   assertEquals(run.code, 0, run.stderr);
 });
 

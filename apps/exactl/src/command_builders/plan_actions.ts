@@ -8,19 +8,30 @@
  */
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
-import type { IExaCtlColumn, IExaCtlOutputRenderer } from "@exaix/cli";
-import { EMPTY_CELL } from "../output/exactl_output.ts";
+import type { IExaCtlColumn } from "@exaix/cli";
+import {
+  cellText,
+  ColumnHeader,
+  EMPTY_CELL,
+  type ExaCtlOutputRenderer,
+  type IJsonRow,
+  type IMutationResult,
+  toRow,
+  TRACE_PREFIX_CHARS,
+} from "../output/exactl_output.ts";
+import { ExaCtlVerb } from "../exactl_constants.ts";
+import { PlanStatus } from "@exaix/core/status";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import type { JSONValue } from "@exaix/core";
-import type { PlanStatus } from "@exaix/core/status";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
-import type { IDisplayService, Opt, Reason } from "@exaix/core/types";
+import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
 export interface IPlanActionContext {
   planCommands: PlanCommands;
   display: IDisplayService;
+  renderer: ExaCtlOutputRenderer;
 }
 
 export interface IPlanListOptions {
@@ -34,27 +45,31 @@ interface IPlanRow {
   status: string;
 }
 
-const TRACE_PREFIX_CHARS = 8;
 const SUBJECT_MAX_CHARS = 50;
 const TRUNCATION_MARK = "...";
-
-function text(value: Opt<JSONValue, Reason.OptionalInput>): string {
-  return typeof value === "string" && value !== "" ? value : EMPTY_CELL;
-}
 
 function truncated(value: string, max: number): string {
   return value.length > max ? `${value.substring(0, max - TRUNCATION_MARK.length)}${TRUNCATION_MARK}` : value;
 }
 
+const AMENDMENT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.ID, value: (plan) => cellText(plan.id) },
+  { header: ColumnHeader.STATUS, value: (plan) => cellText(plan.status) },
+  { header: ColumnHeader.TRACE, value: (plan) => cellText(plan.trace_id).slice(0, TRACE_PREFIX_CHARS) },
+];
+
 const PLAN_COLUMNS: readonly IExaCtlColumn<IPlanRow>[] = [
-  { header: "ID", value: (plan) => plan.id },
-  { header: "Status", value: (plan) => plan.status },
-  { header: "Subject", value: (plan) => truncated(text(plan.request_subject ?? plan.subject), SUBJECT_MAX_CHARS) },
-  { header: "Agent", value: (plan) => text(plan.request_agent_role ?? plan.agent_role) },
-  { header: "Portal", value: (plan) => text(plan.request_portal) },
-  { header: "Priority", value: (plan) => text(plan.request_priority) },
+  { header: ColumnHeader.ID, value: (plan) => plan.id },
+  { header: ColumnHeader.STATUS, value: (plan) => plan.status },
   {
-    header: "Trace",
+    header: ColumnHeader.SUBJECT,
+    value: (plan) => truncated(cellText(plan.request_subject ?? plan.subject), SUBJECT_MAX_CHARS),
+  },
+  { header: ColumnHeader.AGENT, value: (plan) => cellText(plan.request_agent_role ?? plan.agent_role) },
+  { header: ColumnHeader.PORTAL, value: (plan) => cellText(plan.request_portal) },
+  { header: ColumnHeader.PRIORITY, value: (plan) => cellText(plan.request_priority) },
+  {
+    header: ColumnHeader.TRACE,
     value: (plan) => typeof plan.trace_id === "string" ? plan.trace_id.substring(0, TRACE_PREFIX_CHARS) : EMPTY_CELL,
   },
 ];
@@ -82,12 +97,8 @@ function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendment
 /**
  * Handle plan list action
  */
-export async function handlePlanList(
-  context: IPlanActionContext,
-  options: IPlanListOptions,
-  renderer: IExaCtlOutputRenderer,
-): Promise<void> {
-  const { planCommands, display } = context;
+export async function handlePlanList(context: IPlanActionContext, options: IPlanListOptions): Promise<void> {
+  const { planCommands, display, renderer } = context;
 
   try {
     const plans = await planCommands.list(options.status);
@@ -108,10 +119,14 @@ export async function handlePlanShow(
   context: IPlanActionContext,
   id: string,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     const { metadata, content } = await planCommands.show(id);
+    if (renderer.machine) {
+      await renderer.item(toRow({ ...metadata, content }), []);
+      return;
+    }
     const displayData: JSONObject = {
       status: metadata.status,
       subject: metadata.subject,
@@ -149,6 +164,21 @@ export async function handlePlanShow(
   }
 }
 
+const AMENDMENT_SHOW_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.ID, value: (amendment) => cellText(amendment.id) },
+  { header: "Amendment", value: (amendment) => cellText(amendment.amendmentId) },
+  { header: ColumnHeader.SUMMARY, value: (amendment) => cellText(amendment.summary) },
+];
+
+async function emitAmendments(renderer: ExaCtlOutputRenderer, rows: readonly IJsonRow[], bulk: boolean): Promise<void> {
+  if (bulk) await renderer.list(rows, AMENDMENT_SHOW_COLUMNS, (amendment) => cellText(amendment.id));
+  else await renderer.item(rows[0], AMENDMENT_SHOW_COLUMNS);
+}
+
+function decision(id: string, action: ExaCtlVerb, status: string): IMutationResult {
+  return { id, action, status };
+}
+
 /**
  * Approves the ids in order with one decision call each. The first failure prints the ids already decided and exits 1.
  */
@@ -164,6 +194,10 @@ async function approveInOrder(
       await approveOne(id);
       decided.push(id);
     }
+    await context.renderer.mutation(
+      decided.map((id) => decision(id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)),
+      ids.length !== 1,
+    );
   } catch (error) {
     context.display.error("cli.error", label, {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -184,10 +218,12 @@ export function handlePlanApprove(context: IPlanActionContext, ids: readonly str
  * Handle plan approve all action
  */
 export async function handlePlanApproveAll(context: IPlanActionContext): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
+    const inReview = await planCommands.list(PlanStatus.REVIEW);
     await planCommands.approveAll();
+    await renderer.mutation(inReview.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
     display.error("cli.error", "plan approve --all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -204,10 +240,11 @@ export async function handlePlanReject(
   id: string,
   reason: string,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     await planCommands.reject(id, reason);
+    await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
     display.error("cli.error", "plan reject", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -224,10 +261,11 @@ export async function handlePlanRevise(
   id: string,
   comments: string[],
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     await planCommands.revise(id, comments);
+    await renderer.mutation([decision(id, ExaCtlVerb.REVISE, PlanStatus.NEEDS_REVISION)], false);
   } catch (error) {
     display.error("cli.error", "plan revise", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -242,20 +280,11 @@ export async function handlePlanRevise(
 export async function handlePlanAmendmentList(
   context: IPlanActionContext,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     const plans = await planCommands.listAmendments();
-    if (plans.length === 0) {
-      display.info("plan.amendment.list", "amendments", { count: 0, message: "No pending amendments found" });
-      return;
-    }
-    display.info("plan.amendment.list", "amendments", { count: plans.length });
-    for (const plan of plans) {
-      display.info(`⚠️ amendment_pending: ${plan.id}`, plan.id, {
-        trace: plan.trace_id ? `${plan.trace_id.substring(0, 8)}...` : undefined,
-      });
-    }
+    await renderer.list(plans.map((plan) => toRow({ ...plan })), AMENDMENT_COLUMNS, (plan) => String(plan.id));
   } catch (error) {
     display.error("cli.error", "plan amendment list", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -271,12 +300,14 @@ export async function handlePlanAmendmentShow(
   context: IPlanActionContext,
   ids: readonly string[],
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
   const decided: string[] = [];
+  const shown: IJsonRow[] = [];
 
   try {
     for (const id of ids) {
       const patch = await planCommands.getAmendment(id);
+      shown.push(toRow({ id, ...patch }));
       display.info("plan.amendment.show", id, {
         amendment_id: patch.amendmentId,
         summary: patch.summary,
@@ -287,6 +318,7 @@ export async function handlePlanAmendmentShow(
       displayAmendmentChanges(display, patch);
       decided.push(id);
     }
+    if (renderer.machine) await emitAmendments(renderer, shown, ids.length !== 1);
   } catch (error) {
     display.error("cli.error", "plan amendment show", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -316,11 +348,12 @@ export async function handlePlanAmendmentReject(
   id: string,
   reason: string,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     await planCommands.rejectAmendment(id, reason);
     display.info("plan.amendment.rejected", id, { message: "Amendment rejected and execution aborted." });
+    await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
     display.error("cli.error", "plan amendment reject", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -335,10 +368,12 @@ export async function handlePlanAmendmentReject(
 export async function handlePlanAmendmentApproveAll(
   context: IPlanActionContext,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
+    const pending = await planCommands.listAmendments();
     await planCommands.approveAllAmendments();
+    await renderer.mutation(pending.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
     display.error("cli.error", "plan amendment approve --all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -353,10 +388,14 @@ export async function handlePlanAmendmentApproveAll(
 export async function handlePlanAmendmentShowAll(
   context: IPlanActionContext,
 ): Promise<void> {
-  const { planCommands, display } = context;
+  const { planCommands, display, renderer } = context;
 
   try {
     const amendments = await planCommands.getAmendments();
+    if (renderer.machine) {
+      await emitAmendments(renderer, amendments.map(({ id, patch }) => toRow({ id, ...patch })), true);
+      return;
+    }
     if (amendments.length === 0) {
       display.info("plan.amendment.show_all", "none", { message: "No pending amendments found" });
       return;
