@@ -314,7 +314,7 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
     const commands = new MemoryCommands(context);
 
     // List (should be empty or minimal)
-    const listResult = await commands.list(UIOutputFormat.TABLE);
+    const listResult = await commands.getSummary();
     assertExists(listResult);
 
     // Create project memory via service (simulating real usage)
@@ -333,17 +333,17 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
       references: [],
     });
 
-    const projectListResult = await commands.projectList(UIOutputFormat.TABLE);
-    assertStringIncludes(projectListResult, "cli-test-portal");
+    const projectListResult = await commands.projectList();
+    assertEquals(projectListResult.map((project) => project.name), ["cli-test-portal"]);
 
-    const projectShowResult = await commands.projectShow("cli-test-portal", UIOutputFormat.TABLE);
-    assertStringIncludes(projectShowResult, "Factory IPattern");
+    const projectShowResult = await commands.projectShow("cli-test-portal");
+    assertEquals(projectShowResult.patterns[0].name, "Factory IPattern");
 
-    const searchResult = await commands.search("factory", { format: UIOutputFormat.TABLE });
-    assertStringIncludes(searchResult, "Factory");
+    const searchResult = await commands.search("factory");
+    assertEquals(searchResult.some((result) => result.title.includes("Factory")), true);
 
     const rebuildResult = await commands.rebuildIndex();
-    assertStringIncludes(rebuildResult, "rebuilt");
+    assertEquals(rebuildResult.embeddings, null);
   } finally {
     await cleanup();
   }
@@ -401,8 +401,8 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     await extractor.createProposal(learnings[0], execution, execution.agent_role);
 
     // List pending via CLI
-    const pendingList = await commands.pendingList(false, UIOutputFormat.TABLE);
-    assertStringIncludes(pendingList, MemoryStatus.PENDING);
+    const pendingList = await commands.pendingList(false);
+    assertEquals(pendingList.length > 0, true);
 
     // Get the proposal ID
     const pending = await extractor.listPending();
@@ -411,7 +411,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
 
     // Approve via CLI
     const approveResult = await commands.pendingApprove(proposalId);
-    assertStringIncludes(approveResult, MemoryStatus.APPROVED);
+    assertEquals(approveResult.id, proposalId);
 
     // Verify no more pending
     const emptyPending = await extractor.listPending();

@@ -55,11 +55,23 @@ const SKILL_COMMANDS = [
 const EXACTL = join(REPO_ROOT, "apps", "exactl", "src", "exactl.ts");
 
 const read = (path: string) => Deno.readTextFile(join(REPO_ROOT, path));
+const TEST_ENV_PREFIX = "EXA_TEST";
+
+/** The parent environment without the test-mode switches that other test files set in this process. */
+function helpEnv(): Record<string, string> {
+  const env = Deno.env.toObject();
+  for (const key of Object.keys(env)) {
+    if (key.startsWith(TEST_ENV_PREFIX)) delete env[key];
+  }
+  return env;
+}
 
 async function help(...args: string[]): Promise<string> {
   const output = await new Deno.Command("deno", {
     args: ["run", "-A", "--config", join(REPO_ROOT, "deno.json"), EXACTL, ...args, "--help"],
     cwd: REPO_ROOT,
+    clearEnv: true,
+    env: helpEnv(),
     stdout: "piped",
     stderr: "piped",
   }).output();

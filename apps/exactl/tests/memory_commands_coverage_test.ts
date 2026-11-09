@@ -17,7 +17,9 @@ import {
   SkillStatus,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { MemoryEmbeddingService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
@@ -95,11 +97,10 @@ Deno.test("MemoryCommands: search with useEmbeddings option", async () => {
 
     const result = await commands.search("error handling", {
       useEmbeddings: true,
-      format: UIOutputFormat.TABLE,
     });
 
     // Should return some results (even if empty due to mock embeddings)
-    assertEquals(typeof result, "string");
+    assertEquals(Array.isArray(result), true);
   } finally {
     await cleanup();
   }
@@ -121,28 +122,28 @@ Deno.test("MemoryCommands: search with tags option", async () => {
 
     const result = await commands.search(LearningCategory.PATTERN, {
       tags: ["typescript"],
-      format: UIOutputFormat.TABLE,
     });
 
-    assertEquals(typeof result, "string");
+    assertEquals(Array.isArray(result), true);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: search --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: search results render as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.createProjectMemory(
       new ProjectMemoryBuilder("MdSearchProject").build(),
     );
 
-    const result = await commands.search("IPattern", { format: UIOutputFormat.MARKDOWN });
+    const results = await commands.search("IPattern");
+    const markdown = new MemoryFormatter().formatSearchMarkdown("IPattern", results);
 
     // If results found, should have markdown formatting
-    if (!result.includes("No results found")) {
-      assertStringIncludes(result, "# Search Results");
-      assertStringIncludes(result, "| Type |");
+    if (results.length > 0) {
+      assertStringIncludes(markdown, "# Search Results");
+      assertStringIncludes(markdown, "| Type |");
     }
   } finally {
     await cleanup();
@@ -151,14 +152,14 @@ Deno.test("MemoryCommands: search --format md outputs markdown", async () => {
 
 // Project List Markdown Format Test
 
-Deno.test("MemoryCommands: project list --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: the project list renders as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.createProjectMemory(
       new ProjectMemoryBuilder("MdListProject").build(),
     );
 
-    const result = await commands.projectList(UIOutputFormat.MARKDOWN);
+    const result = new MemoryFormatter().formatProjectListMarkdown(await commands.projectList());
 
     assertStringIncludes(result, "# Project Memories");
     assertStringIncludes(result, "| Project |");
@@ -168,7 +169,7 @@ Deno.test("MemoryCommands: project list --format md outputs markdown", async () 
   }
 });
 
-Deno.test("MemoryCommands: project show --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: a project renders as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.createProjectMemory(
@@ -177,7 +178,7 @@ Deno.test("MemoryCommands: project show --format md outputs markdown", async () 
         .build(),
     );
 
-    const result = await commands.projectShow("MdShowProject", UIOutputFormat.MARKDOWN);
+    const result = new MemoryFormatter().formatProjectShowMarkdown(await commands.projectShow("MdShowProject"));
 
     assertStringIncludes(result, "# Project Memory:");
     assertStringIncludes(result, "## Overview");
@@ -189,7 +190,7 @@ Deno.test("MemoryCommands: project show --format md outputs markdown", async () 
 
 // Execution List Markdown Format Test
 
-Deno.test("MemoryCommands: execution list --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: the execution list renders as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const traceId = "cccccccc-cccc-4000-8000-000000000001";
@@ -211,7 +212,7 @@ Deno.test("MemoryCommands: execution list --format md outputs markdown", async (
       },
     });
 
-    const result = await commands.executionList({ format: UIOutputFormat.MARKDOWN });
+    const result = new MemoryFormatter().formatExecutionListMarkdown(await commands.executionList());
 
     assertStringIncludes(result, "# Execution History");
     assertStringIncludes(result, "| Trace ID |");
@@ -316,9 +317,10 @@ Deno.test("MemoryCommands: demote returns error for non-existent learning", asyn
 Deno.test("MemoryCommands: pendingApprove returns error for non-existent proposal", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingApprove("non-existent-proposal-id");
+    const error = await assertRejects(() => commands.pendingApprove("non-existent-proposal-id"), ExaCtlError);
 
-    assertStringIncludes(result, "not found");
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(error.message, "not found");
   } finally {
     await cleanup();
   }
@@ -327,9 +329,10 @@ Deno.test("MemoryCommands: pendingApprove returns error for non-existent proposa
 Deno.test("MemoryCommands: pendingReject returns error for non-existent proposal", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingReject("non-existent-proposal-id", "Reason");
+    const error = await assertRejects(() => commands.pendingReject("non-existent-proposal-id", "Reason"), ExaCtlError);
 
-    assertStringIncludes(result, "not found");
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(error.message, "not found");
   } finally {
     await cleanup();
   }
@@ -355,8 +358,7 @@ Deno.test("MemoryCommands: rebuildIndex with embeddings option", async () => {
 
     const result = await commands.rebuildIndex({ includeEmbeddings: true });
 
-    assertStringIncludes(result, "rebuilt successfully");
-    assertStringIncludes(result, "Embeddings regenerated");
+    assertEquals(result.embeddings, 1);
   } finally {
     await cleanup();
   }
@@ -387,7 +389,7 @@ Deno.test("MemoryCommands: execution show with error message", async () => {
       error_message: "Connection timeout after 30 seconds",
     });
 
-    const result = await commands.executionShow(traceId, UIOutputFormat.TABLE);
+    const result = new MemoryFormatter().formatExecutionShowTable(await commands.executionShow(traceId));
 
     assertStringIncludes(result, "Error:");
     assertStringIncludes(result, "Connection timeout");
@@ -419,7 +421,7 @@ Deno.test("MemoryCommands: execution show with changes and lessons learned", asy
       lessons_learned: ["Lesson 1: Test first", "Lesson 2: Document everything"],
     });
 
-    const result = await commands.executionShow(traceId, UIOutputFormat.TABLE);
+    const result = new MemoryFormatter().formatExecutionShowTable(await commands.executionShow(traceId));
 
     assertStringIncludes(result, "Changes:");
     assertStringIncludes(result, "Created:");
@@ -432,7 +434,7 @@ Deno.test("MemoryCommands: execution show with changes and lessons learned", asy
   }
 });
 
-Deno.test("MemoryCommands: execution show --format md with full data", async () => {
+Deno.test("MemoryFormatter: an execution with full data renders as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const traceId = "22222222-2222-4000-8000-000000000001";
@@ -455,7 +457,7 @@ Deno.test("MemoryCommands: execution show --format md with full data", async () 
       lessons_learned: ["Always write tests"],
     });
 
-    const result = await commands.executionShow(traceId, UIOutputFormat.MARKDOWN);
+    const result = new MemoryFormatter().formatExecutionShowMarkdown(await commands.executionShow(traceId));
 
     assertStringIncludes(result, "# Execution:");
     assertStringIncludes(result, "## Context Files");
@@ -551,13 +553,12 @@ Deno.test("MemoryCommands: pendingList and pendingShow return proposal details",
     const execution = new ExecutionMemoryBuilder("PendingProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
-    const listResult = await commands.pendingList(false, UIOutputFormat.TABLE);
-    assertStringIncludes(listResult, "Pending Memory Update Proposals");
-    assertStringIncludes(listResult, TEST_PENDING_LEARNING_TITLE);
+    const listResult = await commands.pendingList(false);
+    assertEquals(listResult.map((proposal) => proposal.learning.title), [TEST_PENDING_LEARNING_TITLE]);
 
-    const showResult = await commands.pendingShow(proposalId, UIOutputFormat.MARKDOWN);
-    assertStringIncludes(showResult, "# Pending Proposal");
-    assertStringIncludes(showResult, TEST_PENDING_LEARNING_DESCRIPTION);
+    const showResult = await commands.pendingShow(proposalId);
+    assertEquals(showResult.learning.description, TEST_PENDING_LEARNING_DESCRIPTION);
+    assertStringIncludes(new MemoryFormatter().formatPendingShowMarkdown(showResult), "# Pending Proposal");
   } finally {
     await cleanup();
   }
@@ -572,7 +573,9 @@ Deno.test("MemoryCommands: pendingApprove approves global proposal", async () =>
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
     const result = await commands.pendingApprove(proposalId);
-    assertStringIncludes(result, "Proposal approved successfully");
+    assertEquals(result.id, proposalId);
+    assertEquals(result.title, TEST_PENDING_LEARNING_TITLE);
+    assertEquals(result.mergedTo, MemoryScope.GLOBAL);
 
     const globalMem = await memoryBank.getGlobalMemory();
     assertEquals(globalMem?.learnings.length, 1);
@@ -587,9 +590,8 @@ Deno.test("MemoryCommands: pendingReject rejects proposal with reason", async ()
     const execution = new ExecutionMemoryBuilder("RejectProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
-    const result = await commands.pendingReject(proposalId, TEST_PENDING_REASON);
-    assertStringIncludes(result, "Proposal rejected");
-    assertStringIncludes(result, TEST_PENDING_REASON);
+    await commands.pendingReject(proposalId, TEST_PENDING_REASON);
+    assertEquals(await commands.pendingList(false), []);
   } finally {
     await cleanup();
   }
@@ -612,7 +614,7 @@ Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async
     );
 
     const result = await commands.pendingApproveAll();
-    assertStringIncludes(result, "Approved 2 proposal(s)");
+    assertEquals(result.length, 2);
   } finally {
     await cleanup();
   }

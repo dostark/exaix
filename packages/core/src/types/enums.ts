@@ -1398,14 +1398,6 @@ export enum ConfigAdapterMode {
   DAEMON = "daemon",
 }
 
-/**
- * Output format for config CLI commands.
- */
-export enum ConfigOutputFormat {
-  HUMAN = "human",
-  JSON = "json",
-}
-
 /** How a scoped context item's score was computed: portal retrieval uses raw HNSW
  *  cosine similarity; memory retrieval uses the existing post-fusion/tier relevance. */
 // unslop-ignore-next-line unused-enum-member

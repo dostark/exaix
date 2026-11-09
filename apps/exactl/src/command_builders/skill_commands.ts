@@ -19,7 +19,7 @@ import { CLI_LAYOUT_SKILL_HASH_WIDTH, CLI_LAYOUT_SKILL_REVISION_WIDTH, ExaCtlOut
 import type { IExaCtlColumn } from "@exaix/cli";
 import { type MemoryCommands, SkillCommandError } from "../commands/memory_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
+import { COMMA_SEPARATOR, ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { actionOutput, cellText, ColumnHeader, EMPTY_CELL, type IJsonRow, toRow } from "../output/exactl_output.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
@@ -30,12 +30,11 @@ const PORTAL_HELP = "Portal whose project skills apply. Without it only global s
 const REVISION_OPTION = "--revision <revision:string>";
 const LIMIT_OPTION = "-n, --limit <limit:number>";
 const LIMIT_DEFAULT = 10;
-const COMMA_SEPARATOR = ",";
 const NAME_ARGUMENT = "<name:string>";
 
 const SKILL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: "Skill ID", value: (skill) => cellText(skill.skill_id) },
-  { header: "Name", value: (skill) => cellText(skill.title) },
+  { header: ColumnHeader.NAME, value: (skill) => cellText(skill.title) },
   { header: "Source", value: (skill) => cellText(skill.source) },
   { header: ColumnHeader.REVISION, value: (skill) => cellText(skill.id).slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH) },
   { header: ColumnHeader.STATUS, value: (skill) => cellText(skill.status) },
@@ -43,7 +42,7 @@ const SKILL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
 
 const DIAGNOSTIC_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: "Severity", value: (row) => cellText(row.severity) },
-  { header: "Name", value: (row) => cellText(row.name) },
+  { header: ColumnHeader.NAME, value: (row) => cellText(row.name) },
   { header: "Reason", value: (row) => cellText(row.reason) },
   { header: "Path", value: (row) => `${cellText(row.root_kind)}/${cellText(row.safe_path)}` },
 ];
@@ -85,12 +84,12 @@ function listText(values: Opt<readonly string[], Reason.OptionalInput>): string 
 function skillFields(skill: ISkill): readonly IExaCtlColumn<IJsonRow>[] {
   return [
     { header: "Skill ID", value: () => skill.skill_id },
-    { header: "Title", value: () => skill.title },
+    { header: ColumnHeader.TITLE, value: () => skill.title },
     { header: "Source", value: () => skill.source },
     { header: "Scope", value: () => skill.scope },
     { header: ColumnHeader.REVISION, value: () => skill.id },
     { header: ColumnHeader.STATUS, value: () => skill.status },
-    { header: "Description", value: () => skill.description },
+    { header: ColumnHeader.DESCRIPTION, value: () => skill.description },
     { header: "Keywords", value: () => listText(skill.triggers.keywords) },
     { header: "Task types", value: () => listText(skill.triggers.task_types) },
     { header: "Tags", value: () => listText(skill.triggers.tags) },

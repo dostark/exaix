@@ -10,10 +10,21 @@
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { ExternalMcpClient, type IExternalMcpClient } from "@exaix/mcp";
+import {
+  ExternalMcpClient,
+  type IExternalMcpCallResult,
+  type IExternalMcpClient,
+  type IExternalMcpToolDefinition,
+} from "@exaix/mcp";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { EXA_MCP_BEARER_TOKEN_ENV_VAR, STDIO_INHERIT } from "./constants.ts";
+
+/** What `connect` returns: the tools of a list request, or the result of a call request. */
+export interface IMcpConnectResult {
+  tools?: IExternalMcpToolDefinition[];
+  result?: IExternalMcpCallResult;
+}
 
 export class McpCommands extends BaseCommand {
   constructor(context: ICommandContext) {
@@ -36,11 +47,11 @@ export class McpCommands extends BaseCommand {
     }
   }
 
-  /** Connects outbound to an MCP server, lists/calls a tool, and always closes the connection — even when the requested action throws. */
+  /** Lists or calls a tool on an MCP server and always closes the connection, even when the action throws. */
   async connect(
     endpoint: string,
     options: { listTools?: boolean; callTool?: string; args?: string },
-  ): Promise<void> {
+  ): Promise<IMcpConnectResult> {
     const url = this.parseEndpointUrl(endpoint);
     const callArgs = options.callTool ? this.parseCallToolArgs(options.args) : undefined;
     const client = this.createExternalMcpClient();
@@ -48,14 +59,12 @@ export class McpCommands extends BaseCommand {
     try {
       await client.connect(url, bearerToken ? { bearerToken } : undefined);
       if (options.callTool) {
-        const result = await client.callTool(options.callTool, callArgs ?? {});
-        console.log(JSON.stringify(result, null, 2));
-      } else if (options.listTools) {
-        const tools = await client.listTools();
-        for (const tool of tools) {
-          console.log(tool.description ? `${tool.name} — ${tool.description}` : tool.name);
-        }
+        return { result: await client.callTool(options.callTool, callArgs ?? {}) };
       }
+      if (options.listTools) {
+        return { tools: await client.listTools() };
+      }
+      return {};
     } finally {
       await client.close();
     }

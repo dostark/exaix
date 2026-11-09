@@ -13,11 +13,25 @@ import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/con
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
 import type { ConfigValue, IConfigOverrideEntry, ILockedKeyEntry } from "@exaix/core/config";
-import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
+import { CONFIG_PROFILE_KEY_PREFIX, type Opt, type Reason } from "@exaix/core/types";
 import { CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS, CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
-interface NestedConfigTree {
-  [key: string]: ConfigValue | NestedConfigTree;
+export interface INestedConfigTree {
+  [key: string]: ConfigValue | INestedConfigTree;
+}
+
+/** One overridden key with the source that set it. */
+export interface IConfigSourceRow {
+  key: string;
+  value: ConfigValue;
+  source: string;
+}
+
+/** One key whose current value differs from its default. */
+export interface IConfigDiffRow {
+  path: string;
+  default: string;
+  current: string;
 }
 
 function parseValue(input: string): ConfigValue {
@@ -98,21 +112,10 @@ export class ConfigCommands extends BaseCommand {
     return adapter.validate();
   }
 
-  async show(
-    format: ConfigOutputFormat = ConfigOutputFormat.HUMAN,
-    sources?: Opt<boolean, Reason.OptionalInput>,
-  ): Promise<string> {
+  /** The effective configuration as a nested tree. */
+  async show(): Promise<INestedConfigTree> {
     const adapter = await this.ensureAdapter();
-    if (sources) {
-      const overrides = adapter.listOverrides();
-      const lines = overrides.map((o) => {
-        const provenance = adapter.getProvenance(o.key);
-        return `${o.key} = ${o.value}  (source: ${provenance.source})`;
-      });
-      return lines.join("\n");
-    }
-
-    const effective: NestedConfigTree = {};
+    const effective: INestedConfigTree = {};
 
     for (const [key] of getRegisteredDefaults()) {
       const value = adapter.get(key);
@@ -123,27 +126,33 @@ export class ConfigCommands extends BaseCommand {
           if (!current[parts[i]] || typeof current[parts[i]] !== "object") {
             current[parts[i]] = {};
           }
-          current = current[parts[i]] as NestedConfigTree;
+          current = current[parts[i]] as INestedConfigTree;
         }
         current[parts[parts.length - 1]] = value;
       }
     }
 
-    if (format === ConfigOutputFormat.JSON) {
-      return JSON.stringify(effective, null, 2);
-    }
-
-    return formatTree(effective, 0);
+    return effective;
   }
 
-  async diff(): Promise<string> {
+  /** Every overridden key with its value and the source that set it. */
+  async showSources(): Promise<IConfigSourceRow[]> {
+    const adapter = await this.ensureAdapter();
+    return adapter.listOverrides().map((entry) => ({
+      key: entry.key,
+      value: entry.value,
+      source: adapter.getProvenance(entry.key).source,
+    }));
+  }
+
+  /** The keys whose current value differs from the default. */
+  async diff(): Promise<IConfigDiffRow[]> {
     const report = (await this.ensureAdapter()).diff();
-    if (report.overridden.length === 0) {
-      return "  No overridden keys.";
-    }
-    return report.overridden
-      .map((item) => `  ${item.path}: ${item.default} → ${item.current}`)
-      .join("\n");
+    return report.overridden.map((item) => ({
+      path: item.path,
+      default: String(item.default),
+      current: String(item.current),
+    }));
   }
 
   async setModel(name: string, model: string): Promise<void> {
@@ -291,13 +300,14 @@ export class ConfigCommands extends BaseCommand {
   }
 }
 
-function formatTree(obj: NestedConfigTree, depth: number): string {
+/** The nested tree as indented text. */
+export function formatTree(obj: INestedConfigTree, depth: number): string {
   const indent = "  ".repeat(depth);
   let result = "";
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === "object" && value !== null) {
       result += `${indent}${key}:\n`;
-      result += formatTree(value as NestedConfigTree, depth + 1);
+      result += formatTree(value as INestedConfigTree, depth + 1);
     } else {
       result += `${indent}${key}: ${value}\n`;
     }

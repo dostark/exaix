@@ -14,6 +14,27 @@ import { runExactlSequenceInTempWorkspace } from "./helpers/exactl_cli_process.t
 const USAGE_EXIT_CODE = 2;
 
 Deno.test({
+  name: "mcp tool list and mcp tool call print valid JSON with -o json",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const reference = await startReferenceServer();
+    try {
+      const [list, call] = await runExactlSequenceInTempWorkspace([
+        ["mcp", "tool", "list", "--server", reference.url.href, "-o", "json"],
+        ["mcp", "tool", "call", "echo", "--server", reference.url.href, "--args", '{"text":"hello"}', "-o", "json"],
+      ]);
+      assertEquals(list.code, 0, list.stderr);
+      assertEquals(JSON.parse(list.stdout).some((tool: { name: string }) => tool.name === "echo"), true);
+      assertEquals(call.code, 0, call.stderr);
+      assertStringIncludes(JSON.stringify(JSON.parse(call.stdout)), "echo: hello");
+    } finally {
+      await reference.stop();
+    }
+  },
+});
+
+Deno.test({
   name: "mcp tool list --server lists the remote tools",
   sanitizeOps: false,
   sanitizeResources: false,

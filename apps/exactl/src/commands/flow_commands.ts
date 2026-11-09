@@ -6,7 +6,7 @@
  * @related-files [packages/flow/mod.ts, "apps/daemon/main.ts"]
  */
 
-import { cellText, type ExaCtlOutputRenderer, toRow } from "../output/exactl_output.ts";
+import { cellText, ColumnHeader, type ExaCtlOutputRenderer, toRow } from "../output/exactl_output.ts";
 import type { IExaCtlColumn } from "@exaix/cli";
 import type { IJsonRow } from "../output/exactl_output.ts";
 import { Table } from "@cliffy/table";
@@ -35,7 +35,7 @@ interface FlowBindingsOptions {
 
 const FLOW_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: "ID", value: (row) => cellText(row.id) },
-  { header: "Name", value: (row) => cellText(row.name) },
+  { header: ColumnHeader.NAME, value: (row) => cellText(row.name) },
   { header: "Version", value: (row) => cellText(row.version) },
   { header: "Steps", value: (row) => String(row.steps) },
   { header: "Description", value: (row) => cellText(row.description) },

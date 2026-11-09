@@ -13,9 +13,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import {
   BlueprintStatus,
   FlowInputSource,
-  MemoryBankSource,
   MemoryOperation,
-  MemoryScope,
   PortalOperation,
   PortalStatus,
   RequestPriority,
@@ -24,20 +22,17 @@ import {
   type SkillStatus as _SkillStatus,
   VerificationStatus,
 } from "@exaix/core";
-import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core/status";
 import { PlanStatus } from "@exaix/core/status";
 import { RequestStatus } from "@exaix/core/status";
 import { ReviewStatus } from "@exaix/core/status";
 import { GitService } from "@exaix/git";
-import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import type { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
 import { createdFlowRequest, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
-import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
@@ -174,7 +169,7 @@ Deno.test("git log error exits with message", async () => {
       return Promise.reject(new Error("log failed"));
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse([PortalOperation.GIT, "log", "-t", "trace-1"]);
+      await mod.__test_command.parse([PortalOperation.GIT, "log", "--trace", "trace-1"]);
     });
     assert(errors.some((e: string) => e.includes("log failed")));
   });
@@ -672,222 +667,6 @@ Deno.test("git status prints changes when present", async () => {
       await mod.__test_command.parse([PortalOperation.GIT, "status"]);
     });
     assert(out.includes("feat/changes") || out.includes("git.status"));
-  });
-});
-
-// Memory Commands
-
-Deno.test("memory default action shows list", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.list = (format?: OutputFormat) => {
-      called = true;
-      assertEquals(format, "table");
-      return Promise.resolve("Memory list output");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory"]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Memory list output");
-  });
-});
-
-Deno.test("memory list with format option", async () => {
-  await withTestMod(async (mod, ctx) => {
-    ctx.memoryCommands.list = (format?: OutputFormat) => {
-      assertEquals(format, UIOutputFormat.JSON);
-      return Promise.resolve('{"data": []}');
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", "list", "--format", UIOutputFormat.JSON]);
-    });
-    assertStringIncludes(out, '{"data": []}');
-  });
-});
-
-Deno.test("memory search passes all options", async () => {
-  await withTestMod(async (mod, ctx) => {
-    ctx.memoryCommands.search = (
-      query: string,
-      opts?: { portal?: string; tags?: string[]; limit?: number; format?: OutputFormat; useEmbeddings?: boolean },
-    ) => {
-      assertEquals(query, "test query");
-      assertEquals(opts?.portal, "my-portal");
-      assertEquals(opts?.tags, ["tag1", "tag2"]);
-      assertEquals(opts?.limit, 10);
-      assertEquals(opts?.format, "md");
-      assertEquals(opts?.useEmbeddings, true);
-      return Promise.resolve("Search results");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([
-        "memory",
-        "search",
-        "test query",
-        "-p",
-        "my-portal",
-        "-t",
-        "tag1,tag2",
-        "-l",
-        "10",
-        "--format",
-        "md",
-        "-e",
-      ]);
-    });
-    assertStringIncludes(out, "Search results");
-  });
-});
-
-Deno.test("memory project default action lists projects", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.projectList = (_format?: OutputFormat) => {
-      called = true;
-      return Promise.resolve("Projects list");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryScope.PROJECT]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Projects list");
-  });
-});
-
-Deno.test("memory execution default action lists executions", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.executionList = (_opts?: { portal?: string; limit?: number; format?: OutputFormat }) => {
-      called = true;
-      return Promise.resolve("Executions list");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", MemoryBankSource.EXECUTION]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Executions list");
-  });
-});
-
-Deno.test("memory proposal default action lists proposals", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.pendingList = (_eligible?: boolean, _format?: OutputFormat) => {
-      called = true;
-      return Promise.resolve("Pending proposals");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Pending proposals");
-  });
-});
-
-Deno.test("memory proposal approve --all calls pendingApproveAll", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.pendingApproveAll = () => {
-      called = true;
-      return Promise.resolve("All approved");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--all"]);
-    });
-    assert(called);
-    assertStringIncludes(out, "All approved");
-  });
-});
-
-Deno.test("memory proposal list --eligible filters eligible proposals", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.pendingList = (eligible?: boolean, _format?: OutputFormat) => {
-      called = eligible === true;
-      return Promise.resolve("Eligible proposals");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "list", "--eligible"]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Eligible proposals");
-  });
-});
-
-Deno.test("memory proposal approve --dry-run previews auto-approvals", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.pendingApprove = (proposalId?: string, dryRun?: boolean) => {
-      called = dryRun === true && proposalId === undefined;
-      return Promise.resolve("Dry run preview");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--dry-run"]);
-    });
-    assert(called);
-    assertStringIncludes(out, "Dry run preview");
-  });
-});
-
-Deno.test("memory proposal approve with ids approves each id in order", async () => {
-  await withTestMod(async (mod, ctx) => {
-    const seen: string[] = [];
-    ctx.memoryCommands.pendingApprove = (proposalId?: string, _dryRun?: boolean) => {
-      seen.push(String(proposalId));
-      return Promise.resolve(`Proposal approved successfully. ID: ${proposalId}`);
-    };
-    await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "p-1", "p-2"]);
-    });
-    assertEquals(seen, ["p-1", "p-2"]);
-  });
-});
-
-Deno.test("memory proposal approve stops at the first failed id", async () => {
-  await withTestMod(async (mod, ctx) => {
-    const seen: string[] = [];
-    ctx.memoryCommands.pendingApprove = (proposalId?: string, _dryRun?: boolean) => {
-      seen.push(String(proposalId));
-      return Promise.resolve(
-        proposalId === "p-2" ? `Proposal not found: ${proposalId}` : "Proposal approved successfully.",
-      );
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "p-1", "p-2", "p-3"]);
-    });
-    assertEquals(seen, ["p-1", "p-2"]);
-    assertStringIncludes(out, "Proposal not found: p-2");
-  });
-});
-
-Deno.test("memory learning remove calls deleteLearning with the id and reason", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let received: [string, string | undefined] | undefined;
-    ctx.memoryCommands.deleteLearning = (learningId: string, reason?: string) => {
-      received = [learningId, reason];
-      return Promise.resolve("Learning deleted");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.LEARNING, "remove", "l-1", "--reason", "duplicate"]);
-    });
-    assertEquals(received, ["l-1", "duplicate"]);
-    assertStringIncludes(out, "Learning deleted");
-  });
-});
-
-Deno.test("memory index rebuild calls rebuildIndex with the embeddings option", async () => {
-  await withTestMod(async (mod, ctx) => {
-    let includeEmbeddings: boolean | undefined;
-    ctx.memoryCommands.rebuildIndex = (options?: { includeEmbeddings?: boolean }) => {
-      includeEmbeddings = options?.includeEmbeddings;
-      return Promise.resolve("Index rebuilt");
-    };
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.INDEX, "rebuild", "--include-embeddings"]);
-    });
-    assertEquals(includeEmbeddings, true);
-    assertStringIncludes(out, "Index rebuilt");
   });
 });
 

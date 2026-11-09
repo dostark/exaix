@@ -7,66 +7,55 @@
  * JSON format exports, and pattern/decision retrieval across different memory scopes.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertInstanceOf, assertRejects, assertStringIncludes } from "@std/assert";
 import { ExecutionStatus } from "@exaix/core";
-import { UIOutputFormat } from "@exaix/tui";
+import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
 import { createTestExecution, createTestProject } from "@exaix/testing";
 
 // Memory List Tests
 
-Deno.test("MemoryCommands: list returns summary with no data", async () => {
+Deno.test("MemoryCommands: getSummary returns an empty summary with no data", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.list(UIOutputFormat.TABLE);
+    const summary = await commands.getSummary();
 
-    assertStringIncludes(result, "Memory Banks Summary");
-    assertStringIncludes(result, "Projects:");
-    assertStringIncludes(result, "Executions:");
+    assertEquals(summary.projects, []);
+    assertEquals(summary.executions, 0);
+    assertEquals(summary.lastActivity, null);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: list returns summary with projects", async () => {
+Deno.test("MemoryCommands: getSummary lists the projects", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "TestProject");
 
-    const result = await commands.list(UIOutputFormat.TABLE);
+    const summary = await commands.getSummary();
 
-    assertStringIncludes(result, "Projects:    1");
-    assertStringIncludes(result, "TestProject");
+    assertEquals(summary.projects, ["TestProject"]);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: list --format json outputs valid JSON", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
-  try {
-    await createTestProject(memoryBank, "JsonProject");
-
-    const result = await commands.list(UIOutputFormat.JSON);
-    const parsed = JSON.parse(result);
-
-    assertEquals(Array.isArray(parsed.projects), true);
-    assertStringIncludes(parsed.projects.join(","), "JsonProject");
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("MemoryCommands: list --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: the summary renders as a table and as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "MdProject");
+    const summary = await commands.getSummary();
+    const formatter = new MemoryFormatter();
 
-    const result = await commands.list(UIOutputFormat.MARKDOWN);
-
-    assertStringIncludes(result, "# Memory Banks Summary");
-    assertStringIncludes(result, "| Metric | Value |");
-    assertStringIncludes(result, "- MdProject");
+    const table = formatter.formatListTable(summary);
+    assertStringIncludes(table, "Memory Banks Summary");
+    assertStringIncludes(table, "Projects:    1");
+    const markdown = formatter.formatListMarkdown(summary);
+    assertStringIncludes(markdown, "# Memory Banks Summary");
+    assertStringIncludes(markdown, "| Metric | Value |");
+    assertStringIncludes(markdown, "- MdProject");
   } finally {
     await cleanup();
   }
@@ -79,21 +68,19 @@ Deno.test("MemoryCommands: search finds patterns by name", async () => {
   try {
     await createTestProject(memoryBank, "SearchProject");
 
-    const result = await commands.search("Test IPattern");
+    const results = await commands.search("Test IPattern");
 
-    assertStringIncludes(result, "Test IPattern");
-    assertStringIncludes(result, "SearchProject");
+    assertEquals(results.some((result) => result.title.includes("Test IPattern")), true);
+    assertEquals(results.some((result) => result.portal === "SearchProject"), true);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: search returns no results message", async () => {
+Deno.test("MemoryCommands: search returns no results for an unknown query", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.search("nonexistent query 12345");
-
-    assertStringIncludes(result, "No results found");
+    assertEquals(await commands.search("nonexistent query 12345"), []);
   } finally {
     await cleanup();
   }
@@ -105,25 +92,10 @@ Deno.test("MemoryCommands: search --portal filters correctly", async () => {
     await createTestProject(memoryBank, "ProjectA");
     await createTestProject(memoryBank, "ProjectB");
 
-    // Search with portal filter
-    const result = await commands.search("IPattern", { portal: "ProjectA" });
+    const results = await commands.search("IPattern", { portal: "ProjectA" });
 
-    assertStringIncludes(result, "ProjectA");
-    // Should not contain ProjectB since we filtered by ProjectA
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("MemoryCommands: search --format json outputs valid JSON", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
-  try {
-    await createTestProject(memoryBank, "JsonSearchProject");
-
-    const result = await commands.search("IPattern", { format: UIOutputFormat.JSON });
-    const parsed = JSON.parse(result);
-
-    assertEquals(Array.isArray(parsed), true);
+    assertEquals(results.length > 0, true);
+    assertEquals(results.every((result) => result.portal === "ProjectA"), true);
   } finally {
     await cleanup();
   }
@@ -131,72 +103,53 @@ Deno.test("MemoryCommands: search --format json outputs valid JSON", async () =>
 
 // Project Commands Tests
 
-Deno.test("MemoryCommands: project list shows all projects", async () => {
+Deno.test("MemoryCommands: project list shows all projects with their counts", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "Alpha");
     await createTestProject(memoryBank, "Beta");
 
-    const result = await commands.projectList(UIOutputFormat.TABLE);
+    const projects = await commands.projectList();
 
-    assertStringIncludes(result, "Alpha");
-    assertStringIncludes(result, "Beta");
-    assertStringIncludes(result, "Patterns");
-    assertStringIncludes(result, "Decisions");
+    assertEquals(projects.map((project) => project.name), ["Alpha", "Beta"]);
+    assertEquals(typeof projects[0].patterns, "number");
+    assertEquals(typeof projects[0].decisions, "number");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: project list empty returns message", async () => {
+Deno.test("MemoryCommands: project list is empty with no projects", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.projectList(UIOutputFormat.TABLE);
-
-    assertStringIncludes(result, "No project memories found");
+    assertEquals(await commands.projectList(), []);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: project show displays details", async () => {
+Deno.test("MemoryCommands: project show returns the project memory", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "DetailProject");
 
-    const result = await commands.projectShow("DetailProject", UIOutputFormat.TABLE);
+    const project = await commands.projectShow("DetailProject");
 
-    assertStringIncludes(result, "DetailProject");
-    assertStringIncludes(result, "Overview");
-    assertStringIncludes(result, "Test IPattern");
-    assertStringIncludes(result, "Use TypeScript");
+    assertEquals(project.portal, "DetailProject");
+    assertEquals(project.patterns.some((pattern) => pattern.name.startsWith("Test IPattern")), true);
+    assertStringIncludes(new MemoryFormatter().formatProjectShowTable(project), "Overview");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: project show non-existent returns error", async () => {
+Deno.test("MemoryCommands: project show of an unknown portal fails with the not-found code", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.projectShow("NonExistent", UIOutputFormat.TABLE);
-
-    assertStringIncludes(result, "Error");
-    assertStringIncludes(result, "not found");
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("MemoryCommands: project show --format json outputs valid JSON", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
-  try {
-    await createTestProject(memoryBank, "JsonShowProject");
-
-    const result = await commands.projectShow("JsonShowProject", UIOutputFormat.JSON);
-    const parsed = JSON.parse(result);
-
-    assertEquals(parsed.portal, "JsonShowProject");
-    assertEquals(Array.isArray(parsed.patterns), true);
+    const error = await assertRejects(() => commands.projectShow("NonExistent"), ExaCtlError);
+    assertInstanceOf(error, ExaCtlError);
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(error.message, "not found");
   } finally {
     await cleanup();
   }
@@ -204,27 +157,24 @@ Deno.test("MemoryCommands: project show --format json outputs valid JSON", async
 
 // Execution Commands Tests
 
-Deno.test("MemoryCommands: execution list returns history", async () => {
+Deno.test("MemoryCommands: execution list returns the history", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestExecution(memoryBank, "11111111-1111-4111-8111-111111111111", "ExecProject");
 
-    const result = await commands.executionList({ format: UIOutputFormat.TABLE });
+    const executions = await commands.executionList();
 
-    assertStringIncludes(result, "Execution History");
-    assertStringIncludes(result, "11111111");
-    assertStringIncludes(result, ExecutionStatus.COMPLETED);
+    assertEquals(executions.map((execution) => execution.trace_id), ["11111111-1111-4111-8111-111111111111"]);
+    assertEquals(executions[0].status, ExecutionStatus.COMPLETED);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: execution list empty returns message", async () => {
+Deno.test("MemoryCommands: execution list is empty with no history", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.executionList({ format: UIOutputFormat.TABLE });
-
-    assertStringIncludes(result, "No execution history found");
+    assertEquals(await commands.executionList(), []);
   } finally {
     await cleanup();
   }
@@ -236,10 +186,9 @@ Deno.test("MemoryCommands: execution list --portal filters correctly", async () 
     await createTestExecution(memoryBank, "22222222-2222-4222-8222-222222222222", "FilterProjectA");
     await createTestExecution(memoryBank, "33333333-3333-4333-8333-333333333333", "FilterProjectB");
 
-    const result = await commands.executionList({ portal: "FilterProjectA", format: UIOutputFormat.TABLE });
+    const executions = await commands.executionList({ portal: "FilterProjectA" });
 
-    assertStringIncludes(result, "22222222");
-    // Execution for FilterProjectB should be filtered out
+    assertEquals(executions.map((execution) => execution.trace_id), ["22222222-2222-4222-8222-222222222222"]);
   } finally {
     await cleanup();
   }
@@ -252,70 +201,51 @@ Deno.test("MemoryCommands: execution list --limit works", async () => {
     await createTestExecution(memoryBank, "55555555-5555-4555-8555-555555555555", "LimitProject");
     await createTestExecution(memoryBank, "66666666-6666-4666-8666-666666666666", "LimitProject");
 
-    const result = await commands.executionList({ limit: 2, format: UIOutputFormat.TABLE });
-
-    assertStringIncludes(result, "Showing 2 execution(s)");
+    assertEquals((await commands.executionList({ limit: 2 })).length, 2);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: execution show displays details", async () => {
+Deno.test("MemoryCommands: execution show returns the details", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const traceId = "77777777-7777-4777-8777-777777777777";
     await createTestExecution(memoryBank, traceId, "ShowExecProject");
 
-    const result = await commands.executionShow(traceId, UIOutputFormat.TABLE);
+    const execution = await commands.executionShow(traceId);
 
-    assertStringIncludes(result, traceId);
-    assertStringIncludes(result, "ShowExecProject");
-    assertStringIncludes(result, ExecutionStatus.COMPLETED);
-    assertStringIncludes(result, "test-agent");
+    assertEquals(execution.trace_id, traceId);
+    assertEquals(execution.portal, "ShowExecProject");
+    assertEquals(execution.status, ExecutionStatus.COMPLETED);
+    assertEquals(execution.agent_role, "test-agent");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: execution show non-existent returns error", async () => {
+Deno.test("MemoryCommands: execution show of an unknown trace fails with the not-found code", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.executionShow("nonexistent-trace-id", UIOutputFormat.TABLE);
-
-    assertStringIncludes(result, "Error");
-    assertStringIncludes(result, "not found");
+    const error = await assertRejects(() => commands.executionShow("nonexistent-trace-id"), ExaCtlError);
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(error.message, "not found");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: execution show --format json outputs valid JSON", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
-  try {
-    const traceId = "88888888-8888-8888-8888-888888888888";
-    await createTestExecution(memoryBank, traceId, "JsonExecProject");
-
-    const result = await commands.executionShow(traceId, UIOutputFormat.JSON);
-    const parsed = JSON.parse(result);
-
-    assertEquals(parsed.trace_id, traceId);
-    assertEquals(parsed.status, ExecutionStatus.COMPLETED);
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("MemoryCommands: execution show --format md outputs markdown", async () => {
+Deno.test("MemoryFormatter: an execution renders as markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const traceId = "99999999-9999-4999-8999-999999999999";
     await createTestExecution(memoryBank, traceId, "MdExecProject");
 
-    const result = await commands.executionShow(traceId, UIOutputFormat.MARKDOWN);
+    const markdown = new MemoryFormatter().formatExecutionShowMarkdown(await commands.executionShow(traceId));
 
-    assertStringIncludes(result, "# Execution:");
-    assertStringIncludes(result, "## Details");
-    assertStringIncludes(result, "| Field | Value |");
+    assertStringIncludes(markdown, "# Execution:");
+    assertStringIncludes(markdown, "## Details");
+    assertStringIncludes(markdown, "| Field | Value |");
   } finally {
     await cleanup();
   }
@@ -329,9 +259,7 @@ Deno.test("MemoryCommands: rebuild-index completes successfully", async () => {
     await createTestProject(memoryBank, "IndexProject");
     await createTestExecution(memoryBank, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "IndexProject");
 
-    const result = await commands.rebuildIndex();
-
-    assertStringIncludes(result, "rebuilt successfully");
+    assertEquals((await commands.rebuildIndex()).embeddings, null);
   } finally {
     await cleanup();
   }

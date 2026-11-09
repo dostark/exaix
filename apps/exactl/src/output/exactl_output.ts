@@ -55,6 +55,9 @@ export enum ColumnHeader {
   SUMMARY = "Summary",
   ACTION = "Action",
   REVISION = "Revision",
+  NAME = "Name",
+  TITLE = "Title",
+  DESCRIPTION = "Description",
 }
 
 const MUTATION_COLUMNS: readonly IExaCtlColumn<IMutationResult>[] = [
@@ -80,7 +83,7 @@ const JSON_FLAG = "--json";
 const OUTPUT_FLAGS: ReadonlySet<string> = new Set(["-o", "--output"]);
 const OUTPUT_ATTACHED = /^(?:--output=|-o)/;
 const MACHINE_FORMATS: ReadonlySet<string> = new Set([ExaCtlOutputFormat.JSON, ExaCtlOutputFormat.JSONL]);
-const JSON_INDENT = 2;
+export const JSON_INDENT = 2;
 const LINE_END = "\n";
 const TAB = "\t";
 const ESC = String.fromCharCode(27);
@@ -255,6 +258,13 @@ export class ExaCtlOutputRenderer implements IExaCtlOutputRenderer {
   /** Writes one pre-formatted line of human text. The caller has already sanitized any untrusted part of it. */
   async text(line: string): Promise<void> {
     await this.sink.out(line + LINE_END);
+  }
+
+  /** Writes a formatter block for a human format: the markdown form for md, the table form otherwise. Machine and quiet output print nothing here. */
+  async block(table: () => string, markdown: () => string): Promise<void> {
+    if (this.machine || this.quiet) return;
+    const text = this.format === ExaCtlOutputFormat.MD ? markdown() : table();
+    await this.sink.out(stripTerminalControls(text) + LINE_END);
   }
 
   /** True when stdout carries JSON, so human messages must stay off it. */

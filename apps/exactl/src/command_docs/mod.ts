@@ -14,6 +14,11 @@ import { DAEMON_DOCS, DAEMON_NOUN_DOC } from "./daemon_docs.ts";
 import { APPROVAL_DOCS, APPROVAL_NOUN_DOC } from "./approval_docs.ts";
 import { BLUEPRINT_DOCS, BLUEPRINT_NOUN_DOC } from "./blueprint_docs.ts";
 import { FLOW_DOCS, FLOW_NOUN_DOC } from "./flow_docs.ts";
+import { CONFIG_DOCS, CONFIG_NOUN_DOC } from "./config_docs.ts";
+import { DASHBOARD_DOCS } from "./dashboard_docs.ts";
+import { GIT_DOCS, GIT_NOUN_DOC } from "./git_docs.ts";
+import { MCP_DOCS, MCP_NOUN_DOC } from "./mcp_docs.ts";
+import { MEMORY_DOCS, MEMORY_NOUN_DOC } from "./memory_docs.ts";
 import { PLAN_DOCS, PLAN_NOUN_DOC } from "./plan_docs.ts";
 import { PORTAL_DOCS, PORTAL_NOUN_DOC } from "./portal_docs.ts";
 import { REQUEST_DOCS, REQUEST_NOUN_DOC } from "./request_docs.ts";
@@ -30,6 +35,10 @@ export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   BLUEPRINT_NOUN_DOC,
   SKILL_NOUN_DOC,
   PORTAL_NOUN_DOC,
+  MEMORY_NOUN_DOC,
+  GIT_NOUN_DOC,
+  MCP_NOUN_DOC,
+  CONFIG_NOUN_DOC,
 ];
 
 export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
@@ -42,6 +51,11 @@ export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
   ...BLUEPRINT_DOCS,
   ...SKILL_DOCS,
   ...PORTAL_DOCS,
+  ...MEMORY_DOCS,
+  ...GIT_DOCS,
+  ...MCP_DOCS,
+  ...DASHBOARD_DOCS,
+  ...CONFIG_DOCS,
 ];
 
 const PATH_SEPARATOR = " ";

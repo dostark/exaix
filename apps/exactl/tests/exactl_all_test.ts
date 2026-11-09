@@ -263,7 +263,7 @@ Deno.test("git log prints commits when present", async () => {
     ctx.gitCommands.logByTraceId = (_t: string) =>
       Promise.resolve([{ sha: "deadbeef1234", message: "Fix", author: "me", date: new Date().toISOString() }]);
     const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse([PortalOperation.GIT, "log", "-t", "deadbeef"]);
+      await mod.__test_command.parse([PortalOperation.GIT, "log", "--trace", "deadbeef"]);
     });
     assert(out.includes("deadbeef") || out.includes("Fix"));
   });
@@ -276,7 +276,8 @@ Deno.test("git status prints clean state when empty arrays", async () => {
     const out = await captureConsoleOutput(async () => {
       await mod.__test_command.parse([PortalOperation.GIT, "status"]);
     });
-    assert(out.includes("main") && out.includes("clean") || out.includes("git.status"));
+    assertStringIncludes(out, "main");
+    assertStringIncludes(out, "Clean: yes");
   });
 });
 
@@ -635,10 +636,10 @@ Deno.test("plan revise passes comments to planCommands.revise", async () => {
 Deno.test("git log prints no commits when none found", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.gitCommands.logByTraceId = (_t: string) => Promise.resolve([]);
-    const outs = await captureAllOutputs(async () => {
-      await mod.__test_command.parse([PortalOperation.GIT, "log", "-t", "nope"]);
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
+      await mod.__test_command.parse([PortalOperation.GIT, "log", "--trace", "nope", "-o", "json"]);
     });
-    assert(outs.logs.some((l) => l.includes("No commits found") || l.includes("git.log")));
+    assertEquals(JSON.parse(out), []);
   });
 });
 

@@ -7,7 +7,7 @@
  */
 
 import { Command } from "@cliffy/command";
-import { type BlueprintStatus, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import type { BlueprintStatus } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IBlueprintValidationResult } from "@exaix/schemas/blueprint.ts";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
@@ -27,6 +27,7 @@ import {
   type IJsonRow,
   toRow,
 } from "../output/exactl_output.ts";
+import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
@@ -51,12 +52,7 @@ const BLUEPRINT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
 
 function createBlueprintCommand(runtime: IExaCtlRuntime) {
   const { blueprintCommands } = runtime;
-  function failed(action: string, error: Error): never {
-    runtime.display.error("cli.error", action, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    return Deno.exit(1);
-  }
+  const failed = (action: string, error: Error): never => failCommand(runtime.display, action, error);
   async function reportValidation(
     label: string,
     result: IBlueprintValidationResult,

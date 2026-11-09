@@ -21,7 +21,6 @@ import { z } from "zod";
 import { ExternalMcpClient, type IExternalMcpClient } from "@exaix/mcp";
 import { startAuthenticatedReferenceServer, WHOAMI_TOOL_IDENTITY } from "@exaix/mcp/testing";
 import { EXA_MCP_BEARER_TOKEN_ENV_VAR } from "../src/commands/constants.ts";
-import { captureConsoleOutput } from "./helpers/console_utils.ts";
 
 /** Real Streamable HTTP MCP server (official SDK), served on an ephemeral port. */
 function startReferenceServer(): { url: URL; stop: () => Promise<void> } {
@@ -134,30 +133,26 @@ Deno.test("McpCommands.start: throws on process failure", async () => {
   await cleanup();
 });
 
-Deno.test("McpCommands.connect: --list-tools prints the real server's tool names", async () => {
+Deno.test("McpCommands.connect: --list-tools returns the real server's tools", async () => {
   const { context, cleanup } = await createCliTestContext();
   const reference = startReferenceServer();
   const commands = new McpCommands(context);
   try {
-    const output = await captureConsoleOutput(async () => {
-      await commands.connect(reference.url.href, { listTools: true });
-    });
-    assertStringIncludes(output, "echo");
+    const { tools } = await commands.connect(reference.url.href, { listTools: true });
+    assertEquals(tools?.some((tool) => tool.name === "echo"), true);
   } finally {
     await reference.stop();
     await cleanup();
   }
 });
 
-Deno.test("McpCommands.connect: --call-tool invokes the tool and prints its result", async () => {
+Deno.test("McpCommands.connect: --call-tool invokes the tool and returns its result", async () => {
   const { context, cleanup } = await createCliTestContext();
   const reference = startReferenceServer();
   const commands = new McpCommands(context);
   try {
-    const output = await captureConsoleOutput(async () => {
-      await commands.connect(reference.url.href, { callTool: "echo", args: '{"text":"hello"}' });
-    });
-    assertStringIncludes(output, "echo: hello");
+    const { result } = await commands.connect(reference.url.href, { callTool: "echo", args: '{"text":"hello"}' });
+    assertStringIncludes(JSON.stringify(result), "echo: hello");
   } finally {
     await reference.stop();
     await cleanup();
@@ -212,10 +207,8 @@ Deno.test("McpCommands.connect: reads EXA_MCP_BEARER_TOKEN and passes it through
   const commands = new McpCommands(context);
   Deno.env.set(EXA_MCP_BEARER_TOKEN_ENV_VAR, token);
   try {
-    const output = await captureConsoleOutput(async () => {
-      await commands.connect(reference.url.href, { callTool: "whoami", args: "{}" });
-    });
-    assertStringIncludes(output, WHOAMI_TOOL_IDENTITY);
+    const { result } = await commands.connect(reference.url.href, { callTool: "whoami", args: "{}" });
+    assertStringIncludes(JSON.stringify(result), WHOAMI_TOOL_IDENTITY);
   } finally {
     Deno.env.delete(EXA_MCP_BEARER_TOKEN_ENV_VAR);
     await reference.stop();

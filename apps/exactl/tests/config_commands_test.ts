@@ -6,7 +6,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
-import { assertEquals, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { ConfigKeyLockedError, ConfigRateLimitedError, ConfigValidationError } from "@exaix/core/config";
 
@@ -138,21 +138,18 @@ Deno.test("[configuring-cli] get --profile returns the profile-scoped value, not
 
 // diff() returns a string (display convention, no console.log)
 
-Deno.test("[configuring-cli] diff() returns a formatted string of overridden keys", async () => {
+Deno.test("[configuring-cli] diff() returns one row per overridden key", async () => {
   await withProfileCommands(async (commands) => {
     await commands.set("ai.timeout_ms", "99999");
-    const out = await commands.diff();
-    assertEquals(typeof out, "string");
-    assertStringIncludes(out, "ai.timeout_ms");
-    assertStringIncludes(out, "99999");
+    const rows = await commands.diff();
+    const row = rows.find((candidate) => candidate.path === "ai.timeout_ms");
+    assertEquals(row?.current, "99999");
   });
 });
 
-Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing is overridden", async () => {
+Deno.test("[configuring-cli] diff() returns no rows when nothing is overridden", async () => {
   await withProfileCommands(async (commands) => {
-    const out = await commands.diff();
-    assertEquals(typeof out, "string");
-    assertStringIncludes(out.toLowerCase(), "no overridden");
+    assertEquals(await commands.diff(), []);
   });
 });
 

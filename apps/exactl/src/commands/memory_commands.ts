@@ -24,7 +24,16 @@ import { type MemoryBankSource, MemoryScope, MemoryType, SkillDiagnosticSeverity
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest, ISkillsService, Opt, Reason } from "@exaix/core/types";
-import type { ILearning, IMemorySearchResult, ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+import type {
+  IExecutionMemory,
+  ILearning,
+  IMemorySearchResult,
+  IMemoryUpdateProposal,
+  IProjectMemory,
+  ISkill,
+  ISkillMatch,
+} from "@exaix/schemas/memory_bank.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
 import {
   type ISkillRevisionRow,
@@ -40,6 +49,7 @@ import type {
   ISkillShowResult,
   ISkillValidateResult,
 } from "./skill_results.ts";
+import type { IIndexRebuildResult, IProjectListRow, IProposalApproval } from "./memory_results.ts";
 
 const CLI_AGENT_ROLE = "cli";
 
@@ -85,22 +95,6 @@ export class MemoryCommands extends BaseCommand {
       case UIOutputFormat.TABLE:
       default:
         return tableFn(data);
-    }
-  }
-
-  // Memory List Command
-
-  async list(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
-    const summary = await this.getSummary();
-
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(summary, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatListMarkdown(summary);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatListTable(summary);
     }
   }
 
@@ -163,58 +157,42 @@ export class MemoryCommands extends BaseCommand {
       portal?: string;
       tags?: string[];
       limit?: number;
-      format?: OutputFormat;
       useEmbeddings?: boolean;
     }, Reason.QueryFilter>,
-  ): Promise<string> {
-    const format = options?.format || MEMORY_COMMAND_DEFAULTS.FORMAT;
+  ): Promise<IMemorySearchResult[]> {
     const limit = options?.limit || MEMORY_COMMAND_DEFAULTS.LIMIT;
-
-    let results: IMemorySearchResult[];
 
     // Use advanced search if tags are specified
     if (options?.tags && options.tags.length > 0) {
-      results = await this.memoryBank.searchMemoryAdvanced({
+      return await this.memoryBank.searchMemoryAdvanced({
         tags: options.tags,
         keyword: query,
         portal: options.portal,
         limit,
       });
-    } else if (options?.useEmbeddings) {
-      // Use embedding-based search
+    }
+    if (options?.useEmbeddings) {
       const embeddingResults = await this.embedding.searchByEmbedding(query, {
         limit,
       });
-      results = embeddingResults.map((r) => ({
+      return embeddingResults.map((r) => ({
         type: MemoryType.LEARNING,
         title: r.title,
         summary: r.summary,
         relevance_score: r.similarity,
         id: r.id,
       }));
-    } else {
-      // Use standard search
-      results = await this.memoryBank.searchMemory(query, {
-        portal: options?.portal,
-        limit,
-      });
     }
-
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(results, null, 2);
-      case "md":
-        return this.formatter.formatSearchMarkdown(query, results);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatSearchTable(query, results);
-    }
+    return await this.memoryBank.searchMemory(query, {
+      portal: options?.portal,
+      limit,
+    });
   }
 
   // Project Commands
 
-  async projectList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
-    const projects: { name: string; patterns: number; decisions: number }[] = [];
+  async projectList(): Promise<IProjectListRow[]> {
+    const projects: IProjectListRow[] = [];
 
     const projectsDir = pathBuilders.memoryProjectsPath(join(this.config.system.root, this.config.paths.memory));
     if (await exists(projectsDir)) {
@@ -232,35 +210,17 @@ export class MemoryCommands extends BaseCommand {
       }
     }
 
-    projects.sort((a, b) => a.name.localeCompare(b.name));
-
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(projects, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatProjectListMarkdown(projects);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatProjectListTable(projects);
-    }
+    return projects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async projectShow(portal: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
+  async projectShow(portal: string): Promise<IProjectMemory> {
     const projectMem = await this.memoryBank.getProjectMemory(portal);
 
     if (!projectMem) {
-      return `Error: Project memory not found for portal "${portal}"`;
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Project memory not found for portal "${portal}"`);
     }
 
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(projectMem, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatProjectShowMarkdown(projectMem);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatProjectShowTable(projectMem);
-    }
+    return projectMem;
   }
 
   // Execution Commands
@@ -269,44 +229,22 @@ export class MemoryCommands extends BaseCommand {
     options?: Opt<{
       portal?: string;
       limit?: number;
-      format?: OutputFormat;
     }, Reason.OptionalInput>,
-  ): Promise<string> {
-    const format = options?.format || MEMORY_COMMAND_DEFAULTS.FORMAT;
-    const limit = options?.limit || MEMORY_COMMAND_DEFAULTS.LIMIT;
-
-    const executions = await this.memoryBank.getExecutionHistory(
+  ): Promise<IExecutionMemory[]> {
+    return await this.memoryBank.getExecutionHistory(
       options?.portal,
-      limit,
+      options?.limit || MEMORY_COMMAND_DEFAULTS.LIMIT,
     );
-
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(executions, null, 2);
-      case "md":
-        return this.formatter.formatExecutionListMarkdown(executions);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatExecutionListTable(executions);
-    }
   }
 
-  async executionShow(traceId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
+  async executionShow(traceId: string): Promise<IExecutionMemory> {
     const execution = await this.memoryBank.getExecutionByTraceId(traceId);
 
     if (!execution) {
-      return `Error: Execution not found for trace ID "${traceId}"`;
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Execution not found for trace ID "${traceId}"`);
     }
 
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(execution, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatExecutionShowMarkdown(execution);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatExecutionShowTable(execution);
-    }
+    return execution;
   }
 
   // Global Memory Commands
@@ -394,138 +332,71 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  async deleteLearning(learningId: string, reason?: Opt<string, Reason.OptionalInput>): Promise<string> {
-    try {
-      await this.memoryBank.deleteLearning(learningId, reason);
-      return `ILearning deleted successfully.\nID: ${learningId}`;
-    } catch (error) {
-      return `Error: ${(error as Error).message}`;
-    }
+  async deleteLearning(learningId: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
+    await this.memoryBank.deleteLearning(learningId, reason);
   }
 
   // Pending Proposals Commands
 
-  async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
-    const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
-
-    if (proposals.length === 0) {
-      return eligible ? "No eligible proposals for auto-approval." : "No pending proposals.";
-    }
-
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(proposals, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatPendingListMarkdown(proposals);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatPendingListTable(proposals);
-    }
+  async pendingList(eligible = false): Promise<IMemoryUpdateProposal[]> {
+    return eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
   }
 
-  async pendingShow(proposalId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
+  async pendingShow(proposalId: string): Promise<IMemoryUpdateProposal> {
     const proposal = await this.extractor.getPending(proposalId);
 
     if (!proposal) {
-      return `Proposal not found: ${proposalId}`;
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Proposal not found: ${proposalId}`);
     }
 
-    switch (format) {
-      case UIOutputFormat.JSON:
-        return JSON.stringify(proposal, null, 2);
-      case UIOutputFormat.MARKDOWN:
-        return this.formatter.formatPendingShowMarkdown(proposal);
-      case UIOutputFormat.TABLE:
-      default:
-        return this.formatter.formatPendingShowTable(proposal);
-    }
+    return proposal;
   }
 
-  async pendingApprove(
-    proposalId?: Opt<string, Reason.OptionalInput>,
-    dryRun = false,
-  ): Promise<string> {
-    if (dryRun) {
-      if (proposalId) {
-        return "Error: --dry-run is only supported without a proposal ID. Use `exactl memory proposal approve --dry-run`.";
-      }
-      return this.pendingApproveDryRun();
-    }
-
-    if (!proposalId) {
-      return "Error: proposal ID is required unless --dry-run is used.";
-    }
-
-    try {
-      const proposal = await this.extractor.getPending(proposalId);
-      if (!proposal) {
-        return `Proposal not found: ${proposalId}`;
-      }
-
-      await this.extractor.approvePending(proposalId);
-      return `Proposal approved successfully.\nID: ${proposalId}\nTitle: ${proposal.learning.title}\nMerged to: ${
-        proposal.target_project || MemoryScope.GLOBAL
-      }`;
-    } catch (error) {
-      return `Error: ${(error as Error).message}`;
-    }
+  async pendingApprove(proposalId: string): Promise<IProposalApproval> {
+    const proposal = await this.pendingShow(proposalId);
+    await this.extractor.approvePending(proposalId);
+    return {
+      id: proposalId,
+      title: proposal.learning.title,
+      mergedTo: proposal.target_project || MemoryScope.GLOBAL,
+    };
   }
 
-  private async pendingApproveDryRun(): Promise<string> {
-    const eligible = await this.autoApprovalService.listEligible();
-    if (eligible.length === 0) {
-      return "No proposals are currently eligible for auto-approval.";
-    }
-
-    return this.formatter.formatPendingDryRunTable(eligible);
+  /** The proposals that the auto-approval rules would approve now. It changes nothing. */
+  async pendingApproveDryRun(): Promise<IMemoryUpdateProposal[]> {
+    return await this.autoApprovalService.listEligible();
   }
 
-  async pendingReject(proposalId: string, reason: string): Promise<string> {
-    try {
-      const proposal = await this.extractor.getPending(proposalId);
-      if (!proposal) {
-        return `Proposal not found: ${proposalId}`;
-      }
-
-      await this.extractor.rejectPending(proposalId, reason);
-      return `Proposal rejected.\nID: ${proposalId}\nReason: ${reason}`;
-    } catch (error) {
-      return `Error: ${(error as Error).message}`;
-    }
+  async pendingReject(proposalId: string, reason: string): Promise<void> {
+    await this.pendingShow(proposalId);
+    await this.extractor.rejectPending(proposalId, reason);
   }
 
-  async pendingApproveAll(): Promise<string> {
-    try {
-      const count = await this.extractor.approveAll();
-      if (count === 0) {
-        return "No pending proposals to approve.";
+  /** Approves every pending proposal and skips the ones that fail. It returns the approvals. */
+  async pendingApproveAll(): Promise<IProposalApproval[]> {
+    const approvals: IProposalApproval[] = [];
+    for (const proposal of await this.extractor.listPending()) {
+      try {
+        approvals.push(await this.pendingApprove(proposal.id || ""));
+      } catch {
+        // A failed approval is skipped and the others continue.
       }
-      return `Approved ${count} proposal(s).`;
-    } catch (error) {
-      return `Error: ${(error as Error).message}`;
     }
+    return approvals;
   }
 
   // Rebuild Index Command
 
   async rebuildIndex(
     options?: Opt<{ includeEmbeddings?: boolean }, Reason.OptionalInput>,
-  ): Promise<string> {
-    const messages: string[] = [];
-
+  ): Promise<IIndexRebuildResult> {
     if (options?.includeEmbeddings) {
-      // Rebuild with embeddings
       await this.memoryBank.rebuildIndicesWithEmbeddings(this.embedding);
       const stats = await this.embedding.getStats();
-      messages.push("Memory bank indices rebuilt successfully.");
-      messages.push(`Embeddings regenerated: ${stats.total} learnings embedded.`);
-    } else {
-      // Standard rebuild
-      await this.memoryBank.rebuildIndices();
-      messages.push("Memory bank indices rebuilt successfully.");
+      return { embeddings: stats.total };
     }
-
-    return messages.join("\n");
+    await this.memoryBank.rebuildIndices();
+    return { embeddings: null };
   }
 
   // Skills Commands

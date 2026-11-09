@@ -7,7 +7,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { ConfigOutputFormat, ConfigValueType } from "@exaix/core/types";
+import { ConfigValueType } from "@exaix/core/types";
 import { configurable, createConfigAdapter, insertOverride } from "@exaix/core/config";
 import {
   createMockConfig,
@@ -88,13 +88,12 @@ Deno.test("[configuring] end-to-end: validate returns OK for valid config", asyn
   }
 });
 
-Deno.test("[configuring] end-to-end: show --json outputs valid JSON", async () => {
+Deno.test("[configuring] end-to-end: show returns the effective tree", async () => {
   const { commands, cleanup } = setupTest();
   try {
-    const output = await commands.show(ConfigOutputFormat.JSON);
-    const parsed = JSON.parse(output);
+    const parsed = await commands.show();
     assertEquals(typeof parsed, "object");
-    assertEquals(parsed.cli_test?.greeting, "hello");
+    assertEquals((parsed.cli_test as { greeting?: string } | undefined)?.greeting, "hello");
   } finally {
     cleanup();
   }

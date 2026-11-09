@@ -17,14 +17,26 @@ import { EXACTL_COMMAND_DOCS } from "../src/command_docs/mod.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
 
-const MUTATION_NOUNS = ["request", "plan", "review", "approval", "flow", "blueprint", "portal", "skill"];
+const MUTATION_NOUNS = [
+  "request",
+  "plan",
+  "review",
+  "approval",
+  "flow",
+  "blueprint",
+  "portal",
+  "skill",
+  "memory",
+  "config",
+  "git",
+];
 const WAIT_REF = "wait:tok-1";
 const WAIT_STATUS = "fulfilled";
 
 interface IMutationCase {
   readonly args: readonly string[];
   readonly stub: (ctx: ExaCtlTestContext) => void;
-  readonly expected: { readonly [key: string]: string };
+  readonly expected: { readonly [key: string]: string | number | null };
 }
 
 type WaitDecision = Awaited<ReturnType<ExaCtlTestContext["waitStateCommands"]["approve"]>>;
@@ -67,7 +79,80 @@ function blueprintCreated(): ReturnType<ExaCtlTestContext["blueprintCommands"]["
   });
 }
 
+const CONFIG_KEY = "ai.timeout_ms";
+
 const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>([
+  ["memory learning remove", {
+    args: ["memory", "learning", "remove", "l-1", "--reason", "duplicate"],
+    stub: (ctx) => void (ctx.memoryCommands.deleteLearning = resolved),
+    expected: { id: "l-1", action: "remove", status: "deleted" },
+  }],
+  ["memory index rebuild", {
+    args: ["memory", "index", "rebuild"],
+    stub: (ctx) => void (ctx.memoryCommands.rebuildIndex = () => Promise.resolve({ embeddings: null })),
+    expected: { id: "memory-index", action: "rebuild", status: "rebuilt", embeddings: null },
+  }],
+  ["memory proposal approve", {
+    args: ["memory", "proposal", "approve", "p-1"],
+    stub: (ctx) =>
+      void (ctx.memoryCommands.pendingApprove = (id) => Promise.resolve({ id, title: "T", mergedTo: "global" })),
+    expected: { id: "p-1", action: "approve", status: "approved", title: "T", mergedTo: "global" },
+  }],
+  ["memory proposal reject", {
+    args: ["memory", "proposal", "reject", "p-1", "--reason", "No"],
+    stub: (ctx) => void (ctx.memoryCommands.pendingReject = resolved),
+    expected: { id: "p-1", action: "reject", status: "rejected", reason: "No" },
+  }],
+  ["config set", {
+    args: ["config", "set", CONFIG_KEY, "5"],
+    stub: (ctx) => void (ctx.configCommands.set = resolved),
+    expected: { id: CONFIG_KEY, action: "set", status: "set", value: "5" },
+  }],
+  ["config unset", {
+    args: ["config", "unset", CONFIG_KEY],
+    stub: (ctx) => void (ctx.configCommands.unset = resolved),
+    expected: { id: CONFIG_KEY, action: "unset", status: "unset" },
+  }],
+  ["config rollback", {
+    args: ["config", "rollback", CONFIG_KEY, "3"],
+    stub: (ctx) => void (ctx.configCommands.rollback = () => Promise.resolve(7)),
+    expected: { id: CONFIG_KEY, action: "rollback", status: "rolled_back", toId: 3, restoredValue: 7 },
+  }],
+  ["config edit", {
+    args: ["config", "edit"],
+    stub: (ctx) => void (ctx.configCommands.edit = resolved),
+    expected: { id: "config", action: "edit", status: "applied" },
+  }],
+  ["config compact", {
+    args: ["config", "compact"],
+    stub: (ctx) => void (ctx.configCommands.compact = () => Promise.resolve(2)),
+    expected: { id: "config", action: "compact", status: "compacted", removed: 2 },
+  }],
+  ["config block add", {
+    args: ["config", "block", "add", "system.*", "--reason", "Fixed"],
+    stub: (ctx) => void (ctx.configCommands.blockAdd = resolved),
+    expected: { id: "system.*", action: "add", status: "blocked" },
+  }],
+  ["config block remove", {
+    args: ["config", "block", "remove", "system.*"],
+    stub: (ctx) => void (ctx.configCommands.blockRemove = resolved),
+    expected: { id: "system.*", action: "remove", status: "removed" },
+  }],
+  ["config lock add", {
+    args: ["config", "lock", "add", CONFIG_KEY, "--reason", "Tuned"],
+    stub: (ctx) => void (ctx.configCommands.lock = resolved),
+    expected: { id: CONFIG_KEY, action: "add", status: "locked" },
+  }],
+  ["config lock remove", {
+    args: ["config", "lock", "remove", CONFIG_KEY],
+    stub: (ctx) => void (ctx.configCommands.unlock = resolved),
+    expected: { id: CONFIG_KEY, action: "remove", status: "unlocked" },
+  }],
+  ["config profile use", {
+    args: ["config", "profile", "use", "fast"],
+    stub: (ctx) => void (ctx.configCommands.useProfile = resolved),
+    expected: { id: "fast", action: "use", status: "active" },
+  }],
   ["blueprint create", {
     args: ["blueprint", "create", "a-1", "--name", "A", "--model", "mock:test"],
     stub: (ctx) => void (ctx.blueprintCommands.create = blueprintCreated),
@@ -210,6 +295,10 @@ const ENTITY_LEAVES: ReadonlyMap<string, string> = new Map([
   ["request create", "request_actions_test.ts and exactl_all_test.ts (create prints the created request with --json)"],
   ["request clarify", "request_actions_test.ts (clarify prints the clarification result with --json)"],
   ["flow run", "mutation_json_output_test.ts (flow run prints the created request with --json)"],
+  [
+    "git worktree prune",
+    "output_contract_operations_a_test.ts (git worktree prune prints a mutation result with -o json)",
+  ],
 ]);
 
 const mutationLeaves = EXACTL_COMMAND_DOCS

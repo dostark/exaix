@@ -7,410 +7,299 @@
  */
 
 import { Command } from "@cliffy/command";
-import { ConfigOutputFormat, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { readGlobalOptions } from "../output/exactl_output.ts";
-import {
-  CLI_CMD_LIST,
-  CONFIG_DIFF_LABEL,
-  CONFIG_LABEL,
-  CONFIG_VALIDATE_ACTION,
-  ExaCtlSubNoun,
-  ExaCtlVerb,
-} from "../exactl_constants.ts";
+import { formatTree } from "../commands/config_commands.ts";
+import { actionOutput, cellText, ColumnHeader, type IJsonRow, toRow } from "../output/exactl_output.ts";
+import { ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
+
+const PATH_ARGUMENT = "<path>";
+const PATTERN_ARGUMENT = "<pattern>";
+const CONFIG_ID = "config";
+const PROFILE_OPTION = "--profile <name:string>";
+const REASON_OPTION = "--reason <text:string>";
+
+const HISTORY_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.ID, value: (row) => String(row.id) },
+  { header: "Value", value: (row) => cellText(row.value) },
+  { header: "Source", value: (row) => cellText(row.source) },
+  { header: ColumnHeader.CREATED, value: (row) => cellText(row.created_at) },
+];
+
+const BLOCK_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Pattern", value: (row) => cellText(row.pattern) },
+  { header: "Reason", value: (row) => cellText(row.reason) },
+  { header: ColumnHeader.CREATED, value: (row) => cellText(row.created_at) },
+];
+
+const LOCK_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Key", value: (row) => cellText(row.key) },
+  { header: "Locked by", value: (row) => cellText(row.locked_by) },
+  { header: "Reason", value: (row) => cellText(row.reason) },
+];
+
+const DIFF_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Path", value: (row) => cellText(row.path) },
+  { header: "Default", value: (row) => cellText(row.default) },
+  { header: "Current", value: (row) => cellText(row.current) },
+];
+
+const SOURCE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Key", value: (row) => cellText(row.key) },
+  { header: "Value", value: (row) => cellText(row.value) },
+  { header: "Source", value: (row) => cellText(row.source) },
+];
+
+const PROFILE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Profile", value: (row) => cellText(row.name) },
+];
+
+const ISSUE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Path", value: (row) => cellText(row.path) },
+  { header: "Code", value: (row) => cellText(row.code) },
+  { header: "Message", value: (row) => cellText(row.message) },
+];
 
 function createConfigCommand(runtime: IExaCtlRuntime) {
-  const command = new Command()
-    .description("View and modify Exaix configuration");
-  for (
-    const [name, child] of [
-      ...addConfigCommands1(runtime),
-      ...addConfigCommands2(runtime),
-      ...addConfigCommands3(runtime),
-      ...addConfigCommands4(runtime),
-      ...addConfigCommands5(runtime),
-      ...addConfigCommands6(runtime),
-    ]
-  ) command.command(name, child);
-  command.command(ExaCtlSubNoun.LOCK, createLockCommand(runtime));
-  command.command(ExaCtlSubNoun.PROFILE, createProfileCommand(runtime));
-  return command;
-}
-
-function addConfigCommands1(runtime: IExaCtlRuntime) {
   const { display, configCommands } = runtime;
-  return [
-    [
-      "get <path>",
-      new Command()
-        .description("Print effective value at path")
-        .option("--profile <name:string>", "Target a named profile (reads profile.<name>.<path>)")
-        .action(async (options, ...args: string[]) => {
-          try {
-            const value = await configCommands.get(args[0], options.profile);
-            display.info("config.get", args[0], { value: String(value), profile: options.profile });
-          } catch (error) {
-            display.error("cli.error", "config get", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "set <path> <value>",
-      new Command()
-        .description("Set value, validate, write, reload")
-        .option("--profile <name:string>", "Target a named profile (writes profile.<name>.<path>)")
-        .action(async (options, ...args: string[]) => {
-          try {
-            await configCommands.set(args[0], args[1], options.profile);
-            display.info("config.set", args[0], { value: args[1], profile: options.profile });
-          } catch (error) {
-            display.error("cli.error", "config set", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "unset <path>",
-      new Command()
-        .description("Reset key to default")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            await configCommands.unset(args[0]);
-            display.info("config.unset", args[0], {});
-          } catch (error) {
-            display.error("cli.error", "config unset", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
+  const noun = nounDocFor(ExaCtlCommandName.CONFIG);
 
-function addConfigCommands2(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return [
-    [
-      "history <path>",
-      new Command()
-        .description("Show the append-only override history for a key (newest first)")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            const rows = await configCommands.history(args[0]);
-            for (const row of rows) {
-              display.info("config.history.entry", args[0], {
-                id: row.id,
-                value: row.value,
-                source: row.source,
-                created_at: row.created_at,
-              });
-            }
-            display.info("config.history", args[0], { count: rows.length });
-          } catch (error) {
-            display.error("cli.error", "config history", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "rollback <path> <id>",
-      new Command()
-        .description("Revert a key to the value at a history id (appends a rollback row)")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            const id = Number(args[1]);
-            const restored = await configCommands.rollback(args[0], id);
-            display.info("config.rollback", args[0], { to_id: id, restored_value: restored });
-          } catch (error) {
-            display.error("cli.error", "config rollback", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
+  /** Runs one action. A failure prints its message and ends the process with exit code 1. */
+  const guarded = <T extends object | void>(
+    action: string,
+    textFormat: ExaCtlOutputFormat,
+    work: (output: ReturnType<typeof actionOutput>, options: T, ...args: string[]) => Promise<void>,
+  ) =>
+  async (options: T, ...args: string[]): Promise<void> => {
+    try {
+      await work(actionOutput(runtime, options, textFormat), options, ...args);
+    } catch (error) {
+      display.error("cli.error", action, {
+        message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+      });
+      Deno.exit(1);
+    }
+  };
 
-function addConfigCommands3(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return [
-    [
-      "edit",
-      new Command()
-        .description("Edit config overrides in $EDITOR (changes applied through the set() funnel)")
-        .action(async () => {
-          try {
-            await configCommands.edit();
-            display.info("config.edit", CONFIG_LABEL, { applied: true });
-          } catch (error) {
-            display.error("cli.error", "config edit", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
+  const get = new Command()
+    .option(PROFILE_OPTION, "Target a named profile (reads profile.<name>.<path>)")
+    .action(
+      guarded("config get", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
+        const value = await configCommands.get(args[0], options.profile);
+        if (renderer.machine) {
+          await renderer.item(toRow({ path: args[0], value, profile: options.profile ?? null }), []);
+        } else await renderer.text(String(value));
+      }),
+    );
+  const set = new Command()
+    .option(PROFILE_OPTION, "Target a named profile (writes profile.<name>.<path>)")
+    .action(
+      guarded("config set", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
+        await configCommands.set(args[0], args[1], options.profile);
+        display.info("cli.config.set", args[0], { value: args[1], profile: options.profile });
+        await renderer.mutation(
+          [{ id: args[0], action: ExaCtlVerb.SET, status: MutationStatus.SET, value: args[1] }],
+          false,
+        );
+      }),
+    );
+  const unset = new Command().action(
+    guarded("config unset", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+      await configCommands.unset(args[0]);
+      display.info("cli.config.unset", args[0], {});
+      await renderer.mutation([{ id: args[0], action: ExaCtlVerb.UNSET, status: MutationStatus.UNSET }], false);
+    }),
+  );
+  const history = new Command().action(
+    guarded("config history", ExaCtlOutputFormat.TABLE, async ({ renderer }, _options: void, ...args) => {
+      const rows = await configCommands.history(args[0]);
+      await renderer.list(rows.map(toRow), HISTORY_COLUMNS, (row) => String(row.id));
+    }),
+  );
+  const rollback = new Command().action(
+    guarded("config rollback", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+      const id = Number(args[1]);
+      const restored = await configCommands.rollback(args[0], id);
+      display.info("cli.config.rollback", args[0], { to_id: id, restored_value: restored });
+      await renderer.mutation(
+        [{
+          id: args[0],
+          action: ExaCtlVerb.ROLLBACK,
+          status: MutationStatus.ROLLED_BACK,
+          toId: id,
+          restoredValue: restored,
+        }],
+        false,
+      );
+    }),
+  );
+  const edit = new Command().action(guarded("config edit", ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+    await configCommands.edit();
+    display.info("cli.config.edit", CONFIG_ID, { applied: true });
+    await renderer.mutation([{ id: CONFIG_ID, action: ExaCtlVerb.EDIT, status: MutationStatus.APPLIED }], false);
+  }));
+  const compact = new Command().action(guarded("config compact", ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+    const removed = await configCommands.compact();
+    display.info("cli.config.compact", CONFIG_ID, { removed });
+    await renderer.mutation(
+      [{ id: CONFIG_ID, action: ExaCtlVerb.COMPACT, status: MutationStatus.COMPACTED, removed }],
+      false,
+    );
+  }));
+  const validateAction = guarded(
+    "config validate",
+    ExaCtlOutputFormat.TEXT,
+    async ({ renderer }, _options: void, ...args) => {
+      const path: Opt<string, Reason.OptionalInput> = args[0];
+      const report = await configCommands.validate(path);
+      if (renderer.machine) {
+        await renderer.item(toRow({ valid: report.valid, issues: report.issues.map(toRow) }), []);
+      } else if (report.valid) {
+        display.info("cli.config.validate", CONFIG_ID, { valid: true });
+      } else {
+        await renderer.list(report.issues.map(toRow), ISSUE_COLUMNS, (row) => cellText(row.path));
+      }
+    },
+  );
+  const validate = new Command()
+    .arguments("[path:string]")
+    .action((options, path?: Opt<string, Reason.OptionalInput>) =>
+      validateAction(options, ...(path === undefined ? [] : [path]))
+    );
+  const show = new Command()
+    .option("--sources", "Include provenance source for each key")
+    .action(guarded("config show", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { sources?: boolean }) => {
+      if (options.sources) {
+        const rows = await configCommands.showSources();
+        await renderer.list(rows.map(toRow), SOURCE_COLUMNS, (row) => cellText(row.key));
+        return;
+      }
+      const effective = await configCommands.show();
+      if (renderer.machine) await renderer.item(toRow(effective), []);
+      else await renderer.text(formatTree(effective, 0).trimEnd());
+    }));
+  const diff = new Command().action(guarded("config diff", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+    const rows = await configCommands.diff();
+    await renderer.list(rows.map(toRow), DIFF_COLUMNS, (row) => cellText(row.path));
+  }));
 
-function addConfigCommands4(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return [
-    [
-      "block",
-      new Command()
-        .description("Manage the MCP config-write deny-permanently blocklist")
-        .command(
-          "add <pattern>",
-          new Command()
-            .description("Block a config path pattern from MCP writes (glob: system.*)")
-            .option("--reason <text:string>", "Optional admin note for the block")
-            .action(async (options, ...args: string[]) => {
-              try {
-                await configCommands.blockAdd(args[0], options.reason);
-                display.info("config.block.add", args[0], { reason: options.reason });
-              } catch (error) {
-                display.error("cli.error", "config block add", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        )
-        .command(
-          "remove <pattern>",
-          new Command()
-            .description("Remove a blocklist pattern")
-            .action(async (_options, ...args: string[]) => {
-              try {
-                await configCommands.blockRemove(args[0]);
-                display.info("config.block.remove", args[0], {});
-              } catch (error) {
-                display.error("cli.error", "config block remove", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        )
-        .command(
-          CLI_CMD_LIST,
-          new Command()
-            .description("List all blocklist patterns")
-            .action(async () => {
-              try {
-                const blocks = await configCommands.blockList();
-                for (const b of blocks) {
-                  console.log(`${b.pattern}${b.reason ? `  (${b.reason})` : ""}`);
-                }
-                display.info("config.block.list", CONFIG_LABEL, { count: blocks.length });
-              } catch (error) {
-                display.error("cli.error", "config block list", {
-                  message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                });
-                Deno.exit(1);
-              }
-            }),
-        ),
-    ],
-  ] as const;
-}
-
-function addConfigCommands5(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return [
-    [
-      "compact",
-      new Command()
-        .description("Compact config_overrides to one row per key (recovers DB headroom)")
-        .action(async () => {
-          try {
-            const removed = await configCommands.compact();
-            display.info("config.compact", CONFIG_LABEL, { removed });
-          } catch (error) {
-            display.error("cli.error", "config compact", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "validate",
-      new Command()
-        .description("Validate entire config or specific path")
-        .arguments("[path:string]")
-        .action(async (_options, path?: Opt<string, Reason.OptionalInput>) => {
-          try {
-            const report = await configCommands.validate(path);
-            if (report.valid) {
-              display.info(CONFIG_VALIDATE_ACTION, CONFIG_LABEL, { valid: true });
-            } else {
-              for (const issue of report.issues) {
-                display.warn(CONFIG_VALIDATE_ACTION, issue.path, { message: issue.message, code: issue.code });
-              }
-            }
-          } catch (error) {
-            display.error("cli.error", "config validate", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-    [
-      "show",
-      new Command()
-        .description("Show effective config")
-        .option("--sources", "Include provenance source for each key")
-        .action(async (options) => {
-          try {
-            const format = readGlobalOptions(options).json === true
-              ? ConfigOutputFormat.JSON
-              : ConfigOutputFormat.HUMAN;
-            const output = await configCommands.show(format, options.sources);
-            console.log(output);
-          } catch (error) {
-            display.error("cli.error", "config show", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
-
-function addConfigCommands6(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return [
-    [
-      CONFIG_DIFF_LABEL,
-      new Command()
-        .description("Show uncommitted config changes")
-        .action(async () => {
-          try {
-            console.log(await configCommands.diff());
-          } catch (error) {
-            display.error("cli.error", "config diff", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
-    ],
-  ] as const;
-}
-
-function createLockCommand(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return new Command()
-    .description("Lock config keys against all writes (CLI, MCP and daemon)")
+  const block = new Command()
+    .description("Manage the MCP config-write deny-permanently blocklist")
     .command(
-      `${ExaCtlVerb.ADD} <path>`,
+      `${ExaCtlVerb.ADD} ${PATTERN_ARGUMENT}`,
       new Command()
-        .description("Lock a config key against all writes (CLI/MCP/daemon)")
-        .option("--reason <text:string>", "Optional note for the lock")
-        .action(async (options, ...args: string[]) => {
-          try {
-            await configCommands.lock(args[0], options.reason);
-            display.info("config.lock", args[0], { reason: options.reason });
-          } catch (error) {
-            display.error("cli.error", "config lock add", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+        .option(REASON_OPTION, "Optional admin note for the block")
+        .action(
+          guarded(
+            "config block add",
+            ExaCtlOutputFormat.TEXT,
+            async ({ renderer }, options: { reason?: string }, ...args) => {
+              await configCommands.blockAdd(args[0], options.reason);
+              display.info("cli.config.block.add", args[0], { reason: options.reason });
+              await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.BLOCKED }], false);
+            },
+          ),
+        ),
     )
     .command(
-      `${ExaCtlVerb.REMOVE} <path>`,
-      new Command()
-        .description("Unlock a previously locked config key")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            await configCommands.unlock(args[0]);
-            display.info("config.unlock", args[0], {});
-          } catch (error) {
-            display.error("cli.error", "config lock remove", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
+      `${ExaCtlVerb.REMOVE} ${PATTERN_ARGUMENT}`,
+      new Command().action(
+        guarded("config block remove", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+          await configCommands.blockRemove(args[0]);
+          display.info("cli.config.block.remove", args[0], {});
+          await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
         }),
+      ),
     )
     .command(
       ExaCtlVerb.LIST,
-      new Command()
-        .description("List all locked config keys")
-        .action(async () => {
-          try {
-            const locks = await configCommands.listLocks();
-            for (const l of locks) {
-              display.info("config.lock.entry", l.key, { locked_by: l.locked_by, reason: l.reason });
-            }
-            display.info("config.lock.list", CONFIG_LABEL, { count: locks.length });
-          } catch (error) {
-            display.error("cli.error", "config lock list", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+      new Command().action(guarded("config block list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+        const blocks = await configCommands.blockList();
+        await renderer.list(blocks.map(toRow), BLOCK_COLUMNS, (row) => cellText(row.pattern));
+      })),
     );
-}
 
-function createProfileCommand(runtime: IExaCtlRuntime) {
-  const { display, configCommands } = runtime;
-  return new Command()
+  const lock = new Command()
+    .description("Lock config keys against all writes (CLI, MCP and daemon)")
+    .command(
+      `${ExaCtlVerb.ADD} ${PATH_ARGUMENT}`,
+      new Command()
+        .option(REASON_OPTION, "Optional note for the lock")
+        .action(
+          guarded(
+            "config lock add",
+            ExaCtlOutputFormat.TEXT,
+            async ({ renderer }, options: { reason?: string }, ...args) => {
+              await configCommands.lock(args[0], options.reason);
+              display.info("cli.config.lock", args[0], { reason: options.reason });
+              await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.LOCKED }], false);
+            },
+          ),
+        ),
+    )
+    .command(
+      `${ExaCtlVerb.REMOVE} ${PATH_ARGUMENT}`,
+      new Command().action(
+        guarded("config lock remove", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+          await configCommands.unlock(args[0]);
+          display.info("cli.config.unlock", args[0], {});
+          await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.UNLOCKED }], false);
+        }),
+      ),
+    )
+    .command(
+      ExaCtlVerb.LIST,
+      new Command().action(guarded("config lock list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+        const locks = await configCommands.listLocks();
+        await renderer.list(locks.map(toRow), LOCK_COLUMNS, (row) => cellText(row.key));
+      })),
+    );
+
+  const profile = new Command()
     .description("Manage configuration profiles")
     .command(
       `${ExaCtlVerb.USE} <name:string>`,
-      new Command()
-        .description("Set active profile")
-        .action(async (_options, ...args: string[]) => {
-          try {
-            await configCommands.useProfile(args[0]);
-            display.info("config.use-profile", args[0], {});
-          } catch (error) {
-            display.error("cli.error", "config profile use", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
+      new Command().action(
+        guarded("config profile use", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+          await configCommands.useProfile(args[0]);
+          display.info("cli.config.use-profile", args[0], {});
+          await renderer.mutation([{ id: args[0], action: ExaCtlVerb.USE, status: MutationStatus.ACTIVE }], false);
         }),
+      ),
     )
     .command(
       ExaCtlVerb.LIST,
-      new Command()
-        .description("List all profiles")
-        .action(async () => {
-          try {
-            const profiles = await configCommands.listProfiles();
-            for (const p of profiles) {
-              console.log(`  ${p}`);
-            }
-            if (profiles.length === 0) {
-              console.log("  No profiles configured.");
-            }
-          } catch (error) {
-            display.error("cli.error", "config profile list", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+      new Command().action(guarded("config profile list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+        const profiles = await configCommands.listProfiles();
+        await renderer.list(profiles.map((name) => toRow({ name })), PROFILE_COLUMNS, (row) => cellText(row.name));
+      })),
     );
+
+  const command = documentedNoun(new Command(), noun)
+    .command(`${ExaCtlVerb.GET} ${PATH_ARGUMENT}`, get)
+    .command(`${ExaCtlVerb.SET} ${PATH_ARGUMENT} <value>`, set)
+    .command(`${ExaCtlVerb.UNSET} ${PATH_ARGUMENT}`, unset)
+    .command(`${ExaCtlVerb.HISTORY} ${PATH_ARGUMENT}`, history)
+    .command(`${ExaCtlVerb.ROLLBACK} ${PATH_ARGUMENT} <id>`, rollback)
+    .command(ExaCtlVerb.EDIT, edit)
+    .command(ExaCtlSubNoun.BLOCK, block)
+    .command(ExaCtlVerb.COMPACT, compact)
+    .command(ExaCtlVerb.VALIDATE, validate)
+    .command(ExaCtlVerb.SHOW, show)
+    .command(ExaCtlVerb.DIFF, diff)
+    .command(ExaCtlSubNoun.LOCK, lock)
+    .command(ExaCtlSubNoun.PROFILE, profile);
+  const name = ExaCtlCommandName.CONFIG;
+  documentLeaves(command, [name], noun.lifecycle);
+  documentLeaves(block, [name, ExaCtlSubNoun.BLOCK], noun.lifecycle);
+  documentLeaves(lock, [name, ExaCtlSubNoun.LOCK], noun.lifecycle);
+  documentLeaves(profile, [name, ExaCtlSubNoun.PROFILE], noun.lifecycle);
+  return command;
 }
 
 export function buildConfigCommand(runtime: IExaCtlRuntime): ReturnType<typeof createConfigCommand> {

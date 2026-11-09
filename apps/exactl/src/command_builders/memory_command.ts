@@ -7,280 +7,314 @@
  */
 
 import { Command } from "@cliffy/command";
-import { MemoryScope, RequestOperation } from "@exaix/core";
+import { MemoryScope } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
-import { selectBulkTargets } from "./bulk_targets.ts";
+import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
+import { selectBulkTargets } from "./bulk_targets.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
   CLI_LIMIT_HELP,
   CLI_LIMIT_OPTION,
-  CLI_OPTION_PORTAL,
+  CLI_OPTION_PORTAL_LONG,
   CLI_OPTION_REASON,
-  CLI_OUTPUT_FORMAT_DEFAULT,
-  CLI_OUTPUT_FORMAT_HELP,
-  CLI_OUTPUT_FORMAT_OPTION,
+  COMMA_SEPARATOR,
+  ExaCtlCommandName,
   ExaCtlSubNoun,
   ExaCtlVerb,
+  MutationStatus,
 } from "../exactl_constants.ts";
+import {
+  actionOutput,
+  cellText,
+  ColumnHeader,
+  type IJsonRow,
+  toRow,
+  TRACE_PREFIX_CHARS,
+} from "../output/exactl_output.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
 
-/** Result text that starts a failed approval. MemoryCommands reports a failure as text, not as an error. */
-const FAILED_APPROVAL_PREFIXES: readonly string[] = ["Error:", "Proposal not found:"];
+const DEFAULT_LIST_LIMIT = 20;
+const INDEX_ID = "memory-index";
+const PROPOSAL_NOUN = "proposal";
+const DRY_RUN_USAGE = "--dry-run takes no proposal id. Use it alone.";
+const TITLE_MAX_CHARS = 60;
 
-interface IExecutionListOptions {
-  portal?: Opt<string, Reason.OptionalInput>;
-  limit?: Opt<number, Reason.OptionalInput>;
-  format?: Opt<string, Reason.OptionalInput>;
-}
+const SEARCH_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.TYPE, value: (row) => cellText(row.type) },
+  { header: ColumnHeader.PORTAL, value: (row) => cellText(row.portal) },
+  { header: ColumnHeader.TITLE, value: (row) => cellText(row.title) },
+  { header: "Score", value: (row) => typeof row.relevance_score === "number" ? row.relevance_score.toFixed(2) : "-" },
+];
 
-interface IPendingListOptions {
-  eligible?: Opt<boolean, Reason.OptionalInput>;
-  format?: Opt<string, Reason.OptionalInput>;
+const PROJECT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.NAME, value: (row) => cellText(row.name) },
+  { header: "Patterns", value: (row) => String(row.patterns) },
+  { header: "Decisions", value: (row) => String(row.decisions) },
+];
+
+const EXECUTION_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.TRACE, value: (row) => cellText(row.trace_id).slice(0, TRACE_PREFIX_CHARS) },
+  { header: ColumnHeader.STATUS, value: (row) => cellText(row.status) },
+  { header: ColumnHeader.PORTAL, value: (row) => cellText(row.portal) },
+  { header: ColumnHeader.AGENT, value: (row) => cellText(row.agent_role) },
+  { header: "Started", value: (row) => cellText(row.started_at) },
+];
+
+const PROPOSAL_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.ID, value: (row) => cellText(row.id) },
+  { header: ColumnHeader.TITLE, value: (row) => cellText(row.title).slice(0, TITLE_MAX_CHARS) },
+  { header: "Category", value: (row) => cellText(row.category) },
+  { header: "Scope", value: (row) => cellText(row.scope) },
+];
+
+function splitTags(tags: Opt<string, Reason.OptionalInput>): string[] | undefined {
+  return tags ? tags.split(COMMA_SEPARATOR).map((tag) => tag.trim()) : undefined;
 }
 
 function createMemoryCommand(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  const command = new Command()
-    .description("Manage Memory Banks (project memory, execution history, search)")
-    .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+  const { memoryCommands, display } = runtime;
+  const formatter = new MemoryFormatter();
+  const noun = nounDocFor(ExaCtlCommandName.MEMORY);
+
+  const listCommand = new Command().action(async (options) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+    const summary = await memoryCommands.getSummary();
+    if (renderer.machine) await renderer.item(toRow(summary), []);
+    else await renderer.block(() => formatter.formatListTable(summary), () => formatter.formatListMarkdown(summary));
+  });
+
+  const searchCommand = new Command()
+    .option(CLI_OPTION_PORTAL_LONG, "Filter by portal")
+    .option("--tags <tags:string>", "Filter by tags (comma-separated)")
+    .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: DEFAULT_LIST_LIMIT })
+    .option("--use-embeddings", "Use embedding-based semantic search")
+    .action(async (options, ...args: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+      const results = await memoryCommands.search(args[0], {
+        portal: options.portal,
+        tags: splitTags(options.tags),
+        limit: options.limit,
+        useEmbeddings: options.useEmbeddings,
+      });
+      await renderer.list(results.map(toRow), SEARCH_COLUMNS, (row) => cellText(row.id ?? row.title));
+    });
+
+  const projectCommand = new Command()
+    .description("Project memory operations")
+    .command(
+      ExaCtlVerb.LIST,
+      new Command().action(async (options) => {
+        const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+        const projects = await memoryCommands.projectList();
+        await renderer.list(projects.map(toRow), PROJECT_COLUMNS, (row) => cellText(row.name));
+      }),
+    )
+    .command(
+      `${ExaCtlVerb.SHOW} <portal:string>`,
+      new Command().action(async (options, ...args: string[]) => {
+        const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+        const project = await memoryCommands.projectShow(args[0]);
+        if (renderer.machine) await renderer.item(toRow(project), []);
+        else {
+          await renderer.block(
+            () => formatter.formatProjectShowTable(project),
+            () => formatter.formatProjectShowMarkdown(project),
+          );
+        }
+      }),
+    );
+
+  const listExecutions = new Command()
+    .option(CLI_OPTION_PORTAL_LONG, "Filter by portal")
+    .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: DEFAULT_LIST_LIMIT })
     .action(async (options) => {
-      // Default action: show summary
-      const result = await memoryCommands.list(options.format as OutputFormat);
-      console.log(result);
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+      const executions = await memoryCommands.executionList({ portal: options.portal, limit: options.limit });
+      await renderer.list(executions.map(toRow), EXECUTION_COLUMNS, (row) => cellText(row.trace_id));
     });
-  for (
-    const [name, child] of [
-      ...addMemoryCommands1(runtime),
-      ...addMemoryCommands2(runtime),
-      ...addMemoryCommands4(runtime),
-    ]
-  ) command.command(name, child);
-  command.command(ExaCtlSubNoun.LEARNING, createLearningCommand(runtime));
-  command.command(ExaCtlSubNoun.INDEX, createIndexCommand(runtime));
-  return command;
-}
+  const executionCommand = new Command()
+    .description("Execution history operations")
+    .command(ExaCtlVerb.LIST, listExecutions)
+    .command(
+      `${ExaCtlVerb.SHOW} <trace-id:string>`,
+      new Command().action(async (options, ...args: string[]) => {
+        const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+        const execution = await memoryCommands.executionShow(args[0]);
+        if (renderer.machine) await renderer.item(toRow(execution), []);
+        else {
+          await renderer.block(
+            () => formatter.formatExecutionShowTable(execution),
+            () => formatter.formatExecutionShowMarkdown(execution),
+          );
+        }
+      }),
+    );
 
-function addMemoryCommands1(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  return [
-    [
-      RequestOperation.LIST,
-      new Command()
-        .description("List all memory banks with summary")
-        .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-        .action(async (options) => {
-          const result = await memoryCommands.list(options.format as OutputFormat);
-          console.log(result);
-        }),
-    ],
-    [
-      "search <query:string>",
-      new Command()
-        .description("Search across all memory banks")
-        .option(CLI_OPTION_PORTAL, "Filter by portal")
-        .option("-t, --tags <tags:string>", "Filter by tags (comma-separated)")
-        .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
-        .option("-e, --use-embeddings", "Use embedding-based semantic search")
-        .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-        .action(async (options, ...args: string[]) => {
-          const query = args[0];
-          const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
-          const result = await memoryCommands.search(query, {
-            portal: options.portal,
-            tags,
-            limit: options.limit,
-            format: options.format as OutputFormat,
-            useEmbeddings: options.useEmbeddings,
-          });
-          console.log(result);
-        }),
-    ],
-    [
-      MemoryScope.PROJECT,
-      new Command()
-        .description("Project memory operations")
-        .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-        .action(async (options) => {
-          // Default: list projects
-          const result = await memoryCommands.projectList(options.format as OutputFormat);
-          console.log(result);
-        })
-        .command(
-          RequestOperation.LIST,
-          new Command()
-            .description("List all project memories")
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(async (options) => {
-              const result = await memoryCommands.projectList(options.format as OutputFormat);
-              console.log(result);
-            }),
-        )
-        .command(
-          "show <portal:string>",
-          new Command()
-            .description("Show details of a specific project memory")
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(async (options, ...args: string[]) => {
-              const portal = args[0];
-              const result = await memoryCommands.projectShow(portal, options.format as OutputFormat);
-              console.log(result);
-            }),
-        ),
-    ],
-  ] as const;
-}
-
-function addMemoryCommands2(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  const listExecutions = async (options: IExecutionListOptions): Promise<void> => {
-    const result = await memoryCommands.executionList({
-      portal: options.portal,
-      limit: options.limit,
-      format: options.format as OutputFormat,
-    });
-    console.log(result);
-  };
-  return [
-    [
-      "execution",
-      new Command()
-        .description("Execution history operations")
-        .option(CLI_OPTION_PORTAL, "Filter by portal")
-        .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
-        .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-        .action(listExecutions)
-        .command(
-          RequestOperation.LIST,
-          new Command()
-            .description("List execution history")
-            .option(CLI_OPTION_PORTAL, "Filter by portal")
-            .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(listExecutions),
-        )
-        .command(
-          "show <traceId:string>",
-          new Command()
-            .description("Show details of a specific execution")
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(async (options, ...args: string[]) => {
-              const traceId = args[0];
-              const result = await memoryCommands.executionShow(traceId, options.format as OutputFormat);
-              console.log(result);
-            }),
-        ),
-    ],
-  ] as const;
-}
-
-function createLearningCommand(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  return new Command()
+  const learningCommand = new Command()
     .description("Manage global learnings")
     .command(
-      `${ExaCtlVerb.REMOVE} <learningId:string>`,
+      `${ExaCtlVerb.REMOVE} <learning-id:string>`,
       new Command()
-        .description("Soft-delete a global learning (status → deleted, retained for audit)")
         .option(CLI_OPTION_REASON, "Deletion reason")
         .action(async (options, ...args: string[]) => {
-          const learningId = args[0];
-          const result = await memoryCommands.deleteLearning(learningId, options.reason);
-          console.log(result);
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          await memoryCommands.deleteLearning(args[0], options.reason);
+          display.info("cli.memory.learning.removed", args[0], { status: MutationStatus.DELETED });
+          await renderer.mutation(
+            [{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.DELETED }],
+            false,
+          );
         }),
     );
-}
 
-function createIndexCommand(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  return new Command()
+  const indexCommand = new Command()
     .description("Manage memory bank search indices")
     .command(
       ExaCtlVerb.REBUILD,
       new Command()
-        .description("Rebuild memory bank search indices")
-        .option("-e, --include-embeddings", "Regenerate embedding vectors for all learnings")
+        .option("--include-embeddings", "Regenerate embedding vectors for all learnings")
         .action(async (options) => {
-          const result = await memoryCommands.rebuildIndex({
-            includeEmbeddings: options.includeEmbeddings,
-          });
-          console.log(result);
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          const result = await memoryCommands.rebuildIndex({ includeEmbeddings: options.includeEmbeddings });
+          display.info("cli.memory.index.rebuilt", INDEX_ID, { embeddings: result.embeddings ?? 0 });
+          await renderer.mutation(
+            [{
+              id: INDEX_ID,
+              action: ExaCtlVerb.REBUILD,
+              status: MutationStatus.REBUILT,
+              embeddings: result.embeddings,
+            }],
+            false,
+          );
         }),
     );
+
+  const proposalCommand = createProposalCommand(runtime, formatter);
+
+  const command = documentedNoun(new Command(), noun)
+    .command(ExaCtlVerb.LIST, listCommand)
+    .command(`${ExaCtlVerb.SEARCH} <query:string>`, searchCommand)
+    .command(ExaCtlSubNoun.PROJECT, projectCommand)
+    .command(ExaCtlSubNoun.EXECUTION, executionCommand)
+    .command(ExaCtlSubNoun.LEARNING, learningCommand)
+    .command(ExaCtlSubNoun.INDEX, indexCommand)
+    .command(ExaCtlSubNoun.PROPOSAL, proposalCommand);
+  const name = ExaCtlCommandName.MEMORY;
+  documentLeaves(command, [name], noun.lifecycle);
+  for (
+    const [subNoun, child] of [
+      [ExaCtlSubNoun.PROJECT, projectCommand],
+      [ExaCtlSubNoun.EXECUTION, executionCommand],
+      [ExaCtlSubNoun.LEARNING, learningCommand],
+      [ExaCtlSubNoun.INDEX, indexCommand],
+      [ExaCtlSubNoun.PROPOSAL, proposalCommand],
+    ] as const
+  ) documentLeaves(child, [name, subNoun], noun.lifecycle);
+  return command;
 }
 
-function addMemoryCommands4(runtime: IExaCtlRuntime) {
-  const { memoryCommands } = runtime;
-  const listPending = async (options: IPendingListOptions): Promise<void> => {
-    const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
-    console.log(result);
-  };
-  return [
-    [
-      ExaCtlSubNoun.PROPOSAL,
+function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatter) {
+  const { memoryCommands, display } = runtime;
+  const proposalRows = (proposals: Awaited<ReturnType<typeof memoryCommands.pendingList>>): IJsonRow[] =>
+    proposals.map((proposal) =>
+      toRow({
+        ...proposal,
+        title: proposal.learning.title,
+        category: proposal.learning.category,
+        scope: proposal.target_project || MemoryScope.GLOBAL,
+      })
+    );
+  return new Command()
+    .description("Manage pending memory update proposals")
+    .command(
+      ExaCtlVerb.LIST,
       new Command()
-        .description("Manage pending memory update proposals")
-        .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
         .option("--eligible", "Show only auto-approval eligible pending proposals")
-        .action(listPending)
-        .command(
-          RequestOperation.LIST,
-          new Command()
-            .description("List all pending proposals")
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .option("--eligible", "Show only auto-approval eligible pending proposals")
-            .action(listPending),
-        )
-        .command(
-          "show <proposalId:string>",
-          new Command()
-            .description("Show details of a pending proposal")
-            .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-            .action(async (options, ...args: string[]) => {
-              const proposalId = args[0];
-              const result = await memoryCommands.pendingShow(proposalId, options.format as OutputFormat);
-              console.log(result);
-            }),
-        )
-        .command(
-          "approve [proposalIds...:string]",
-          new Command()
-            .description("Approve pending proposals or preview auto-approvals")
-            .option("--all", "Approve every pending proposal")
-            .option("--dry-run", "Preview auto-approvable proposals without changing state")
-            .action(async (options, ...ids: string[]) => {
-              if (options.dryRun) {
-                if (ids.length > 0 || options.all) {
-                  throw new ExaCtlError(ExaCtlExitCode.USAGE, "--dry-run takes no proposal id. Use it alone.");
-                }
-                console.log(await memoryCommands.pendingApprove(undefined, true));
-                return;
+        .action(async (options) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+          const proposals = await memoryCommands.pendingList(options.eligible === true);
+          await renderer.list(proposalRows(proposals), PROPOSAL_COLUMNS, (row) => cellText(row.id));
+        }),
+    )
+    .command(
+      `${ExaCtlVerb.SHOW} <proposal-id:string>`,
+      new Command().action(async (options, ...args: string[]) => {
+        const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+        const proposal = await memoryCommands.pendingShow(args[0]);
+        if (renderer.machine) await renderer.item(toRow(proposal), []);
+        else {
+          await renderer.block(
+            () => formatter.formatPendingShowTable(proposal),
+            () => formatter.formatPendingShowMarkdown(proposal),
+          );
+        }
+      }),
+    )
+    .command(
+      `${ExaCtlVerb.APPROVE} [proposal-ids...:string]`,
+      new Command()
+        .option("--all", "Approve every pending proposal")
+        .option("--dry-run", "Preview auto-approvable proposals without changing state")
+        .action(async (options, ...ids: string[]) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
+          if (options.dryRun) {
+            if (ids.length > 0 || options.all) throw new ExaCtlError(ExaCtlExitCode.USAGE, DRY_RUN_USAGE);
+            const eligible = await memoryCommands.pendingApproveDryRun();
+            await renderer.list(proposalRows(eligible), PROPOSAL_COLUMNS, (row) => cellText(row.id));
+            return;
+          }
+          const targets = selectBulkTargets(ids, options.all === true, PROPOSAL_NOUN);
+          const approvals = targets.all ? await memoryCommands.pendingApproveAll() : [];
+          let failure: Error | undefined;
+          if (!targets.all) {
+            for (const proposalId of targets.ids) {
+              try {
+                approvals.push(await memoryCommands.pendingApprove(proposalId));
+              } catch (error) {
+                failure = error as Error;
+                break;
               }
-              const targets = selectBulkTargets(ids, options.all === true, "proposal");
-              if (targets.all) {
-                console.log(await memoryCommands.pendingApproveAll());
-                return;
-              }
-              for (const proposalId of targets.ids) {
-                const result = await memoryCommands.pendingApprove(proposalId, false);
-                console.log(result);
-                if (FAILED_APPROVAL_PREFIXES.some((prefix) => result.startsWith(prefix))) break;
-              }
-            }),
-        )
-        .command(
-          "reject <proposalId:string>",
-          new Command()
-            .description("Reject a pending proposal")
-            .option(CLI_OPTION_REASON, "Rejection reason", { required: true })
-            .action(async (options, ...args: string[]) => {
-              const proposalId = args[0];
-              const result = await memoryCommands.pendingReject(proposalId, options.reason);
-              console.log(result);
-            }),
-        ),
-    ],
-  ] as const;
+            }
+          }
+          for (const approval of approvals) {
+            display.info("cli.memory.proposal.approved", approval.id, {
+              title: approval.title,
+              merged_to: approval.mergedTo,
+            });
+          }
+          if (approvals.length > 0) {
+            await renderer.mutation(
+              approvals.map((approval) => ({
+                id: approval.id,
+                action: ExaCtlVerb.APPROVE,
+                status: MutationStatus.APPROVED,
+                title: approval.title,
+                mergedTo: approval.mergedTo,
+              })),
+              targets.all || approvals.length > 1,
+            );
+          }
+          if (failure !== undefined) throw failure;
+        }),
+    )
+    .command(
+      `${ExaCtlVerb.REJECT} <proposal-id:string>`,
+      new Command()
+        .option(CLI_OPTION_REASON, "Rejection reason", { required: true })
+        .action(async (options, ...args: string[]) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          await memoryCommands.pendingReject(args[0], options.reason);
+          display.info("cli.memory.proposal.rejected", args[0], { reason: options.reason });
+          await renderer.mutation(
+            [{ id: args[0], action: ExaCtlVerb.REJECT, status: MutationStatus.REJECTED, reason: options.reason }],
+            false,
+          );
+        }),
+    );
 }
 
 export function buildMemoryCommand(runtime: IExaCtlRuntime): ReturnType<typeof createMemoryCommand> {

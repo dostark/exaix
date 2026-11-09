@@ -167,6 +167,7 @@ export function __test_getContext(): {
   toolCommands: typeof toolCommands;
   dashboardCommands: typeof dashboardCommands;
   memoryCommands: typeof memoryCommands;
+  configCommands: typeof configCommands;
   watchCommand: typeof watchCommandInstance;
   waitStateCommands: typeof waitStateCommands;
   evalCommands: typeof evalCommands;
@@ -191,6 +192,7 @@ export function __test_getContext(): {
     toolCommands,
     dashboardCommands,
     memoryCommands,
+    configCommands,
     watchCommand: watchCommandInstance,
     waitStateCommands,
     evalCommands,

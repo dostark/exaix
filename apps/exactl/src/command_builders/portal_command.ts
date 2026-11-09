@@ -7,18 +7,14 @@
  */
 
 import { Command } from "@cliffy/command";
-import {
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  type PortalAnalysisMode,
-  PortalExecutionStrategy,
-  PortalStatus,
-} from "@exaix/core";
+import { type PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, Opt, Reason } from "@exaix/core/types";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { actionOutput, cellText, ColumnHeader, type IJsonRow, toRow } from "../output/exactl_output.ts";
+import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
@@ -80,12 +76,7 @@ function parseExecutionStrategy(strategy: Opt<string, Reason.OptionalInput>): Po
 
 function createPortalCommand(runtime: IExaCtlRuntime) {
   const { display, portalCommands } = runtime;
-  function failed(action: string, error: Error): never {
-    display.error("cli.error", action, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    return Deno.exit(1);
-  }
+  const failed = (action: string, error: Error): never => failCommand(display, action, error);
   const listCommand = new Command().action(async (options) => {
     const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
     try {

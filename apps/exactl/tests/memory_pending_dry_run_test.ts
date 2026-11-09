@@ -6,41 +6,47 @@
  * @description Tests memory proposal dry-run behavior for the CLI proposal approve flow.
  */
 import "./helpers/set_test_mode.ts";
-import { assert, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ExaCtlSubNoun } from "../src/exactl_constants.ts";
-import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
-import { captureConsoleOutput, withTestMod } from "./helpers/test_utils.ts";
+import { withCapturedSink } from "./helpers/captured_output.ts";
+import { withTestMod } from "./helpers/test_utils.ts";
 
 Deno.test("memory proposal list --eligible routes to pendingList with eligible flag", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.memoryCommands.pendingList = (eligible?: boolean, _format?: OutputFormat) => {
+    ctx.memoryCommands.pendingList = (eligible?: boolean) => {
       called = eligible === true;
-      return Promise.resolve("Eligible proposals");
+      return Promise.resolve([]);
     };
 
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "list", "--eligible"]);
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "list", "--eligible", "-o", "json"]);
     });
 
     assert(called);
-    assertStringIncludes(out, "Eligible proposals");
+    assertEquals(JSON.parse(out), []);
   });
 });
 
-Deno.test("memory proposal approve --dry-run routes to pendingApprove with dryRun true", async () => {
+Deno.test("memory proposal approve --dry-run lists the eligible proposals and approves nothing", async () => {
   await withTestMod(async (mod, ctx) => {
-    let called = false;
-    ctx.memoryCommands.pendingApprove = (proposalId?: string, dryRun?: boolean) => {
-      called = dryRun === true && proposalId === undefined;
-      return Promise.resolve("Dry run preview");
+    let dryRun = false;
+    let approved = false;
+    ctx.memoryCommands.pendingApproveDryRun = () => {
+      dryRun = true;
+      return Promise.resolve([]);
+    };
+    ctx.memoryCommands.pendingApprove = () => {
+      approved = true;
+      return Promise.reject(new Error("must not approve"));
     };
 
-    const out = await captureConsoleOutput(async () => {
-      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--dry-run"]);
+    const { out } = await withCapturedSink(ctx.outputSink, async () => {
+      await mod.__test_command.parse(["memory", ExaCtlSubNoun.PROPOSAL, "approve", "--dry-run", "-o", "json"]);
     });
 
-    assert(called);
-    assertStringIncludes(out, "Dry run preview");
+    assert(dryRun);
+    assertEquals(approved, false);
+    assertStringIncludes(out, "[]");
   });
 });

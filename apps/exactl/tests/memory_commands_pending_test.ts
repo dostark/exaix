@@ -7,9 +7,10 @@
  * review, and approve agent-suggested learnings before permanent archival.
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { MemoryApprovalReader } from "../src/commands/memory_approval_reader.ts";
-import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core/status";
 
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
@@ -58,18 +59,16 @@ Deno.test("MemoryApprovalReader: listPendingProposals returns the proposals that
     const proposals = await new MemoryApprovalReader(context).listPendingProposals();
     assertEquals(proposals.map((proposal) => proposal.id), [proposalId]);
     assertEquals(proposals, await extractor.listPending());
-    assertStringIncludes(await commands.pendingList(false, UIOutputFormat.JSON), proposalId);
+    assertEquals((await commands.pendingList(false)).map((proposal) => proposal.id), [proposalId]);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: pendingList returns empty message", async () => {
+Deno.test("MemoryCommands: pendingList returns no proposals when none are pending", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingList(false, UIOutputFormat.TABLE);
-
-    assertStringIncludes(result, "No pending");
+    assertEquals(await commands.pendingList(false), []);
   } finally {
     await cleanup();
   }
@@ -78,24 +77,21 @@ Deno.test("MemoryCommands: pendingList returns empty message", async () => {
 Deno.test("MemoryCommands: pendingList shows proposals", async () => {
   const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal();
   try {
-    const result = await commands.pendingList(false, UIOutputFormat.TABLE);
+    const result = await commands.pendingList(false);
 
-    // Should show the pending proposal
+    // Should list the pending proposal
     if (proposalId) {
-      assertStringIncludes(result, "Pending");
+      assertStringIncludes(new MemoryFormatter().formatPendingListTable(result), "Pending");
     }
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: pendingList --format json outputs valid JSON", async () => {
+Deno.test("MemoryCommands: pendingList returns an array", async () => {
   const { commands, cleanup } = await createTestEnvironmentWithProposal();
   try {
-    const result = await commands.pendingList(false, UIOutputFormat.JSON);
-    const parsed = JSON.parse(result);
-
-    assertEquals(Array.isArray(parsed), true);
+    assertEquals(Array.isArray(await commands.pendingList(false)), true);
   } finally {
     await cleanup();
   }
@@ -110,7 +106,7 @@ Deno.test("MemoryCommands: pendingShow displays proposal details", async () => {
   try {
     if (!proposalId) return;
 
-    const result = await commands.pendingShow(proposalId, UIOutputFormat.TABLE);
+    const result = new MemoryFormatter().formatPendingShowTable(await commands.pendingShow(proposalId));
 
     assertStringIncludes(result, proposalId.substring(0, 8));
     assertStringIncludes(result, MemoryStatus.PENDING);
@@ -119,26 +115,26 @@ Deno.test("MemoryCommands: pendingShow displays proposal details", async () => {
   }
 });
 
-Deno.test("MemoryCommands: pendingShow non-existent returns error", async () => {
+Deno.test("MemoryCommands: pendingShow of an unknown id fails with the not-found code", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingShow("non-existent-id", UIOutputFormat.TABLE);
+    const error = await assertRejects(() => commands.pendingShow("non-existent-id"), ExaCtlError);
 
-    assertStringIncludes(result, "not found");
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(error.message, "not found");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: pendingShow --format json outputs valid JSON", async () => {
+Deno.test("MemoryCommands: pendingShow returns the stored proposal", async () => {
   const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
     "550e8400-e29b-41d4-a716-446655440032",
   );
   try {
     if (!proposalId) return;
 
-    const result = await commands.pendingShow(proposalId, UIOutputFormat.JSON);
-    const parsed = JSON.parse(result);
+    const parsed = await commands.pendingShow(proposalId);
 
     assertEquals(parsed.id, proposalId);
     assertEquals(parsed.status, MemoryStatus.PENDING);
@@ -158,7 +154,7 @@ Deno.test("MemoryCommands: pendingApprove merges learning", async () => {
 
     const result = await commands.pendingApprove(proposalId);
 
-    assertStringIncludes(result, MemoryStatus.APPROVED);
+    assertEquals(result.id, proposalId);
 
     // Verify learning was added
     const project = await memoryBank.getProjectMemory("test-app");
@@ -169,12 +165,12 @@ Deno.test("MemoryCommands: pendingApprove merges learning", async () => {
   }
 });
 
-Deno.test("MemoryCommands: pendingApprove non-existent returns error", async () => {
+Deno.test("MemoryCommands: pendingApprove of an unknown id fails with the not-found code", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingApprove("non-existent-id");
+    const error = await assertRejects(() => commands.pendingApprove("non-existent-id"), ExaCtlError);
 
-    assertStringIncludes(result, "not found");
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
     await cleanup();
   }
@@ -189,20 +185,20 @@ Deno.test("MemoryCommands: pendingReject archives proposal", async () => {
   try {
     if (!proposalId) return;
 
-    const result = await commands.pendingReject(proposalId, "Not relevant");
+    await commands.pendingReject(proposalId, "Not relevant");
 
-    assertStringIncludes(result, MemoryStatus.REJECTED);
+    assertEquals(await commands.pendingList(false), []);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("MemoryCommands: pendingReject non-existent returns error", async () => {
+Deno.test("MemoryCommands: pendingReject of an unknown id fails with the not-found code", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingReject("non-existent-id", "test");
+    const error = await assertRejects(() => commands.pendingReject("non-existent-id", "test"), ExaCtlError);
 
-    assertStringIncludes(result, "not found");
+    assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
     await cleanup();
   }
@@ -231,7 +227,7 @@ Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
 
     const result = await commands.pendingApproveAll();
 
-    assertStringIncludes(result.toLowerCase(), MemoryStatus.APPROVED);
+    assertEquals(result.length > 0, true);
 
     // Verify no pending remain
     const pending = await extractor.listPending();
@@ -241,12 +237,10 @@ Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
   }
 });
 
-Deno.test("MemoryCommands: pendingApproveAll with none returns message", async () => {
+Deno.test("MemoryCommands: pendingApproveAll with none approves nothing", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingApproveAll();
-
-    assertStringIncludes(result.toLowerCase(), "no pending");
+    assertEquals(await commands.pendingApproveAll(), []);
   } finally {
     await cleanup();
   }

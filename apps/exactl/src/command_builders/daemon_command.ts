@@ -17,10 +17,21 @@ import { ExaCtlCommandName } from "../exactl_constants.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
 import { documentLeaves } from "./documented_children.ts";
-import { ColumnHeader, createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
+import { actionOutput, ColumnHeader, createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
 
+const NOT_AVAILABLE_LABEL = "(not available)";
 const RUNNING_LABEL = "Running ✓";
 const STOPPED_LABEL = "Stopped ✗";
+
+interface IVersionInfo {
+  [key: string]: JSONValue;
+  binary_version: string;
+  workspace_schema_version: string;
+  on_disk_schema_version: string;
+  compatible: boolean;
+  migration_required: boolean;
+  config_path: string;
+}
 
 interface IDaemonStatusRow {
   [key: string]: JSONValue;
@@ -142,7 +153,8 @@ function createVersionCommand(runtime: IExaCtlRuntime) {
   const { services } = runtime;
   return new Command()
     .description("Show Exaix binary and workspace schema version information")
-    .action((options) => {
+    .action(async (options) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       const onDiskSchemaVersion = (() => {
         try {
           return services.config.getSchemaVersion();
@@ -166,41 +178,29 @@ function createVersionCommand(runtime: IExaCtlRuntime) {
         ? "❌ Binary older than workspace — update exactl"
         : "✅ OK";
 
-      if (readGlobalOptions(options).json === true) {
-        const configPath = (() => {
-          try {
-            return services.config.getConfigPath();
-          } catch {
-            return "";
-          }
-        })();
-        console.log(
-          JSON.stringify({
-            binary_version: BINARY_VERSION,
-            workspace_schema_version: WORKSPACE_SCHEMA_VERSION,
-            on_disk_schema_version: onDiskSchemaVersion,
-            compatible,
-            migration_required: migrationRequired,
-            config_path: configPath,
-          }),
-        );
-        return;
-      }
-
       const configPath = (() => {
         try {
           return services.config.getConfigPath();
         } catch {
-          return "(not available)";
+          return "";
         }
       })();
-
-      console.log("Exaix CLI");
-      console.log(`  Binary version:             ${BINARY_VERSION}`);
-      console.log(`  Workspace schema version:   ${WORKSPACE_SCHEMA_VERSION}`);
-      console.log(`  Config path:                ${configPath}`);
-      console.log(`  On-disk schema version:     ${onDiskSchemaVersion}`);
-      console.log(`  Compatibility:              ${compatibilityLabel}`);
+      const info: IVersionInfo = {
+        binary_version: BINARY_VERSION,
+        workspace_schema_version: WORKSPACE_SCHEMA_VERSION,
+        on_disk_schema_version: onDiskSchemaVersion,
+        compatible,
+        migration_required: migrationRequired,
+        config_path: configPath,
+      };
+      const fields: readonly IExaCtlColumn<IVersionInfo>[] = [
+        { header: "Binary version", value: (row) => row.binary_version },
+        { header: "Workspace schema version", value: (row) => row.workspace_schema_version },
+        { header: "Config path", value: (row) => row.config_path || NOT_AVAILABLE_LABEL },
+        { header: "On-disk schema version", value: (row) => row.on_disk_schema_version },
+        { header: "Compatibility", value: () => compatibilityLabel },
+      ];
+      await renderer.item(info, fields);
     });
 }
 

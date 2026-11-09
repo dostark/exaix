@@ -120,7 +120,22 @@ Deno.test("no node defines a global option locally", () => {
 });
 
 const DOC_RULES = ["doc-record", "doc-example", "doc-see-also", "doc-noun", "doc-output-kind"] as const;
-const DOCUMENTED_NOUNS = ["request", "plan", "review", "approval", "daemon"];
+const DOCUMENTED_NOUNS = [
+  "request",
+  "plan",
+  "review",
+  "approval",
+  "daemon",
+  "flow",
+  "blueprint",
+  "skill",
+  "portal",
+  "memory",
+  "config",
+  "git",
+  "mcp",
+  "dashboard",
+];
 
 function unlisted(rule: (typeof DOC_RULES)[number], violations = liveDocViolations()) {
   return violations.filter((violation) => violation.rule === rule && !isAllowlisted(violation, allowlist));
@@ -147,7 +162,7 @@ Deno.test("every record declares an output kind and only the named leaves are PR
   const protocol = EXACTL_COMMAND_DOCS.filter((doc) => doc.output === ExaCtlOutputKind.PROTOCOL).map((doc) =>
     doc.path.join(" ")
   );
-  assertEquals(protocol, ["daemon logs"]);
+  assertEquals(protocol, ["daemon logs", "mcp serve", "dashboard"]);
 });
 
 Deno.test("the doc rules have no allow-list entries for the documented nouns", () => {

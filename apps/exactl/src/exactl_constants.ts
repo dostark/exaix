@@ -6,8 +6,6 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
-import { UIOutputFormat } from "@exaix/tui";
-
 /** The name of each exactl command that hangs directly under the root command. */
 export enum ExaCtlCommandName {
   REQUEST = "request",
@@ -102,6 +100,21 @@ export enum MutationStatus {
   DERIVED = "derived",
   REFRESHED = "refreshed",
   ANALYZED = "analyzed",
+  DELETED = "deleted",
+  REBUILT = "rebuilt",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  PRUNED = "pruned",
+  PREVIEWED = "previewed",
+  SET = "set",
+  UNSET = "unset",
+  ROLLED_BACK = "rolled_back",
+  APPLIED = "applied",
+  COMPACTED = "compacted",
+  BLOCKED = "blocked",
+  LOCKED = "locked",
+  UNLOCKED = "unlocked",
+  ACTIVE = "active",
 }
 
 /** Sub-nouns: a command that owns verbs but is not a root. */
@@ -125,21 +138,13 @@ export enum ExaCtlSubNoun {
 
 export const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
 
-export const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
-
-export const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
-
-export const CONFIG_LABEL = "config";
-
-export const CONFIG_VALIDATE_ACTION = "config.validate";
-
-export const CONFIG_DIFF_LABEL = "diff";
-
 export const DEFAULT_CAPABILITIES_LABEL = "general";
 
-export const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
+export const CLI_LIMIT_OPTION = "-n, --limit <limit:number>";
 
 export const CLI_LIMIT_HELP = "Maximum results";
+
+export const COMMA_SEPARATOR = ",";
 
 export const CLI_CMD_LIST = "list";
 
@@ -148,6 +153,8 @@ export const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 export const CLI_OPTION_MODEL = "-m, --model <model:string>";
 
 export const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
+/** The portal option without a short letter, for the nouns that follow the short-flag policy. */
+export const CLI_OPTION_PORTAL_LONG = "--portal <portal:string>";
 
 export const CLI_PORTAL_LONG_OPTION = "--portal <portal:string>";
 
