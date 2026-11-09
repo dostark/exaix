@@ -12,8 +12,9 @@
  */
 import { assert, assertEquals } from "@std/assert";
 import { AciDocSchema } from "@exaix/schemas";
-import { ToolSideEffectScope } from "@exaix/core";
+import { ToolName, ToolSideEffectScope } from "@exaix/core";
 import { createCoreToolSchemas, renderAciDocFragments, validateAciExampleAgainstSchema } from "@exaix/tool-runtime";
+import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 
 /** Canonical side-effect scopes: NONE for read/search/list/grep/git-info;
  * PORTAL for mutation; NETWORK for fetch_url; SYSTEM for run_command/deno_task. */
@@ -41,6 +42,19 @@ const EXPECTED_SCOPES: Record<string, ToolSideEffectScope> = {
   search_memory: ToolSideEffectScope.NONE,
   list_available_tools: ToolSideEffectScope.NONE,
 };
+
+Deno.test("run_command catalog example executes under the real command policy", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const tool = createCoreToolSchemas().find((entry) => entry.name === ToolName.RUN_COMMAND);
+    assert(tool?.aciDoc !== undefined);
+    const registry = createToolRegistryForTests(tempDir);
+    const result = await registry.execute(ToolName.RUN_COMMAND, tool.aciDoc.example.input);
+    assertEquals(result.success, true, result.error);
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});
 
 Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the named ReAct tools", () => {
   const tools = createCoreToolSchemas();

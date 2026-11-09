@@ -164,6 +164,31 @@ function createDynamicApprovalFlow(): IFlow {
   return flow as IFlow;
 }
 
+function createConfirmationRunner(
+  context: ReturnType<typeof createStubContext>,
+  handler: RecordingCreateRequestHandler,
+): FlowRunner {
+  return new FlowRunner({
+    agentExecutor: new FailingAgentExecutor(),
+    eventLogger: new NoopEventLogger(),
+    context,
+    mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.REQUEST_CREATE, handler]])),
+    dynamicModeTools: DYNAMIC_MODE_TOOLS,
+    dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+  });
+}
+
+function executeConfirmation(
+  context: ReturnType<typeof createStubContext>,
+  handler: RecordingCreateRequestHandler,
+  prompt: string,
+) {
+  return createConfirmationRunner(context, handler).execute(createDynamicApprovalFlow(), {
+    userPrompt: prompt,
+    traceId: crypto.randomUUID(),
+  });
+}
+
 Deno.test("FlowRunner confirmation integration: approval executes the tool and completes the dynamic step", async () => {
   const { db, config, tempDir, cleanup } = await initTestDbService();
   const handler = new RecordingCreateRequestHandler();
@@ -199,19 +224,7 @@ Deno.test("FlowRunner confirmation integration: approval executes the tool and c
       notificationService,
     });
 
-    const runner = new FlowRunner({
-      agentExecutor: new FailingAgentExecutor(),
-      eventLogger: new NoopEventLogger(),
-      context,
-      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.REQUEST_CREATE, handler]])),
-      dynamicModeTools: DYNAMIC_MODE_TOOLS,
-      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-    });
-
-    const result = await runner.execute(createDynamicApprovalFlow(), {
-      userPrompt: "Create a request for the approved case",
-      traceId: crypto.randomUUID(),
-    });
+    const result = await executeConfirmation(context, handler, "Create a request for the approved case");
 
     assertEquals(result.success, true);
     assertEquals(handler.calls.length, 1);
@@ -259,19 +272,7 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
       notificationService,
     });
 
-    const runner = new FlowRunner({
-      agentExecutor: new FailingAgentExecutor(),
-      eventLogger: new NoopEventLogger(),
-      context,
-      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.REQUEST_CREATE, handler]])),
-      dynamicModeTools: DYNAMIC_MODE_TOOLS,
-      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
-    });
-
-    const result = await runner.execute(createDynamicApprovalFlow(), {
-      userPrompt: "Create a request for the denied case",
-      traceId: crypto.randomUUID(),
-    });
+    const result = await executeConfirmation(context, handler, "Create a request for the denied case");
 
     assertEquals(result.success, true);
     assertEquals(handler.calls.length, 0);

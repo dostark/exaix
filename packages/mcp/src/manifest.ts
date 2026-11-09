@@ -446,7 +446,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "exaix-team/packages/mcp-server/handlers/run_command_tool.ts",
     description:
-      "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
+      "Execute one allowed command such as pwd, ls, git, grep, or exactl in the portal with validated arguments. Use when no dedicated tool fits. Shell operators, scripts, deno, npm, and node are not supported. Report unsupported test commands as unavailable. Returns output and exit code.",
     input_schema: {
       type: "object",
       properties: {

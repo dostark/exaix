@@ -217,9 +217,9 @@ export function createCoreToolSchemas(
     {
       name: ToolName.RUN_COMMAND,
       description:
-        "Execute a whitelisted shell command (git, deno, npm, grep, ls, etc.) with argument validation. Use when you need to run a CLI tool or build script; for git repo inspection use git_info instead. Returns data.output (stdout string) and data.exitCode. Blocked or failed commands return a descriptive error.",
+        "Execute one allowed command such as pwd, ls, git, grep, or exactl with validated arguments. Shell operators, scripts, deno, npm, and node are not supported. Use run_deno_task for its supported Deno tasks; report other test commands as unavailable. Returns data.output and data.exitCode.",
       nativeDescription:
-        "Execute shell commands for exploration, testing, and building. For code analysis, prefer search_text or read_file. For editing, prefer patch_file or write_file.",
+        "Execute one allowed command with validated arguments. Shell operators, scripts, deno, npm, and node are not supported. Use run_deno_task for supported Deno tasks; report other test commands as unavailable.",
       parameters: {
         type: "object",
         properties: {
@@ -241,21 +241,18 @@ export function createCoreToolSchemas(
       },
       sideEffectScope: ToolSideEffectScope.SYSTEM,
       aciDoc: {
-        summary: "Executes one whitelisted shell command (git, deno, npm, grep, ls, etc.) with argument validation.",
-        when_to_use:
-          "Use for build, test, or lint tasks, or other whitelisted CLI operations not covered by a dedicated tool.",
+        summary: "Executes one allowed command with validated arguments, without a shell.",
+        when_to_use: "Use for an allowed command such as pwd, ls, git, grep, or exactl when no dedicated tool fits.",
         when_not_to_use:
-          "Do not use for git repository status, branch, or diff inspection — use git_info, which returns structured data instead of raw stdout you would otherwise have to parse yourself.",
+          "Do not use shell operators or arbitrary scripts. deno, npm, and node are blocked; use run_deno_task for supported Deno tasks and report other test commands as unavailable.",
         example: {
-          input: { command: "deno", args: ["test", "--allow-all", "packages/core/tests/"] },
-          output: '{"output":"running 12 tests...\\nok | 12 passed | 0 failed","exitCode":0}',
-          rationale:
-            "Runs the project's real test command exactly as a human would, capturing both output and exit code for pass/fail determination.",
+          input: { command: "pwd", args: [] },
+          output: '{"output":"/portal/project\\n","exitCode":0}',
+          rationale: "Reports the working directory with an allowed command and captures its exit code.",
         },
         anti_example: {
           input: { args: ["-rf", "/"] },
-          why_wrong:
-            "command is required and must be a single whitelisted executable name (e.g. 'deno'); here it is entirely omitted while destructive flags were placed into args, which would never run since no executable was named.",
+          why_wrong: "command is required and must be one allowed executable name; it is missing here.",
         },
       },
     },
