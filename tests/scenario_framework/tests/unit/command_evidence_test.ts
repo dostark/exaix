@@ -5,9 +5,13 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/skill_evaluation_evidence.ts]
  */
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { join } from "@std/path";
-import { evaluateObservedArtifacts, loadCommandEvidence } from "../../runner/skill_evaluation_evidence.ts";
+import {
+  commandRequirementFor,
+  evaluateObservedArtifacts,
+  loadCommandEvidence,
+} from "../../runner/skill_evaluation_evidence.ts";
 
 const EXPECTED = {
   requestId: "request-2e9cc893",
@@ -70,6 +74,7 @@ Deno.test("command evidence rejects malformed records and unknown cases", async 
     await writeBundle(root, { expected: { ...EXPECTED, argv: [] }, observed: [] });
     assertEquals((await loadCommandEvidence(root, "p234-s2-c1")).result.status, "failed");
     await assertRejects(() => loadCommandEvidence(root, "../escape"), Error, "Invalid case");
+    assertThrows(() => commandRequirementFor("p234-s7-c1"), Error, "Invalid case");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -95,6 +100,38 @@ Deno.test("observed evaluation consumes bound command evidence instead of hardco
     const evaluation = await evaluateObservedArtifacts(root, "p234-s2-c1", [], []);
     assertEquals(evaluation.effects.commands.status, "passed");
     assertEquals(evaluation.effects.commands.reasons, []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("command requirement is authored for every case and gates only the execution cases", () => {
+  const required: string[] = [];
+  for (let group = 1; group <= 6; group++) {
+    for (let index = 1; index <= 5; index++) {
+      const caseId = `p234-s${group}-c${index}`;
+      if (commandRequirementFor(caseId) === "required") required.push(caseId);
+    }
+  }
+  assertEquals(required, [
+    "p234-s1-c2",
+    "p234-s1-c3",
+    "p234-s2-c1",
+    "p234-s2-c2",
+    "p234-s2-c3",
+    "p234-s2-c4",
+  ]);
+  assertThrows(() => commandRequirementFor("p234-s7-c1"), Error, "Invalid case");
+});
+
+Deno.test("a case without a command requirement does not block on a missing trace", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    const evaluation = await evaluateObservedArtifacts(root, "p234-s5-c1", [], []);
+    assertEquals(evaluation.effects.commands.status, "passed");
+    assertEquals(evaluation.effects.commands.reasons, ["Command evidence does not apply to this case"]);
+    const required = await evaluateObservedArtifacts(root, "p234-s2-c1", [], []);
+    assertEquals(required.effects.commands.status, "pending");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

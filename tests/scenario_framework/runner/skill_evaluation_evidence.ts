@@ -14,6 +14,7 @@ import { parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { z } from "zod";
 import { readRequirementsArtifact } from "./requirements_artifact.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import evidenceRequirements from "../fixtures/skill_eval/phase234/evidence_requirements.json" with { type: "json" };
 import {
   bindRecordedSkillSubmission,
   type IExpectedSubmission,
@@ -187,6 +188,21 @@ export function verifyCommandObservation(
 }
 
 const COMMAND_CASE = /^p234-s[1-6]-c[1-5]$/;
+
+/** Whether a case requires an independent command trace. */
+export type CommandRequirement = "required" | "not_applicable";
+
+/** Reads the authored command requirement for one case. */
+export function commandRequirementFor(caseId: string): CommandRequirement {
+  if (!COMMAND_CASE.test(caseId)) throw new Error("Invalid case identity");
+  const entry = Object.entries(evidenceRequirements).find(([id]) => id === caseId)?.[1];
+  if (!entry) throw new Error(`No evidence requirement is authored for ${caseId}`);
+  if (entry.command !== "required" && entry.command !== "not_applicable") {
+    throw new Error(`Invalid command requirement for ${caseId}`);
+  }
+  return entry.command;
+}
+
 const CommandObservationSchema = z.object({
   requestId: z.string().regex(/^request-[a-f0-9]{8}$/),
   argv: z.array(z.string().min(1)).min(1),
@@ -470,7 +486,9 @@ export async function evaluateObservedArtifacts(
       ),
     )
     : { status: "pending" as const, reasons: ["Request-bound skill usage unavailable"] };
-  const commands = (await loadCommandEvidence(root, caseId)).result;
+  const commands = commandRequirementFor(caseId) === "not_applicable"
+    ? { status: "passed" as const, reasons: ["Command evidence does not apply to this case"] }
+    : (await loadCommandEvidence(root, caseId)).result;
   const evaluation = evaluatePhase234({
     delivery,
     behavior: deterministic.status === "not_applicable" ? semantic : combine([deterministic, semantic]),
