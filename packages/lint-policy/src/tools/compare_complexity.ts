@@ -187,7 +187,7 @@ export const CALIBRATION_EXCLUSIONS: readonly IExclusion[] = [
   },
   {
     tool: TOOL_CORE,
-    path: "exaix-dev-docs/planning/evidence/",
+    path: "exaix-dev-docs/evidence/",
     reason: "Evidence probes in the plan submodule that the fallow run does not scan.",
   },
   {

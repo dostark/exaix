@@ -16,7 +16,19 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { applyBacktickFix, applyFix, checkMdPaths, extractHeadings, slugify } from "../../scripts/check_md_paths.ts";
+import {
+  applyBacktickFix,
+  applyFix,
+  checkMdPaths,
+  extractHeadings,
+  isFrozenDoc,
+  slugify,
+} from "../../scripts/check_md_paths.ts";
+
+Deno.test("[md-paths] relocated evidence is treated as frozen run output", () => {
+  assertEquals(isFrozenDoc("exaix-dev-docs/evidence/phase-234/record.md"), true);
+  assertEquals(isFrozenDoc("exaix-dev-docs/planning/phase-234.md"), false);
+});
 
 async function sandbox(): Promise<{ root: string; cleanup: () => void }> {
   const root = await Deno.makeTempDir({ prefix: "md_paths_" });
@@ -661,10 +673,10 @@ Deno.test("[md-paths] a PLANNING phase doc is skipped repo-wide (proposals are n
   }
 });
 
-Deno.test("[md-paths] planning evidence output is skipped (raw run artifacts are not docs)", async () => {
+Deno.test("[md-paths] evidence output is skipped (raw run artifacts are not docs)", async () => {
   const { root, cleanup } = await sandbox();
   try {
-    const dir = join(root, "exaix-dev-docs", "planning", "evidence", "phase-142", "artifacts");
+    const dir = join(root, "exaix-dev-docs", "evidence", "phase-142", "artifacts");
     await ensureDir(dir);
     await ensureDir(join(root, "src"));
     await Deno.writeTextFile(join(root, "src", "real.ts"), "export {};\n");

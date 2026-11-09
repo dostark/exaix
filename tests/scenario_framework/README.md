@@ -867,7 +867,7 @@ exactl log export-otel "$TRACE_ID" --eval-run-id <run-id>
 
 # 3. Record redacted evidence: the invocation (with any secret/endpoint redacted), the receiver's
 #    config and version, the resolved OTel trace ID, and the spans/attributes it reported — see
-#    exaix-dev-docs/planning/evidence/phase-177/live-cutover.md for the Phase 177 cutover's own
+#    exaix-dev-docs/evidence/phase-177/live-cutover.md for the Phase 177 cutover's own
 #    redacted invocation, otel-collector-config.yaml, and receiver-query-output.txt as a template.
 ```
 

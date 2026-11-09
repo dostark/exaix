@@ -117,13 +117,13 @@ export const IGNORE_DIRS: Record<string, true> = {
 };
 
 /** Frozen historical-documentation prefixes (repo-relative). These trees record past project state, such as pre-monorepo paths and resolved reports.
- *  A stale path there is history, not drift, so it is never reported. `planning/evidence/` holds raw run output.
+ *  A stale path there is history, not drift, so it is never reported. `evidence/` holds raw run output.
  *  Living docs (`docs/`, `.copilot/`, `planning/`) stay fully checked. */
 const FROZEN_DOC_PREFIXES: readonly string[] = [
   "exaix-dev-docs/dev/",
   "exaix-dev-docs/issues/",
   "exaix-dev-docs/not_actual/",
-  "exaix-dev-docs/planning/evidence/",
+  "exaix-dev-docs/evidence/",
 ];
 
 /** True when a repo-relative markdown path lives under a frozen historical tree. */

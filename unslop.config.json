@@ -1724,7 +1724,7 @@
             "/\\.codex(/|$)",
             "/tests/scenario_framework/fixtures(/|$)",
             "/tests/scenario_framework/output(/|$)",
-            "/exaix-dev-docs/planning/evidence(/|$)"
+            "/exaix-dev-docs/evidence(/|$)"
           ],
           "extraEntries": [
             "apps/exactl/tests/helpers/approval_hang_probe.ts",

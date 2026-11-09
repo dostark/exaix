@@ -15,6 +15,11 @@ import type { JSONObject } from "@exaix/core/types";
 const AGENTS_DIR = ".copilot";
 const REQUIRED_KEYS = ["agent", "scope", "title", "short_summary", "version"];
 
+/** Evidence files are not agent instructions. */
+export function isAgentEvidencePath(path: string): boolean {
+  return path.startsWith("exaix-dev-docs/evidence/");
+}
+
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
   return match ? match[1] : null;
@@ -80,7 +85,7 @@ async function main() {
       for await (const entry of walk(dir, { exts: [".md"], maxDepth: 4 })) {
         if (entry.isFile) {
           if (
-            entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
+            isAgentEvidencePath(entry.path) || entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
             entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
             entry.path.includes("/vc/") ||
             entry.name === "MAINTENANCE.md" || entry.name === "TOOLS.md"
