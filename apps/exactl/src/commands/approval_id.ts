@@ -3,11 +3,11 @@
  * @path apps/exactl/src/commands/approval_id.ts
  * @description Typed approval ids (`wait:<token>`, `tool:<id>`) and the command that owns each kind of pending decision.
  * @architectural-layer CLI
- * @dependencies [apps/exactl/src/exactl_errors.ts]
+ * @dependencies [packages/cli/src/errors/exactl_errors.ts]
  * @related-files [apps/exactl/src/commands/approval_commands.ts, apps/exactl/src/command_builders/approval_command.ts]
  */
 
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
 import { quoteArgument, quoteForShell } from "../exactl_shell.ts";
 

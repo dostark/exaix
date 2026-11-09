@@ -9,7 +9,7 @@
 
 import { assertEquals, assertNotMatch, assertThrows } from "@std/assert";
 import { ApprovalKind, parseApprovalId, parseApprovalKinds } from "../src/commands/approval_id.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 const TOKEN = "550e8400-e29b-41d4-a716-446655440011";
 

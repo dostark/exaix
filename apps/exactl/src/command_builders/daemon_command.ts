@@ -13,6 +13,10 @@ import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { JSONValue } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
+import { ExaCtlCommandName } from "../exactl_constants.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
+import { documentLeaves } from "./documented_children.ts";
 import { createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
 
 const RUNNING_LABEL = "Running ✓";
@@ -37,12 +41,11 @@ const DAEMON_STATUS_FIELDS: readonly IExaCtlColumn<IDaemonStatusRow>[] = [
 
 function createDaemonCommand(runtime: IExaCtlRuntime) {
   const { display, daemonCommands, outputSink } = runtime;
-  return new Command()
-    .description("Control the Exaix daemon")
+  const noun = nounDocFor(ExaCtlCommandName.DAEMON);
+  const command = documentedNoun(new Command(), noun)
     .command(
       "start",
       new Command()
-        .description("Start the Exaix daemon")
         .option(
           "--ready-timeout <ms:number>",
           "Milliseconds to wait for daemon.ready (default: daemon.ready_timeout_ms)",
@@ -61,7 +64,6 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       "stop",
       new Command()
-        .description("Stop the Exaix daemon")
         .action(async () => {
           try {
             await daemonCommands.stop();
@@ -76,7 +78,6 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       "restart",
       new Command()
-        .description("Restart the Exaix daemon")
         .action(async () => {
           try {
             await daemonCommands.restart();
@@ -91,7 +92,6 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       GIT_CMD_STATUS,
       new Command()
-        .description("Check daemon status")
         .action(async (options) => {
           try {
             const status = await daemonCommands.status();
@@ -117,7 +117,6 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       "logs",
       new Command()
-        .description("Show daemon logs")
         .option("-n, --lines <lines:number>", "Number of lines to show", { default: CLI_DEFAULTS.LOG_LINES })
         .option("-f, --follow", "Follow log output")
         .action(async (options) => {
@@ -131,6 +130,8 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
           }
         }),
     );
+  documentLeaves(command, [ExaCtlCommandName.DAEMON], noun.lifecycle);
+  return command;
 }
 
 export function buildDaemonCommand(runtime: IExaCtlRuntime): ReturnType<typeof createDaemonCommand> {

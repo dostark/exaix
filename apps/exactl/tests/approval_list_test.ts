@@ -28,7 +28,7 @@ import type { IReviewMetadata } from "../src/commands/review_commands.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { createExaCtlCommand } from "../src/exactl.ts";
 import { type ICommandTreeNode, walkCommandTree } from "../src/docs/command_tree_walk.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";

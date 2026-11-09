@@ -10,7 +10,7 @@
 /** Longest typed text that a hint echoes back. */
 export const MAX_HINT_ECHO_CHARS = 200;
 
-const SINGLE_QUOTE = "'";
+export const SINGLE_QUOTE = "'";
 const ESCAPED_SINGLE_QUOTE = `'\\''`;
 const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const PLAIN_WORD = /^[\w./:=@%+,-]+$/;

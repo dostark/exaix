@@ -10,7 +10,7 @@
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { ExaCtlVerb } from "../exactl_constants.ts";
 import { quoteForShell } from "../exactl_shell.ts";
 import { ApprovalKind, type IApprovalRef, ownerCommand, parseApprovalId, parseApprovalKinds } from "./approval_id.ts";

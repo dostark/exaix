@@ -3,11 +3,11 @@
  * @path apps/exactl/src/command_builders/bulk_targets.ts
  * @description Checks the ids-or-all argument rule of the exactl bulk commands.
  * @architectural-layer CLI
- * @dependencies [apps/exactl/src/exactl_errors.ts]
+ * @dependencies [packages/cli/src/errors/exactl_errors.ts]
  * @related-files [apps/exactl/src/command_builders/plan_command.ts, apps/exactl/src/command_builders/memory_command.ts]
  */
 
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 // unslop-ignore-next-line unused-type
 /** Either every item of the kind, or the listed ids. */

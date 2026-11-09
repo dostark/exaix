@@ -38,7 +38,13 @@ Deno.test("walkCommandTree reports aliases, arguments, options and examples of a
     { name: "more", optional: true, variadic: true },
   ]);
   const status = node?.options.find((option) => option.name === "status");
-  assertEquals(status, { name: "status", flags: ["-s", "--status"], required: true, hidden: false });
+  assertEquals(status, {
+    name: "status",
+    flags: ["-s", "--status"],
+    takesValue: true,
+    required: true,
+    hidden: false,
+  });
   assertEquals(node?.options.find((option) => option.name === "hidden-flag")?.hidden, true);
   assertEquals(node?.examples, [{ name: "List everything", description: "exactl thing list all" }]);
   assertStrictEquals(node?.command, leaf);

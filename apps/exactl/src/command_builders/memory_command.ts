@@ -11,7 +11,7 @@ import { MemoryScope, RequestOperation } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import { selectBulkTargets } from "./bulk_targets.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import {
   CLI_LIMIT_HELP,

@@ -32,7 +32,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { WaitStateSchema } from "@exaix/flow";
 import { WaitStateCommands } from "./wait_state_commands.ts";
 import { ApprovalKind } from "./approval_id.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 const WAIT_LIST_COMMAND = `exactl approval list --kind ${ApprovalKind.WAIT}`;
 

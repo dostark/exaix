@@ -16,7 +16,7 @@ import {
   type IExaCtlOutputSink,
 } from "@exaix/cli";
 import type { JSONValue } from "@exaix/core";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { OPTION_TERMINATOR } from "../exactl_renames.ts";
 
 /** The cell text for a value that is absent. */

@@ -19,14 +19,24 @@ export interface IWalkableCommand {
     optional?: Opt<boolean, Reason.OptionalInput>;
     variadic?: Opt<boolean, Reason.OptionalInput>;
   }>;
-  getBaseOptions(hidden: boolean): ReadonlyArray<{
-    name: string;
-    flags: string[];
-    required?: Opt<boolean, Reason.OptionalInput>;
-    hidden?: Opt<boolean, Reason.OptionalInput>;
-  }>;
+  getBaseOptions(hidden: boolean): ReadonlyArray<IWalkableOption>;
   getExamples(): ReadonlyArray<{ name: string; description: string }>;
   getBaseCommands(hidden: boolean): IWalkableCommand[];
+}
+
+/** The part of a cliffy option that the walker reads. */
+interface IWalkableOption {
+  name: string;
+  flags: string[];
+  args?: Opt<ReadonlyArray<object>, Reason.OptionalInput>;
+  global?: Opt<boolean, Reason.OptionalInput>;
+  required?: Opt<boolean, Reason.OptionalInput>;
+  hidden?: Opt<boolean, Reason.OptionalInput>;
+}
+
+/** The root command also exposes its own options, some of which every subcommand inherits. */
+export interface IWalkableRoot extends IWalkableCommand {
+  getOptions(hidden: boolean): ReadonlyArray<IWalkableOption>;
 }
 
 interface ICommandTreeArg {
@@ -35,9 +45,11 @@ interface ICommandTreeArg {
   variadic: boolean;
 }
 
-interface ICommandTreeOption {
+export interface ICommandTreeOption {
   name: string;
   flags: string[];
+  /** True when the option reads a value, such as `--status <status>`. */
+  takesValue: boolean;
   required: boolean;
   hidden: boolean;
 }
@@ -59,7 +71,22 @@ export interface ICommandTreeNode {
   command: IWalkableCommand;
 }
 
-const HELP_COMMAND_NAME = "help";
+export const HELP_COMMAND_NAME = "help";
+
+function toOption(option: IWalkableOption): ICommandTreeOption {
+  return {
+    name: option.name,
+    flags: option.flags,
+    takesValue: (option.args ?? []).length > 0,
+    required: option.required ?? false,
+    hidden: option.hidden ?? false,
+  };
+}
+
+/** The options that every subcommand of `root` inherits. */
+export function globalOptionsOf(root: IWalkableRoot): ICommandTreeOption[] {
+  return root.getOptions(true).filter((option) => option.global === true).map(toOption);
+}
 
 function toNode(command: IWalkableCommand, path: string[]): ICommandTreeNode {
   return {
@@ -70,12 +97,7 @@ function toNode(command: IWalkableCommand, path: string[]): ICommandTreeNode {
       optional: optional ?? false,
       variadic: variadic ?? false,
     })),
-    options: command.getBaseOptions(true).map((option) => ({
-      name: option.name,
-      flags: option.flags,
-      required: option.required ?? false,
-      hidden: option.hidden ?? false,
-    })),
+    options: command.getBaseOptions(true).map(toOption),
     description: command.getDescription(),
     examples: command.getExamples().map(({ name, description }) => ({ name, description })),
     command,

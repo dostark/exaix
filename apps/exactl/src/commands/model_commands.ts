@@ -16,7 +16,7 @@ import { parse, stringify } from "@std/toml";
 import * as colors from "@std/fmt/colors";
 import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MODEL_PRESETS, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { NO_VALUE, renderModelTable, renderPrice, renderStale, renderVerifiedAt } from "./model_list_rendering.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */

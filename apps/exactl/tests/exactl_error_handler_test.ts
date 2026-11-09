@@ -12,7 +12,7 @@ import { stub } from "@std/testing/mock";
 import { ValidationError } from "@cliffy/command";
 import { createExaCtlCommand } from "../src/exactl.ts";
 import { handleExaCtlError } from "../src/exactl_error_handler.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 class ExitCalled extends Error {
   constructor(readonly code: number) {

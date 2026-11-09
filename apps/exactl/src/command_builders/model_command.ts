@@ -11,7 +11,7 @@ import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlSubNoun, ExaCtlVerb } from "../exactl_constants.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 const DEFAULT_MODEL_NAME = "default";
 const PROVIDER_MODEL_SEPARATOR = ":";

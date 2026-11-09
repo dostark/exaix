@@ -4,11 +4,11 @@
  * @description The root error handler of exactl. It maps ExaCtlError to exit codes and prints rename hints.
  * @architectural-layer CLI
  * @dependencies [@cliffy/command]
- * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_renames.ts, apps/exactl/src/exactl_errors.ts]
+ * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_renames.ts, packages/cli/src/errors/exactl_errors.ts]
  */
 
 import { ValidationError } from "@cliffy/command";
-import { ExaCtlError, ExaCtlExitCode } from "./exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import {
   findOptionRename,
   findRename,

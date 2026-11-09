@@ -18,7 +18,7 @@ import { APPROVAL_SOURCE_TIMEOUT_MS, ApprovalCommands } from "../src/commands/ap
 import { toolApprovalSource, waitApprovalSource } from "../src/commands/approval_sources.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
 const TOKEN = "550e8400-e29b-41d4-a716-446655440001";

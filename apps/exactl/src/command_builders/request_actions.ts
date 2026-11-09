@@ -34,7 +34,7 @@ import {
   RequestNotFoundError,
   RequestStatusInvalidError,
 } from "@exaix/core/errors";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import type { ICliApplicationContext, IDisplayService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import { ProviderFactory } from "@exaix/ai";

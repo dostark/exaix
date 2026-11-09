@@ -10,7 +10,7 @@ import { Command } from "@cliffy/command";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IDisplayService } from "@exaix/core/types";
 import type { ApprovalCommands, IApprovalDecision } from "../commands/approval_commands.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import {
   CLI_OPTION_APPROVAL_KIND,
   CLI_OPTION_APPROVAL_KIND_DESC,

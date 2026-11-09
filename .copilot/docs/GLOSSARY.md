@@ -163,7 +163,7 @@ It is data, not an alias: it runs only after the parser has rejected a path, and
 
 ### `ExaCtlExitCode` and `ExaCtlError`
 
-The process exit codes of `exactl` (`apps/exactl/src/exactl_errors.ts`): 0 ok, 1 failure, 2 usage, 3 not found,
+The process exit codes of `exactl` (`packages/cli/src/errors/exactl_errors.ts`): 0 ok, 1 failure, 2 usage, 3 not found,
 4 state conflict, 5 daemon unavailable, 6 invalid data, 7 credentials, 124 timeout, 130 cancelled. A command throws
 `ExaCtlError` with a code, and only the root error handler turns it into an exit. Commands adopt the codes one by
 one, so an older command can still exit 1 for a case that has its own code.

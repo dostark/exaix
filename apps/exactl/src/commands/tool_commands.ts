@@ -11,7 +11,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { DomainEventType, type IToolConfirmationDecidedPayload } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 const DEFAULT_DENIAL_REASON = "User declined";
 

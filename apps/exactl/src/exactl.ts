@@ -55,6 +55,8 @@ import { ExaCtlCommandName } from "./exactl_constants.ts";
 import { handleExaCtlError } from "./exactl_error_handler.ts";
 import { buildLogCommand } from "./command_builders/log_command.ts";
 import { defaultOutputSink, isColorDisabled, normalizeGlobalOptions } from "./output/exactl_output.ts";
+import { EXACTL_NOUN_DOCS } from "./command_docs/mod.ts";
+import { renderRootDescription } from "./docs/root_help.ts";
 import type { IExaCtlOutputSink } from "@exaix/cli";
 
 export interface IExaCtlCommandOptions {
@@ -207,11 +209,12 @@ export function __test_initializeServices(
 }
 
 const OUTPUT_FORMAT_TYPE = "output-format";
+const ROOT_INTRO = "Exaix CLI - Human interface for agent orchestration";
 
 const baseCommand = new Command()
   .name("exactl")
   .version(BINARY_VERSION)
-  .description("Exaix CLI - Human interface for agent orchestration")
+  .description(ROOT_INTRO)
   .globalType(OUTPUT_FORMAT_TYPE, new EnumType(Object.values(ExaCtlOutputFormat)))
   .globalOption(`-o, --output <format:${OUTPUT_FORMAT_TYPE}>`, "Output format: table, json, jsonl, md, text")
   .globalOption("--json", "Output as JSON (same as -o json)")
@@ -291,6 +294,11 @@ baseCommand
   .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
   .command(ExaCtlCommandName.SKILL, buildSkillCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
+
+const rootCommand = baseCommand.reset();
+rootCommand.description(
+  renderRootDescription(ROOT_INTRO, EXACTL_NOUN_DOCS, rootCommand.getOptions(false).filter((option) => option.global)),
+);
 
 // cliffy attaches .error() to the last registered command unless reset() runs first.
 baseCommand.reset().error((error) => handleExaCtlError(error, Deno.args, Deno.exit, baseCommand));

@@ -6,6 +6,7 @@
     "./testing": "./testing/mod.ts"
   },
   "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@^1.2.1",
     "@cliffy/table": "jsr:@cliffy/table@^1.1.0",
     "@std/fmt": "jsr:@std/fmt@^1.0.10",
     "@exaix/ai": "../../packages/ai/mod.ts",

@@ -22,7 +22,7 @@ import type {
 } from "@exaix/core/types";
 import { HealthStatus } from "@exaix/core/types";
 import { ModelCommands } from "../src/commands/model_commands.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 /** A minimal in-memory registry stub covering the methods ModelCommands reads. */

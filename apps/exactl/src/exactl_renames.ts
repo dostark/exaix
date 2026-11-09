@@ -39,7 +39,7 @@ const LEGACY_TOOL = "tool";
 const USAGE_TEMPLATE_MARKER = "<";
 export const REQUEST_NOUN = "request";
 const CREATE_VERB = "create";
-const OPTION_PREFIX = "-";
+export const OPTION_PREFIX = "-";
 export const OPTION_TERMINATOR = "--";
 const OPTION_VALUE_SEPARATOR = "=";
 const AGENT_OPTION = "--agent";

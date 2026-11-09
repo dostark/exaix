@@ -26,7 +26,7 @@ import {
 } from "./request_actions.ts";
 import type { IInspectCommandOptions } from "../commands/inspect_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { CLI_CMD_SHOW_ID, CLI_OPTION_WAIT_RESOLVED_BY, ExaCtlVerb } from "../exactl_constants.ts";
 import { buildRequestCreateBase } from "./request_create_options.ts";
 

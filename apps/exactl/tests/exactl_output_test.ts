@@ -17,7 +17,7 @@ import {
   resolveOutputFormat,
   stripTerminalControls,
 } from "../src/output/exactl_output.ts";
-import { ExaCtlError, ExaCtlExitCode } from "../src/exactl_errors.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 interface IRow {
   [key: string]: JSONValue;

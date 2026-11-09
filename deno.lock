@@ -607,6 +607,7 @@
       },
       "packages/cli": {
         "dependencies": [
+          "jsr:@cliffy/command@^1.2.1",
           "jsr:@cliffy/table@^1.1.0",
           "jsr:@std/fmt@^1.0.10"
         ]
