@@ -16,9 +16,12 @@ import type { Opt, Reason } from "@exaix/core/types";
 const REFERENCE_SET =
   `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/reference_set.json`;
 const RUBRIC_MAP = `${REPO_ROOT}/exaix-dev-docs/planning/phase-234-case-rubric-mapping.md`;
+const REQUEST_DIR = `${REPO_ROOT}/tests/scenario_framework/fixtures/requests/skill_eval/phase234`;
+const APPROVED_CASES = `${REPO_ROOT}/tests/scenario_framework/fixtures/planning_decisions/approved_cases.md`;
 const RESULT = `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/calibration_result.json`;
 const EVALUATOR = "phase234-semantic-calibration-v1";
-const MODEL = "claude-sonnet-4-6";
+const DEFAULT_TOOL = "claude-code";
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 interface IReferenceEntry {
   id: string;
@@ -47,6 +50,7 @@ interface ICalibrationEntryResult {
 
 interface ICalibrationResult {
   evaluator: string;
+  tool: string;
   model: string;
   scriptSha256: string;
   rubricSha256: string;
@@ -73,12 +77,46 @@ function rubricRows(markdown: string): Map<string, IRubricRow> {
   return rows;
 }
 
-function buildPrompt(entry: IReferenceEntry, rubric: IRubricRow, prior: Opt<string, Reason.OptionalInput>): string {
+function stripFrontmatter(text: string): string {
+  return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
+}
+
+async function readRequest(caseId: string): Promise<string> {
+  return stripFrontmatter(await Deno.readTextFile(`${REQUEST_DIR}/${caseId}.md`));
+}
+
+async function readAnswer(caseId: string, turn: string): Promise<string | undefined> {
+  if (caseId !== "p234-s5-c2" || turn !== "answered") return undefined;
+  return stripFrontmatter(await Deno.readTextFile(`${REQUEST_DIR}/${caseId}-answer.md`));
+}
+
+async function readApprovedCase(caseId: string): Promise<string | undefined> {
+  if (caseId[6] !== "6") return undefined;
+  const index = caseId.at(-1);
+  const text = await Deno.readTextFile(APPROVED_CASES);
+  const match = new RegExp(`## C${index}:[\\s\\S]*?(?=\\n## |$)`).exec(text);
+  return match?.[0]?.trim();
+}
+
+function buildPrompt(
+  entry: IReferenceEntry,
+  rubric: IRubricRow,
+  requestText: string,
+  answerText: Opt<string, Reason.OptionalInput>,
+  approvedCase: Opt<string, Reason.OptionalInput>,
+  prior: Opt<string, Reason.OptionalInput>,
+): string {
+  const answerBlock = answerText ? `\nAnswer turn:\n${answerText}\n` : "";
+  const approvedBlock = approvedCase ? `\nApproved case details:\n${approvedCase}\n` : "";
   const priorBlock = prior === undefined ? "" : `\nPrior artifact (the initial turn):\n${prior}\n`;
   return `You are a blind semantic evaluator for one Phase 234 case.
 
 Case: ${entry.caseId}
 
+Frozen request:
+${requestText}
+${answerBlock}
+${approvedBlock}
 Rubric:
 ${rubric.oracle}
 
@@ -89,7 +127,7 @@ Artifact:
 ${entry.artifact}
 ${priorBlock}
 Decide only whether the artifact satisfies the rubric and does not exhibit the named bad control.
-Use only the artifact text. Do not assume success.
+Use only the frozen request, the rubric, and the artifact. Do not assume success.
 Answer with exactly one verdict line: VERDICT: PASS or VERDICT: FAIL.
 Then write one short rationale sentence.`;
 }
@@ -104,6 +142,10 @@ function parseVerdict(text: string): { predicted: "pass" | "fail" | "error"; rat
 async function main(): Promise<void> {
   const limitArg = Deno.args.indexOf("--limit");
   const limit = limitArg >= 0 ? Number(Deno.args[limitArg + 1]) : undefined;
+  const toolArg = Deno.args.indexOf("--tool");
+  const tool = toolArg >= 0 ? Deno.args[toolArg + 1] : DEFAULT_TOOL;
+  const modelArg = Deno.args.indexOf("--model");
+  const model = modelArg >= 0 ? Deno.args[modelArg + 1] : DEFAULT_MODEL;
   const reference = JSON.parse(await Deno.readTextFile(REFERENCE_SET)) as {
     entries: IReferenceEntry[];
     reviewRecord: { reviewedSetSha256: string };
@@ -112,9 +154,9 @@ async function main(): Promise<void> {
   const rubric = rubricRows(await Deno.readTextFile(RUBRIC_MAP));
   const script = await Deno.readTextFile(new URL(import.meta.url));
   const provider = new CliDelegateModelProvider({
-    tool: "claude-code",
-    bin: "claude",
-    model: MODEL,
+    tool: tool as "claude-code" | "codex" | "opencode",
+    bin: tool === "codex" ? "codex" : tool === "opencode" ? "opencode" : "claude",
+    model,
     cwd: REPO_ROOT,
   });
   const entries: ICalibrationEntryResult[] = [];
@@ -127,7 +169,14 @@ async function main(): Promise<void> {
         candidate.caseId === entry.caseId && candidate.turn === "initial" && candidate.kind === "positive"
       )?.artifact
       : undefined;
-    const prompt = buildPrompt(entry, row, prior);
+    const prompt = buildPrompt(
+      entry,
+      row,
+      await readRequest(entry.caseId),
+      await readAnswer(entry.caseId, entry.turn),
+      await readApprovedCase(entry.caseId),
+      prior,
+    );
     const result = await provider.generate(prompt);
     const verdict = parseVerdict(result.content);
     entries.push({
@@ -149,7 +198,8 @@ async function main(): Promise<void> {
     const kappa = computeCohenKappa(pairs, 0.5);
     const output: ICalibrationResult = {
       evaluator: EVALUATOR,
-      model: MODEL,
+      tool,
+      model,
       scriptSha256: await sha256(script),
       rubricSha256: reference.rubricSha256,
       reviewedSetSha256: reference.reviewRecord.reviewedSetSha256,

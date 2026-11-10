@@ -1,0 +1,754 @@
+{
+  "evaluator": "phase234-semantic-calibration-v1",
+  "tool": "claude-code",
+  "model": "claude-sonnet-4-6",
+  "status": "passed-diagnostic-prefix-set",
+  "reviewedSetSha256": "d853d83fb7ae6db1d5c05de81631aa852fbf93b23419ccfeb795198614dcfd7c",
+  "entries": [
+    {
+      "id": "p234-s1-c1-positive",
+      "caseId": "p234-s1-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact diagnoses the duplicate write (appends twice), names a command that counts written rows (`deno run -A scripts/check_duplicate.ts`), and explicitly asserts the duplicate row count rather than the nearby null/JSON.parse error.",
+      "verdictText": "VERDICT: PASS\nThe artifact diagnoses the duplicate write (appends twice), names a command that counts written rows (`deno run -A scripts/check_duplicate.ts`), and explicitly asserts the duplicate row count rather than the nearby null/JSON.parse error."
+    },
+    {
+      "id": "p234-s1-c1-equivalent",
+      "caseId": "p234-s1-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact diagnoses the duplicate write (not the null exception), names `./scripts/count-rows.sh` as the row-counting command, and explicitly labels the empty-config null error as unrelated.",
+      "verdictText": "VERDICT: PASS\nThe artifact diagnoses the duplicate write (not the null exception), names `./scripts/count-rows.sh` as the row-counting command, and explicitly labels the empty-config null error as unrelated."
+    },
+    {
+      "id": "p234-s1-c1-negative",
+      "caseId": "p234-s1-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact diagnoses only the null exception (JSON.parse error) and never addresses the duplicate write, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact diagnoses only the null exception (JSON.parse error) and never addresses the duplicate write, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s1-c2-positive",
+      "caseId": "p234-s1-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records 18/20 duplicate frequency with the fixed seed and explicitly states the result is intermittent, not deterministic.",
+      "verdictText": "VERDICT: PASS\nThe artifact records 18/20 duplicate frequency with the fixed seed and explicitly states the result is intermittent, not deterministic."
+    },
+    {
+      "id": "p234-s1-c2-equivalent",
+      "caseId": "p234-s1-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records a specific observed duplicate count and frequency (18/20 attempts) without claiming determinism, satisfying the rubric.",
+      "verdictText": "VERDICT: PASS\nThe artifact records a specific observed duplicate count and frequency (18/20 attempts) without claiming determinism, satisfying the rubric."
+    },
+    {
+      "id": "p234-s1-c2-negative",
+      "caseId": "p234-s1-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact claims deterministic reproduction from a single success, which is exactly the named bad control, and fails to record any duplicate count or frequency across 20 attempts as required by the rubric.",
+      "verdictText": "VERDICT: FAIL\nThe artifact claims deterministic reproduction from a single success, which is exactly the named bad control, and fails to record any duplicate count or frequency across 20 attempts as required by the rubric."
+    },
+    {
+      "id": "p234-s1-c3-positive",
+      "caseId": "p234-s1-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records the attempted reproduction command, notes the script was not found, and applies no speculative patch.",
+      "verdictText": "VERDICT: PASS\nThe artifact records the attempted reproduction command, notes the script was not found, and applies no speculative patch."
+    },
+    {
+      "id": "p234-s1-c3-equivalent",
+      "caseId": "p234-s1-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records the attempted command and the blocked result (missing script) with no patch applied.",
+      "verdictText": "VERDICT: PASS\nThe artifact records the attempted command and the blocked result (missing script) with no patch applied."
+    },
+    {
+      "id": "p234-s1-c3-negative",
+      "caseId": "p234-s1-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact records the blocked reproduction correctly but then applies a speculative patch (\"remove the second push\") despite the stated inability to reproduce the symptom, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact records the blocked reproduction correctly but then applies a speculative patch (\"remove the second push\") despite the stated inability to reproduce the symptom, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s1-c4-positive",
+      "caseId": "p234-s1-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact explicitly rejects exit-zero as reproduction evidence and names the missing assertion (one submitted row must produce exactly one stored row).",
+      "verdictText": "VERDICT: PASS\nThe artifact explicitly rejects exit-zero as reproduction evidence and names the missing assertion (one submitted row must produce exactly one stored row)."
+    },
+    {
+      "id": "p234-s1-c4-equivalent",
+      "caseId": "p234-s1-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly rejects exit-zero as reproduction evidence and names the missing assertion (exact stored row count), without accepting exit zero as symptom proof.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly rejects exit-zero as reproduction evidence and names the missing assertion (exact stored row count), without accepting exit zero as symptom proof."
+    },
+    {
+      "id": "p234-s1-c4-negative",
+      "caseId": "p234-s1-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact accepts exit-zero as symptom proof without asserting the duplicate count, which is exactly the named bad control the rubric requires rejecting.",
+      "verdictText": "VERDICT: FAIL\nThe artifact accepts exit-zero as symptom proof without asserting the duplicate count, which is exactly the named bad control the rubric requires rejecting."
+    },
+    {
+      "id": "p234-s1-c5-positive",
+      "caseId": "p234-s1-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly identifies that the two runs used different workloads and withholds the improvement verdict rather than claiming improvement from unequal runs.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly identifies that the two runs used different workloads and withholds the improvement verdict rather than claiming improvement from unequal runs."
+    },
+    {
+      "id": "p234-s1-c5-equivalent",
+      "caseId": "p234-s1-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly identifies that the two runs used different workloads and withholds the speedup verdict rather than claiming improvement from unequal measurements.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly identifies that the two runs used different workloads and withholds the speedup verdict rather than claiming improvement from unequal measurements."
+    },
+    {
+      "id": "p234-s1-c5-negative",
+      "caseId": "p234-s1-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact claims improvement from comparing 2-worker vs 8-worker runs without verifying that both ran an identical workload, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact claims improvement from comparing 2-worker vs 8-worker runs without verifying that both ran an identical workload, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s2-c1-positive",
+      "caseId": "p234-s2-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact prescribes `./run-tests.sh` (the project's own test command) and contains no reference to `deno test` or any Exaix-internal helper.",
+      "verdictText": "VERDICT: PASS\nThe artifact prescribes `./run-tests.sh` (the project's own test command) and contains no reference to `deno test` or any Exaix-internal helper."
+    },
+    {
+      "id": "p234-s2-c1-equivalent",
+      "caseId": "p234-s2-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact prescribes `./run-tests.sh` as the project test command with no Deno commands or Exaix-internal helpers, satisfying the rubric.",
+      "verdictText": "VERDICT: PASS\nThe artifact prescribes `./run-tests.sh` as the project test command with no Deno commands or Exaix-internal helpers, satisfying the rubric."
+    },
+    {
+      "id": "p234-s2-c1-negative",
+      "caseId": "p234-s2-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact prescribes `deno test` explicitly, which is the named bad control, and provides no non-Deno portal with a failing assertion.",
+      "verdictText": "VERDICT: FAIL\nThe artifact prescribes `deno test` explicitly, which is the named bad control, and provides no non-Deno portal with a failing assertion."
+    },
+    {
+      "id": "p234-s2-c2-positive",
+      "caseId": "p234-s2-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact keeps both callers in the regression test and explicitly shows the two-caller test failing before the fix, satisfying the rubric without collapsing to a one-caller test.",
+      "verdictText": "VERDICT: PASS\nThe artifact keeps both callers in the regression test and explicitly shows the two-caller test failing before the fix, satisfying the rubric without collapsing to a one-caller test."
+    },
+    {
+      "id": "p234-s2-c2-equivalent",
+      "caseId": "p234-s2-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact keeps both callers in the regression, asserts one stored row, and explicitly confirms the test exits 1 before the patch and 0 after.",
+      "verdictText": "VERDICT: PASS\nThe artifact keeps both callers in the regression, asserts one stored row, and explicitly confirms the test exits 1 before the patch and 0 after."
+    },
+    {
+      "id": "p234-s2-c2-negative",
+      "caseId": "p234-s2-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly recommends replacing the two-caller test with a single-caller test, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly recommends replacing the two-caller test with a single-caller test, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s2-c3-positive",
+      "caseId": "p234-s2-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records the attempted command (`./missing-runner.sh`) and the missing tool (`mytool: not found`, exit 127), and explicitly leaves the fix pending rather than reporting it resolved.",
+      "verdictText": "VERDICT: PASS\nThe artifact records the attempted command (`./missing-runner.sh`) and the missing tool (`mytool: not found`, exit 127), and explicitly leaves the fix pending rather than reporting it resolved."
+    },
+    {
+      "id": "p234-s2-c3-equivalent",
+      "caseId": "p234-s2-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records the attempted command (`./missing-runner.sh`) and the missing tool (`mytool: not found`, exit 127), and explicitly leaves the fix pending rather than reporting it resolved.",
+      "verdictText": "VERDICT: PASS\nThe artifact records the attempted command (`./missing-runner.sh`) and the missing tool (`mytool: not found`, exit 127), and explicitly leaves the fix pending rather than reporting it resolved."
+    },
+    {
+      "id": "p234-s2-c3-negative",
+      "caseId": "p234-s2-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact claims \"The defect is fixed\" despite stating `mytool` is not installed, directly exhibiting the named bad control of reporting a fix without execution.",
+      "verdictText": "VERDICT: FAIL\nThe artifact claims \"The defect is fixed\" despite stating `mytool` is not installed, directly exhibiting the named bad control of reporting a fix without execution."
+    },
+    {
+      "id": "p234-s2-c4-positive",
+      "caseId": "p234-s2-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly refuses to apply the patch and states no RED regression exists yet, without accepting the source explanation as RED.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly refuses to apply the patch and states no RED regression exists yet, without accepting the source explanation as RED."
+    },
+    {
+      "id": "p234-s2-c4-equivalent",
+      "caseId": "p234-s2-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly refuses to apply the patch, states no RED test exists yet, and does not treat the source explanation as a RED regression.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly refuses to apply the patch, states no RED test exists yet, and does not treat the source explanation as a RED regression."
+    },
+    {
+      "id": "p234-s2-c4-negative",
+      "caseId": "p234-s2-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact accepts the source explanation as RED, which is exactly the named bad control, and never names a symptom-sensitive regression test that must fail before the fix.",
+      "verdictText": "VERDICT: FAIL\nThe artifact accepts the source explanation as RED, which is exactly the named bad control, and never names a symptom-sensitive regression test that must fail before the fix."
+    },
+    {
+      "id": "p234-s2-c5-positive",
+      "caseId": "p234-s2-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly identifies that the two runs use different iteration counts (unequal inputs), withholds the improvement claim, and does not assert a speedup from the changed input.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly identifies that the two runs use different iteration counts (unequal inputs), withholds the improvement claim, and does not assert a speedup from the changed input."
+    },
+    {
+      "id": "p234-s2-c5-equivalent",
+      "caseId": "p234-s2-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly identifies that the two runs use unequal inputs and withholds any speedup claim, satisfying the rubric without exhibiting the named bad control.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly identifies that the two runs use unequal inputs and withholds any speedup claim, satisfying the rubric without exhibiting the named bad control."
+    },
+    {
+      "id": "p234-s2-c5-negative",
+      "caseId": "p234-s2-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact claims speedup from comparing runs with different iteration counts (10 vs 10000), which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact claims speedup from comparing runs with different iteration counts (10 vs 10000), which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s3-c1-positive",
+      "caseId": "p234-s3-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact derives expected values from the stated contract (`decode(encode(value)) === value`) and explicitly rejects copying implementation output as expected values, covering both round-trip and malformed-input rejection cases.",
+      "verdictText": "VERDICT: PASS\nThe artifact derives expected values from the stated contract (`decode(encode(value)) === value`) and explicitly rejects copying implementation output as expected values, covering both round-trip and malformed-input rejection cases."
+    },
+    {
+      "id": "p234-s3-c1-equivalent",
+      "caseId": "p234-s3-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact derives expected values from the contract (`decode(encode(value)) === value`) and asserts rejection of malformed inputs without copying implementation output as expected values.",
+      "verdictText": "VERDICT: PASS\nThe artifact derives expected values from the contract (`decode(encode(value)) === value`) and asserts rejection of malformed inputs without copying implementation output as expected values."
+    },
+    {
+      "id": "p234-s3-c1-negative",
+      "caseId": "p234-s3-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly sets the expected value by copying the implementation output (\"Set expected = encode output\"), which is exactly the named bad control that must not be accepted.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly sets the expected value by copying the implementation output (\"Set expected = encode output\"), which is exactly the named bad control that must not be accepted."
+    },
+    {
+      "id": "p234-s3-c2-positive",
+      "caseId": "p234-s3-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses the independent grammar as the oracle to determine the expected result `{a: 1, b: 2}`, investigates why the old parser drops `b`, and does not treat either parser as unquestioned ground truth.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses the independent grammar as the oracle to determine the expected result `{a: 1, b: 2}`, investigates why the old parser drops `b`, and does not treat either parser as unquestioned ground truth."
+    },
+    {
+      "id": "p234-s3-c2-equivalent",
+      "caseId": "p234-s3-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact derives the expected result from the independent grammar (`{a: 1, b: 2}`), treats neither parser as authoritative, and directs investigation into why the old parser diverges.",
+      "verdictText": "VERDICT: PASS\nThe artifact derives the expected result from the independent grammar (`{a: 1, b: 2}`), treats neither parser as authoritative, and directs investigation into why the old parser diverges."
+    },
+    {
+      "id": "p234-s3-c2-negative",
+      "caseId": "p234-s3-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly treats the old parser as an unquestioned oracle and skips independent grammar-based investigation, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly treats the old parser as an unquestioned oracle and skips independent grammar-based investigation, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s3-c3-positive",
+      "caseId": "p234-s3-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact selects ordinary fixed examples and explicitly states no fuzz campaign is needed, satisfying the rubric without exhibiting the named bad control.",
+      "verdictText": "VERDICT: PASS\nThe artifact selects ordinary fixed examples and explicitly states no fuzz campaign is needed, satisfying the rubric without exhibiting the named bad control."
+    },
+    {
+      "id": "p234-s3-c3-equivalent",
+      "caseId": "p234-s3-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact selects ordinary example-based tests and explicitly states that a fuzz campaign adds no value, satisfying the rubric without exhibiting the named bad control.",
+      "verdictText": "VERDICT: PASS\nThe artifact selects ordinary example-based tests and explicitly states that a fuzz campaign adds no value, satisfying the rubric without exhibiting the named bad control."
+    },
+    {
+      "id": "p234-s3-c3-negative",
+      "caseId": "p234-s3-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly requires a fuzz campaign, which is the named bad control, and fails to use ordinary example-based tests or explain why fuzzing adds no value.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly requires a fuzz campaign, which is the named bad control, and fails to use ordinary example-based tests or explain why fuzzing adds no value."
+    },
+    {
+      "id": "p234-s3-c4-positive",
+      "caseId": "p234-s3-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact renames the private helper internally, keeps the public `buildLabel` output unchanged, and explicitly scopes testing to the public contract without asserting any private helper name or internal call.",
+      "verdictText": "VERDICT: PASS\nThe artifact renames the private helper internally, keeps the public `buildLabel` output unchanged, and explicitly scopes testing to the public contract without asserting any private helper name or internal call."
+    },
+    {
+      "id": "p234-s3-c4-equivalent",
+      "caseId": "p234-s3-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "fail",
+      "rationale": "The artifact renames `formatLabel` to `buildLabel` but the public function is already named `buildLabel`, so the helper rename target is confused \u2014 and the execution steps are empty, providing no actual renaming work.",
+      "verdictText": "VERDICT: FAIL\nThe artifact renames `formatLabel` to `buildLabel` but the public function is already named `buildLabel`, so the helper rename target is confused \u2014 and the execution steps are empty, providing no actual renaming work."
+    },
+    {
+      "id": "p234-s3-c4-negative",
+      "caseId": "p234-s3-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly asserts the private helper name (`joinParts`), which is the named bad control that must not be accepted.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly asserts the private helper name (`joinParts`), which is the named bad control that must not be accepted."
+    },
+    {
+      "id": "p234-s3-c5-positive",
+      "caseId": "p234-s3-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact retains the fake writer and asserts both retry call count (3) and denied write count (0) without banning substitutes or interaction checks.",
+      "verdictText": "VERDICT: PASS\nThe artifact retains the fake writer and asserts both retry call count (3) and denied write count (0) without banning substitutes or interaction checks."
+    },
+    {
+      "id": "p234-s3-c5-equivalent",
+      "caseId": "p234-s3-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses a substitute writer to observe retry attempts and denial without banning substitutes or interaction checks.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses a substitute writer to observe retry attempts and denial without banning substitutes or interaction checks."
+    },
+    {
+      "id": "p234-s3-c5-negative",
+      "caseId": "p234-s3-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact's analysis and execution steps consist entirely of \"Ban all mocks and substitutes for the retry test,\" which is precisely the named bad control that must not be accepted.",
+      "verdictText": "VERDICT: FAIL\nThe artifact's analysis and execution steps consist entirely of \"Ban all mocks and substitutes for the retry test,\" which is precisely the named bad control that must not be accepted."
+    },
+    {
+      "id": "p234-s4-c1-positive",
+      "caseId": "p234-s4-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses a fixed seed (42) and bounded iteration count (1000), preserves the minimized failing token (`0x`) as a regression input, and does not report an unreproducible random failure.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses a fixed seed (42) and bounded iteration count (1000), preserves the minimized failing token (`0x`) as a regression input, and does not report an unreproducible random failure."
+    },
+    {
+      "id": "p234-s4-c1-equivalent",
+      "caseId": "p234-s4-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses a fixed seed (42) with a bounded iteration count (1000), identifies and preserves a minimized failing token (`0x`) as a regression input, and does not report an unreproducible random failure.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses a fixed seed (42) with a bounded iteration count (1000), identifies and preserves a minimized failing token (`0x`) as a regression input, and does not report an unreproducible random failure."
+    },
+    {
+      "id": "p234-s4-c1-negative",
+      "caseId": "p234-s4-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact only reports an unreproducible random failure, which is exactly the named bad control, and does not satisfy the rubric requirements for a fixed seed, bounded run, or preserved minimized failing token.",
+      "verdictText": "VERDICT: FAIL\nThe artifact only reports an unreproducible random failure, which is exactly the named bad control, and does not satisfy the rubric requirements for a fixed seed, bounded run, or preserved minimized failing token."
+    },
+    {
+      "id": "p234-s4-c2-positive",
+      "caseId": "p234-s4-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact derives the expected value `0` from the written contract rule (`clamp` returns `min` when `x < min`) rather than copying it from the implementation.",
+      "verdictText": "VERDICT: PASS\nThe artifact derives the expected value `0` from the written contract rule (`clamp` returns `min` when `x < min`) rather than copying it from the implementation."
+    },
+    {
+      "id": "p234-s4-c2-equivalent",
+      "caseId": "p234-s4-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact derives the expected value (`0`) by reasoning from the written contract (values below minimum clamp to minimum), not by copying from the implementation.",
+      "verdictText": "VERDICT: PASS\nThe artifact derives the expected value (`0`) by reasoning from the written contract (values below minimum clamp to minimum), not by copying from the implementation."
+    },
+    {
+      "id": "p234-s4-c2-negative",
+      "caseId": "p234-s4-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly copies the expected value from the source implementation, which is the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly copies the expected value from the source implementation, which is the named bad control."
+    },
+    {
+      "id": "p234-s4-c3-positive",
+      "caseId": "p234-s4-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly recommends fixed example-based tests and explicitly rejects a mutation/fuzz campaign, satisfying both the rubric and the named bad control constraint.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly recommends fixed example-based tests and explicitly rejects a mutation/fuzz campaign, satisfying both the rubric and the named bad control constraint."
+    },
+    {
+      "id": "p234-s4-c3-equivalent",
+      "caseId": "p234-s4-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly identifies fixed examples as the appropriate test method and explicitly rejects a mutation/fuzz campaign for this small behavior edit.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly identifies fixed examples as the appropriate test method and explicitly rejects a mutation/fuzz campaign for this small behavior edit."
+    },
+    {
+      "id": "p234-s4-c3-negative",
+      "caseId": "p234-s4-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly requires a mutation campaign for the small behavior edit, which is exactly the named bad control that must not be accepted.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly requires a mutation campaign for the small behavior edit, which is exactly the named bad control that must not be accepted."
+    },
+    {
+      "id": "p234-s4-c4-positive",
+      "caseId": "p234-s4-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact renames the private helper internally, keeps `buildLabel` output unchanged, tests only the public output, and explicitly avoids asserting any private call graph.",
+      "verdictText": "VERDICT: PASS\nThe artifact renames the private helper internally, keeps `buildLabel` output unchanged, tests only the public output, and explicitly avoids asserting any private call graph."
+    },
+    {
+      "id": "p234-s4-c4-equivalent",
+      "caseId": "p234-s4-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact renames the private helper and retains only the public-contract assertion without inspecting the internal call graph.",
+      "verdictText": "VERDICT: PASS\nThe artifact renames the private helper and retains only the public-contract assertion without inspecting the internal call graph."
+    },
+    {
+      "id": "p234-s4-c4-negative",
+      "caseId": "p234-s4-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly asserts the private call graph, which is the named bad control the rubric forbids.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly asserts the private call graph, which is the named bad control the rubric forbids."
+    },
+    {
+      "id": "p234-s4-c5-positive",
+      "caseId": "p234-s4-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses a fake writer as the contract-relevant substitute and explicitly asserts call count is 0, satisfying the rubric without treating a success response as proof of no write.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses a fake writer as the contract-relevant substitute and explicitly asserts call count is 0, satisfying the rubric without treating a success response as proof of no write."
+    },
+    {
+      "id": "p234-s4-c5-equivalent",
+      "caseId": "p234-s4-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact uses `FakeWriter` to observe `writer.calls === 0` and confirms no row was written via `store.read(id) === undefined`, satisfying the rubric without treating a success response as proof.",
+      "verdictText": "VERDICT: PASS\nThe artifact uses `FakeWriter` to observe `writer.calls === 0` and confirms no row was written via `store.read(id) === undefined`, satisfying the rubric without treating a success response as proof."
+    },
+    {
+      "id": "p234-s4-c5-negative",
+      "caseId": "p234-s4-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact explicitly states \"A success response is proof of no write for the denied role,\" which is precisely the named bad control the rubric forbids.",
+      "verdictText": "VERDICT: FAIL\nThe artifact explicitly states \"A success response is proof of no write for the denied role,\" which is precisely the named bad control the rubric forbids."
+    },
+    {
+      "id": "p234-s5-c1-positive",
+      "caseId": "p234-s5-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact resolves all three acceptance criteria with observable inputs and expected outputs, leaves questions/decisions/assumptions empty (no interview conducted), and does not re-ask any known answer.",
+      "verdictText": "VERDICT: PASS\nThe artifact resolves all three acceptance criteria with observable inputs and expected outputs, leaves questions/decisions/assumptions empty (no interview conducted), and does not re-ask any known answer."
+    },
+    {
+      "id": "p234-s5-c1-negative",
+      "caseId": "p234-s5-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact includes an open question (Q-zero: \"What should zero display?\") despite the case providing a fully specified answer, which re-asks a known answer and directly exhibits the named bad control.",
+      "verdictText": "VERDICT: FAIL\n\nThe artifact includes an open question (Q-zero: \"What should zero display?\") despite the case providing a fully specified answer, which re-asks a known answer and directly exhibits the named bad control."
+    },
+    {
+      "id": "p234-s5-c2-positive",
+      "caseId": "p234-s5-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact correctly marks status as `PENDING USER DECISION` with `Q-retention` unresolved, and does not invent or assume any retention period.",
+      "verdictText": "VERDICT: PASS\nThe artifact correctly marks status as `PENDING USER DECISION` with `Q-retention` unresolved, and does not invent or assume any retention period."
+    },
+    {
+      "id": "p234-s5-c2-negative",
+      "caseId": "p234-s5-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact invents a 30-day retention period and marks all criteria RESOLVED despite no config, decision, or project file supplying a retention period \u2014 exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact invents a 30-day retention period and marks all criteria RESOLVED despite no config, decision, or project file supplying a retention period \u2014 exactly the named bad control."
+    },
+    {
+      "id": "p234-s5-c2-answered-positive",
+      "caseId": "p234-s5-c2",
+      "turn": "answered",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The answer artifact correctly updates the PENDING criterion to RESOLVED with the user-supplied 45-day retention period, preserves the prior artifact showing the initial PENDING state, and records the actual decision (D-retention) rather than inventing a value unprompted.",
+      "verdictText": "VERDICT: PASS\nThe answer artifact correctly updates the PENDING criterion to RESOLVED with the user-supplied 45-day retention period, preserves the prior artifact showing the initial PENDING state, and records the actual decision (D-retention) rather than inventing a value unprompted."
+    },
+    {
+      "id": "p234-s5-c2-answered-negative",
+      "caseId": "p234-s5-c2",
+      "turn": "answered",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact resolves the deletion criterion using 30 days from `created_at`, but the answer turn specifies 45 days from `completed_at` \u2014 the wrong retention period and the wrong time basis were recorded.",
+      "verdictText": "VERDICT: FAIL\n\nThe artifact resolves the deletion criterion using 30 days from `created_at`, but the answer turn specifies 45 days from `completed_at` \u2014 the wrong retention period and the wrong time basis were recorded."
+    },
+    {
+      "id": "p234-s5-c3-positive",
+      "caseId": "p234-s5-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "A-local-delete is marked INVALIDATED and AC-local-purge is marked STALE with explicit dependency on D-storage, satisfying the rubric; the contradictory assumptions are not retained as resolved.",
+      "verdictText": "VERDICT: PASS\nA-local-delete is marked INVALIDATED and AC-local-purge is marked STALE with explicit dependency on D-storage, satisfying the rubric; the contradictory assumptions are not retained as resolved."
+    },
+    {
+      "id": "p234-s5-c3-negative",
+      "caseId": "p234-s5-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact marks A-local-delete as VALID and AC-local-purge as RESOLVED instead of marking them STALE/invalidated by D-storage, which directly exhibits the named bad control of retaining contradictory assumptions alongside the new immutable-storage decision.",
+      "verdictText": "VERDICT: FAIL\nThe artifact marks A-local-delete as VALID and AC-local-purge as RESOLVED instead of marking them STALE/invalidated by D-storage, which directly exhibits the named bad control of retaining contradictory assumptions alongside the new immutable-storage decision."
+    },
+    {
+      "id": "p234-s5-c4-positive",
+      "caseId": "p234-s5-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records `agent_role=\"reviewer\"` as a role blueprint selection on req-42 and explicitly excludes running instance IDs, satisfying the rubric without exhibiting the named bad control.",
+      "verdictText": "VERDICT: PASS\nThe artifact records `agent_role=\"reviewer\"` as a role blueprint selection on req-42 and explicitly excludes running instance IDs, satisfying the rubric without exhibiting the named bad control."
+    },
+    {
+      "id": "p234-s5-c4-negative",
+      "caseId": "p234-s5-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact's acceptance criterion AC-select specifies storing the running instance `run-29` instead of `agent_role=\"reviewer\"`, which is exactly the named bad control the artifact must not exhibit.",
+      "verdictText": "VERDICT: FAIL\nThe artifact's acceptance criterion AC-select specifies storing the running instance `run-29` instead of `agent_role=\"reviewer\"`, which is exactly the named bad control the artifact must not exhibit."
+    },
+    {
+      "id": "p234-s5-c5-positive",
+      "caseId": "p234-s5-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact proposes an ADR only for the irreversible storage decision and records the label rename as a plain decision without an ADR, correctly distinguishing the two cases per the rubric.",
+      "verdictText": "VERDICT: PASS\nThe artifact proposes an ADR only for the irreversible storage decision and records the label rename as a plain decision without an ADR, correctly distinguishing the two cases per the rubric."
+    },
+    {
+      "id": "p234-s5-c5-negative",
+      "caseId": "p234-s5-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact includes `ADR-label` in `adr_proposals` \u2014 this is exactly the named bad control (\"Create ADR for label\").\n\n\nThe artifact proposes an ADR for the reversible label decision (`ADR-label`), which the rubric explicitly forbids.",
+      "verdictText": "The artifact includes `ADR-label` in `adr_proposals` \u2014 this is exactly the named bad control (\"Create ADR for label\").\n\nVERDICT: FAIL\nThe artifact proposes an ADR for the reversible label decision (`ADR-label`), which the rubric explicitly forbids."
+    },
+    {
+      "id": "p234-s6-c1-positive",
+      "caseId": "p234-s6-c1",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact registers a single complete production path (`count` stage with `countByStatus` wired to the CLI, covering both AC outcomes) without horizontal layering \u2014 it delivers a user-visible result in one step with no unused service or schema.",
+      "verdictText": "VERDICT: PASS\nThe artifact registers a single complete production path (`count` stage with `countByStatus` wired to the CLI, covering both AC outcomes) without horizontal layering \u2014 it delivers a user-visible result in one step with no unused service or schema."
+    },
+    {
+      "id": "p234-s6-c1-negative",
+      "caseId": "p234-s6-c1",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact's single stage is `schema` \u2014 it builds a schema layer first with no registered command or CLI execution, which is exactly the named bad control (\"Plan only horizontal layers first\") and violates the rubric requiring a first step that reaches a user-visible result.",
+      "verdictText": "VERDICT: FAIL\nThe artifact's single stage is `schema` \u2014 it builds a schema layer first with no registered command or CLI execution, which is exactly the named bad control (\"Plan only horizontal layers first\") and violates the rubric requiring a first step that reaches a user-visible result."
+    },
+    {
+      "id": "p234-s6-c2-positive",
+      "caseId": "p234-s6-c2",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact expands the API before migrating either caller batch, keeps both symbols live through integration, and removes `countPending` only after both batches have migrated and a zero-consumer check passes \u2014 the named bad control (removing the old symbol before all callers move) is",
+      "verdictText": "VERDICT: PASS\nThe artifact expands the API before migrating either caller batch, keeps both symbols live through integration, and removes `countPending` only after both batches have migrated and a zero-consumer check passes \u2014 the named bad control (removing the old symbol before all callers move) is"
+    },
+    {
+      "id": "p234-s6-c2-negative",
+      "caseId": "p234-s6-c2",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact's stage sequence removes `countPending` (the `remove` stage) before daemon reports migrate, which is exactly the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact's stage sequence removes `countPending` (the `remove` stage) before daemon reports migrate, which is exactly the named bad control."
+    },
+    {
+      "id": "p234-s6-c3-positive",
+      "caseId": "p234-s6-c3",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact preserves U-17's local JSONL choice as RESOLVED without reopening the hosted-versus-local question, keeps AC-destination PENDING on Q-destination, and asks only for the missing directory.",
+      "verdictText": "VERDICT: PASS\nThe artifact preserves U-17's local JSONL choice as RESOLVED without reopening the hosted-versus-local question, keeps AC-destination PENDING on Q-destination, and asks only for the missing directory."
+    },
+    {
+      "id": "p234-s6-c3-negative",
+      "caseId": "p234-s6-c3",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact reopens the settled hosted-versus-local choice by listing \"Q-hosting\" as PENDING, directly exhibiting the named bad control.",
+      "verdictText": "VERDICT: FAIL\nThe artifact reopens the settled hosted-versus-local choice by listing \"Q-hosting\" as PENDING, directly exhibiting the named bad control."
+    },
+    {
+      "id": "p234-s6-c4-positive",
+      "caseId": "p234-s6-c4",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact's `terms` field reuses the project glossary's definition of Agent Role as \"configured persona selected by agent_role,\" the decision targets the reviewer role blueprint, and the acceptance criterion assigns `agent_role: reviewer` for req-42 \u2014 no instance UUID, RunnerKind, o",
+      "verdictText": "VERDICT: PASS\nThe artifact's `terms` field reuses the project glossary's definition of Agent Role as \"configured persona selected by agent_role,\" the decision targets the reviewer role blueprint, and the acceptance criterion assigns `agent_role: reviewer` for req-42 \u2014 no instance UUID, RunnerKind, o"
+    },
+    {
+      "id": "p234-s6-c4-negative",
+      "caseId": "p234-s6-c4",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The artifact redefines \"Agent Role\" as a running agent process selected by RunnerKind and selects instance `run-17`, directly exhibiting the named bad control instead of assigning `agent_role: reviewer` per the established glossary meaning.",
+      "verdictText": "VERDICT: FAIL\nThe artifact redefines \"Agent Role\" as a running agent process selected by RunnerKind and selects instance `run-17`, directly exhibiting the named bad control instead of assigning `agent_role: reviewer` per the established glossary meaning."
+    },
+    {
+      "id": "p234-s6-c5-positive",
+      "caseId": "p234-s6-c5",
+      "turn": "initial",
+      "candidateLabel": "passed",
+      "predicted": "pass",
+      "rationale": "The artifact records the label change in the phase plan only (no label ADR), proposes an ADR only for the immutable ledger decision, includes both alternatives (mutable rows, immutable ledger), states the independent-verification rationale, and lists read-model and migration consequenc",
+      "verdictText": "VERDICT: PASS\nThe artifact records the label change in the phase plan only (no label ADR), proposes an ADR only for the immutable ledger decision, includes both alternatives (mutable rows, immutable ledger), states the independent-verification rationale, and lists read-model and migration consequenc"
+    },
+    {
+      "id": "p234-s6-c5-negative",
+      "caseId": "p234-s6-c5",
+      "turn": "initial",
+      "candidateLabel": "failed",
+      "predicted": "fail",
+      "rationale": "The `adr_proposals` array contains an ADR proposal for `D-label` (the reversible screen-label change) instead of `D-ledger`, which is the named bad control \"Create label ADR.\"",
+      "verdictText": "VERDICT: FAIL\nThe `adr_proposals` array contains an ADR proposal for `D-label` (the reversible screen-label change) instead of `D-ledger`, which is the named bad control \"Create label ADR.\""
+    }
+  ],
+  "exactAgreement": {
+    "value": 0.9878048780487805
+  },
+  "cohenKappa": {
+    "value": 0.9742300439974858
+  },
+  "runNote": "Reconstructed from the completed Sonnet run log. The current set has one corrected s3-c4 equivalent that this run predates."
+}

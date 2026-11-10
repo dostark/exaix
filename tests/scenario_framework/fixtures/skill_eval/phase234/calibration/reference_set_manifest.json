@@ -46,14 +46,14 @@
     "p234-s6-c4": "Redefine Agent Role as a running agent.",
     "p234-s6-c5": "Create a label ADR or omit the storage alternatives."
   },
-  "reviewPacket": "reference_set_review.md",
   "reviewRecord": {
     "reviewer": "User (approved via delegated agent)",
     "reviewerKind": "user-delegation",
     "reviewedAt": "2026-11-10",
-    "decision": "approve-all",
-    "reviewedSetSha256": "c5d04d048851e70fb088e713f92ade5739d889ebf19bf69cfd8694a07be78877",
+    "decision": "approve-all-revised-set",
+    "reviewedSetSha256": "ded83bc6bdc9c1033624b7dc9538c08692ef42112fe867d93919adac5e78d1ea",
     "independence": "waived-by-user",
-    "waiver": "The user directed the agent to approve all entries on their behalf. This is not an independent review."
-  }
+    "waiver": "The user directed the agent to proceed with further calibration and approve the revised set on their behalf. This is not an independent review."
+  },
+  "reviewPacket": "reference_set_review.md"
 }
