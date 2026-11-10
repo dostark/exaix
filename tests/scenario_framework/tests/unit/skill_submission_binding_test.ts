@@ -230,6 +230,34 @@ Deno.test("binding rejects a capture that names another request", async () => {
   }
 });
 
+Deno.test("binding prefers a request-scoped capture over a shared skill capture", async () => {
+  const env = await initTestDbService();
+  try {
+    const loaded = await loadFixBug();
+    const { revision, hash } = await seedRevision(env.db, loaded.snapshot);
+    await seedUsage(env.db, "call-1", revision);
+    const body = bodyOf(loaded.snapshot.skill_md);
+    await writeCapture(env.tempDir, "**Instructions:**\nWrong generic body.\n", { revision, sha256: hash });
+    await Deno.writeTextFile(
+      join(env.tempDir, ".exa", "phase234-evidence", `fix-bug-${REQUEST_ID}-provider-prompt.json`),
+      JSON.stringify({
+        skill: "fix-bug",
+        root: "blueprint",
+        revision,
+        sha256: hash,
+        prompt: `**Instructions:**\n${body}\n`,
+        requestId: REQUEST_ID,
+        callId: "call-1",
+      }),
+      { mode: 0o600 },
+    );
+    const binding = await bindRecordedSkillSubmission(env.tempDir, "p234-s2-c1", REQUEST_ID);
+    assertEquals(binding.result.status, "passed");
+  } finally {
+    await env.cleanup();
+  }
+});
+
 Deno.test("binding refuses an ambiguous request with more than one call identity", async () => {
   const env = await initTestDbService();
   try {

@@ -208,23 +208,11 @@ function instructionsFor(row: IUsageRow): string {
   return row.render_mode === "trimmed" ? stripExamplesSection(body) : body;
 }
 
-async function readCapture(
-  root: string,
+function parseCapture(
+  raw: string,
   expected: (typeof approvedSkills)[number],
   requestId: string,
-): Promise<ICaptureRecord | undefined> {
-  const resolver = new PathResolver(createMockConfig(root));
-  const path = await resolver.validatePath(
-    join(root, ".exa", "phase234-evidence", `${expected.name}-provider-prompt.json`),
-    [root],
-  );
-  let raw: string;
-  try {
-    raw = await Deno.readTextFile(path);
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return undefined;
-    throw error;
-  }
+): ICaptureRecord {
   let parsed: ReturnType<typeof CaptureSchema.safeParse>;
   try {
     parsed = CaptureSchema.safeParse(JSON.parse(raw));
@@ -239,6 +227,30 @@ async function readCapture(
     throw new Error("Provider capture identifies another request");
   }
   return { prompt: parsed.data.prompt, requestId: parsed.data.requestId, callId: parsed.data.callId };
+}
+
+async function readCapture(
+  root: string,
+  expected: (typeof approvedSkills)[number],
+  requestId: string,
+): Promise<ICaptureRecord | undefined> {
+  const resolver = new PathResolver(createMockConfig(root));
+  const candidates = [
+    join(root, ".exa", "phase234-evidence", `${expected.name}-${requestId}-provider-prompt.json`),
+    join(root, ".exa", "phase234-evidence", `${expected.name}-provider-prompt.json`),
+  ];
+  for (const candidate of candidates) {
+    const path = await resolver.validatePath(candidate, [root]);
+    let raw: string;
+    try {
+      raw = await Deno.readTextFile(path);
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) continue;
+      throw error;
+    }
+    return parseCapture(raw, expected, requestId);
+  }
+  return undefined;
 }
 
 /** Binds a retained prompt to the request's journal submission. */
