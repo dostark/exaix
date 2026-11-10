@@ -13,16 +13,6 @@ import { computeCohenKappa, computeExactAgreement } from "@exaix/eval-history";
 import { REPO_ROOT } from "@exaix/testing";
 import type { Opt, Reason } from "@exaix/core/types";
 
-const REFERENCE_SET =
-  `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/reference_set.json`;
-const RUBRIC_MAP = `${REPO_ROOT}/exaix-dev-docs/planning/phase-234-case-rubric-mapping.md`;
-const REQUEST_DIR = `${REPO_ROOT}/tests/scenario_framework/fixtures/requests/skill_eval/phase234`;
-const APPROVED_CASES = `${REPO_ROOT}/tests/scenario_framework/fixtures/planning_decisions/approved_cases.md`;
-const RESULT = `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/calibration_result.json`;
-const EVALUATOR = "phase234-semantic-calibration-v1";
-const DEFAULT_TOOL = "claude-code";
-const DEFAULT_MODEL = "claude-sonnet-4-6";
-
 interface IReferenceEntry {
   id: string;
   caseId: string;
@@ -33,7 +23,14 @@ interface IReferenceEntry {
   pairId: string | null;
 }
 
-interface IRubricRow {
+/** Minimal artifact identity needed by the shared judge prompt. */
+export interface IPromptEntry {
+  caseId: string;
+  turn: string;
+  artifact: string;
+}
+
+export interface IRubricRow {
   oracle: string;
   control: string;
 }
@@ -61,13 +58,23 @@ interface ICalibrationResult {
   cohenKappa: { value: number | null; reason?: string };
 }
 
+const REFERENCE_SET =
+  `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/reference_set.json`;
+const RUBRIC_MAP = `${REPO_ROOT}/exaix-dev-docs/planning/phase-234-case-rubric-mapping.md`;
+const REQUEST_DIR = `${REPO_ROOT}/tests/scenario_framework/fixtures/requests/skill_eval/phase234`;
+const APPROVED_CASES = `${REPO_ROOT}/tests/scenario_framework/fixtures/planning_decisions/approved_cases.md`;
+const RESULT = `${REPO_ROOT}/tests/scenario_framework/fixtures/skill_eval/phase234/calibration/calibration_result.json`;
+const EVALUATOR = "phase234-semantic-calibration-v1";
+const DEFAULT_TOOL = "claude-code";
+const DEFAULT_MODEL = "claude-sonnet-4-6";
+
 function sha256(text: string): Promise<string> {
   return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then((digest) =>
     Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")
   );
 }
 
-function rubricRows(markdown: string): Map<string, IRubricRow> {
+export function rubricRows(markdown: string): Map<string, IRubricRow> {
   const rows = new Map<string, IRubricRow>();
   for (const line of markdown.split("\n")) {
     const cells = line.split("|").map((cell) => cell.trim());
@@ -81,16 +88,16 @@ function stripFrontmatter(text: string): string {
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
 }
 
-async function readRequest(caseId: string): Promise<string> {
+export async function readRequest(caseId: string): Promise<string> {
   return stripFrontmatter(await Deno.readTextFile(`${REQUEST_DIR}/${caseId}.md`));
 }
 
-async function readAnswer(caseId: string, turn: string): Promise<string | undefined> {
+export async function readAnswer(caseId: string, turn: string): Promise<string | undefined> {
   if (caseId !== "p234-s5-c2" || turn !== "answered") return undefined;
   return stripFrontmatter(await Deno.readTextFile(`${REQUEST_DIR}/${caseId}-answer.md`));
 }
 
-async function readApprovedCase(caseId: string): Promise<string | undefined> {
+export async function readApprovedCase(caseId: string): Promise<string | undefined> {
   if (caseId[6] !== "6") return undefined;
   const index = caseId.at(-1);
   const text = await Deno.readTextFile(APPROVED_CASES);
@@ -98,8 +105,8 @@ async function readApprovedCase(caseId: string): Promise<string | undefined> {
   return match?.[0]?.trim();
 }
 
-function buildPrompt(
-  entry: IReferenceEntry,
+export function buildPrompt(
+  entry: IPromptEntry,
   rubric: IRubricRow,
   requestText: string,
   answerText: Opt<string, Reason.OptionalInput>,
@@ -132,7 +139,7 @@ Answer with exactly one verdict line: VERDICT: PASS or VERDICT: FAIL.
 Then write one short rationale sentence.`;
 }
 
-function parseVerdict(text: string): { predicted: "pass" | "fail" | "error"; rationale: string } {
+export function parseVerdict(text: string): { predicted: "pass" | "fail" | "error"; rationale: string } {
   const verdict = /VERDICT:\s*(PASS|FAIL)/i.exec(text);
   const rationale = text.replace(/VERDICT:\s*(PASS|FAIL)/i, "").trim().slice(0, 500);
   if (!verdict) return { predicted: "error", rationale: rationale || "No verdict line" };
