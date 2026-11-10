@@ -12,10 +12,10 @@ portals:
     git_init: true
 matrix:
   cells:
-    - tool: live
-      provider: claude-cli
-      config: configs/claude-sonnet-4-6-skill-eval.toml
-      requires_bin: "claude"
+    - tool: codex
+      provider: codex-cli
+      config: configs/codex-terra-61-skill-eval.toml
+      requires_bin: "codex"
 steps:
   - id: capture-workspace-baseline
     type: run-script

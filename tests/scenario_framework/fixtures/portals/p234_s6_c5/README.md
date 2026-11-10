@@ -17,4 +17,11 @@ Decision entries identify the source, choice, affected `acceptance_ids`, and `co
 Stages identify real `depends_on` edges, `api`, `callers`, `tests`, and `rollback`.
 Use consumer/method entries in `callers`. Omit stages blocked by unanswered decisions.
 Use structured acceptance outcomes for count examples, assignments, and ledger corrections.
-ADR proposals record decision, alternatives, rationale, and consequences.
+The record `status` is `RESOLVED` or `PENDING USER DECISION`.
+Acceptance entries use `RESOLVED` or `PENDING`.
+Every stage's `rollback.requires_api` names at least one API or invariant to retain.
+ADR proposals record decision, alternatives, rationale, consequences, and `hard_to_reverse`.
+`hard_to_reverse` is a sentence that explains why the choice is difficult to reverse.
+The ledger decision ID is `D-ledger`; the proposal's `decision` field names `D-ledger`.
+Acceptance uses the stable IDs `AC-label` and `AC-correction`.
+Every stage names a concrete implementation API and a rollback condition; do not add discovery-only stages.

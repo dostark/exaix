@@ -23,6 +23,30 @@ for (const sample of samples) {
   }
 }
 
+Deno.test("p234-s6-c5 accepts equivalent ADR wording and outcome shapes", () => {
+  const sample = samples.find((candidate) => candidate.case_id === "p234-s6-c5");
+  if (!sample) throw new Error("missing p234-s6-c5 sample");
+  const good = structuredClone(sample.good) as {
+    acceptance: Array<{ id: string; status: string; outcome: object }>;
+    adr_proposals: Array<{ alternatives: string[]; hard_to_reverse: string }>;
+  };
+  const proposal = good.adr_proposals[0];
+  proposal.alternatives = ["Mutable ledger rows", "Immutable signed ledger with append-only corrections"];
+  proposal.hard_to_reverse =
+    "Independent verification would break because the original signed bytes cannot be reconstructed after rewriting.";
+  good.acceptance.find((entry) => entry.id === "AC-label")!.outcome = {
+    screen_label: "Runs",
+    replaces: "Executions",
+  };
+  good.acceptance.find((entry) => entry.id === "AC-correction")!.outcome = {
+    original_entry: "Original signed bytes remain unchanged and independently verifiable.",
+    correction: "A correction is appended as a separate entry linked to the original.",
+    read_model: "The read model distinguishes originals and corrections.",
+    migration: "Preserve original signed bytes.",
+  };
+  assertEquals(evaluatePlanning("p234-s6-c5", JSON.stringify(good)).ok, true);
+});
+
 Deno.test("planning oracle rejects malformed records and mismatched or duplicate identities", () => {
   const first = samples[0].good;
   for (const raw of ["not JSON", "{}", JSON.stringify({ ...first, acceptance: [] })]) {

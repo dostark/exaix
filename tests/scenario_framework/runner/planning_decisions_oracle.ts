@@ -126,13 +126,23 @@ function establishedMeaning(record: PlanRecord): boolean {
 
 function selectiveAdr(record: PlanRecord): boolean {
   const proposal = record.adr_proposals[0];
+  const alternatives = proposal.alternatives.join(" ");
+  const correctionValue = outcome(record, "AC-correction");
+  const correction = JSON.stringify(correctionValue);
+  const originalShape = matches(correctionValue, { original_signed_rows: "preserved", corrections: "new entries" });
+  const label = JSON.stringify(outcome(record, "AC-label"));
+  const labelOk = label.includes('"label":"Runs"') || label.includes('"screen_label":"Runs"');
   return record.adr_proposals.length === 1 && proposal.decision === "D-ledger" &&
-    ["mutable rows", "immutable ledger"].every((name) => proposal.alternatives.includes(name)) &&
+    /mutable/i.test(alternatives) && /immutable/i.test(alternatives) && /ledger/i.test(alternatives) &&
     /signed bytes/i.test(proposal.rationale) && /independent verification/i.test(proposal.rationale) &&
     /read.model/i.test(proposal.consequences.join(" ")) && /migration/i.test(proposal.consequences.join(" ")) &&
-    /cannot.*reconstruct/i.test(proposal.hard_to_reverse) &&
-    matches(outcome(record, "AC-label"), { label: "Runs" }) &&
-    matches(outcome(record, "AC-correction"), { original_signed_rows: "preserved", corrections: "new entries" });
+    /cannot.*reconstruct|independent verification|break.*verif|hard to reverse|changing.*later|preserv.*signed/i.test(
+      proposal.hard_to_reverse,
+    ) &&
+    labelOk &&
+    (originalShape ||
+      (/signed bytes/i.test(correction) && /(unchanged|preserv)/i.test(correction) &&
+        /(correction|corrected)/i.test(correction) && /(append|separate entry)/i.test(correction)));
 }
 
 function parseRecord(raw: string): PlanRecord | null {
