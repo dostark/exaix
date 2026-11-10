@@ -113,4 +113,5 @@ claude_allowed_tools = [
   "Bash(sh missing-runner.sh:*)",
   "Bash(sh:*)",
   "Bash(bash:*)",
+  "Bash(deno:*)",
 ]

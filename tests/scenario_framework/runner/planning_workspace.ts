@@ -33,7 +33,7 @@ export async function preparePlanningWorkspace(root: string, caseId: string): Pr
   const configPath = await resolver.validatePath(join(root, "exa.config.toml"), [root]);
   const preset = await Deno.readTextFile(join(REPO_ROOT, "configs/dogfood.toml"));
   const base = parse(resolveCellConfig(preset, { workspaceRoot: root, worktreePath: worktree }));
-  const codexCase = /^p234-s3-c[124]$/.test(caseId) || match[1] === "6";
+  const codexCase = /^p234-s3-c[124]$/.test(caseId) || match[1] === "6" || caseId === "p234-s1-c2";
   const livePreset = codexCase ? "configs/dogfood.codex-terra-61.toml" : "configs/dogfood.claude-sonnet.toml";
   const live = parse(await Deno.readTextFile(join(REPO_ROOT, livePreset)));
   const systemSchema = z.object({ allow_net: z.array(z.string()) }).passthrough();
