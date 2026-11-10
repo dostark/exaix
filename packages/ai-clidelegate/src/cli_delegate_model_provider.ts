@@ -67,6 +67,7 @@ import { SafeSubprocess } from "@exaix/core";
 import {
   MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
   SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT,
+  SESSION_FLAG_ALLOWED_TOOLS,
   SESSION_FLAG_CONFIG_OVERRIDE,
   SESSION_FLAG_EFFORT,
   SESSION_FLAG_FORMAT,
@@ -84,6 +85,7 @@ import {
   SESSION_FLAG_VARIANT,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
+  SESSION_SANDBOX_WORKSPACE_WRITE,
   SESSION_SUBCMD_EXEC,
   SESSION_SUBCMD_RESUME,
   SESSION_SUBCMD_RUN,
@@ -108,6 +110,23 @@ export type IRunCliDelegateProcess = (
   options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
+/** Codex sandbox mode for direct provider calls. */
+export type CliProviderCodexSandbox = "read-only" | "workspace-write";
+/** OpenCode bash permission for direct provider calls. */
+export type CliProviderOpencodeBash = "allow" | "deny";
+
+/** Opt-in native-tool policy for direct provider calls. Absent keeps the read-only planning posture. */
+export interface ICliDelegateProviderTools {
+  /** Claude Code tools to pre-approve, for example "Bash(./run-tests.sh)". */
+  claudeAllowedTools?: readonly string[];
+  /** Codex sandbox. Defaults to read-only. */
+  codexSandbox?: CliProviderCodexSandbox;
+  /** OpenCode bash permission. Defaults to deny. */
+  opencodeBash?: CliProviderOpencodeBash;
+  /** Give the child a workspace-local TMPDIR. Defaults to false. */
+  workspaceTmp?: boolean;
+}
+
 interface ICliDelegateModelProviderOptions {
   /** Which headless CLI tool to invoke. */
   tool: SessionTool;
@@ -123,6 +142,8 @@ interface ICliDelegateModelProviderOptions {
   id?: string;
   /** Optional tool-specific invocation policy for caller-owned protocols such as ReAct. */
   protocolBackend?: ICliDelegateProtocolBackend;
+  /** Optional native-tool policy for direct provider calls. */
+  providerTools?: ICliDelegateProviderTools;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
   /** Version probe function for --json-schema support. Defaults to probeDelegateVersion. Overridden in tests. */
@@ -147,6 +168,20 @@ export interface IOpencodeReadOnlyPermissionConfig {
 function assertValidEffortTier(effort: string): void {
   if (!EffortTierSchema.options.includes(effort as never)) {
     throw new SafeError(`Invalid reasoning effort tier: '${effort}'`, "INVALID_EFFORT_TIER");
+  }
+}
+
+const CLAUDE_ALLOWED_TOOL_PATTERN = /^[A-Za-z][A-Za-z0-9_.-]*(?:\([^()]+\))?$/;
+
+/** Rejects a blanket Bash grant. Only an exact tool or an exact tool pattern is allowed. */
+function assertSafeClaudeAllowedTools(tools: readonly string[]): void {
+  for (const tool of tools) {
+    if (!CLAUDE_ALLOWED_TOOL_PATTERN.test(tool) || tool === "Bash" || tool === "Bash(*)") {
+      throw new SafeError(
+        `Invalid Claude allowed tool '${tool}': use an exact entry such as Bash(./run-tests.sh).`,
+        "INVALID_CLAUDE_ALLOWED_TOOL",
+      );
+    }
   }
 }
 
@@ -196,24 +231,30 @@ function isCodexFlatPropertySchema(property: JSONValue): boolean {
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
 
 const OPENCODE_PERMISSION_DENY = OpencodePermissionValueSchema.enum.deny;
+const OPENCODE_PERMISSION_ALLOW = OpencodePermissionValueSchema.enum.allow;
 
-/** Read-only config for plan-generation calls: edit/bash/task denied, no tools allowed. Do not add read/grep/glob — that switches opencode into ReAct tool mode, producing prose instead of a plan string. */
-function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
+/** Config for plan-generation calls: edit/task denied, bash denied unless opted in. */
+function buildOpencodeProviderConfig(
+  providerTools: Opt<ICliDelegateProviderTools, Reason.OptionalDependency>,
+): IOpencodeReadOnlyPermissionConfig {
   return {
     permission: {
       edit: OPENCODE_PERMISSION_DENY,
-      bash: OPENCODE_PERMISSION_DENY,
+      bash: providerTools?.opencodeBash === "allow" ? OPENCODE_PERMISSION_ALLOW : OPENCODE_PERMISSION_DENY,
       task: OPENCODE_PERMISSION_DENY,
     },
   };
 }
 
 /** Written once per provider instance (not per call), under cwd not the OS tempdir — the daemon process only holds --allow-write for its sandbox/portal tree. */
-async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
+async function writeOpencodeProviderConfig(
+  cwd: string,
+  providerTools: Opt<ICliDelegateProviderTools, Reason.OptionalDependency>,
+): Promise<string> {
   const dir = pathBuilders.runtimePath(cwd, "tmp");
   await Deno.mkdir(dir, { recursive: true });
-  const path = join(dir, `opencode-readonly-${crypto.randomUUID()}.json`);
-  await Deno.writeTextFile(path, JSON.stringify(buildOpencodeReadOnlyConfig(), null, 2));
+  const path = join(dir, `opencode-provider-${crypto.randomUUID()}.json`);
+  await Deno.writeTextFile(path, JSON.stringify(buildOpencodeProviderConfig(providerTools), null, 2));
   return path;
 }
 
@@ -271,7 +312,7 @@ function extractCodexSessionId(stdout: string): string | undefined {
 export class CliDelegateModelProvider implements IModelProvider {
   public readonly id: string;
   private readonly run: IRunCliDelegateProcess;
-  private opencodeReadOnlyConfigPath: Promise<string> | undefined;
+  private opencodeConfigPath: Promise<string> | undefined;
   /** conversationId -> captured session id, for --resume/--session continuity. */
   private readonly sessionIds = new Map<string, string>();
   /** Cached result of the claude version probe for --json-schema support. null = not yet probed. */
@@ -327,12 +368,19 @@ export class CliDelegateModelProvider implements IModelProvider {
     return resultOf(parsed, this.options.model, this.options.tool, this.isTextPassthroughTool());
   }
 
-  /** The delegate environment with the opencode read-only config when that tool needs it. */
+  /** The delegate environment with the opencode config and optional workspace TMPDIR. */
   private async delegateEnv(): Promise<Record<string, string>> {
     const env = buildDelegateEnv();
+    if (this.options.providerTools?.workspaceTmp) {
+      const tmp = pathBuilders.runtimePath(this.options.cwd, "tmp");
+      await Deno.mkdir(tmp, { recursive: true });
+      env.TMPDIR = tmp;
+      env.TMP = tmp;
+      env.TEMP = tmp;
+    }
     if (!this.isTextPassthroughTool()) {
-      this.opencodeReadOnlyConfigPath ??= writeOpencodeReadOnlyConfig(this.options.cwd);
-      env.OPENCODE_CONFIG = await this.opencodeReadOnlyConfigPath;
+      this.opencodeConfigPath ??= writeOpencodeProviderConfig(this.options.cwd, this.options.providerTools);
+      env.OPENCODE_CONFIG = await this.opencodeConfigPath;
     }
     return env;
   }
@@ -393,6 +441,12 @@ export class CliDelegateModelProvider implements IModelProvider {
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
     if (effort) assertValidEffortTier(effort);
     const effortFlag = effort ? [SESSION_FLAG_EFFORT, effort] : [];
+    const allowedTools = this.options.providerTools?.claudeAllowedTools;
+    const allowedToolsFlag: string[] = [];
+    if (allowedTools && allowedTools.length > 0) {
+      assertSafeClaudeAllowedTools(allowedTools);
+      allowedToolsFlag.push(SESSION_FLAG_ALLOWED_TOOLS, allowedTools.join(","));
+    }
     const jsonSchemaFlag: string[] = [];
     if (jsonSchema) {
       if (this.jsonSchemaVersionSupported === null) {
@@ -421,6 +475,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_MODEL,
       this.options.model,
       ...effortFlag,
+      ...allowedToolsFlag,
       ...backendArgs,
       ...resumeFlag,
       ...jsonSchemaFlag,
@@ -474,7 +529,9 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_MODEL,
       this.options.model,
       SESSION_FLAG_SANDBOX,
-      SESSION_SANDBOX_READ_ONLY,
+      this.options.providerTools?.codexSandbox === "workspace-write"
+        ? SESSION_SANDBOX_WORKSPACE_WRITE
+        : SESSION_SANDBOX_READ_ONLY,
       SESSION_FLAG_SKIP_GIT_REPO_CHECK,
       ...effortArgs,
       ...backendArgs,

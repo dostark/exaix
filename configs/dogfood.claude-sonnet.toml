@@ -96,3 +96,21 @@ max_cost_per_mtok = 0
 min_context_window = 64000
 supports_thinking = false
 candidates = ["claude-cli"]
+
+# Opt-in native-tool policy for direct plan-generation calls in the fixed test
+# portal. Shell interpreters are allowed so the portal's own test scripts can run;
+# every other Bash command still needs approval. Do not copy this to production.
+[cli_delegate]
+enabled = false
+tool = "claude-code"
+
+[cli_delegate.provider_tools]
+claude_allowed_tools = [
+  "Bash(cd:*)",
+  "Bash(./run-tests.sh)",
+  "Bash(./run-tests.sh:*)",
+  "Bash(bash scripts/repro.sh:*)",
+  "Bash(sh missing-runner.sh:*)",
+  "Bash(sh:*)",
+  "Bash(bash:*)",
+]

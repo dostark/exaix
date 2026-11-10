@@ -47,6 +47,7 @@ export async function preparePlanningWorkspace(root: string, caseId: string): Pr
     agents: live.agents,
     model_presets: live.model_presets,
     request_analysis: live.request_analysis,
+    ...(live.cli_delegate ? { cli_delegate: live.cli_delegate } : {}),
   };
   await copy(join(REPO_ROOT, ".copilot/skills", skill), target);
   await Deno.writeTextFile(configPath, stringify(config));

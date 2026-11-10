@@ -44,3 +44,13 @@ max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false
 candidates = ["codex-cli"]
+
+# Opt-in native-tool policy for direct plan-generation calls. The workspace-write
+# sandbox lets the project command run; TMPDIR stays inside the workspace.
+[cli_delegate]
+enabled = false
+tool = "codex"
+
+[cli_delegate.provider_tools]
+codex_sandbox = "workspace-write"
+workspace_tmp = true

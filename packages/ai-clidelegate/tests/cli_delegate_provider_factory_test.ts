@@ -14,6 +14,7 @@ import { DEFAULT_CLAUDE_CLI_MODEL, DEFAULT_OPENCODE_CLI_MODEL } from "../src/con
 import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
 import { ProviderType } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas";
+import type { CliDelegateProviderTools } from "@exaix/schemas/session_delegate.ts";
 import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } from "../src/protocol_backend.ts";
 
 function optionsFor(
@@ -27,6 +28,22 @@ function optionsFor(
     config: ConfigSchema.parse({
       system: { root: Deno.cwd() },
       cli_delegate: { enabled: true, tool, ...(toolExposure ? { tool_exposure: toolExposure } : {}) },
+    }),
+  };
+}
+
+function claudeOptionsWithProviderTools(providerTools?: CliDelegateProviderTools): IResolvedProviderOptions {
+  return {
+    provider: ProviderType.CLAUDE_CLI,
+    model: "claude-sonnet-5",
+    timeoutMs: 60000,
+    config: ConfigSchema.parse({
+      system: { root: Deno.cwd() },
+      cli_delegate: {
+        enabled: true,
+        tool: "claude-code",
+        ...(providerTools ? { provider_tools: providerTools } : {}),
+      },
     }),
   };
 }
@@ -124,4 +141,25 @@ Deno.test("CliDelegateProviderFactory: falls back to the tool's default model wh
     timeoutMs: 60000,
   } as IResolvedProviderOptions);
   assertEquals((opencodeProvider as CliDelegateModelProvider).id, `opencode-${DEFAULT_OPENCODE_CLI_MODEL}`);
+});
+
+Deno.test("CliDelegateProviderFactory: maps the opt-in provider tool policy", async () => {
+  const factory = new CliDelegateProviderFactory("claude-code");
+  const provider = await factory.create(claudeOptionsWithProviderTools({
+    claude_allowed_tools: ["Bash(./run-tests.sh)"],
+    codex_sandbox: "workspace-write",
+    opencode_bash: "allow",
+    workspace_tmp: true,
+  }));
+  const options = Reflect.get(provider, "options");
+  assertEquals(options.providerTools?.claudeAllowedTools, ["Bash(./run-tests.sh)"]);
+  assertEquals(options.providerTools?.codexSandbox, "workspace-write");
+  assertEquals(options.providerTools?.opencodeBash, "allow");
+  assertEquals(options.providerTools?.workspaceTmp, true);
+});
+
+Deno.test("CliDelegateProviderFactory: omits the provider tool policy when no block is configured", async () => {
+  const factory = new CliDelegateProviderFactory("claude-code");
+  const provider = await factory.create(claudeOptionsWithProviderTools());
+  assertEquals(Reflect.get(provider, "options").providerTools, undefined);
 });

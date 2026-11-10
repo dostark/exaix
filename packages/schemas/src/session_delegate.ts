@@ -209,6 +209,20 @@ export const SessionDelegateConfigSchema = z.object({
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;
 
+/** Opt-in native-tool policy for direct CLI provider calls. Defaults preserve the
+ *  read-only planning posture, so production configs unlock nothing unless they say so. */
+export const CliDelegateProviderToolsSchema = z.object({
+  /** Claude Code tools to pre-approve, for example "Bash(./run-tests.sh)". */
+  claude_allowed_tools: z.array(z.string().min(1)).max(20).optional(),
+  /** Codex sandbox for provider calls. Default read-only. */
+  codex_sandbox: z.enum(["read-only", "workspace-write"]).default("read-only").optional(),
+  /** OpenCode bash permission for provider calls. Default deny. */
+  opencode_bash: z.enum(["allow", "deny"]).default("deny").optional(),
+  /** Give the CLI child a workspace-local TMPDIR instead of the OS temp directory. */
+  workspace_tmp: z.boolean().default(false).optional(),
+}).strict();
+export type CliDelegateProviderTools = z.infer<typeof CliDelegateProviderToolsSchema>;
+
 /** TOML config block: [cli_delegate] — per-step execution via a headless CLI tool (claude/opencode) as an
  *  alternative to direct IModelProvider API calls. Distinct from [session_delegate]: this selects the execution
  *  strategy for a single agent step, not a whole gate. */
@@ -222,6 +236,8 @@ export const CliDelegateConfigSchema = z.object({
   effort: z.string().min(1).optional(),
   /** Native CLI tool catalog for planning/analysis provider calls; shell_only is Claude-only. */
   tool_exposure: z.enum(["default", "shell_only"]).default("default").optional(),
+  /** Opt-in native-tool policy for direct provider calls. */
+  provider_tools: CliDelegateProviderToolsSchema.optional(),
   /** Absolute paths to additional binaries allowed beyond the built-in claude/opencode bins. */
   bin_overrides: z.array(z.string()).optional(),
   /** Provider whose API key the daemon passes to the tool. Without it the tool gets no provider key. */

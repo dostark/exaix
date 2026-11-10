@@ -13,6 +13,7 @@ import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.t
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import { CliDelegateModelProvider } from "./cli_delegate_model_provider.ts";
+import type { ICliDelegateProviderTools } from "./cli_delegate_model_provider.ts";
 import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } from "./protocol_backend.ts";
 import {
   DEFAULT_CLAUDE_CLI_BIN,
@@ -42,6 +43,20 @@ function stripProviderPrefix(model: string): string {
   return separatorIndex === -1 ? model : model.slice(separatorIndex + 1);
 }
 
+/** Maps the validated config block to the provider option shape. */
+function providerToolsFromConfig(
+  config: IResolvedProviderOptions["config"],
+): ICliDelegateProviderTools | undefined {
+  const providerTools = config?.cli_delegate?.provider_tools;
+  if (!providerTools) return undefined;
+  return {
+    ...(providerTools.claude_allowed_tools ? { claudeAllowedTools: providerTools.claude_allowed_tools } : {}),
+    ...(providerTools.codex_sandbox ? { codexSandbox: providerTools.codex_sandbox } : {}),
+    ...(providerTools.opencode_bash ? { opencodeBash: providerTools.opencode_bash } : {}),
+    ...(providerTools.workspace_tmp ? { workspaceTmp: providerTools.workspace_tmp } : {}),
+  };
+}
+
 export class CliDelegateProviderFactory extends AbstractProviderFactory {
   constructor(private readonly tool: SessionTool) {
     super();
@@ -56,6 +71,7 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
     }
     const { bin, defaultModel } = BIN_AND_MODEL_BY_TOOL[this.tool] ?? OPENCODE_FALLBACK;
     const model = stripProviderPrefix(options.model || defaultModel);
+    const providerTools = providerToolsFromConfig(options.config);
 
     return Promise.resolve(
       new CliDelegateModelProvider({
@@ -66,6 +82,7 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
         timeoutMs: options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
         id: options.id ?? this.generateId(this.tool, model),
         ...(shellOnly ? { protocolBackend: SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } : {}),
+        ...(providerTools ? { providerTools } : {}),
       }),
     );
   }

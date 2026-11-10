@@ -368,3 +368,30 @@ Deno.test("[session_delegate] CliDelegateConfigSchema accepts an optional provid
   assertEquals(parsed.provider, { name: "openrouter", key_env: "OPENROUTER_API_KEY" });
   assertEquals(CliDelegateConfigSchema.parse({ enabled: true, tool: "opencode" }).provider, undefined);
 });
+
+Deno.test("[cli_delegate] provider tools default to the read-only posture and validate opt-in", () => {
+  const base = { enabled: true, tool: "claude-code" };
+  assertEquals(CliDelegateConfigSchema.parse(base).provider_tools, undefined);
+  const defaults = CliDelegateConfigSchema.parse({ ...base, provider_tools: {} }).provider_tools;
+  assertEquals(defaults?.codex_sandbox, "read-only");
+  assertEquals(defaults?.opencode_bash, "deny");
+  assertEquals(defaults?.workspace_tmp, false);
+  assertEquals(defaults?.claude_allowed_tools, undefined);
+  const configured = CliDelegateConfigSchema.parse({
+    ...base,
+    provider_tools: {
+      claude_allowed_tools: ["Bash(./run-tests.sh)"],
+      codex_sandbox: "workspace-write",
+      opencode_bash: "allow",
+      workspace_tmp: true,
+    },
+  }).provider_tools;
+  assertEquals(configured?.claude_allowed_tools, ["Bash(./run-tests.sh)"]);
+  assertEquals(configured?.codex_sandbox, "workspace-write");
+  assertEquals(configured?.opencode_bash, "allow");
+  assertEquals(configured?.workspace_tmp, true);
+  assertThrows(() =>
+    CliDelegateConfigSchema.parse({ ...base, provider_tools: { codex_sandbox: "danger-full-access" } })
+  );
+  assertThrows(() => CliDelegateConfigSchema.parse({ ...base, provider_tools: { unknown: true } }));
+});

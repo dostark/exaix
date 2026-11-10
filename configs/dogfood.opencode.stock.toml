@@ -37,3 +37,9 @@ enabled = true
 enabled = true
 tool = "opencode"
 model = "opencode-go/deepseek-v4.1-flash"
+
+# Opt-in native-tool policy for direct plan-generation calls. Bash is allowed;
+# edit and task stay denied in the generated OpenCode config.
+[cli_delegate.provider_tools]
+opencode_bash = "allow"
+workspace_tmp = true
