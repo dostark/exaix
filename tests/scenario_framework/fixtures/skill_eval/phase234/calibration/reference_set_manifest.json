@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "status": "unreviewed-reference-set",
-  "reviewStatus": "pending-independent-review",
+  "status": "approved-user-delegated",
+  "reviewStatus": "approved-user-delegated",
   "rubricSha256": "e66e8215c1ceef521d95069b0202cbae764e400b2aecc6168d8ef629d7505f50",
   "processSha256": "39126b5fcc8b5b1d1250d1ce7e73dca2d753dee00f2a67ce9b94e142e6cd6dd7",
   "caseCount": 30,
   "entryCount": 82,
   "proposedCalibrationPolicy": {
-    "status": "proposed-not-approved",
+    "status": "approved-user-delegated",
     "minimumPositive": 30,
     "minimumNegative": 30,
     "minimumEquivalent": 20,
@@ -46,5 +46,14 @@
     "p234-s6-c4": "Redefine Agent Role as a running agent.",
     "p234-s6-c5": "Create a label ADR or omit the storage alternatives."
   },
-  "reviewPacket": "reference_set_review.md"
+  "reviewPacket": "reference_set_review.md",
+  "reviewRecord": {
+    "reviewer": "User (approved via delegated agent)",
+    "reviewerKind": "user-delegation",
+    "reviewedAt": "2026-11-10",
+    "decision": "approve-all",
+    "reviewedSetSha256": "c5d04d048851e70fb088e713f92ade5739d889ebf19bf69cfd8694a07be78877",
+    "independence": "waived-by-user",
+    "waiver": "The user directed the agent to approve all entries on their behalf. This is not an independent review."
+  }
 }

@@ -76,7 +76,7 @@ Deno.test("the reference set covers every case with a positive and a negative co
 Deno.test("the reference set stays separate from live artifacts and keeps its hashes", async () => {
   for (const entry of entries) {
     assertEquals(await sha256(entry.artifact), entry.artifactSha256, entry.id);
-    assertEquals(entry.reviewStatus, "pending-independent-review", entry.id);
+    assertEquals(entry.reviewStatus, "approved-user-delegated", entry.id);
     assert(!entry.artifact.includes("exaix-sandboxes"), `${entry.id} references a live sandbox`);
     assert(!entry.artifact.includes("/home/"), `${entry.id} references an absolute home path`);
   }
@@ -113,9 +113,11 @@ Deno.test("every reference label agrees with the existing case oracle", () => {
   }
 });
 
-Deno.test("the reference set does not claim independent review or calibration", () => {
-  assertEquals(reference.status, "unreviewed-reference-set");
-  assertEquals(reference.reviewStatus, "pending-independent-review");
-  assertEquals(manifest.proposedCalibrationPolicy.status, "proposed-not-approved");
-  assertStringIncludes(manifest.reviewStatus, "pending");
+Deno.test("the reference set records the user-delegated approval without claiming independent review", () => {
+  assertEquals(reference.status, "approved-user-delegated");
+  assertEquals(reference.reviewStatus, "approved-user-delegated");
+  assertEquals(manifest.proposedCalibrationPolicy.status, "approved-user-delegated");
+  assertEquals(reference.reviewRecord.independence, "waived-by-user");
+  assertStringIncludes(reference.reviewRecord.waiver, "not an independent review");
+  assertStringIncludes(manifest.reviewRecord.waiver, "not an independent review");
 });
