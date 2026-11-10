@@ -45,5 +45,6 @@
     "p234-s6-c3": "Reopen a settled choice.",
     "p234-s6-c4": "Redefine Agent Role as a running agent.",
     "p234-s6-c5": "Create a label ADR or omit the storage alternatives."
-  }
+  },
+  "reviewPacket": "reference_set_review.md"
 }

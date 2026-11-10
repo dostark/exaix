@@ -12,6 +12,8 @@ run, and an approved agreement threshold.
   SHA-256 hashes.
 - `reference_set_manifest.json` — case count, control map, rubric and process
   hashes, and the proposed (not approved) calibration policy.
+- `reference_set_review.md` — independent-review packet with a verdict column
+  for every entry.
 
 ## Coverage
 
