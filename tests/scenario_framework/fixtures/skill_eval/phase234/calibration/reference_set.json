@@ -172,9 +172,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-39739d67\ntrace_id: 13d476f6-04e2-5017-bf72-d62ff343d9dc\ncase_id: p234-s1-c5\n---\n# Latency comparison with different worker counts\n\n## Analysis\n\nThe 2-worker and 8-worker runs used different workloads. The comparison is not comparable; withhold the improvement verdict.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nThe 2-worker and 8-worker runs used different workloads. The comparison is not comparable; withhold the improvement verdict.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-39739d67\ntrace_id: 13d476f6-04e2-5017-bf72-d62ff343d9dc\ncase_id: p234-s1-c5\n---\n# Latency comparison with different worker counts\n\n## Analysis\n\nMetric: p95 request latency. Acceptance threshold: at least a 10% p95 reduction on the same workload, worker count, environment, and dataset. The 2-worker and 8-worker runs use different workloads, so they are not comparable; withhold the improvement verdict until an identical controlled run is measured.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nMetric: p95 request latency. Acceptance threshold: at least a 10% p95 reduction on the same workload, worker count, environment, and dataset. The 2-worker and 8-worker runs use different workloads, so they are not comparable; withhold the improvement verdict until an identical controlled run is measured.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "2554b29c058f2174bf008861809501113fa05a66eaa83aebd31f26d86e6e72fe",
+      "artifactSha256": "f65851a3d73d970a7f272c12cbfcd37f91a40ff2924f27f3c32365baf9dad3ff",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -185,9 +185,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-39739d67\ntrace_id: 13d476f6-04e2-5017-bf72-d62ff343d9dc\ncase_id: p234-s1-c5\n---\n# Latency comparison with different worker counts\n\n## Analysis\n\nThe 2-worker and 8-worker measurements used different workloads. They are not comparable, so withhold any speedup verdict.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nThe 2-worker and 8-worker measurements used different workloads. They are not comparable, so withhold any speedup verdict.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-39739d67\ntrace_id: 13d476f6-04e2-5017-bf72-d62ff343d9dc\ncase_id: p234-s1-c5\n---\n# Latency comparison with different worker counts\n\n## Analysis\n\nUse p95 latency with a fixed 10% improvement threshold. Because the 2-worker baseline and 8-worker candidate used different workloads, the comparison is not comparable; withhold any speedup verdict.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse p95 latency with a fixed 10% improvement threshold. Because the 2-worker baseline and 8-worker candidate used different workloads, the comparison is not comparable; withhold any speedup verdict.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "98ad17dfd28ccb48ca95274dcc9473271d2ade226458115f93200a13d6b86626",
+      "artifactSha256": "5209a1f85415d88ba46f3131bfc8bdbc981a1c45b20fc41e3f18d9b812c8e9c7",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -328,9 +328,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-25c6e1a5\ntrace_id: dc6d5530-dcf6-5022-a70d-14a5aad62b94\ncase_id: p234-s2-c4\n---\n# Plausible patch without RED\n\n## Analysis\n\nDo not apply the patch before a symptom-sensitive regression fails. No RED exists yet.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nDo not apply the patch before a symptom-sensitive regression fails. No RED exists yet.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-25c6e1a5\ntrace_id: dc6d5530-dcf6-5022-a70d-14a5aad62b94\ncase_id: p234-s2-c4\n---\n# Plausible patch without RED\n\n## Analysis\n\nA plausible diagnosis is insufficient. The named symptom-sensitive regression is `tests/count_test.ts`, which submits one row and asserts that exactly one row is stored. Run `./run-tests.sh`; it must fail with `FAIL: expected 1 row, got 2` before any patch is applied. No patch is applied until that RED is observed.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nA plausible diagnosis is insufficient. The named symptom-sensitive regression is `tests/count_test.ts`, which submits one row and asserts that exactly one row is stored. Run `./run-tests.sh`; it must fail with `FAIL: expected 1 row, got 2` before any patch is applied. No patch is applied until that RED is observed.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "1a9a9cff4f754dab7cf1fe04eb054e5d0332500ab91b530773abe9b658ffeaff",
+      "artifactSha256": "03b189a76ba9b2cdda8f38db7476506c290fe0e3a088b57ab4d92b5aeb98cae7",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -341,9 +341,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-25c6e1a5\ntrace_id: dc6d5530-dcf6-5022-a70d-14a5aad62b94\ncase_id: p234-s2-c4\n---\n# Plausible patch without RED\n\n## Analysis\n\nDo not patch before a symptom-sensitive regression fails; no RED test exists yet.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nDo not patch before a symptom-sensitive regression fails; no RED test exists yet.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-25c6e1a5\ntrace_id: dc6d5530-dcf6-5022-a70d-14a5aad62b94\ncase_id: p234-s2-c4\n---\n# Plausible patch without RED\n\n## Analysis\n\nDo not apply the patch from source inspection. The required RED is `tests/count_test.ts` asserting one stored row for one submission; it must fail with `FAIL: expected 1 row, got 2` first.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nDo not apply the patch from source inspection. The required RED is `tests/count_test.ts` asserting one stored row for one submission; it must fail with `FAIL: expected 1 row, got 2` first.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "bfc1dc6952d515f524e7bc5c742e12acc1bd0ee0cb89c696d4a04bb018590376",
+      "artifactSha256": "09f8caa370399c86a77c1f23649c7c525dce0f7fe00c19495ebb3403210b6b63",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -380,9 +380,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-fbb1ca72\ntrace_id: dd5c9d06-00f5-503b-8ed8-ff1808aa3a3a\ncase_id: p234-s2-c5\n---\n# Latency comparison with different iteration counts\n\n## Analysis\n\nThe 100-iteration and 10000-iteration runs use different inputs. They are not comparable, so withhold any speedup verdict.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nThe 100-iteration and 10000-iteration runs use different inputs. They are not comparable, so withhold any speedup verdict.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-fbb1ca72\ntrace_id: dd5c9d06-00f5-503b-8ed8-ff1808aa3a3a\ncase_id: p234-s2-c5\n---\n# Latency comparison with different iteration counts\n\n## Analysis\n\nUse p95 latency with a fixed 10% threshold. The 100-iteration and 10000-iteration runs use different inputs, so they are not comparable; withhold the improvement verdict.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse p95 latency with a fixed 10% threshold. The 100-iteration and 10000-iteration runs use different inputs, so they are not comparable; withhold the improvement verdict.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "c73323a88ef2345f7f2cdd2839ba6018b7680e05778f582685e8e77942065f5c",
+      "artifactSha256": "7e70cb927d2b5ce75dc304763f3d619c441c61b23904f74ec9a6c8065396b68f",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -406,9 +406,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-14540241\ntrace_id: 6a7003f6-3fae-580a-9074-2909ceb6abc6\ncase_id: p234-s3-c1\n---\n# Serializer round-trip and malformed input\n\n## Analysis\n\n## Contract\nFor every valid value, `decode(encode(value))` must equal `value`. Malformed bytes must throw `SerializationError`.\n\n## Tests\nUse a table of representative values and assert deep equality after the round trip. Add malformed inputs (`\"\"`, `\"0x\"`, truncated bytes) and assert they throw. Derive expected values from the contract, not from the encoder output.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\n## Contract\nFor every valid value, `decode(encode(value))` must equal `value`. Malformed bytes must throw `SerializationError`.\n\n## Tests\nUse a table of representative values and assert deep equality after the round trip. Add malformed inputs (`\"\"`, `\"0x\"`, truncated bytes) and assert they throw. Derive expected values from the contract, not from the encoder output.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-14540241\ntrace_id: 6a7003f6-3fae-580a-9074-2909ceb6abc6\ncase_id: p234-s3-c1\n---\n# Serializer round-trip and malformed input\n\n## Analysis\n\nContract: `decode(encode(value)) === value` for well-formed text. Malformed UTF-8 bytes must throw `SerializerError`.\n\n```ts\nfor (const value of [\"\", \"a\", \"\u00e9\"]) assertEquals(decode(encode(value)), value);\nfor (const bad of [new Uint8Array([0xff]), new Uint8Array([0xc3])]) assertThrows(() => decode(bad), SerializerError);\n```\n\nExpected values come from the contract, not the encoder output.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nContract: `decode(encode(value)) === value` for well-formed text. Malformed UTF-8 bytes must throw `SerializerError`.\n\n```ts\nfor (const value of [\"\", \"a\", \"\u00e9\"]) assertEquals(decode(encode(value)), value);\nfor (const bad of [new Uint8Array([0xff]), new Uint8Array([0xc3])]) assertThrows(() => decode(bad), SerializerError);\n```\n\nExpected values come from the contract, not the encoder output.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "ca93f5131e749fa09cd376caaceeea095694d140f4637a0bb43a447c5f91e5c4",
+      "artifactSha256": "e0a01798627a0a2b92e53d75fcb74909ddb2660f080524c9eb4ac848e08a372e",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -419,9 +419,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-14540241\ntrace_id: 6a7003f6-3fae-580a-9074-2909ceb6abc6\ncase_id: p234-s3-c1\n---\n# Serializer round-trip and malformed input\n\n## Analysis\n\nTest the contract property `decode(encode(value)) === value` for a table of values. Add malformed inputs and assert rejection:\n\n```ts\nfor (const value of values) assertEquals(decode(encode(value)), value);\nfor (const bad of [\"\", \"0x\", truncated]) assertThrows(() => decode(bad));\n```\n\nThe expected values come from the contract, not from implementation output.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nTest the contract property `decode(encode(value)) === value` for a table of values. Add malformed inputs and assert rejection:\n\n```ts\nfor (const value of values) assertEquals(decode(encode(value)), value);\nfor (const bad of [\"\", \"0x\", truncated]) assertThrows(() => decode(bad));\n```\n\nThe expected values come from the contract, not from implementation output.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-14540241\ntrace_id: 6a7003f6-3fae-580a-9074-2909ceb6abc6\ncase_id: p234-s3-c1\n---\n# Serializer round-trip and malformed input\n\n## Analysis\n\nTest the contract with a table of well-formed values and assert `decode(encode(value)) === value`. Add malformed UTF-8 byte arrays and assert `SerializerError`:\n\n```ts\nassertThrows(() => decode(new Uint8Array([0xff])), SerializerError);\n```\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nTest the contract with a table of well-formed values and assert `decode(encode(value)) === value`. Add malformed UTF-8 byte arrays and assert `SerializerError`:\n\n```ts\nassertThrows(() => decode(new Uint8Array([0xff])), SerializerError);\n```\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "b24e343025521abc8cc0b17a2a3bccbd346f34d87b41d07b581a28a96ed3baf4",
+      "artifactSha256": "8c62d0a461c162007e8ce533f07aa151840f47f780a31352f9a3e996c3150307",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -458,9 +458,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-e1a429f6\ntrace_id: 02fb11ed-547d-5aeb-bb04-bc785fd82de2\ncase_id: p234-s3-c2\n---\n# Parser disagreement on a fixed token\n\n## Analysis\n\nThe independent grammar parses `a=1; b=2` to `{a: 1, b: 2}`. The old parser returns `{a: 1}` and the new parser returns `{a: 1, b: 2}`. The grammars disagree; investigate why the old parser drops `b` and record which result the grammar requires. The grammar decides; no parser is authoritative.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nThe independent grammar parses `a=1; b=2` to `{a: 1, b: 2}`. The old parser returns `{a: 1}` and the new parser returns `{a: 1, b: 2}`. The grammars disagree; investigate why the old parser drops `b` and record which result the grammar requires. The grammar decides; no parser is authoritative.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-e1a429f6\ntrace_id: 02fb11ed-547d-5aeb-bb04-bc785fd82de2\ncase_id: p234-s3-c2\n---\n# Parser disagreement on a fixed token\n\n## Analysis\n\nThe independent grammar parses `a=1; b=2` to `{a:1,b:2}`. The old parser returns `{a:1}` because it stops at the semicolon; the new parser returns both keys. Investigate the old parser's splitter, record the root cause, and use the grammar-derived result as the expected value.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nThe independent grammar parses `a=1; b=2` to `{a:1,b:2}`. The old parser returns `{a:1}` because it stops at the semicolon; the new parser returns both keys. Investigate the old parser's splitter, record the root cause, and use the grammar-derived result as the expected value.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "e07043f7769cce2b191107dbcf2462b74bdd4e1a7ee35ed5f9e4cb8939523cc5",
+      "artifactSha256": "41a7857dcfe8164e8214610d797c539058ac3dbb05d143e9c81daee2596662f1",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -484,9 +484,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-0871eb84\ntrace_id: 4128e4db-e3ce-56cc-ae55-f2b2f358cb5b\ncase_id: p234-s3-c3\n---\n# Small formatter with fixed examples\n\n## Analysis\n\nUse ordinary fixed examples for the formatter. No fuzz campaign is needed for this one-line behavior.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse ordinary fixed examples for the formatter. No fuzz campaign is needed for this one-line behavior.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-0871eb84\ntrace_id: 4128e4db-e3ce-56cc-ae55-f2b2f358cb5b\ncase_id: p234-s3-c3\n---\n# Small formatter with fixed examples\n\n## Analysis\n\nUse ordinary examples: `formatName(\"  Ada  \") === \"Ada\"`, `formatName(\"Bob\") === \"Bob\"`. A fuzz or mutation campaign adds no value because this is a deterministic one-line trim with a tiny fixed input domain.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse ordinary examples: `formatName(\"  Ada  \") === \"Ada\"`, `formatName(\"Bob\") === \"Bob\"`. A fuzz or mutation campaign adds no value because this is a deterministic one-line trim with a tiny fixed input domain.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "a2c94b2a4789839c5af363b4ea671fe9c3618cee0e9033e7ca897cdbfb486941",
+      "artifactSha256": "ced27ac91bd890fb3d20dba5ee9cea3274a0abd6c69d6073f280492293dc84ae",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -497,9 +497,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-0871eb84\ntrace_id: 4128e4db-e3ce-56cc-ae55-f2b2f358cb5b\ncase_id: p234-s3-c3\n---\n# Small formatter with fixed examples\n\n## Analysis\n\nUse a small fixed example table for the formatter; a fuzz campaign adds no value for this one-line behavior.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse a small fixed example table for the formatter; a fuzz campaign adds no value for this one-line behavior.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-0871eb84\ntrace_id: 4128e4db-e3ce-56cc-ae55-f2b2f358cb5b\ncase_id: p234-s3-c3\n---\n# Small formatter with fixed examples\n\n## Analysis\n\nFixed example tests: `formatName(\"  Ada  \")` returns `\"Ada\"` and `formatName(\"Bob\")` returns `\"Bob\"`. No fuzz or mutation campaign is justified for a one-line trim.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nFixed example tests: `formatName(\"  Ada  \")` returns `\"Ada\"` and `formatName(\"Bob\")` returns `\"Bob\"`. No fuzz or mutation campaign is justified for a one-line trim.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "bfb3b08de984c784b849bf8dcbf79c47f7808ab8fa1d5835cfd3e623b96af573",
+      "artifactSha256": "87f61a4e5df50db29b1c773ffea7cc2cf6d8b360a7925f512585d250a37f1cf6",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -523,9 +523,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-3b84f35e\ntrace_id: dd02f8cc-17d4-5157-9900-32ff5555e616\ncase_id: p234-s3-c4\n---\n# Private helper refactor\n\n## Analysis\n\nRename the private helper internally. The public `buildLabel` output stays unchanged and byte-identical for fixed inputs. Test only the public output; do not inspect or assert any private helper or internal call.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private helper internally. The public `buildLabel` output stays unchanged and byte-identical for fixed inputs. Test only the public output; do not inspect or assert any private helper or internal call.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-3b84f35e\ntrace_id: dd02f8cc-17d4-5157-9900-32ff5555e616\ncase_id: p234-s3-c4\n---\n# Private helper refactor\n\n## Analysis\n\nRename the private `joinParts` helper in `src/helper.ts` to `joinSegments`. The public `buildLabel` output is unchanged:\n\n```ts\nassertEquals(buildLabel({id:1,name:\"x\"}), \"x\");\n```\n\nDo not assert `joinParts`, `joinSegments`, or any internal call.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private `joinParts` helper in `src/helper.ts` to `joinSegments`. The public `buildLabel` output is unchanged:\n\n```ts\nassertEquals(buildLabel({id:1,name:\"x\"}), \"x\");\n```\n\nDo not assert `joinParts`, `joinSegments`, or any internal call.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "e3b0fe5790bcbf9b732302bc646ac843f1e1cb5fe79aea8ce7ac6cfa6422e83a",
+      "artifactSha256": "64d0b1123626bde581b72ea97f104eeee4e2970827d53a394c81006d9fe88a4d",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -536,9 +536,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-3b84f35e\ntrace_id: dd02f8cc-17d4-5157-9900-32ff5555e616\ncase_id: p234-s3-c4\n---\n# Private helper refactor\n\n## Analysis\n\nRename the private `formatLabel` helper to `joinLabelParts` internally. The public `buildLabel` output is unchanged. Public test:\n\n```ts\nassertEquals(buildLabel({ id: 1, name: \"x\" }), \"x\");\n```\n\nDo not assert the private helper name or any private call.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private `formatLabel` helper to `joinLabelParts` internally. The public `buildLabel` output is unchanged. Public test:\n\n```ts\nassertEquals(buildLabel({ id: 1, name: \"x\" }), \"x\");\n```\n\nDo not assert the private helper name or any private call.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-3b84f35e\ntrace_id: dd02f8cc-17d4-5157-9900-32ff5555e616\ncase_id: p234-s3-c4\n---\n# Private helper refactor\n\n## Analysis\n\nRename the private `joinParts` helper in `src/helper.ts` to `joinSegments`. Keep the public `buildLabel` test unchanged: `assertEquals(buildLabel({id:1,name:\"x\"}), \"x\")`. Do not assert either private name or an internal call.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private `joinParts` helper in `src/helper.ts` to `joinSegments`. Keep the public `buildLabel` test unchanged: `assertEquals(buildLabel({id:1,name:\"x\"}), \"x\")`. Do not assert either private name or an internal call.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "b901861c61c93fa3a80eeca3622db5b376e7399f594e7da0d89de020ca470ddf",
+      "artifactSha256": "37b5717ecb753bcacbf5c503b6b3029cfb3813f58712d4ff423ffbbaa4482479",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -601,9 +601,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-98c81215\ntrace_id: ffbd51d8-9987-5b92-be44-b1230a713c68\ncase_id: p234-s4-c1\n---\n# Parser malformed-input set\n\n## Analysis\n\nRun `deno run -A scripts/fuzz.ts --seed 42 --iterations 1000`. The run found the malformed token `0x` at iteration 73. Minimize it to `0x` and keep `assertThrows(parse(\"0x\"))` as the regression.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRun `deno run -A scripts/fuzz.ts --seed 42 --iterations 1000`. The run found the malformed token `0x` at iteration 73. Minimize it to `0x` and keep `assertThrows(parse(\"0x\"))` as the regression.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-98c81215\ntrace_id: ffbd51d8-9987-5b92-be44-b1230a713c68\ncase_id: p234-s4-c1\n---\n# Parser malformed-input set\n\n## Analysis\n\nRun `deno run -A scripts/fuzz.ts --seed 7 --iterations 1000`. The bounded run found the malformed token `0x` at iteration 73. Minimize it to `0x` and keep `assertThrows(parse(\"0x\"))` as the regression input.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRun `deno run -A scripts/fuzz.ts --seed 7 --iterations 1000`. The bounded run found the malformed token `0x` at iteration 73. Minimize it to `0x` and keep `assertThrows(parse(\"0x\"))` as the regression input.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "14e341770c08c16849a91f9bc1632689abf4fbe000bb9dabdacf5079a2e95194",
+      "artifactSha256": "9720ba2854c30a438303bfb98a5a421eff0e1b37c169c8fa7ce65552a129b43b",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -614,9 +614,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-98c81215\ntrace_id: ffbd51d8-9987-5b92-be44-b1230a713c68\ncase_id: p234-s4-c1\n---\n# Parser malformed-input set\n\n## Analysis\n\nExecute the bounded fuzz case with seed 42 and 1000 iterations. The minimized failing token is `0x`; preserve it as a malformed-input regression.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nExecute the bounded fuzz case with seed 42 and 1000 iterations. The minimized failing token is `0x`; preserve it as a malformed-input regression.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-98c81215\ntrace_id: ffbd51d8-9987-5b92-be44-b1230a713c68\ncase_id: p234-s4-c1\n---\n# Parser malformed-input set\n\n## Analysis\n\nRun the bounded fuzz case with `--seed 7` and a fixed iteration bound. The minimized failing token is `0x`; preserve `assertThrows(parse(\"0x\"))` as the regression.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRun the bounded fuzz case with `--seed 7` and a fixed iteration bound. The minimized failing token is `0x`; preserve `assertThrows(parse(\"0x\"))` as the regression.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "46f99762176ddaa425dfd7438d0feec2c2a1f0d8564f71922da2f39fea8e8cda",
+      "artifactSha256": "a1ceaf2b836edb22eb8bfaf58ad266b59ac2d777695665400daba2d8c599bd4b",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -679,9 +679,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-c4fd9a85\ntrace_id: fa07677e-12b2-5ef6-a9ff-ac105c36e55b\ncase_id: p234-s4-c3\n---\n# Small portal behavior edit\n\n## Analysis\n\nUse fixed examples for greet. No mutation or fuzz campaign is needed for this small behavior.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse fixed examples for greet. No mutation or fuzz campaign is needed for this small behavior.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-c4fd9a85\ntrace_id: fa07677e-12b2-5ef6-a9ff-ac105c36e55b\ncase_id: p234-s4-c3\n---\n# Small portal behavior edit\n\n## Analysis\n\nAdd ordinary example tests: `greet(\"  Ada \") === \"Hello, Ada\"` and `greet(\"Bob\") === \"Hello, Bob\"`. No mutation or fuzz campaign is needed for this small deterministic edit; there is no defect model that justifies it.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nAdd ordinary example tests: `greet(\"  Ada \") === \"Hello, Ada\"` and `greet(\"Bob\") === \"Hello, Bob\"`. No mutation or fuzz campaign is needed for this small deterministic edit; there is no defect model that justifies it.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "5bae4eb0c3fb7f62afb06939f2ac560b93e536d7542235815fa3f16ebdd8ef2e",
+      "artifactSha256": "8249f56af1cec0a040496fa45b17e1ed0a1f9ddd234d1747b56f2b803f4b0d6d",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -718,9 +718,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-8b4003ca\ntrace_id: a662ba27-e2f1-5cfd-a9de-18334f6bb509\ncase_id: p234-s4-c4\n---\n# Private refactor with stable output\n\n## Analysis\n\nRename the private helper internally. The public `buildLabel` output stays unchanged. Test only the public output for fixed inputs. Do not inspect or assert any private call graph.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private helper internally. The public `buildLabel` output stays unchanged. Test only the public output for fixed inputs. Do not inspect or assert any private call graph.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-8b4003ca\ntrace_id: a662ba27-e2f1-5cfd-a9de-18334f6bb509\ncase_id: p234-s4-c4\n---\n# Private refactor with stable output\n\n## Analysis\n\nRename the private `joinParts` helper in `src/private.ts` to `joinSegments`. The public `buildLabel` output is unchanged:\n\n```ts\nassertEquals(buildLabel({id:1,name:\"x\"}), \"x\");\n```\n\nDo not assert the private call graph.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nRename the private `joinParts` helper in `src/private.ts` to `joinSegments`. The public `buildLabel` output is unchanged:\n\n```ts\nassertEquals(buildLabel({id:1,name:\"x\"}), \"x\");\n```\n\nDo not assert the private call graph.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "legacy-fixture-candidate",
-      "artifactSha256": "c3b92ac49d10633ec54edfea724a8250a756c57740e989db86b74eef1afaaaa1",
+      "artifactSha256": "01ae6666ef669055a426434f7f739f671b60526350603202ea98f0d0427e3c31",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -770,9 +770,9 @@
       "label": "passed",
       "control": null,
       "pairId": null,
-      "artifact": "---\nrequest_id: request-a56a2346\ntrace_id: 538440f5-9e08-5fbe-adc4-07a655daf4c6\ncase_id: p234-s4-c5\n---\n# Denied authorization request\n\n## Analysis\n\nUse `FakeWriter` for the denied role. Assert the request is denied, `writer.calls === 0` (zero writes), and `store.read(id) === undefined`. The write count and missing row are the evidence.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse `FakeWriter` for the denied role. Assert the request is denied, `writer.calls === 0` (zero writes), and `store.read(id) === undefined`. The write count and missing row are the evidence.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
+      "artifact": "---\nrequest_id: request-a56a2346\ntrace_id: 538440f5-9e08-5fbe-adc4-07a655daf4c6\ncase_id: p234-s4-c5\n---\n# Denied authorization request\n\n## Analysis\n\nUse `FakeWriter` for the denied role and run the authorization check:\n\n```ts\nconst writer = new FakeWriter();\nconst result = await authorizeAndWrite(deniedRole, writer);\nassertEquals(result.denied, true);\nassertEquals(writer.calls, 0);\nassertUndefined(store.read(id));\n```\n\nThe zero write count and missing row are the evidence.\n\n## Execution Steps\n\n## Step 1: Apply the selected method\n\nUse `FakeWriter` for the denied role and run the authorization check:\n\n```ts\nconst writer = new FakeWriter();\nconst result = await authorizeAndWrite(deniedRole, writer);\nassertEquals(result.denied, true);\nassertEquals(writer.calls, 0);\nassertUndefined(store.read(id));\n```\n\nThe zero write count and missing row are the evidence.\n\n## Verification\n\nThe result is checked against the frozen case acceptance criteria.\n",
       "source": "authored-equivalent",
-      "artifactSha256": "eeaf150e3530af1a4e825b688e4889b748ffb733c96639ce4912dbc82780353a",
+      "artifactSha256": "2b69b04730f5cbac972a4c868687ec2b447beffd8bcf9750e6866733f7b739b2",
       "reviewStatus": "approved-user-delegated"
     },
     {
@@ -1080,7 +1080,7 @@
     "reviewerKind": "user-delegation",
     "reviewedAt": "2026-11-10",
     "decision": "approve-all-revised-set",
-    "reviewedSetSha256": "ded83bc6bdc9c1033624b7dc9538c08692ef42112fe867d93919adac5e78d1ea",
+    "reviewedSetSha256": "e2a252a3be8741e0cee4540f72cb0377d813eea855b27a4e3d08c1e10fc9c731",
     "independence": "waived-by-user",
     "waiver": "The user directed the agent to proceed with further calibration and approve the revised set on their behalf. This is not an independent review."
   }

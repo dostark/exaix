@@ -51,7 +51,7 @@
     "reviewerKind": "user-delegation",
     "reviewedAt": "2026-11-10",
     "decision": "approve-all-revised-set",
-    "reviewedSetSha256": "ded83bc6bdc9c1033624b7dc9538c08692ef42112fe867d93919adac5e78d1ea",
+    "reviewedSetSha256": "e2a252a3be8741e0cee4540f72cb0377d813eea855b27a4e3d08c1e10fc9c731",
     "independence": "waived-by-user",
     "waiver": "The user directed the agent to proceed with further calibration and approve the revised set on their behalf. This is not an independent review."
   },

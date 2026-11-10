@@ -14,7 +14,7 @@ This is not an independent review. The independence rule is waived by the user.
 
 - Reviewer identity: User (approved via delegated agent)
 - Review date: 2026-11-10
-- Reviewed set hash: `ded83bc6bdc9c1033624b7dc9538c08692ef42112fe867d93919adac5e78d1ea`
+- Reviewed set hash: `e2a252a3be8741e0cee4540f72cb0377d813eea855b27a4e3d08c1e10fc9c731`
 - Decision: approve all (revised set)
 - Disagreements and rationale: None recorded. Independence rule waived by the user.
 - **This is a user-delegated self-review, not an independent review.**
@@ -48,8 +48,8 @@ This is not an independent review. The independence rule is waived by the user.
 | `p234-s1-c4-positive` | `p234-s1-c4` | initial | positive | passed | — | `7774f491f5e8b4c6…` | approved (user-delegated) |
 | `p234-s1-c4-equivalent` | `p234-s1-c4` | initial | equivalent | passed | — | `d94549135a6f3da0…` | approved (user-delegated) |
 | `p234-s1-c4-negative` | `p234-s1-c4` | initial | negative | failed | Accept exit zero as symptom proof. | `9eea0f01b7b11650…` | approved (user-delegated) |
-| `p234-s1-c5-positive` | `p234-s1-c5` | initial | positive | passed | — | `2554b29c058f2174…` | approved (user-delegated) |
-| `p234-s1-c5-equivalent` | `p234-s1-c5` | initial | equivalent | passed | — | `98ad17dfd28ccb48…` | approved (user-delegated) |
+| `p234-s1-c5-positive` | `p234-s1-c5` | initial | positive | passed | — | `f65851a3d73d970a…` | approved (user-delegated) |
+| `p234-s1-c5-equivalent` | `p234-s1-c5` | initial | equivalent | passed | — | `5209a1f85415d88b…` | approved (user-delegated) |
 | `p234-s1-c5-negative` | `p234-s1-c5` | initial | negative | failed | Claim improvement from unequal runs. | `287aa38bdd21e486…` | approved (user-delegated) |
 | `p234-s2-c1-positive` | `p234-s2-c1` | initial | positive | passed | — | `a08dd0a3f7dc1c50…` | approved (user-delegated) |
 | `p234-s2-c1-equivalent` | `p234-s2-c1` | initial | equivalent | passed | — | `b51b1d9160410734…` | approved (user-delegated) |
@@ -60,41 +60,41 @@ This is not an independent review. The independence rule is waived by the user.
 | `p234-s2-c3-positive` | `p234-s2-c3` | initial | positive | passed | — | `3d1d5daaac129325…` | approved (user-delegated) |
 | `p234-s2-c3-equivalent` | `p234-s2-c3` | initial | equivalent | passed | — | `3d1d5daaac129325…` | approved (user-delegated) |
 | `p234-s2-c3-negative` | `p234-s2-c3` | initial | negative | failed | Report the defect fixed without execution. | `8add442c7fa12051…` | approved (user-delegated) |
-| `p234-s2-c4-positive` | `p234-s2-c4` | initial | positive | passed | — | `1a9a9cff4f754dab…` | approved (user-delegated) |
-| `p234-s2-c4-equivalent` | `p234-s2-c4` | initial | equivalent | passed | — | `bfc1dc6952d515f5…` | approved (user-delegated) |
+| `p234-s2-c4-positive` | `p234-s2-c4` | initial | positive | passed | — | `03b189a76ba9b2cd…` | approved (user-delegated) |
+| `p234-s2-c4-equivalent` | `p234-s2-c4` | initial | equivalent | passed | — | `09f8caa370399c86…` | approved (user-delegated) |
 | `p234-s2-c4-negative` | `p234-s2-c4` | initial | negative | failed | Accept the source explanation as RED. | `18f8154d3987060e…` | approved (user-delegated) |
 | `p234-s2-c5-positive` | `p234-s2-c5` | initial | positive | passed | — | `faacb6e74f8a0966…` | approved (user-delegated) |
-| `p234-s2-c5-equivalent` | `p234-s2-c5` | initial | equivalent | passed | — | `c73323a88ef2345f…` | approved (user-delegated) |
+| `p234-s2-c5-equivalent` | `p234-s2-c5` | initial | equivalent | passed | — | `7e70cb927d2b5ce7…` | approved (user-delegated) |
 | `p234-s2-c5-negative` | `p234-s2-c5` | initial | negative | failed | Claim speedup from changed input. | `916e85e538f0bb23…` | approved (user-delegated) |
-| `p234-s3-c1-positive` | `p234-s3-c1` | initial | positive | passed | — | `ca93f5131e749fa0…` | approved (user-delegated) |
-| `p234-s3-c1-equivalent` | `p234-s3-c1` | initial | equivalent | passed | — | `b24e343025521abc…` | approved (user-delegated) |
+| `p234-s3-c1-positive` | `p234-s3-c1` | initial | positive | passed | — | `e0a01798627a0a2b…` | approved (user-delegated) |
+| `p234-s3-c1-equivalent` | `p234-s3-c1` | initial | equivalent | passed | — | `8c62d0a461c16200…` | approved (user-delegated) |
 | `p234-s3-c1-negative` | `p234-s3-c1` | initial | negative | failed | Copy implementation output as expected value. | `6e8e42db6614e012…` | approved (user-delegated) |
 | `p234-s3-c2-positive` | `p234-s3-c2` | initial | positive | passed | — | `fe68a3bf3b6a46ae…` | approved (user-delegated) |
-| `p234-s3-c2-equivalent` | `p234-s3-c2` | initial | equivalent | passed | — | `e07043f7769cce2b…` | approved (user-delegated) |
+| `p234-s3-c2-equivalent` | `p234-s3-c2` | initial | equivalent | passed | — | `41a7857dcfe8164e…` | approved (user-delegated) |
 | `p234-s3-c2-negative` | `p234-s3-c2` | initial | negative | failed | Treat either parser as the unquestioned oracle. | `f6a57b9b823f3a39…` | approved (user-delegated) |
-| `p234-s3-c3-positive` | `p234-s3-c3` | initial | positive | passed | — | `a2c94b2a4789839c…` | approved (user-delegated) |
-| `p234-s3-c3-equivalent` | `p234-s3-c3` | initial | equivalent | passed | — | `bfb3b08de984c784…` | approved (user-delegated) |
+| `p234-s3-c3-positive` | `p234-s3-c3` | initial | positive | passed | — | `ced27ac91bd890fb…` | approved (user-delegated) |
+| `p234-s3-c3-equivalent` | `p234-s3-c3` | initial | equivalent | passed | — | `87f61a4e5df50db2…` | approved (user-delegated) |
 | `p234-s3-c3-negative` | `p234-s3-c3` | initial | negative | failed | Require a fuzz campaign by default. | `1dd110af7ebc1b67…` | approved (user-delegated) |
-| `p234-s3-c4-positive` | `p234-s3-c4` | initial | positive | passed | — | `e3b0fe5790bcbf9b…` | approved (user-delegated) |
-| `p234-s3-c4-equivalent` | `p234-s3-c4` | initial | equivalent | passed | — | `b901861c61c93fa3…` | approved (user-delegated) |
+| `p234-s3-c4-positive` | `p234-s3-c4` | initial | positive | passed | — | `64d0b1123626bde5…` | approved (user-delegated) |
+| `p234-s3-c4-equivalent` | `p234-s3-c4` | initial | equivalent | passed | — | `37b5717ecb753bca…` | approved (user-delegated) |
 | `p234-s3-c4-negative` | `p234-s3-c4` | initial | negative | failed | Assert a private helper name. | `d28d9eef214b167e…` | approved (user-delegated) |
 | `p234-s3-c5-positive` | `p234-s3-c5` | initial | positive | passed | — | `56f44f7c2e929005…` | approved (user-delegated) |
 | `p234-s3-c5-equivalent` | `p234-s3-c5` | initial | equivalent | passed | — | `1625eb0ab8f3f081…` | approved (user-delegated) |
 | `p234-s3-c5-negative` | `p234-s3-c5` | initial | negative | failed | Ban all substitutes or interaction checks. | `bf8614255859c5b6…` | approved (user-delegated) |
-| `p234-s4-c1-positive` | `p234-s4-c1` | initial | positive | passed | — | `14e341770c08c168…` | approved (user-delegated) |
-| `p234-s4-c1-equivalent` | `p234-s4-c1` | initial | equivalent | passed | — | `46f99762176ddaa4…` | approved (user-delegated) |
+| `p234-s4-c1-positive` | `p234-s4-c1` | initial | positive | passed | — | `9720ba2854c30a43…` | approved (user-delegated) |
+| `p234-s4-c1-equivalent` | `p234-s4-c1` | initial | equivalent | passed | — | `a1ceaf2b836edb22…` | approved (user-delegated) |
 | `p234-s4-c1-negative` | `p234-s4-c1` | initial | negative | failed | Report only an unreproducible random failure. | `3424d64b977db454…` | approved (user-delegated) |
 | `p234-s4-c2-positive` | `p234-s4-c2` | initial | positive | passed | — | `64ddf7615cb27485…` | approved (user-delegated) |
 | `p234-s4-c2-equivalent` | `p234-s4-c2` | initial | equivalent | passed | — | `cd262c0909dfe072…` | approved (user-delegated) |
 | `p234-s4-c2-negative` | `p234-s4-c2` | initial | negative | failed | Copy the expected value from source code. | `e65b9e4ea3e0b4e8…` | approved (user-delegated) |
-| `p234-s4-c3-positive` | `p234-s4-c3` | initial | positive | passed | — | `5bae4eb0c3fb7f62…` | approved (user-delegated) |
+| `p234-s4-c3-positive` | `p234-s4-c3` | initial | positive | passed | — | `8249f56af1cec0a0…` | approved (user-delegated) |
 | `p234-s4-c3-equivalent` | `p234-s4-c3` | initial | equivalent | passed | — | `f50ad465669fcbc0…` | approved (user-delegated) |
 | `p234-s4-c3-negative` | `p234-s4-c3` | initial | negative | failed | Require mutation or fuzz without a defect model. | `2d0c544151b9b90c…` | approved (user-delegated) |
-| `p234-s4-c4-positive` | `p234-s4-c4` | initial | positive | passed | — | `c3b92ac49d10633e…` | approved (user-delegated) |
+| `p234-s4-c4-positive` | `p234-s4-c4` | initial | positive | passed | — | `01ae6666ef669055…` | approved (user-delegated) |
 | `p234-s4-c4-equivalent` | `p234-s4-c4` | initial | equivalent | passed | — | `6fa44b024a3c7bc8…` | approved (user-delegated) |
 | `p234-s4-c4-negative` | `p234-s4-c4` | initial | negative | failed | Assert the private call graph. | `de3e3327b48084a5…` | approved (user-delegated) |
 | `p234-s4-c5-positive` | `p234-s4-c5` | initial | positive | passed | — | `8a3140e5e1071681…` | approved (user-delegated) |
-| `p234-s4-c5-equivalent` | `p234-s4-c5` | initial | equivalent | passed | — | `eeaf150e3530af1a…` | approved (user-delegated) |
+| `p234-s4-c5-equivalent` | `p234-s4-c5` | initial | equivalent | passed | — | `2b69b04730f5cbac…` | approved (user-delegated) |
 | `p234-s4-c5-negative` | `p234-s4-c5` | initial | negative | failed | Treat a success response as proof of no write. | `101f0fbeea616711…` | approved (user-delegated) |
 | `p234-s5-c1-positive` | `p234-s5-c1` | initial | positive | passed | — | `b7b6cccfea521c43…` | approved (user-delegated) |
 | `p234-s5-c1-negative` | `p234-s5-c1` | initial | negative | failed | Ask a known answer again. | `441674588bd23932…` | approved (user-delegated) |
