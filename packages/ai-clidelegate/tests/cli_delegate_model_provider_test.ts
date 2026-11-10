@@ -886,7 +886,7 @@ Deno.test("CliDelegateModelProvider: options.effort maps to codex's -c model_rea
   ]);
 });
 
-Deno.test("CliDelegateModelProvider: options.effort maps to opencode's --variant flag", async () => {
+Deno.test("CliDelegateModelProvider: options.effort selects opencode's model variant", async () => {
   let seenArgs: string[] = [];
   const run: IRunCliDelegateProcess = (_command, args) => {
     seenArgs = args;
@@ -912,9 +912,7 @@ Deno.test("CliDelegateModelProvider: options.effort maps to opencode's --variant
     "--format",
     "json",
     "--model",
-    "opencode/deepseek-v4-flash-free",
-    "--variant",
-    "medium",
+    "opencode/deepseek-v4-flash-free#medium",
     "Analyze this request",
   ]);
 });

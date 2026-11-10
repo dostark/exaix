@@ -82,7 +82,6 @@ import {
   SESSION_FLAG_SESSION_ID,
   SESSION_FLAG_SKIP_GIT_REPO_CHECK,
   SESSION_FLAG_STANDALONE,
-  SESSION_FLAG_VARIANT,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
   SESSION_SANDBOX_WORKSPACE_WRITE,
@@ -549,15 +548,16 @@ export class CliDelegateModelProvider implements IModelProvider {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     if (effort) assertValidEffortTier(effort);
-    const variantFlag = effort ? [SESSION_FLAG_VARIANT, effort] : [];
+    const modelWithVariant = effort && !this.options.model.includes("#")
+      ? `${this.options.model}#${effort}`
+      : this.options.model;
     return [
       SESSION_SUBCMD_RUN,
       SESSION_FLAG_STANDALONE,
       SESSION_FLAG_FORMAT,
       SESSION_OUTPUT_FORMAT_JSON,
       SESSION_FLAG_MODEL,
-      this.options.model,
-      ...variantFlag,
+      modelWithVariant,
       ...backendArgs,
       ...sessionFlag,
       prompt,
