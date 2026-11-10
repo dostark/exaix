@@ -46,6 +46,22 @@ const SAMPLES: ICaseSample[] = [
     good: "Observe the retry call count and the denied write with a substitute interaction check.",
     bad: "Ban all mocks and substitutes for the retry test.",
   },
+  {
+    id: "p234-v3-c1",
+    good: "Use three fixed examples for the formatter. Add a canary for each. No fuzz campaign is needed.",
+    bad: "A fuzz campaign is required for the formatter.",
+  },
+  {
+    id: "p234-v3-c2",
+    good: "Use a property test from the contract with a fixed seed and 100 bounded cases.",
+    bad: "Copy the expected values from the implementation output.",
+  },
+  {
+    id: "p234-v3-c3",
+    good:
+      "Compare the new parser with the existing parser, derive expectations from the reference, and investigate every disagreement.",
+    bad: "The new parser is the oracle for the expected values.",
+  },
 ];
 
 Deno.test("every announced verification-method case has a sample", () => {

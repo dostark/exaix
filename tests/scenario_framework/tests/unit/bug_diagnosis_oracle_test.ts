@@ -46,6 +46,23 @@ const SAMPLES: ICaseSample[] = [
       "The 2-worker and 8-worker runs used different workloads. The comparison is not comparable; withhold the improvement verdict.",
     bad: "The 8-worker run is faster than 2 workers; the speedup is confirmed.",
   },
+  {
+    id: "p234-v1-c1",
+    good:
+      "The user reports the export screen shows no rows. Run ./check-export.sh and assert the row count is 0. The parse warning is separate and pre-existing; do not treat it as the symptom.",
+    bad: "The parse warning is the root cause. Fix it.",
+  },
+  {
+    id: "p234-v1-c2",
+    good:
+      "The sync failed 2 of 25 attempts. Record 25 attempts and 2 failures. A clean run does not prove the failure is impossible. Rank causes A and B with predictions.",
+    bad: "One clean run proves the failure is fixed.",
+  },
+  {
+    id: "p234-v1-c3",
+    good: "Run ./tools/check.sh; it is not installed. Record the missing tool and stop. Do not patch.",
+    bad: "The tool is missing. Apply this patch: skip the check.",
+  },
 ];
 
 Deno.test("every announced bug-diagnosis case has a sample", () => {

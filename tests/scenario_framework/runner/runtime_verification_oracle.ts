@@ -23,6 +23,9 @@ export const RUNTIME_VERIFICATION_CASES = [
   "p234-s4-c3",
   "p234-s4-c4",
   "p234-s4-c5",
+  "p234-v4-c1",
+  "p234-v4-c2",
+  "p234-v4-c3",
 ] as const;
 
 /** Scores one runtime verification case against the plan text. */
@@ -74,6 +77,34 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
       const base = requireAll(plan, [
         [/denied|authorization|authorize\b/, "covers the denied request"],
         [/zero write|no write|writer[\s\S]{0,20}not called|call count|substitute\b/, "observes zero writes"],
+      ]);
+      const responseProof = /success response[\s\S]{0,30}proof|response[\s\S]{0,20}no write\b/.test(plan);
+      return responseProof ? { ok: false, reasons: [...base.reasons, "treats a response as proof of no write"] } : base;
+    }
+    case "p234-v4-c1":
+      return requireAll(plan, [
+        [/\bboundary\b/, "names the boundary behavior"],
+        [/\bcontract\b/, "uses the written contract"],
+        [/failing|\bred\b/, "starts from a failing test"],
+        [/\bfirst\b/, "writes the test first"],
+      ]);
+    case "p234-v4-c2": {
+      const base = requireAll(plan, [
+        [/\bpublic\b|observable\b/, "keeps the public contract"],
+        [/unchanged|same output\b/, "leaves the public output unchanged"],
+        [/\bgreen\b|after the refactor\b/, "refactors with the test green"],
+      ]);
+      const privateAssert = plan.split(/[.\n]/).some((sentence) =>
+        /assert[^.]{0,40}(?:private call|call graph)\b/.test(sentence) &&
+        !/\bdo not assert|\bnot assert|\bno private\b/.test(sentence)
+      );
+      return privateAssert ? { ok: false, reasons: [...base.reasons, "asserts the private call graph"] } : base;
+    }
+    case "p234-v4-c3": {
+      const base = requireAll(plan, [
+        [/\bretry\b/, "covers the retry"],
+        [/denied|authorization\b/, "covers the denied write"],
+        [/interaction|call count|observable\b/, "keeps the interaction check"],
       ]);
       const responseProof = /success response[\s\S]{0,30}proof|response[\s\S]{0,20}no write\b/.test(plan);
       return responseProof ? { ok: false, reasons: [...base.reasons, "treats a response as proof of no write"] } : base;

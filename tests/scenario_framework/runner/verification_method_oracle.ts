@@ -23,6 +23,9 @@ export const VERIFICATION_METHOD_CASES = [
   "p234-s3-c3",
   "p234-s3-c4",
   "p234-s3-c5",
+  "p234-v3-c1",
+  "p234-v3-c2",
+  "p234-v3-c3",
 ] as const;
 
 /** Scores one verification-method case against the plan text. */
@@ -90,6 +93,31 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
       ]);
       const blanket = /no mocks|ban[\s\S]{0,20}mock|no substitutes|no interaction\b/.test(plan);
       return blanket ? { ok: false, reasons: [...base.reasons, "bans substitutes or interaction checks"] } : base;
+    }
+    case "p234-v3-c1": {
+      const base = requireAll(plan, [
+        [/\bexample|fixed\b/, "keeps ordinary examples"],
+        [/\bcanary\b/, "adds a canary"],
+        [/no fuzz|not needed|no mutation\b/, "explains why a campaign is not needed"],
+      ]);
+      const campaign = /(?:must|requires?|required)\s+(?:a\s+)?fuzz|fuzz campaign required\b/.test(plan);
+      return campaign ? { ok: false, reasons: [...base.reasons, "requires a fuzz campaign by default"] } : base;
+    }
+    case "p234-v3-c2":
+      return requireAll(plan, [
+        [/\bproperty\b/, "selects a property test"],
+        [/\bcontract\b/, "derives the property from the contract"],
+        [/\bseed\b/, "fixes the seed"],
+        [/\bbound|bounded|100\b/, "bounds the cases"],
+      ]);
+    case "p234-v3-c3": {
+      const base = requireAll(plan, [
+        [/differential|compare\b/, "selects a differential check"],
+        [/reference|existing parser\b/, "uses the independent reference"],
+        [/disagree|disagreement\b/, "investigates disagreements"],
+      ]);
+      const parserOracle = /new parser[\s\S]{0,40}\b(?:oracle|expected)\b/.test(plan);
+      return parserOracle ? { ok: false, reasons: [...base.reasons, "treats the new parser as the oracle"] } : base;
     }
     default:
       throw new Error(`Unhandled verification-method case: ${caseId}`);

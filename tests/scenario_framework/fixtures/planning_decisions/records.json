@@ -653,5 +653,394 @@
         }
       ]
     ]
+  },
+  {
+    "case_id": "p234-v6-c1",
+    "good": {
+      "case_id": "p234-v6-c1",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-format",
+          "choice": "CSV with header",
+          "source": "user",
+          "acceptance_ids": [
+            "AC-export"
+          ],
+          "cost_row": "UI only"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-export",
+          "status": "RESOLVED",
+          "outcome": {
+            "command": "exactl request export --format csv",
+            "rows": 2
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "export",
+          "depends_on": [],
+          "api": [
+            "listSavedSearches",
+            "exportCsv"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "exportCsv"
+            }
+          ],
+          "tests": [
+            "AC-export"
+          ],
+          "rollback": {
+            "requires_api": [
+              "listSavedSearches"
+            ],
+            "restore_callers": []
+          },
+          "entrypoint": "exactl request export --format csv",
+          "registered": true,
+          "store": "ExportStore",
+          "new_services": [],
+          "new_schemas": []
+        }
+      ],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "store"
+          ],
+          "value": "NewStore"
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "callers"
+          ],
+          "value": []
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "outcome"
+          ],
+          "value": {
+            "command": "exactl request export --format csv",
+            "rows": 1
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-v6-c2",
+    "good": {
+      "case_id": "p234-v6-c2",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-rename",
+          "choice": "keep old and new names through caller batches",
+          "source": "plan",
+          "acceptance_ids": [
+            "AC-equivalence"
+          ],
+          "cost_row": "two batches"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-equivalence",
+          "status": "RESOLVED",
+          "outcome": {
+            "oldName": 2,
+            "newName": 2
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "expand",
+          "depends_on": [],
+          "api": [
+            "oldName",
+            "newName"
+          ],
+          "callers": [],
+          "tests": [
+            "both-names"
+          ],
+          "rollback": {
+            "requires_api": [
+              "oldName"
+            ],
+            "restore_callers": []
+          }
+        },
+        {
+          "id": "web",
+          "depends_on": [
+            "expand"
+          ],
+          "api": [
+            "oldName",
+            "newName"
+          ],
+          "callers": [
+            {
+              "consumer": "web",
+              "method": "newName"
+            }
+          ],
+          "tests": [
+            "web"
+          ],
+          "rollback": {
+            "requires_api": [
+              "oldName"
+            ],
+            "restore_callers": [
+              "web"
+            ]
+          }
+        },
+        {
+          "id": "worker",
+          "depends_on": [
+            "expand"
+          ],
+          "api": [
+            "oldName",
+            "newName"
+          ],
+          "callers": [
+            {
+              "consumer": "worker",
+              "method": "newName"
+            }
+          ],
+          "tests": [
+            "worker"
+          ],
+          "rollback": {
+            "requires_api": [
+              "oldName"
+            ],
+            "restore_callers": [
+              "worker"
+            ]
+          }
+        },
+        {
+          "id": "integration",
+          "depends_on": [
+            "web",
+            "worker"
+          ],
+          "api": [
+            "oldName",
+            "newName"
+          ],
+          "callers": [
+            {
+              "consumer": "web",
+              "method": "newName"
+            },
+            {
+              "consumer": "worker",
+              "method": "newName"
+            }
+          ],
+          "tests": [
+            "both-callers"
+          ],
+          "rollback": {
+            "requires_api": [
+              "oldName"
+            ],
+            "restore_callers": [
+              "web",
+              "worker"
+            ]
+          }
+        },
+        {
+          "id": "contract",
+          "depends_on": [
+            "integration"
+          ],
+          "api": [
+            "newName"
+          ],
+          "callers": [],
+          "tests": [
+            "oldName-absent"
+          ],
+          "rollback": {
+            "requires_api": [
+              "oldName"
+            ],
+            "restore_callers": [],
+            "restore_compatible_api_first": true
+          },
+          "old_consumers": []
+        }
+      ],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": [],
+      "migration_reason": "cannot deploy atomically"
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "stages",
+            0,
+            "api"
+          ],
+          "value": [
+            "newName"
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "migration_reason"
+          ],
+          "value": "deployable together"
+        }
+      ],
+      [
+        {
+          "path": [
+            "stages",
+            4,
+            "old_consumers"
+          ],
+          "value": [
+            {
+              "consumer": "web",
+              "method": "newName"
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-v6-c3",
+    "good": {
+      "case_id": "p234-v6-c3",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "U-17",
+          "choice": "CSV with header",
+          "source": "U-17",
+          "acceptance_ids": [
+            "AC-export"
+          ],
+          "cost_row": "none"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-export",
+          "status": "RESOLVED",
+          "outcome": {
+            "format": "CSV",
+            "header": true
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "export",
+          "depends_on": [],
+          "api": [
+            "exportCsv"
+          ],
+          "callers": [
+            {
+              "consumer": "CLI",
+              "method": "exportCsv"
+            }
+          ],
+          "tests": [
+            "AC-export"
+          ],
+          "rollback": {
+            "requires_api": [
+              "exportCsv"
+            ],
+            "restore_callers": []
+          }
+        }
+      ],
+      "terms": {},
+      "adr_proposals": [],
+      "created_files": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-format",
+              "topic": "Which export format?"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "decisions",
+            0,
+            "choice"
+          ],
+          "value": "JSON without header"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "outcome"
+          ],
+          "value": {
+            "format": "CSV",
+            "header": false
+          }
+        }
+      ]
+    ]
   }
 ]

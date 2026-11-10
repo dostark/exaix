@@ -23,6 +23,9 @@ export const BUG_DIAGNOSIS_CASES = [
   "p234-s1-c3",
   "p234-s1-c4",
   "p234-s1-c5",
+  "p234-v1-c1",
+  "p234-v1-c2",
+  "p234-v1-c3",
 ] as const;
 
 /** Scores one case against the plan text. */
@@ -86,6 +89,25 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
         ? { ok: false, reasons: [...base.reasons, "claims a speedup from unequal runs"] }
         : base;
     }
+    case "p234-v1-c1":
+      return requireAll(plan, [
+        [/no rows|row count|empty list\b/, "names the reported symptom"],
+        [/check-export|assert\b/, "names a bounded symptom assertion"],
+        [/separate|pre-existing|not[\s\S]{0,20}symptom\b/, "keeps the nearby error separate"],
+      ]);
+    case "p234-v1-c2":
+      return requireAll(plan, [
+        [/\b25\b/, "records the attempt count"],
+        [/\b2 of\b|\b2 failures\b/, "records the observed failures"],
+        [/does not prove|not impossible|cannot prove\b/, "does not claim impossibility from a clean run"],
+        [/\brank|prediction\b/, "ranks causes with predictions"],
+      ]);
+    case "p234-v1-c3":
+      return requireAll(plan, [
+        [/check\.sh\b/, "names the reproduction command"],
+        [/not installed|\bmissing\b|\bunavailable\b/, "records the missing tool"],
+        [/\bstop\b|\bblocked\b|do not patch\b/, "stops without a speculative patch"],
+      ]);
     default:
       throw new Error(`Unhandled bug-diagnosis case: ${caseId}`);
   }

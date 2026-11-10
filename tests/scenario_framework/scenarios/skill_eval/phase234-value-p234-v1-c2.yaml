@@ -1,0 +1,62 @@
+schema_version: "1.0.0"
+id: phase234-value-p234-v1-c2
+title: "Value pilot — Diagnose intermittent sync failure"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:fix-bug", "phase234-value"]
+request_fixture: fixtures/requests/skill_eval/phase234/value/p234-v1-c2.md
+mode_support: [auto]
+portals: []
+matrix:
+  cells:
+    - tool: opencode-go
+      provider: opencode-cli
+      config: configs/opencode-go-deepseek-41-flash-skill-eval.toml
+      requires_bin: "opencode"
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      EXA_EVAL_SUPPRESS_SKILLS: "response-contract,tdd-methodology,typescript-patterns,error-handling"
+  - id: submit-request
+    type: exactl
+    command: request
+    args: ["--agent-role", "senior-coder", "--effort", "low", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+  - id: verify-pinned-skill
+    type: exactl
+    command: journal
+    args: [wait, --event, skills.resolved, --since-rowid, "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 65
+    output_criteria:
+      - id: skill-injected
+        kind: journal-event-exists
+        event_type: skills.resolved
+        payload_includes:
+          pinned_skill_ids: [fix-bug]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 300
+  - id: oracle-check
+    type: run-script
+    command: deno
+    args: [
+      run,
+      -A,
+      --config,
+      "$REPO_ROOT/deno.json",
+      "$FRAMEWORK_HOME/fixtures/skill_eval/phase234/bug_diagnosis_oracle.ts",
+      "p234-v1-c2",
+      "$WORKSPACE_ROOT",
+      "$REQUEST_ID",
+    ]
+    timeout_sec: 120
+    output_criteria:
+      - id: oracle-pass
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

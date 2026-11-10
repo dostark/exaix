@@ -477,5 +477,209 @@
         }
       ]
     ]
+  },
+  {
+    "case_id": "p234-v5-c1",
+    "answer": false,
+    "good": {
+      "case_id": "p234-v5-c1",
+      "status": "RESOLVED",
+      "questions": [],
+      "decisions": [
+        {
+          "id": "D-page",
+          "decision": "page size is 25 items"
+        }
+      ],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-1",
+          "status": "RESOLVED",
+          "input": 1,
+          "expected": "1 item"
+        },
+        {
+          "id": "AC-2",
+          "status": "RESOLVED",
+          "input": 26,
+          "expected": "2 pages"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "acceptance",
+            1,
+            "expected"
+          ],
+          "value": "1 page"
+        }
+      ],
+      [
+        {
+          "path": [
+            "questions"
+          ],
+          "value": [
+            {
+              "id": "Q-x",
+              "text": "What page size?"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "status"
+          ],
+          "value": "PENDING USER DECISION"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-v5-c2",
+    "answer": false,
+    "good": {
+      "case_id": "p234-v5-c2",
+      "status": "PENDING USER DECISION",
+      "questions": [
+        {
+          "id": "Q-format",
+          "text": "Which export format should the report use?"
+        }
+      ],
+      "decisions": [],
+      "assumptions": [],
+      "acceptance": [
+        {
+          "id": "AC-export",
+          "status": "PENDING",
+          "expected": "Export uses Q-format"
+        },
+        {
+          "id": "AC-header",
+          "status": "RESOLVED",
+          "expected": "Export includes a header row"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "decisions"
+          ],
+          "value": [
+            {
+              "id": "D-format",
+              "decision": "export as CSV"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "path": [
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ]
+    ]
+  },
+  {
+    "case_id": "p234-v5-c3",
+    "answer": false,
+    "good": {
+      "case_id": "p234-v5-c3",
+      "status": "PENDING USER DECISION",
+      "questions": [
+        {
+          "id": "Q-refresh",
+          "text": "Should the cache refresh on write?"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "D-storage",
+          "decision": "use an immutable event log"
+        }
+      ],
+      "assumptions": [
+        {
+          "id": "A-cache",
+          "status": "INVALIDATED",
+          "text": "D-storage keeps the cache coherent"
+        }
+      ],
+      "acceptance": [
+        {
+          "id": "AC-cache",
+          "status": "STALE",
+          "text": "D-storage cache is coherent"
+        },
+        {
+          "id": "AC-log",
+          "status": "RESOLVED",
+          "expected": "Append-only log"
+        }
+      ],
+      "terms": [],
+      "adr_proposals": []
+    },
+    "bad": [
+      [
+        {
+          "path": [
+            "assumptions",
+            0,
+            "status"
+          ],
+          "value": "VALID"
+        }
+      ],
+      [
+        {
+          "path": [
+            "acceptance",
+            0,
+            "status"
+          ],
+          "value": "RESOLVED"
+        }
+      ],
+      [
+        {
+          "path": [
+            "decisions"
+          ],
+          "value": [
+            {
+              "id": "D-storage",
+              "decision": "use a mutable cache"
+            }
+          ]
+        }
+      ]
+    ]
   }
 ]

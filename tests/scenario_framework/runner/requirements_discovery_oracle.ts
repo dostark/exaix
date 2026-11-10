@@ -29,7 +29,16 @@ interface IVerdict {
   ok: boolean;
   reasons: string[];
 }
-const CASES = ["p234-s5-c1", "p234-s5-c2", "p234-s5-c3", "p234-s5-c4", "p234-s5-c5"];
+const CASES = [
+  "p234-s5-c1",
+  "p234-s5-c2",
+  "p234-s5-c3",
+  "p234-s5-c4",
+  "p234-s5-c5",
+  "p234-v5-c1",
+  "p234-v5-c2",
+  "p234-v5-c3",
+];
 const COUNT_EXAMPLES = [[0, "0 items"], [1, "1 item"], [2, "2 items"]] as const;
 
 function text(value?: Opt<Json, Reason.OptionalInput>): string {
@@ -118,6 +127,37 @@ function roleSelection(record: Artifact): boolean {
     );
 }
 
+function paginationOutcome(record: Artifact): boolean {
+  return complete(record) &&
+    record.decisions.some((entry) => has(entry, [/\b25\b/, /page|items/])) &&
+    record.acceptance.some((criterion) => criterion.input === 1 && criterion.expected === "1 item") &&
+    record.acceptance.some((criterion) => criterion.input === 26 && criterion.expected === "2 pages");
+}
+
+function pendingExport(record: Artifact): boolean {
+  const question = record.questions[0];
+  const pending = record.acceptance.find((entry) =>
+    entry.status === "PENDING" && question !== undefined && text(entry).includes(question.id.toLowerCase())
+  );
+  const header = record.acceptance.find((entry) => entry.status === "RESOLVED" && has(entry, [/header/]));
+  const invented = /\bcsv\b|\bjson\b|\bparquet\b|\bxlsx\b/.test(text(record.decisions));
+  return record.status === "PENDING USER DECISION" && record.questions.length === 1 &&
+    has(record.questions, [/format/, /export|report/]) && !invented &&
+    pending !== undefined && header !== undefined;
+}
+
+function staleCache(record: Artifact): boolean {
+  const assumption = named(record.assumptions, "A-cache");
+  const criterion = named(record.acceptance, "AC-cache");
+  const storage = named(record.decisions, "D-storage");
+  return record.status === "PENDING USER DECISION" && storage !== undefined &&
+    has(storage, [/immutable/, /event log|append-only/]) &&
+    (assumption?.status === "INVALIDATED" || assumption?.status === "STALE") &&
+    text(assumption).includes("d-storage") &&
+    criterion?.status === "STALE" && text(criterion).includes("d-storage") &&
+    has(record.questions, [/refresh/, /cache/]) && record.adr_proposals.length === 0;
+}
+
 function selectiveAdr(record: Artifact): boolean {
   const label = named(record.decisions, "D-label");
   const storage = named(record.decisions, "D-storage");
@@ -176,6 +216,15 @@ export function evaluateRequirements(
       break;
     case "p234-s5-c5":
       ok = selectiveAdr(record);
+      break;
+    case "p234-v5-c1":
+      ok = paginationOutcome(record);
+      break;
+    case "p234-v5-c2":
+      ok = pendingExport(record);
+      break;
+    case "p234-v5-c3":
+      ok = staleCache(record);
       break;
     default:
       throw new Error(`Unknown requirements case: ${caseId}`);

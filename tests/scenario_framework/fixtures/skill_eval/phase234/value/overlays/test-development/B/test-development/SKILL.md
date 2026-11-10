@@ -1,0 +1,395 @@
+---
+name: test-development
+description: Write tests following Exaix conventions — helpers, placement, patterns, CI
+---
+
+```text
+Key points
+
+- A test that cannot fail is worse than no test — it certifies the subsystem as covered
+  and stops anyone looking again. Canary every test: break what it names, confirm red,
+  restore (§Assertion sensitivity).
+- Happy-path-only tests miss integration bypasses, partial-failure states, and
+  malformed-input crashes — cover the 6 edge case dimensions (§Edge case coverage).
+- A test's wall time is a budget, not an accident. Never `sleep` for an effect that has a
+  readiness signal, and never re-do work a helper already did (§Execution-time budget).
+- A literal count of something the code defines (registry size, corpus size, ceiling) breaks
+  on every legitimate change and checks nothing. Derive it from its source of truth
+  (§Assertion sensitivity, anti-pattern 9).
+- Do not pin historical phase state in a standing test. A plan doc, phase registry,
+  phase status, frozen inventory, or old caller path is evidence, not a live contract
+  (§Historical phase state).
+
+See also
+  Test directory → [tests/README.md](../../../tests/README.md)
+  Helpers       → [packages/testing/README.md](../../../packages/testing/README.md)
+  Integration   → [tests/integration/README.md](../../../tests/integration/README.md)
+  Scenario/eval → [tests/scenario_framework/README.md](../../../tests/scenario_framework/README.md)
+  Style         → [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md)
+
+Unified helpers (prefer over bespoke setup):
+  - initTestDbService()      — DatabaseService + tempdir
+  - createCliTestContext()   — CLI test with DB + tempdir; call cleanup() in afterEach
+  - withEnv()                — temporary env changes
+  - TestEnvironment.create() — full workspace/DB/git scaffold for integration
+  - MockLLMProvider          — deterministic LLM responses (no real API calls)
+
+Mocking: MockLLMProvider for deterministic agent tests. Integration:
+TestEnvironment.create(). DB: initTestDbService(); prefer initActivityTableSchema() for
+reconnection tests — no raw SQL CREATE TABLE in tests.
+
+Canonical prompt (short):
+"Write tests for {feature}. Use initTestDbService() or createCliTestContext()
+where appropriate. Follow the test target map below for file placement."
+
+Test target map (deterministic source-to-test)
+
+  packages/<name>/src/... → packages/<name>/tests/...
+  apps/<name>/src/...     → apps/<name>/tests/... or tests/integration/...
+  scripts/...             → tests/scripts/...
+  Cross-package           → tests/integration/...
+  Scenario / evaluation   → tests/scenario_framework/...
+
+  Enforced by `deno task check:test-placement` — violations are blocking.
+
+Mandatory placement
+  - All *_test.ts live under tests/ or packages/<name>/tests/.
+  - Never under scripts/, docs/, or other non-tests/ roots.
+  - Service tests: tests/services/<domain>/, not directly under tests/services/.
+  - Search for an existing domain folder before creating a new one.
+
+Coverage measurement is manual-only (AGENTS.md). Only an explicit user request authorizes
+`deno task test:coverage`; the branch target for that requested work is ≥70% on new features.
+
+Assertion sensitivity — a test that cannot fail is worse than no test
+
+  A tautology's assertion holds whatever the named code does. It is worse than missing
+  coverage: absent coverage is visible, a green tautology certifies the subsystem and
+  stops anyone looking. THE CANARY RULE — mandatory for every new or edited test: before
+  calling it done, break what it names (delete the line, invert the condition, drop the
+  flag), re-run, confirm red, restore. Stayed green? It tests nothing the name claims —
+  fix the test. Record subtle canaries in the commit body/docstring.
+
+  RED FROM TS2307 IS NOT ASSERTION EVIDENCE. #tdd-workflow's RED accepts "module not
+  found" for a new file — that proves the import path is wired, not that assertions
+  discriminate (they never ran). Once the module exists you still owe the canary:
+  make the implementation wrong, confirm the ASSERTION fails. Same for adding tests to
+  already-working code — no natural RED, so the canary is the only evidence.
+
+  ASSERTION CHOICE — prefer useful failure output without changing the test's meaning.
+  Use `assertStringIncludes(s, x)` for a known string substring check when equivalent.
+
+  `Array.includes` uses SameValueZero and object identity. `assertArrayIncludes` uses
+  structural equality for objects, so it is not a general replacement. Keep the original
+  predicate when identity or SameValueZero matters. Add a useful message when practical.
+
+  A named boolean alone does not improve diagnostics. Preserve true/false expectations,
+  messages, argument order, and evaluation count. Do not coerce a value just to type-check.
+  When lint reports repeated calls, cache only calls proven pure and intended to run once.
+  Keep separate calls and results when the test checks state changes or call count.
+
+  Test a constant through a consumer's behavior. Compare its value only when that value
+  is the contract, and derive the expectation independently.
+  Keep structured multiline fixtures in the owning test boundary's fixture files.
+  Replace `assertEquals(x, false)` with `assertFalse(x)` only when `x` is a defined boolean.
+  An optional chain such as `a?.includes(b)` can be `undefined`, and `assertFalse` passes on it.
+  See the Exaix [test assertion guidance](../../../packages/lint-policy/docs/style_guide.md#test-assertions).
+
+  ANTI-PATTERN CATALOGUE — all shipped in this repo:
+    1. **Restating a constant against itself** — `assertEquals(ToolErrorCode.NOT_FOUND,
+       "NOT_FOUND")`. Passes whether a producer ever emits it. Assert the value is
+       PRODUCED and OBSERVED, not spelled as it is.
+    2. **Deriving the expectation from the input** — a parity gate building its expected
+       list from the same ids it checks can never fail (one concealed thirteen wrong ids
+       for a phase). Read one side from disk (catalog/schema), the other from the artefact
+       under test.
+    3. **Asserting the test's own scaffolding** — asserting a `finally` you wrote ran, or
+       a fixture you just built has the fields you just set. Drive the production entry
+       point and assert ITS observable effect.
+    4. **Testing the runtime/stdlib/third-party binary** — a file importing nothing from
+       `@exaix/*` is pinning git/stdlib, not your handler. Untested OUR code hides behind
+       tested THEIR code.
+    5. **Assertions true by construction** — `Array.isArray` on a declared array, a
+       disjunction satisfied by either branch, `!== undefined` on a non-optional return.
+       One exact assertion over three vague ones.
+    6. **A fixture that tests only the convenient layout** — every fixture gave a Go
+       package exactly one file, so same-package cross-file resolution was never
+       exercised and a defect that dropped those edges survived a fully green suite.
+       A fixture must exercise the DOMINANT real-world layout, not the smallest one that
+       compiles: multiple files per package or module, a call chain at least three
+       frames deep, and at least one cross-boundary call. Ask of each fixture "what
+       real-world shape would this still pass on?" — if the answer is "a shape users do
+       not have", add the shape they do. Corollary: a fixture path must not collide with
+       the traversal ignore list (`DEFAULT_IGNORE_PATTERNS` includes `target`, `dist`,
+       `build`, `vendor`), or discovery silently skips it.
+    7. **A name/docstring that outruns the body** — a header claiming coverage of
+       FlowRunner in a file importing none. The name is a claim; honour it or rename.
+    8. **A proxy assertion that passes while the claimed property is violated** — a claim
+       about ORDER, BYTE-IDENTITY, or a STRICT
+       REDUCTION must assert exactly that property, not a
+       surrogate (a character multiset survives order changes; a non-zero drop count
+       survives non-final drops). Use exact equality / strict `<`. Also: **zero-test files
+       and assertion-free bodies** (`*_test.ts` with no `Deno.test`, or a body that is one
+       comment) — delete them.
+    9. **Pinning a literal count of repo-defined state** — `assertEquals(tools.length, 22)`,
+       `files.length >= 200`, a ceiling that must equal the measured value. Every legitimate
+       add, remove, or cleanup breaks it, and the fix is to edit the number, so the test
+       records a fact and checks nothing. Derive the expectation from its source of truth
+       (the registry, schema table, or catalog). Compare the explicit set or ordered list,
+       so a change shows as a diff. Write a "the corpus loaded" guard as `> 0`, followed by
+       the per-item loop. Fail a ratchet on a RISE only, and report a fall without failing.
+       Keep a literal when it is a format (UUID 36, SHA 64) or data the test seeds itself.
+       A count in a test name, title, or comment ("all 18 tools") goes stale the same way:
+       leave it out.
+
+  HISTORICAL PHASE STATE — evidence, not a contract
+
+  A test must not read exaix-dev-docs/planning/phase-*.md, PHASE_REGISTRY.md, phase
+  evidence, or a frozen plan table as its source of truth. Do not pin phase statuses
+  (COMPLETED, SUPERSEDED, PLANNING), phase numbers, historical commit hashes, old caller
+  paths, or a plan's frozen inventory. A later refactor that moves a caller or renames a
+  file is not a regression. Test current behavior, stable symbols, or a committed live
+  baseline. If a historical fact is a live policy, store it as data (for example a
+  committed ceiling baseline), not as a parse of the plan doc. Use a phase-closure audit
+  for plan-doc consistency. When a test fails only because a phase doc is stale, delete
+  the historical assertion rather than editing the doc to satisfy it.
+
+  SWEEPING AN EXISTING SUITE — run over a directory before trusting coverage. Every hit is
+  a CANDIDATE, verify by reading (internal-assert helpers, generic type params like
+  `assertEquals<ModelSize>`, and legit real-process tests are noise):
+
+      # files registering no test at all (match BDD too — root tests/ uses describe/it)
+      for f in $(rg -l "" -g "*_test.ts" <dir>); do \
+        rg -q "Deno\.test|^\s*(it|test)\(" "$f" || echo "NO TESTS: $f"; done
+      # test files importing nothing from our source
+      rg -L --files-without-match "@exaix|from \"\.\./" -g "*_test.ts" <dir>
+      # assertion-free bodies and always-true shapes
+      rg -n "Array\.isArray\(|!== undefined\)|typeof .* === \"string\" \|\|" -g "*_test.ts" <dir>
+      # a constant compared to its own name — needs grep -P (rg has no backreferences)
+      grep -rPn --include="*_test.ts" 'assertEquals\(\s*(\w+)\.(\w+),\s*"\2"' <dir>
+      # literal sizes of collections — formats (36, 64) and seeded data are noise
+      grep -rPn --include="*_test.ts" '(\.length|\.size)\s*(,|===|>=|>)\s*[0-9]{2,}' <dir>
+
+  A file with a raw NUL byte classifies binary and is SKIPPED by rg/grep — it looks like a
+  zero-test file while holding many. Write `\0` as an escape, never a literal byte. Run the
+  WHOLE set — each pattern caught a live instance the others missed.
+
+  WHEN YOU FIND ONE — do not delete on sight. A tautology is often the visible end of dead
+  production code (the deleted enum test exposed a base class that never read its code:
+  twenty handlers computed a classification that reached neither response nor journal). In
+  order: (a) find what it CLAIMS to cover; (b) check the path is reachable and consumed;
+  (c) if so, write the sensitive test and canary it; (d) if not, fix/remove the dead path
+  under #tdd-workflow (failing test first); (e) only then delete, saying what replaced it.
+  When deleting a test file, grep for it — planning docs cite test paths as ✅ evidence.
+
+  TEST-RUN EVIDENCE — a command exit code is not proof the intended tests ran. Retain
+  output naming a non-zero selected-test count and pass/fail counts. In Deno,
+  multiple-name filters use a regex literal such as `--filter '/first case|second case/'`;
+  a plain `--filter 'first|second'` can select zero tests and exit cleanly.
+  Treat zero selected tests as a failed verification. Evidence cited by a phase claim must
+  survive session restarts: `/tmp` must not be the sole user-facing proof artifact. Copy
+  or write decisive logs and manifests to a durable, phase-named workspace/sandbox output directory
+  and cite that path.
+
+Verification method selection — match the method to the defect
+
+  Default to an example-based test for one named behavior with a known input and
+  output. Choose another method only when it detects a defect the example misses.
+
+  | Method               | Use when                                               | Required control                                                 |
+  | -------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- |
+  | Example-based        | One behavior, one known input and output               | A canary that breaks the behavior                                |
+  | Property-based       | A rule holds across many inputs and a generator exists | Property from the contract, fixed seed, bounded cases            |
+  | Differential         | A replacement must match an independent reference      | Expectation from the reference, investigate every disagreement  |
+  | Fuzz                 | Malformed input is the defect model                    | Bounded iterations, fixed seed, minimized failing input          |
+  | Mutation (selective) | Assertion sensitivity is uncertain                     | A named mutation set and bounded run; no new dependency          |
+
+  For each proposed test, record:
+  - Behavior and the production entry point that must show it.
+  - The independent oracle or contract that supplies the expected value.
+  - Substituted dependencies and what they hide.
+  - What the test cannot establish.
+
+  An example-based test remains the right default for a simple formatter or a
+  fixed table. Do not add a fuzz or mutation campaign without a named defect it
+  detects.
+
+  Keep RED → GREEN → REFACTOR, canaries, placement, deterministic seeds, shared
+  helpers, and bounded runtime. Do not assert incidental internal structure.
+  Keep interaction checks when retry, ordering, or authorization is the contract.
+  Do not ban mocks or delete tests automatically.
+
+Edge case coverage — mandatory test dimensions
+
+  Every feature that takes input, crosses subsystem boundaries, or composes operations
+  MUST test each applicable dimension. Happy-path-only Planned Tests are incomplete —
+  missing dimensions are 🟠 Testing gaps.
+  1. **Invalid/malformed input** — every CLI arg, config value, data field at its type
+     boundary: NaN/negative, empty strings, out-of-bounds, missing required. Assert a clear
+     error, never silent NaN.
+  2. **Integration paths** — two features together (locking + profile keys; checksum +
+     rollback). Isolation tests do NOT prove the combined path — that is where bypasses
+     hide.
+  3. **Partial/mid-operation failure** — step K of N fails; preceding steps roll back or
+     are reported; no silent partial state.
+  4. **Round-trip fidelity** — serialisation paths (config → string → parsed; object →
+     JSON → object) survive a full round-trip; watch lossy types.
+  5. **Idempotency/stability** — repeated identical input yields identical output; also
+     test "unchanged when input unchanged".
+  6. **Resource cleanup** — temp files, subprocesses, DB transactions cleaned on success
+     AND failure via try/finally or `using`.
+
+Execution-time budget — avoid time bottlenecks
+
+  Slow tests are a real defect: they push the suite out of the local loop and hide the
+  next regression behind minutes of waiting. The two dominant costs in this repo are
+  blind `sleep` and re-doing work a helper already did. A slow test is usually one of
+  these, not real work.
+
+  FIND THE HOTSPOT BEFORE OPTIMIZING — never guess. Per-test durations are printed as
+  `... ok (12s)`; sort them:
+      deno test --allow-all <files> 2>&1 \
+        | sed -E 's/\x1b\[[0-9;]*m//g' \
+        | grep -E '\.\.\. (ok|FAILED) \(' \
+        | sed -E 's/(.*) \.\.\. (ok|FAILED) \(([0-9]+m)?([0-9]+)s?\).*/\3\4 \1/' | sort -rn
+  Then read the slowest test and ask: is it waiting on a signal it could observe, or
+  repeating a boot/migration/setup that is already done?
+
+  1. **Replace a blind `sleep` with a readiness poll.** A fixed `settleMs`/`afterInjectMs`
+     is a race traded for a tax: it is too short under load and pure waste when idle. Wait
+     on the authoritative event instead — `bootRealDaemon()` polls `daemon.ready`
+     (watchers listening, apps/daemon/main.ts), and `exactl daemon start`/`restart`/`stop`
+     already block until the daemon is ready/stopped (apps/exactl/src/commands/daemon_commands.ts).
+     So a `setTimeout` after any of those commands buys nothing — delete it. Poll the
+     condition with a bounded deadline and a short interval; never loop forever.
+  2. **Do not re-do what a helper already did.** The scenario runner mounts every declared
+     `portals:` entry before the steps run (prepareDeclaredPortals), so a scenario that
+     also runs `exactl portal add` + `daemon restart` boots the daemon twice for one mount.
+     Check the harness before adding a boot/portal/config step; a second daemon boot is
+     ~1–2s of pure duplication.
+  3. **Run independent I/O concurrently.** When a test (or the code under test) makes
+     several independent calls — a judge and a reference, N file reads — issue them with
+     `Promise.all`/`Promise.allSettled`, not one `await` per iteration. Preserve error
+     attribution: `allSettled` + re-throw with the failing operation named (see
+     calibration_runner.ts's target/reference scoring). Only serialize when order is a
+     contract the test actually asserts.
+  4. **Prefer the in-process path when the test does not need the real subprocess.** A
+     Deno CLI/daemon subprocess costs ~0.9s of startup each; 25 spawns is ~20s of pure
+     overhead. Where the assertion is about logic (not the process boundary), call the
+     handler in-process with the shared helpers instead of spawning `exactl`. Keep at
+     least one real-subprocess test per boundary, and put it in the sequential batch.
+  5. **Route process-sensitive tests to the Containered Batch, not around it.** Tests that
+     boot a real daemon, mutate process env (`withEnv`, `Deno.env.set`), bind the default
+     port, write a shared path, or order rows by wall-clock `created_at` cannot run under
+     `--parallel`: they race on the Deno module cache, leak env into other workers, or flip
+     order when timestamps collide. Add a `SEQUENTIAL_TESTS` entry in
+     scripts/test_parallel.ts with at least one `reasons` value (`module-cache`,
+     `process-env`, `port`, `shared-path`, `pressure`). Mark a `dist/bin` writer
+     `serializedOutput: true`, a repo-shared writer `exclusive: true`, and an
+     egress-dependent file `network: true`. `SEQUENTIAL_FILES` is derived from
+     `SEQUENTIAL_TESTS`, so its order stays authoritative. Also update
+     `EXPECTED_SEQUENTIAL_FILES` in `tests/scripts/test_parallel_test.ts`; the two lists must match
+     in order. A test that seeds a file into the repo must use a `__temp_` prefix, and a whole-tree
+     count must ignore that prefix. Do not weaken the assertion or drop the parallelism only for it.
+
+  A time win is not done until the same tests still pass. Re-run the changed files (and
+  the pack that owns them), confirm identical pass/fail counts, then record before/after
+  in the commit body. Deleting a wait is safe only when a real signal replaced it.
+
+Live-daemon subprocess teardown — mandatory precautions
+
+  Any test booting a real `apps/daemon/main.ts` subprocess (direct Deno.Command,
+  bootRealDaemon(), or `exactl daemon start`/`restart`) MUST guarantee the daemon is dead
+  before the test returns — every exit path. Two orphan-daemon bugs looked identical: a
+  subprocess still running with its tempDir deleted (`readlink /proc/<pid>/cwd` →
+  `(deleted)`) — the `finally` tore down filesystem but never the process.
+  - **Every `daemon start`/`restart` needs a matching `daemon stop`** — `restart` leaves a
+    daemon by contract; env.cleanup() only closes the DB + tempDir. Add the explicit stop:
+    `finally { await runExactl(["daemon", "stop"], env.tempDir).catch(() => {}); await env.cleanup(); }`
+  - **A direct Deno.Command spawn needs try/finally with both a kill AND an awaited
+    status**: `const proc = new Deno.Command(...).spawn(); try { /* body */ } finally {
+    try { Deno.kill(proc.pid, "SIGTERM"); } catch {} try { await proc.status; } catch {} }`
+    Signal-without-status risks returning before exit. Prefer `bootRealDaemon()`
+    (tests/integration/helpers/daemon_config.ts).
+  - **A timer-based kill racing `await proc.output()`/`status` is not a guarantee** — the
+    function can return while the process lives. Await the process's own exit status.
+  - **Not proof against a hostile top-level kill**: killing the runner does NOT cascade.
+    Fixed at the runner level (`scripts/test_parallel.ts`'s `detached: true` +
+    killActiveChildGroups()); replicate only in new orchestration scripts.
+  - **Verify with the real diagnostic**, not "tests passed": `pgrep -af
+    "apps/daemon/main.ts"` before + after (clean baseline first); a survivor is orphaned if
+    `readlink /proc/<pid>/cwd` is `(deleted)` and `ps -o pid,ppid,pgid -p <pid>` shows PPID 1.
+
+Advanced patterns
+  - Refactoring/duplication: `npx jscpd packages apps tests`; extract helpers.
+  - Paranoid security: path traversal, command injection, symlink escapes. Whitelists beat
+    blacklists.
+  - Performance: measure — write benchmarks/load tests.
+  - Check-then-act races: a `get`(miss) → async-create → `set` pattern is racy under two
+    concurrent callers of the SAME never-seen key (both pass the miss check). Prove with
+    `await Promise.all([subject.resolve(k), subject.resolve(k)])` against a counting fake —
+    call count 1 = in-flight cache, 2 = race (Phase 194 GAP-7). For eviction-vs-in-flight:
+    a manually-releasable gate (hold one call behind an unresolved Promise the test
+    controls), start without awaiting, poll until the fake records reach, drive the
+    pressure, assert the fake's calls, release, then await the original (see
+    `packages/flow/tests/flow_worktree_coordinator_test.ts`'s `FakeGitService.addWorktreeGate`).
+
+Security tests as first-class citizens: put every `[security]`-tagged test in a
+`*_security_test.ts` file and cover traversal, injection, exfiltration, env leakage. Run
+`deno task test:security` (it globs `tests/**/*_security_test.ts`; a tagged test in a normal
+file is not selected). `check:security-test-naming` enforces the suffix.
+
+Organization (root tests/): tests/cli/ (CLI), tests/services/ (services),
+tests/integration/ (e2e), tests/helpers/ (shared utils).
+
+Deduplication: search similar names, compare case names, merge unique into canonical,
+delete duplicates.
+
+Env vars (EXA_TEST_*): EXA_TEST_MODE, EXA_TEST_CLI_MODE, EXA_TEST_ENABLE_PAID_LLM,
+EXA_TEST_ENABLE_OLLAMA, EXA_TEST_ENABLE_LLAMA, EXA_TEST_LLM_MODEL,
+EXA_TEST_OPENAI_API_KEY. Use `isTestMode()` / `isCIMode()` from
+`@exaix/core/config/env_schema.ts` — never legacy DENO_TEST/EXACTL_TEST_MODE.
+
+CI pitfalls
+  - Treat CI as truthy (CI=true), not strictly "1".
+  - Paid LLM disabled unless EXA_TEST_ENABLE_PAID_LLM=1.
+  - Avoid compiled binaries; prefer `new Deno.Command(Deno.execPath(), { args: ["run",
+    "--allow-all", ...] })`.
+
+Permissions: some npm packages read env at module-init (`typescript` reads
+`TSC_WATCHFILE`), so a bare `deno test <file>` can fail NotCapable — run standalone script
+tests with `deno test --allow-all <file>`.
+
+Scoped-permission runs: a test may run under path-scoped grants (the engine deploy
+compatibility check uses `--allow-read=<repo>,<tmp> --allow-write=<tmp>` with no loader
+variables). It must not call APIs that need unscoped grants: `Deno.symlink` is the common
+one. Probe for the capability and skip the case when the run is scoped; verify the test with
+the scoped command, not only `deno test --allow-all`.
+
+Private state: `check:style` rejects `as unknown as`. Expose a `public readonly` field, or narrow
+with `instanceof` on the exported class. A test that needs a private value usually points to a
+value that should be observable behavior.
+
+Output format
+  1. Target test files created/modified.
+  1. Helpers used.
+  1. Test command.
+  1. Coverage check result only when the user requested measurement.
+
+Examples
+  #test-development Add unit tests for PlanWriter error handling
+  #test-development Write security tests for file path validation
+  #test-development Create integration test for workspace bootstrap flow
+```
+
+## Parallel isolation for repo-mutating tests
+
+- A test that rewrites a repository config, or runs a whole-tree task over the checkout, must be
+  registered in `scripts/test_parallel.ts` `SEQUENTIAL_TESTS` with the `sharedPath` reason and
+  `exclusive: true`. Otherwise a neighbouring worker observes a half-written file and fails with a
+  spurious `check:style` or `check:magic` error.
+- Whole-tree walkers must ignore hidden transient fixtures that a neighbouring test writes (a
+  dot-prefixed `.ts` file under `scripts/`). The plugin host skips dotfiles while a filesystem
+  walker does not, so a parity test sees a finding the plugin never reports.
+- A test that pins a Dockerfile cache line (for example `ci_submodule_init_test.ts`) must change in
+  the same commit as that line.

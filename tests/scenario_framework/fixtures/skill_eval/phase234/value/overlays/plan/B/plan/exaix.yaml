@@ -1,0 +1,50 @@
+applies_to:
+  agents:
+    - senior-coder
+triggers:
+  keywords:
+    - plan
+    - phase
+    - planning
+    - design
+  task_types:
+    - planning
+  tags:
+    - planning
+    - architecture
+constraints:
+  - "Follow Exaix TDD, security, and traceability standards"
+  - Each step includes a step-manifest YAML block
+  - Ground third-party integrations in deep web research
+  - Include a Reachability Ledger section
+  - "Vertical end-to-end slice before breadth. Exception: justified broad mechanical migration with compatible expand, bounded caller batches, and contract after all consumers move"
+  - Reuse established terminology and settled user decisions in acceptance criteria
+  - Keep affected criteria pending when a material user decision is unresolved
+  - Give migration stages real blocking dependencies, compatibility checks, focused tests, rollback conditions, and a named integration checkpoint
+  - Preserve runtime integration anchors, the Reachability Ledger, and terminal cutover during migrations
+  - Propose an ADR only for a consequential, hard-to-reverse tradeoff with non-obvious rationale
+  - Balance implementation workload and split overloaded steps before plan handoff
+  - Documentation update step as final step
+output_requirements:
+  - Phase planning document with numbered steps
+  - Step Workload Assessment with independently testable steps and bounded acceptance criteria
+  - Step-manifest blocks for dogfood compatibility
+  - Reachability Ledger table
+  - Pre-Gap Analysis recommended
+  - Decision record linked to acceptance criteria and Requirement Cost rows
+  - Sources for settled choices and any material unanswered decisions
+  - Migration justification and stage dependencies, compatibility evidence, tests, rollback conditions, and integration checkpoint when applicable
+  - Alternatives, consequences, and rationale for a qualifying ADR proposal when applicable
+quality_criteria:
+  - name: step_manifest_completeness
+    description: Every step has a manifest block
+    weight: 35
+  - name: architectural_rigor
+    description: Plan references ARCHITECTURE.md components
+    weight: 35
+  - name: reachability_tracking
+    description: Reachability Ledger tracks production-dead symbols
+    weight: 30
+related_skills:
+  - review-phase-plan
+  - test-development

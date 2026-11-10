@@ -1,0 +1,148 @@
+---
+name: tdd-methodology
+description: "Enforces the Red-Green-Refactor cycle for reliable, well-tested code"
+---
+
+# Test-Driven Development Methodology
+
+Follow the Red-Green-Refactor cycle for all code changes.
+
+## Phase 1: Red (Write Failing Test)
+
+1. **Understand the requirement** - What behavior needs to be implemented?
+1. **Write a test** that describes the expected behavior
+1. **Run the test** to confirm it fails (for the right reason)
+1. **Name tests descriptively** - Test names should read like specifications
+
+```typescript
+// ✅ Good test name
+Deno.test("calculateTotal returns sum of items when cart has products");
+
+// ❌ Bad test name
+Deno.test("test1");
+```
+
+## Phase 2: Green (Make It Pass)
+
+1. **Write ONLY enough code** to make the test pass
+1. **No additional features** or optimizations
+1. **Focus on correctness**, not elegance
+1. **Run tests frequently** - After every small change
+
+```typescript
+// ✅ Minimal implementation to pass
+function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+
+// ❌ Over-engineering before tests pass
+function calculateTotal(items: Item[]): number {
+  // Don't add caching, discounts, etc. until needed
+}
+```
+
+## Phase 3: Refactor (Clean Up)
+
+1. **Improve code structure** while tests stay green
+1. **Extract helpers**, reduce duplication
+1. **Improve naming** and organization
+1. **Run tests after EVERY change**
+
+## Key Rules
+
+- **Never write production code without a failing test**
+- **Keep tests fast** - Unit tests should run in milliseconds
+- **Test behavior, not implementation** - Tests shouldn't break when refactoring
+- **One logical assertion per test** - Makes failures clear
+- **Test edge cases** - Empty inputs, nulls, boundaries
+- **Preserve assertion meaning** - Prefer failure output that shows actual and expected values.
+  Use a dedicated assertion only when its equality and identity semantics match the test.
+  JavaScript `Array.includes` uses SameValueZero and object identity. A structural-equality helper
+  can change the result.
+  A boolean assertion is valid when a replacement changes the contract. Naming a boolean alone
+  does not improve the failure output. Preserve negative expectations, messages, and call order and count.
+  Do not coerce values solely to satisfy an assertion helper.
+- **Keep stateful calls** - Reuse a result only when the call is pure and the test intends one evaluation.
+  Keep separate calls when the test checks state changes or call count.
+- **Test constants** - Check observable consumer behavior. Use an independent expectation when the exact
+  constant value is the contract. Follow the target project's fixture policy for structured test data.
+- **Never pin a literal count of data the code defines** - A registry size, a corpus size, or a ceiling that must
+  be edited on every legitimate change protects nothing. Derive the expectation from its source of truth, or compare
+  the explicit set or list so a change shows as a diff. A "the data loaded" guard is `> 0`.
+
+```typescript
+// ✅ Derived from the source: adding a tool changes nothing here
+assertEquals(registry.getTools().map((t) => t.name), createCoreToolSchemas().map((t) => t.name));
+
+// ❌ Pinned: every legitimate add or remove breaks it
+assertEquals(registry.getTools().length, 22);
+```
+
+## Verification method selection
+
+Choose the smallest method that detects a named defect. An example-based test remains the default.
+
+| Method               | Use when                                               | Required control                                               |
+| -------------------- | ------------------------------------------------------ | -------------------------------------------------------------- |
+| Example-based        | One behavior, one known input and output               | A failing test that names the behavior                         |
+| Property-based       | A rule holds across many inputs and a generator exists | Property from the contract, fixed seed, bounded cases          |
+| Differential         | A replacement must match an independent reference      | Expectation from the reference, investigate every disagreement |
+| Fuzz                 | Malformed input is the defect model                    | Bounded iterations, fixed seed, minimized failing input        |
+| Mutation (selective) | Assertion sensitivity is uncertain                     | A named mutation set and bounded run; no new dependency        |
+
+For each test, record:
+
+- Behavior and the production entry point that must show it.
+- The independent oracle or contract that supplies the expected value.
+- Substituted dependencies and what they hide.
+- What the test cannot establish.
+
+Keep RED → GREEN → REFACTOR. Test observable behavior that survives an internal refactor. Keep retry, ordering, or authorization interaction checks when the contract requires them. Report any check you did not run. Do not add a per-test approval gate, ban mocks, or inspect unrelated internals.
+
+## Example Workflow
+
+1. Write the failing test: "should return an empty array when no items match".
+1. Run it and confirm it fails for the right reason (RED).
+1. Implement the minimal code to pass (GREEN).
+1. Refactor with the test green, then re-run.
+
+## Test design reference
+
+### Test Pyramid
+
+```text
+      /\
+     /  \     E2E Tests (few)
+    /────\
+   /      \   Integration Tests (some)
+  /────────\
+ /          \ Unit Tests (many)
+/────────────\
+```
+
+### FIRST principles
+
+- **F**ast: tests run quickly.
+- **I**ndependent: no test depends on another's state.
+- **R**epeatable: same result every run.
+- **S**elf-validating: a clear pass/fail with no manual inspection.
+- **T**imely: written alongside (ideally before) the code.
+
+### Arrange-Act-Assert
+
+```typescript
+Deno.test("should do something", () => {
+  // Arrange: set up test data
+  const input = createTestInput();
+  // Act: execute the code under test
+  const result = functionUnderTest(input);
+  // Assert: verify the outcome
+  assertEquals(result, expectedOutput);
+});
+```
+
+### Test categories
+
+- **Unit** — single functions/methods; mock external deps; fast (<100ms); high coverage.
+- **Integration** — component interactions; real deps where feasible (DB, FS, network).
+- **Edge case** — boundary values, empty/null inputs, error conditions, concurrency.

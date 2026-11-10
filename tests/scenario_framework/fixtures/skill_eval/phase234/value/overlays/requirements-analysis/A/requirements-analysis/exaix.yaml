@@ -1,0 +1,32 @@
+title: Requirements Analysis & Specification
+triggers:
+  tags:
+    - requirements
+    - analysis
+    - specification
+    - user-stories
+    - acceptance-criteria
+constraints:
+  - 'Every requirement must be testable — if you cannot write a pass/fail check for it, it is not a requirement'
+  - Separate functional requirements from non-functional constraints explicitly
+  - Identify assumptions and risks alongside every requirement
+output_requirements:
+  - User stories in standard As a / I want / So that format
+  - Acceptance criteria in Given / When / Then format
+  - Success metrics with measurable targets
+  - Technical requirements with rationale
+  - Constraints and assumptions
+quality_criteria:
+  - name: Testability
+    description: Every acceptance criterion is a pass/fail check
+    weight: 40
+  - name: Completeness
+    description: 'Functional, non-functional, edge cases, and constraints are all covered'
+    weight: 30
+  - name: Traceability
+    description: Every requirement maps back to a business need or user story
+    weight: 30
+applies_to:
+  agents:
+    - product-manager
+    - '*'

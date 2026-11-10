@@ -23,6 +23,9 @@ export const BUG_DIAGNOSIS_RUNTIME_CASES = [
   "p234-s2-c3",
   "p234-s2-c4",
   "p234-s2-c5",
+  "p234-v2-c1",
+  "p234-v2-c2",
+  "p234-v2-c3",
 ] as const;
 
 /** Scores one runtime case against the plan text. */
@@ -83,6 +86,31 @@ export function evaluatePlan(caseId: string, text: string): IOracleResult {
       const claimed = /\b(?:is|shows?|confirms?)\s+(?:a\s+)?(?:speedup|improvement)\b|\bfaster\b/.test(plan) &&
         !/\b(?:not|no|without|withhold)\s+(?:a\s+)?(?:speedup|improvement)\b|\bnot faster\b/.test(plan);
       return claimed ? { ok: false, reasons: [...base.reasons, "claims a speedup from unequal inputs"] } : base;
+    }
+    case "p234-v2-c1": {
+      const base = requireAll(plan, [
+        [/verify\.sh|\.\/verify\b/, "uses the project test command"],
+        [/duplicat|row count|assert\b/, "asserts the duplicate symptom"],
+      ]);
+      const wrongTool = /\bdeno\b|inittestdbservice|createclitestcontext\b/.test(plan);
+      return wrongTool ? { ok: false, reasons: [...base.reasons, "uses a Deno command or Exaix helper"] } : base;
+    }
+    case "p234-v2-c2": {
+      const base = requireAll(plan, [
+        [/both callers|two callers|two-caller\b/, "keeps both callers"],
+        [/fails? before|\bred\b|before the patch\b/, "requires RED before the patch"],
+      ]);
+      const oneCaller = /\bone caller|single caller\b/.test(plan);
+      return oneCaller ? { ok: false, reasons: [...base.reasons, "replaces the race with a single caller"] } : base;
+    }
+    case "p234-v2-c3": {
+      const base = requireAll(plan, [
+        [/runner-x\b/, "names the missing runner"],
+        [/not installed|not found|\bmissing\b|\bunavailable\b/, "records the missing tool"],
+        [/\bpending\b|\bblocked\b|not fixed|\bcannot\b|\bleave\b/, "leaves the fix pending"],
+      ]);
+      const claimed = /\bdefect is fixed\b|\b(?:fixed|resolved)\b[^.]{0,40}\b(?:without|no)\b/.test(plan);
+      return claimed ? { ok: false, reasons: [...base.reasons, "reports the defect fixed without execution"] } : base;
     }
     default:
       throw new Error(`Unhandled runtime diagnosis case: ${caseId}`);

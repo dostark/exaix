@@ -1,0 +1,45 @@
+applies_to:
+  agents:
+    - general
+triggers:
+  keywords:
+    - fix
+    - bug
+    - bugfix
+    - failing-test
+    - defect
+    - regression
+  task_types:
+    - bugfix
+  tags:
+    - bugfix
+    - tdd
+constraints:
+  - Write regression test first that reproduces the bug (RED phase)
+  - Reproduce the reported symptom with one bounded command and observed failure
+  - Rank plausible causes and test one falsifiable prediction at a time
+  - Implement minimal fix to pass the test (GREEN phase)
+  - Run all CI gates after fix to prevent regressions
+  - 'If GREEN unreachable after 2 attempts, revert and re-analyse'
+  - Use structured commit with bug reference
+output_requirements:
+  - 'Reproduction: command, observed symptom, controls, and bounds'
+  - 'Ranked hypotheses, rejected causes, and the confirmed cause'
+  - 'RED evidence: failing regression at the real failing boundary'
+  - 'GREEN evidence: regression and original reproduction pass after fix'
+  - 'Performance evidence on identical workloads when the defect is performance-related'
+  - CI gates clean before commit
+  - Structured commit message referencing the bug
+quality_criteria:
+  - name: regression_test
+    description: Test written that reproduces the bug before fix
+    weight: 40
+  - name: minimal_fix
+    description: Only the minimum code changed to fix the bug
+    weight: 30
+  - name: ci_gate_compliance
+    description: All CI gates pass before commit
+    weight: 30
+related_skills:
+  - test-development
+  - exaix-development

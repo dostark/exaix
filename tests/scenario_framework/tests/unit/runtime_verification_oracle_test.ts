@@ -46,6 +46,22 @@ const SAMPLES: ICaseSample[] = [
     good: "For the denied role, observe zero writes with a substitute call count on the writer.",
     bad: "A success response is proof of no write for the denied role.",
   },
+  {
+    id: "p234-v4-c1",
+    good: "Write a failing boundary test from the written contract first, then the minimal implementation.",
+    bad: "Implement first, then write a test.",
+  },
+  {
+    id: "p234-v4-c2",
+    good:
+      "Keep the public-contract test unchanged; do not assert the private call structure; refactor with the test green.",
+    bad: "Assert the private call graph after the refactor.",
+  },
+  {
+    id: "p234-v4-c3",
+    good: "Keep the retry and denied-write interaction check. Prove it test-first.",
+    bad: "Treat a success response as proof of no write.",
+  },
 ];
 
 Deno.test("every announced runtime verification case has a sample", () => {

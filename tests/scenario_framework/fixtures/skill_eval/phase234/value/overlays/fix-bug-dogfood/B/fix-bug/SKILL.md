@@ -1,0 +1,133 @@
+---
+name: fix-bug
+description: Fix a bug or failing test using TDD root-cause loop — regression test first, minimal fix, CI gates, structured commit
+---
+
+```text
+Key points
+
+- NEVER fix before a failing regression test. RED must come first.
+- Fix only the root cause, not the symptom. Diff the fix to confirm scope.
+- Hard or intermittent bug? Record one symptom-specific reproduction and rank
+  falsifiable causes. Probe one variable at a time.
+- A successful command is not reproduction evidence unless it asserts the
+  reported symptom.
+- For performance defects, compare the same workload in the same environment.
+- File-scoped tests by default; full suite only when blast radius is wide.
+- Multiple test files failing at once? Identify the single root cause first — one fault,
+  one regression test.
+- All CI gates pass before committing.
+- No GREEN after 2 attempts: revert, use `#review-research`, retry.
+- Tracing > ~20 files: batches of 5–10. Read a batch, record findings, continue.
+
+Canonical prompt (short):
+"Fix <bug/failing test>. Reproduce it in a regression test first, then implement
+the minimal fix to make it pass. Run CI gates and commit with #commit."
+
+Examples
+- "#fix-bug PathResolver is not resolving symlinks to files outside the portal"
+- "#fix-bug deno test tests/services/memory_bank_test.ts — 3 failing tests"
+
+Workflow
+────────
+REPRODUCE
+  1. Read the bug report or failing test output in full.
+  2. Locate the source file(s) and related test file(s).
+  3. Confirm reproducibility:
+       deno test --allow-all <test-file>     (existing failing tests)
+       deno check <src-file>                 (type errors)
+  4. Find the root cause by reading source — not just the stack trace.
+
+HARD-BUG DIAGNOSIS (optional)
+  4a. Use this branch when the cause is unclear or the failure is intermittent.
+      - Record the expected result and the exact reported symptom.
+      - Run one bounded command that asserts that symptom. Keep the observed failure.
+        Record input, fixture, seed, time, network, and execution limits. Redact secrets.
+      - Reduce the reproduction while the same failure remains.
+      - Rank the plausible causes. Give each cause a testable prediction.
+      - Test one prediction at a time. Record the observation and reject disproved causes.
+      - For intermittent failures, record attempts and failures before and after the fix.
+        A sample with no failures does not prove the failure is impossible.
+      - For performance defects, read the metric and acceptance threshold from the
+        requirement. Compare identical workloads in a controlled environment. Record
+        uncertainty instead of asserting causality from an unmatched comparison.
+  4b. If the symptom cannot be reproduced, record the commands, results, and missing
+      evidence. Do not apply a speculative fix. Remove temporary instrumentation.
+
+REGRESSION TEST (RED)
+  5. In the relevant test file (or a new one), write a named test that:
+     - reproduces the minimized symptom at the real failing boundary, not a nearby error
+     - is named "fix(<component>): <what it should do>"
+     - uses the established helpers (initTestDbService, createCliTestContext, etc.)
+  6. Confirm RED: the new test fails before the fix.
+       deno test --allow-all <test-file>   → must error or fail
+
+FIX (GREEN)
+  7. Minimum change to pass the regression test.
+     - No unrelated refactors in the same change.
+     - No public interface changes unless strictly necessary.
+  8. Run the regression test again — it must pass.
+       deno test --allow-all <test-file>   → must pass
+
+CI GATES
+  9. deno lint <src-file> <test-file>
+ 10. deno check <src-file>
+ 11. deno task check:arch   → no new UNGROUNDED files
+ 12. deno fmt <src-file> <test-file>
+ 13. deno task check:magic  (if new literals added — optional)
+ 14. No regressions in adjacent test files touched by the change.
+
+COMMIT
+ 15. Use #commit. Type: `fix(<scope>): <description>`. Fields: what:, rationale:,
+     tests:, who:, impact:.
+
+Do / Don't
+- ✅ Write the regression test BEFORE the fix. RED first.
+- ✅ Name the regression test after the failure scenario.
+- ✅ Confirm RED before implementing.
+- ✅ Fix only the root cause — keep the diff minimal.
+- ✅ Use Exaix test helpers (initTestDbService, createCliTestContext, etc.).
+- ✅ Run all CI gates before committing.
+- ✅ Use #commit for the final message.
+- ✅ Assert the reported symptom; an exit code alone is not evidence.
+- ✅ Rank causes and test one falsifiable prediction at a time.
+- ✅ Record attempts and failures for intermittent bugs.
+- ✅ Compare performance on identical workloads and environments.
+- ❌ Fix without a regression test.
+- ❌ Refactor unrelated code in the same change.
+- ❌ Skip CI gates.
+- ❌ Suppress a test to make it "pass".
+- ❌ Use --no-verify.
+- ❌ Treat a nearby exception or a successful command as the reported symptom.
+- ❌ Patch from a hypothesis when reproduction is unavailable.
+- ❌ Claim a speedup from different workloads or environments.
+
+Related: #next-steps (return after the fix); #commit (structured commit); #audit-security
+(security-related bugs first); #refactor-check-magic (new literals).
+```
+
+## See also
+
+- [test-development](../test-development/SKILL.md) — regression test patterns, helpers
+- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, config conventions
+
+## Output Format
+
+1. **Reproduction** — command, observed symptom, controls, and bounds.
+1. **Rejected causes** — ranked hypotheses and the observation that rejected each.
+1. **Root cause** — why the remaining cause is confirmed.
+1. **Regression test** — file path and test name.
+1. **Fix summary** — what changed and why it resolves the root cause.
+1. **Original-scenario verification** — the original reproduction result after the fix.
+1. **Residual uncertainty** — intermittent frequency or unmatched measurements.
+1. **CI gate results** — lint, type-check, arch, fmt.
+1. **Commit payload** — use `#commit`.
+
+## Workflow Chain
+
+#next-steps (bug discovered) → **#fix-bug** → #commit
+
+## Related
+
+- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules

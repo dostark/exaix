@@ -51,7 +51,16 @@ const RecordSchema = z.object({
 type PlanRecord = z.infer<typeof RecordSchema>;
 type Stage = z.infer<typeof StageSchema>;
 type Json = z.infer<typeof JsonSchema>;
-const CASES = ["p234-s6-c1", "p234-s6-c2", "p234-s6-c3", "p234-s6-c4", "p234-s6-c5"];
+const CASES = [
+  "p234-s6-c1",
+  "p234-s6-c2",
+  "p234-s6-c3",
+  "p234-s6-c4",
+  "p234-s6-c5",
+  "p234-v6-c1",
+  "p234-v6-c2",
+  "p234-v6-c3",
+];
 
 function matches(value: Json, expected: Json): boolean {
   return equal(value, expected);
@@ -145,6 +154,33 @@ function selectiveAdr(record: PlanRecord): boolean {
         /(correction|corrected)/i.test(correction) && /(append|separate entry)/i.test(correction)));
 }
 
+function reachableExport(record: PlanRecord): boolean {
+  const first = record.stages[0];
+  return record.stages.length === 1 && first.entrypoint === "exactl request export --format csv" &&
+    first.registered === true && first.store === "ExportStore" &&
+    first.callers.some((caller) => caller.consumer === "CLI" && caller.method === "exportCsv") &&
+    matches(first.new_services ?? null, []) && matches(first.new_schemas ?? null, []) &&
+    matches(outcome(record, "AC-export"), { command: "exactl request export --format csv", rows: 2 });
+}
+
+function compatibleRename(record: PlanRecord): boolean {
+  if (!/cannot deploy atomically/i.test(record.migration_reason ?? "")) return false;
+  const ids = ["expand", "web", "worker", "integration", "contract"];
+  if (!matches(record.stages.map((stage) => stage.id), ids)) return false;
+  const [expand, , , , contract] = record.stages;
+  return expand.api.includes("oldName") && expand.api.includes("newName") &&
+    record.stages.every((stage) => stage.rollback.requires_api.includes("oldName")) &&
+    matches(contract.old_consumers ?? null, []) && !contract.api.includes("oldName") &&
+    matches(outcome(record, "AC-equivalence"), { oldName: 2, newName: 2 });
+}
+
+function settledDecision(record: PlanRecord): boolean {
+  const choice = record.decisions.find((entry) => entry.id === "U-17");
+  return choice?.choice === "CSV with header" && choice.source === "U-17" &&
+    choice.acceptance_ids.includes("AC-export") && record.questions.length === 0 &&
+    matches(outcome(record, "AC-export"), { format: "CSV", header: true });
+}
+
 function parseRecord(raw: string): PlanRecord | null {
   const blocks = [...raw.matchAll(/```json\s*\n([\s\S]*?)\n```/g)];
   if (blocks.length > 1) return null;
@@ -170,7 +206,16 @@ export function evaluatePlanning(caseId: string, raw: string): { ok: boolean; re
   );
   const resolved = caseId === "p234-s6-c3" || (record.status === "RESOLVED" && record.questions.length === 0 &&
     record.acceptance.every((criterion) => criterion.status === "RESOLVED"));
-  const checks = [reachableFeature, compatibleMigration, settledChoice, establishedMeaning, selectiveAdr];
+  const checks = [
+    reachableFeature,
+    compatibleMigration,
+    settledChoice,
+    establishedMeaning,
+    selectiveAdr,
+    reachableExport,
+    compatibleRename,
+    settledDecision,
+  ];
   const ok = linked && resolved && record.created_files.length === 0 &&
     (caseId === "p234-s6-c5" || record.adr_proposals.length === 0) && checks[CASES.indexOf(caseId)](record);
   return { ok, reasons: ok ? [] : [`Plan contradicts the independent ${caseId} contract`] };

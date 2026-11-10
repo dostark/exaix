@@ -49,6 +49,21 @@ const SAMPLES: ICaseSample[] = [
       "The 100 and 10000 runs use different inputs. The comparison is not comparable; withhold the improvement verdict.",
     bad: "The 10000 run is faster than 100; the speedup is confirmed.",
   },
+  {
+    id: "p234-v2-c1",
+    good: "Run ./verify.sh and assert the duplicate row count.",
+    bad: "Run deno test and assert the duplicate row count.",
+  },
+  {
+    id: "p234-v2-c2",
+    good: "Keep both callers in the regression. It fails before the patch.",
+    bad: "Use one caller in the regression. It fails before the patch.",
+  },
+  {
+    id: "p234-v2-c3",
+    good: "runner-x is not installed. Record the missing tool and leave the fix pending.",
+    bad: "runner-x is not installed. The defect is fixed.",
+  },
 ];
 
 Deno.test("every announced runtime case has a sample", () => {

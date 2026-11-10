@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "phase": 234,
+  "step": 9,
+  "registeredAt": "2026-11-10T00:00:00Z",
+  "provider": "opencode-cli/opencode-go/deepseek-v4.1-flash",
+  "judge": "none (objective_outcome)",
+  "metric": "objective_outcome",
+  "minimumUsefulEffect": 0.01,
+  "trialsPerTask": 1,
+  "stoppingRule": "Run the fixed 36 paired submissions and the two controls. Do not stop at the first favorable or unfavorable difference.",
+  "heldOutNote": "Each task is new and distinct from the Step 8 behavioral cases. The oracle is reused; the task is held out.",
+  "comparisons": [
+    {
+      "spec": {
+        "armId": "phase234-value-fix-bug-dogfood",
+        "kind": "skill-version",
+        "control": {
+          "description": "fix-bug fix-bug-dogfood revision before Phase 234"
+        },
+        "treatment": {
+          "description": "fix-bug fix-bug-dogfood approved revision"
+        },
+        "taskIds": [
+          "p234-v1-c1",
+          "p234-v1-c2",
+          "p234-v1-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "fix-bug",
+      "root": "dogfood",
+      "sourcePath": ".copilot/skills/fix-bug",
+      "controlRef": "8194b4443^",
+      "treatmentRef": "worktree",
+      "controlSha256": "8fcdb1ccab598157457e244d7fd4f634b233e32d33e9352b593dcac94bb431cd",
+      "treatmentSha256": "595bd0fa8fe492e5bc5f79cb42acc01b6aa660c6bfb27794b8f01e9f1bd352b4",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v1-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v1-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v1-c3.md"
+      ]
+    },
+    {
+      "spec": {
+        "armId": "phase234-value-fix-bug-blueprint",
+        "kind": "skill-version",
+        "control": {
+          "description": "fix-bug fix-bug-blueprint revision before Phase 234"
+        },
+        "treatment": {
+          "description": "fix-bug fix-bug-blueprint approved revision"
+        },
+        "taskIds": [
+          "p234-v2-c1",
+          "p234-v2-c2",
+          "p234-v2-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "fix-bug",
+      "root": "blueprint",
+      "sourcePath": "Blueprints/Skills/fix-bug",
+      "controlRef": "b4b20e608^",
+      "treatmentRef": "worktree",
+      "controlSha256": "14a1e2a3d932195e05eb3efaa70ea7103c30fab06d0d3b4c4af956c5ecd2373b",
+      "treatmentSha256": "ba5bd4b0d6d9960b7e0c3181c4ad923990c5c372b1ec4800cd06cb6bfb00ecea",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v2-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v2-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v2-c3.md"
+      ]
+    },
+    {
+      "spec": {
+        "armId": "phase234-value-test-development",
+        "kind": "skill-version",
+        "control": {
+          "description": "test-development test-development revision before Phase 234"
+        },
+        "treatment": {
+          "description": "test-development test-development approved revision"
+        },
+        "taskIds": [
+          "p234-v3-c1",
+          "p234-v3-c2",
+          "p234-v3-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "test-development",
+      "root": "dogfood",
+      "sourcePath": ".copilot/skills/test-development",
+      "controlRef": "275edc770^",
+      "treatmentRef": "worktree",
+      "controlSha256": "37885ede1adc47a5489876bcc48e4f1f8f816bdf8d3ff2a0a8eed21175d14365",
+      "treatmentSha256": "b653cecdf2b02c73072cc8ea8ea33ae64818a21ef375aa1addc1527b982d8ca1",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v3-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v3-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v3-c3.md"
+      ]
+    },
+    {
+      "spec": {
+        "armId": "phase234-value-tdd-methodology",
+        "kind": "skill-version",
+        "control": {
+          "description": "tdd-methodology tdd-methodology revision before Phase 234"
+        },
+        "treatment": {
+          "description": "tdd-methodology tdd-methodology approved revision"
+        },
+        "taskIds": [
+          "p234-v4-c1",
+          "p234-v4-c2",
+          "p234-v4-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "tdd-methodology",
+      "root": "blueprint",
+      "sourcePath": "Blueprints/Skills/tdd-methodology",
+      "controlRef": "03c3cecd6^",
+      "treatmentRef": "worktree",
+      "controlSha256": "829cc080d664cc09da4bbb1cc41a7faf2bec33d5ae60af55efa2c091bb1369a4",
+      "treatmentSha256": "720814ec95adf0c679aabf3fd1d15378eca178b21b6a4f21f41cbb3a3a0664cd",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v4-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v4-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v4-c3.md"
+      ]
+    },
+    {
+      "spec": {
+        "armId": "phase234-value-requirements-analysis",
+        "kind": "skill-version",
+        "control": {
+          "description": "requirements-analysis requirements-analysis revision before Phase 234"
+        },
+        "treatment": {
+          "description": "requirements-analysis requirements-analysis approved revision"
+        },
+        "taskIds": [
+          "p234-v5-c1",
+          "p234-v5-c2",
+          "p234-v5-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "requirements-analysis",
+      "root": "blueprint",
+      "sourcePath": "Blueprints/Skills/requirements-analysis",
+      "controlRef": "5490fca13^",
+      "treatmentRef": "worktree",
+      "controlSha256": "0d94d4820173c26db94a9bfaca5f3ab43daa5f5db8c55af3cc81f1f167fe1446",
+      "treatmentSha256": "aeef1577b0ae6f6dfb363bcc2d4c1ace082937eca448fd932ffa06ebef0d651d",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v5-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v5-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v5-c3.md"
+      ]
+    },
+    {
+      "spec": {
+        "armId": "phase234-value-plan",
+        "kind": "skill-version",
+        "control": {
+          "description": "plan plan revision before Phase 234"
+        },
+        "treatment": {
+          "description": "plan plan approved revision"
+        },
+        "taskIds": [
+          "p234-v6-c1",
+          "p234-v6-c2",
+          "p234-v6-c3"
+        ],
+        "trials": 1,
+        "metric": "objective_outcome",
+        "registeredAt": "2026-11-10T00:00:00Z"
+      },
+      "skill": "plan",
+      "root": "dogfood",
+      "sourcePath": ".copilot/skills/plan",
+      "controlRef": "32ef839ae^",
+      "treatmentRef": "worktree",
+      "controlSha256": "552ccf0526d5d3782ff0546ac1bb99d5ff4a7c73ffa0abe47694f3e8626d7c5c",
+      "treatmentSha256": "ef5c800c69eaf3fc35fbf32d3d8428758845f787b2648b67da7c8f195c9277e4",
+      "taskFiles": [
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v6-c1.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v6-c2.md",
+        "tests/scenario_framework/fixtures/requests/skill_eval/phase234/value/p234-v6-c3.md"
+      ]
+    }
+  ]
+}
