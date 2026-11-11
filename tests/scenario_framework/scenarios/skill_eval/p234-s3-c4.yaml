@@ -53,7 +53,17 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: ["--effort", "high", "--agent-role", "test-engineer", "--file", "$REQUEST_FIXTURE", "--portal", "exaix-self"]
+    args: [
+      "create",
+      "--effort",
+      "high",
+      "--agent",
+      "test-engineer",
+      "--file",
+      "$REQUEST_FIXTURE",
+      "--portal",
+      "exaix-self",
+    ]
   - id: await-plan
     type: wait-for-file
     args: ["Workspace/Plans/*_plan.md"]

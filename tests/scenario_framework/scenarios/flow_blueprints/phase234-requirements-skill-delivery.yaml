@@ -3,7 +3,7 @@ id: "phase234-requirements-skill-delivery"
 title: "Requirements skill delivery through the daemon and replay CLI"
 pack: "flow_blueprints"
 tags: ["smoke", "subsystem:flows", "subsystem:skills", "entity:requirements-analysis"]
-request_fixture: "fixtures/requests/flow_blueprints/feature_development.md"
+request_fixture: "fixtures/requests/flow_blueprints/requirements_skill_delivery.md"
 mode_support: ["auto"]
 portals:
   - alias: blueprint-project
@@ -64,7 +64,7 @@ steps:
   - id: "submit-flow-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "blueprint-project"]
+    args: ["create", "--file", "$REQUEST_FIXTURE", "--portal", "blueprint-project"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:

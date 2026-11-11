@@ -26,6 +26,7 @@ const BATCH_SKILLS_2 = [
   "collaborative-flow",
   "documentation-driven",
   "error-handling",
+  "implementation-plan",
 ];
 const BATCH_SKILLS_3 = [
   "fix-bug",

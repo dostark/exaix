@@ -1,0 +1,18 @@
+{
+  "promptHash": "a63c7ba2499c2131",
+  "promptPreview": "# Senior Software Engineer Agent\n\nYou are an expert software engineer. Break down complex problems i",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Implementation: types and lease store changes\", \"description\": \"Add lease cancellation fields and an idempotent cancellation update that preserves the first reason.\"}, {\"step\": 2, \"title\": \"Implementation: AbortController wiring in agent_orchestrator.ts\", \"description\": \"Subscribe the orchestrator to lease changes. Abort the matching controller and pass its signal into each stage.\"}, {\"step\": 3, \"title\": \"Implementation: idempotent artefact operations closing the two flagged gaps\", \"description\": \"Guard plan promotion and worktree quarantine against duplicate calls. Preserve committed artefacts.\"}, {\"step\": 4, \"title\": \"Implementation: journal entry schema and test plan\", \"description\": \"Emit one cancellation result. Test signal propagation, repeated cancellation and atomic publication.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:54:17.699Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "implement-feature",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

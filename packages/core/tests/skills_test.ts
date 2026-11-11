@@ -265,5 +265,5 @@ Deno.test("SkillsService: buildSkillContext drops a skill that overflows the con
     const context = await service.buildSkillContext(["big-skill"]);
     assertStringIncludes(context, "excluded due to context budget");
     assertFalse(context.includes("Big Skill"));
-  });
+  }, { skillContextBudget: 1_000 });
 });

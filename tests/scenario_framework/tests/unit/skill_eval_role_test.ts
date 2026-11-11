@@ -27,7 +27,7 @@ Deno.test("skill evaluation requests select existing agent role blueprints", asy
       const path = join(REPO_ROOT, `tests/scenario_framework/scenarios/skill_eval/${id}.yaml`);
       const scenario = ScenarioSchema.parse(parse(await Deno.readTextFile(path)));
       for (const step of scenario.steps.filter((item) => item.command === "request")) {
-        const position = step.args?.indexOf("--agent-role") ?? -1;
+        const position = step.args?.indexOf("--agent") ?? -1;
         const role = position < 0 ? undefined : step.args?.[position + 1];
         assertExists(role, `${id} must choose an agent role`);
         await Deno.stat(join(REPO_ROOT, "Blueprints/Agents", `${role}.md`));
@@ -58,10 +58,13 @@ Deno.test("failed skill evaluation cases select Codex Terra with high effort", a
           assertEquals(step.args?.[effort + 1], "high", id);
         }
       }
+      // Two separate decisions: rerun cases need high effort, and the Codex preset also covers
+      // the two group-2 recaptures.
+      const codexConfig = rerun || (group === 2 && [1, 3].includes(index));
       if ([2, 4, 5].includes(group)) {
         assertStringIncludes(
           text,
-          rerun ? "configs/codex-terra-61-skill-eval.toml" : "configs/claude-sonnet-4-6-skill-eval.toml",
+          codexConfig ? "configs/codex-terra-61-skill-eval.toml" : "configs/claude-sonnet-4-6-skill-eval.toml",
         );
       }
     }

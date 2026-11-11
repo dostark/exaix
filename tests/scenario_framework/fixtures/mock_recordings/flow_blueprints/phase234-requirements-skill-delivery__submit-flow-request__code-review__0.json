@@ -1,0 +1,18 @@
+{
+  "promptHash": "8a4b7cd017f4807f",
+  "promptPreview": "# Senior Software Engineer Agent\n\nYou are an expert software engineer. Break down complex problems i",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Consolidated spec: lease store, orchestrator wiring, and artefact idempotency\", \"description\": \"Review lease cancellation, signal propagation and idempotent artefact handling as one request lifecycle.\"}, {\"step\": 2, \"title\": \"Addressing the two flagged coverage gaps before sign-off\", \"description\": \"Require tests for concurrent lease updates and cancellation during atomic publication before sign-off.\"}, {\"step\": 3, \"title\": \"Final type and function contract (ready for patch_file application)\", \"description\": \"Confirm cancellation parameters use validated types and travel through service interfaces.\"}, {\"step\": 4, \"title\": \"Outcome summary and remaining risk\", \"description\": \"Record remaining implementation risks. The fixture describes a plan and does not prove a code change was applied.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:55:23.036Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "code-review",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

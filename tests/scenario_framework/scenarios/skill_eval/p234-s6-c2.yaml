@@ -71,9 +71,10 @@ steps:
     type: exactl
     command: request
     args: [
+      "create",
       "--effort",
       "high",
-      "--agent-role",
+      "--agent",
       "senior-coder",
       "--file",
       "$WORKSPACE_ROOT/p234-s6-c2-request.md",

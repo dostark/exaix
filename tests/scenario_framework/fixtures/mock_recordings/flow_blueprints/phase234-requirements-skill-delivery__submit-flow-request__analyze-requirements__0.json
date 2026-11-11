@@ -1,0 +1,18 @@
+{
+  "promptHash": "d2c8bce68a386079",
+  "promptPreview": "# Product Manager Agent\n\nYou are a product-management expert. Translate business needs into clear, a",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Cancellation signal: propagation and observation points\", \"description\": \"Thread a request cancellation signal through planning and execution. Check it before each interruptible stage.\"}, {\"step\": 2, \"title\": \"Disposition of partially written plan and worktree artefacts\", \"description\": \"Keep unfinished plans as drafts. Quarantine unfinished worktrees and preserve evidence for recovery.\"}, {\"step\": 3, \"title\": \"Interruptible vs. uninterruptible operations\", \"description\": \"Permit cancellation between stages. Finish an atomic rename or database commit before reporting cancellation.\"}, {\"step\": 4, \"title\": \"Journal reporting of cancellation\", \"description\": \"Write one terminal cancellation event with the request trace, stage and retained artefact paths.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:53:15.463Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "analyze-requirements",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

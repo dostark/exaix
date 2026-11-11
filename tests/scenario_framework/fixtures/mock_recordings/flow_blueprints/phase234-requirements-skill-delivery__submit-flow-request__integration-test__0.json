@@ -1,0 +1,18 @@
+{
+  "promptHash": "e199be028fd9eafd",
+  "promptPreview": "# QA Engineer Agent\n\nYou are a quality assurance expert. Ensure software meets quality standards thr",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"QA gate: acceptance criteria traceability\", \"description\": \"Map each cancellation acceptance criterion to a test and its expected journal or filesystem evidence.\"}, {\"step\": 2, \"title\": \"QA gate: test suite completeness against the test pyramid\", \"description\": \"Check unit, integration and security coverage for signal propagation, repeated cancellation and retained artefacts.\"}, {\"step\": 3, \"title\": \"QA gate: outstanding risks and required pre-merge actions\", \"description\": \"Require concurrent cancellation and atomic publication checks before approving the implementation.\"}, {\"step\": 4, \"title\": \"QA verdict: conditional pass\", \"description\": \"Approve the proposed test plan conditionally. Actual implementation validation remains required in the target project.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:55:50.344Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "integration-test",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

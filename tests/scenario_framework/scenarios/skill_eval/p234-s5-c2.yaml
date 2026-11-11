@@ -77,9 +77,10 @@ steps:
     type: exactl
     command: request
     args: [
+      "create",
       "--effort",
       "high",
-      "--agent-role",
+      "--agent",
       "product-manager",
       "--file",
       "$WORKSPACE_ROOT/p234-s5-c2-request.md",
@@ -114,9 +115,10 @@ steps:
     type: exactl
     command: request
     args: [
+      "create",
       "--effort",
       "high",
-      "--agent-role",
+      "--agent",
       "product-manager",
       "--file",
       "$WORKSPACE_ROOT/p234-s5-c2-answer-request.md",

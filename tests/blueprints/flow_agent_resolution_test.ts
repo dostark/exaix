@@ -77,30 +77,31 @@ async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
 // Catalog-wide Flow Tests: enumerate Blueprints/Flows/ rather than naming files one per
 // Deno.test, so a renamed or newly added flow file is covered automatically.
 
-/** Flows that have never declared `defaultSkills`. Listed rather than fixed because whether
- * every flow REQUIRES defaultSkills is unconfirmed; this list must shrink, never grow. */
-const FLOWS_WITHOUT_DEFAULT_SKILLS = new Set(["analyze-codebase.flow.yaml", "api-documentation.flow.yaml"]);
+/** Flows that declare no skill at all. A flow may declare skills for every step
+ *  (`defaultSkills`) or per step (`skills`). This list may only shrink, never grow. */
+const FLOWS_WITHOUT_SKILLS = new Set(["api-documentation.flow.yaml"]);
 
 Deno.test("fix(blueprints): architecture decisions load the shipped architecture review skill", async () => {
   const flow = await new FlowLoader(FLOWS_DIR).loadFlow("architecture-decision");
   assertEquals(flow.defaultSkills, ["architecture-review"]);
 });
 
-Deno.test("Flow validation: no flow loses its defaultSkills", async () => {
+Deno.test("Flow validation: no flow loses its declared skills", async () => {
   const missing: string[] = [];
   const staleExemptions: string[] = [];
   for await (const entry of Deno.readDir(FLOWS_DIR)) {
     if (!entry.isFile || !entry.name.endsWith(".flow.yaml")) continue;
     const content = await Deno.readTextFile(join(FLOWS_DIR, entry.name));
-    const has = content.includes("defaultSkills:");
-    if (!has && !FLOWS_WITHOUT_DEFAULT_SKILLS.has(entry.name)) missing.push(entry.name);
-    if (has && FLOWS_WITHOUT_DEFAULT_SKILLS.has(entry.name)) staleExemptions.push(entry.name);
+    // A flow may declare skills for every step or per step. Both satisfy the contract.
+    const has = /^\s*(?:defaultSkills|skills):/m.test(content);
+    if (!has && !FLOWS_WITHOUT_SKILLS.has(entry.name)) missing.push(entry.name);
+    if (has && FLOWS_WITHOUT_SKILLS.has(entry.name)) staleExemptions.push(entry.name);
   }
-  assertEquals(missing.sort(), [], `flow blueprints that lost defaultSkills: ${missing.join(", ")}`);
+  assertEquals(missing.sort(), [], `flow blueprints that declare no skills: ${missing.join(", ")}`);
   assertEquals(
     staleExemptions.sort(),
     [],
-    `these now declare defaultSkills — remove them from FLOWS_WITHOUT_DEFAULT_SKILLS: ${staleExemptions.join(", ")}`,
+    `these now declare skills — remove them from FLOWS_WITHOUT_SKILLS: ${staleExemptions.join(", ")}`,
   );
 });
 

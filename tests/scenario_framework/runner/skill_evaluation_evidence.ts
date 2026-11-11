@@ -417,7 +417,10 @@ export function compareWorkspaceSnapshots(before: IWorkspaceSnapshot, after: IWo
   return changes;
 }
 
-const CASE_ID = /^p234-s[1-6]-c[1-5]$/;
+const CASE_ID = /^p234-[sv][1-6]-c[1-5]$/;
+
+/** A deterministic value case: no approved skill revision, provider capture, or command trace. */
+const VALUE_CASE = /^p234-v[1-6]-c[1-5]$/;
 const BaselineSchema = z.object({
   caseId: z.string().regex(CASE_ID),
   files: z.record(z.string(), z.object({ kind: z.enum(["file", "symlink"]), fingerprint: z.string() }).strict()),
@@ -479,14 +482,16 @@ export async function evaluateObservedArtifacts(
     : combine(artifacts.map((item, index) => checkPlanFormat(item, requestIds[index])));
   const deterministic = checkDeterministicBehavior(caseId, artifacts.at(-1) ?? "");
   const semantic: IEvidenceResult = { status: "pending", reasons: ["Independent semantic review is required"] };
-  const delivery = requestIds.length === artifacts.length && requestIds.length > 0
+  const delivery = VALUE_CASE.test(caseId)
+    ? { status: "pending" as const, reasons: ["Value cases do not bind skill-delivery evidence"] }
+    : requestIds.length === artifacts.length && requestIds.length > 0
     ? combine(
       (await Promise.all(requestIds.map((id) => bindRecordedSkillSubmission(root, caseId, id)))).map((item) =>
         item.result
       ),
     )
     : { status: "pending" as const, reasons: ["Request-bound skill usage unavailable"] };
-  const commands = commandRequirementFor(caseId) === "not_applicable"
+  const commands = VALUE_CASE.test(caseId) || commandRequirementFor(caseId) === "not_applicable"
     ? { status: "passed" as const, reasons: ["Command evidence does not apply to this case"] }
     : (await loadCommandEvidence(root, caseId)).result;
   const evaluation = evaluatePhase234({

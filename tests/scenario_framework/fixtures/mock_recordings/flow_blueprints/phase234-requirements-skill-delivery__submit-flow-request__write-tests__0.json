@@ -1,0 +1,18 @@
+{
+  "promptHash": "a45b3220187c0119",
+  "promptPreview": "# Test Engineer Agent\n\nYou are a test engineering expert. You design and implement comprehensive,\nre",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Test design: lease store and requestCancellation unit tests\", \"description\": \"Test the lease update, repeated cancellation, invalid reasons and concurrent cancellation calls.\"}, {\"step\": 2, \"title\": \"Test design: AbortController wiring and pipeline-stage abort behavior\", \"description\": \"Test controller notification and signal propagation. Assert that each interruptible stage stops before further mutation.\"}, {\"step\": 3, \"title\": \"Test design: idempotent artefact operations \u2014 the three closed gaps\", \"description\": \"Test cancellation before and during plan promotion. Test repeated quarantine without losing worktree evidence.\"}, {\"step\": 4, \"title\": \"Test design: integration/e2e layer, security tests, and coverage gaps flagged for follow-up\", \"description\": \"Run cancellation through the orchestrator with a test database and filesystem. Verify retained artefacts and one terminal event.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:54:51.923Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "write-tests",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

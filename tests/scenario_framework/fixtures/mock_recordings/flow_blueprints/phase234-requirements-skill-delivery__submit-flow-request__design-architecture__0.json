@@ -1,0 +1,18 @@
+{
+  "promptHash": "d66f13cba66d7b94",
+  "promptPreview": "# Software Architect Agent\n\nYou are a software-architecture expert. Design scalable, maintainable sy",
+  "response": "<thought>Return the recorded flow-stage summary.</thought>\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Architecture: cancellation signal propagation\", \"description\": \"Persist cancellation on the request lease and notify its AbortController. Pass the signal through service interfaces.\"}, {\"step\": 2, \"title\": \"Architecture: artefact disposition \u2014 atomicity as the organizing principle\", \"description\": \"Use atomic writes and renames for plan publication. Retain drafts and quarantine worktrees after cancellation.\"}, {\"step\": 3, \"title\": \"Architecture: interruptible/uninterruptible table, plus one correctness gap\", \"description\": \"Define stage boundaries for cancellation. Guard promotion and worktree cleanup against duplicate calls.\"}, {\"step\": 4, \"title\": \"Architecture: journal schema and final recommendation\", \"description\": \"Journal the cancellation reason and artefact disposition under the request trace. Verify terminal events are unique.\"}]}\n</content>",
+  "model": "mock:test",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-08-02T09:53:48.357Z",
+  "callSite": {
+    "scenarioId": "phase234-requirements-skill-delivery",
+    "stepId": "submit-flow-request",
+    "flowStepId": "design-architecture",
+    "callIndex": 0
+  },
+  "fixtureSource": "Synthetic summary derived from the shipped capture; used for orchestration regression."
+}

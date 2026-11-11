@@ -42,7 +42,7 @@ steps:
   - id: submit-request
     type: exactl
     command: request
-    args: ["--effort", "high", "--agent-role", "senior-coder", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s2"]
+    args: ["create", "--effort", "high", "--agent", "senior-coder", "--file", "$REQUEST_FIXTURE", "--portal", "p234-s2"]
   - id: await-plan
     type: wait-for-file
     args: ["Workspace/Plans/*_plan.md"]
