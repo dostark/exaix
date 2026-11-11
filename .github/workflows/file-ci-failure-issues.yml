@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # The workflow token already grants contents: read, issues: write and actions: read.
+      # A separate PAT is not required and its expiry broke this checkout.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -153,7 +155,7 @@ jobs:
             --jq '.[0].number')
           echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
         env:
-          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create labels
         if: ${{ steps.existing.outputs.issue_number == '' }}
@@ -165,13 +167,13 @@ jobs:
           gh label create "workflow:${workflow_name}" --repo "${{ github.repository }}" --color "1D76DB" --description "Workflow-specific remediation issues" || true
           gh label create "category:${category}" --repo "${{ github.repository }}" --color "5319E7" --description "Failure category" || true
         env:
-          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create remediation issue
         if: ${{ steps.existing.outputs.issue_number == '' }}
         id: issue
         env:
-          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
           WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -233,4 +235,4 @@ jobs:
             --repo "${{ github.repository }}" \
             --body "Another failing run of ${workflow_name}: ${workflow_url}"
         env:
-          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
