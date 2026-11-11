@@ -1732,6 +1732,8 @@
             "scripts/commit_plan_step.ts",
             "scripts/generate_bare_swe_scenarios.ts",
             "scripts/regenerate_terminal_bench_scenarios.ts",
+            "tests/scenario_framework/runner/skill_semantic_calibration.ts",
+            "tests/scenario_framework/runner/skill_semantic_live_review.ts",
             "unslop-ts/examples/**",
             "unslop-ts/scripts/*.mjs",
             "unslop-ts/tests/fixtures/**",
