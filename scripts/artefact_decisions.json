@@ -357,5 +357,11 @@
     "artefactId": "guarded-change",
     "status": "non-coverage",
     "rationale": "covered by guarded-change pass and fail strict replay scenarios; no scoreable arm in this register"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "implementation-plan",
+    "status": "non-coverage",
+    "rationale": "Phase 235 adds the portable Blueprint planning skill. Deterministic delivery is covered by the implementation-plan-delivery scenario; comparative value is not yet registered."
   }
 ]

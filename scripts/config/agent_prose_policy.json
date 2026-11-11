@@ -913,7 +913,7 @@
     },
     {
       "path": "Skills/blueprint-best-practices/SKILL.md",
-      "contentHash": "71f11b609718e607a66843cd853bbfe3fac736209549685e86dbfb5d22f34987",
+      "contentHash": "5799a50070584ed02b9407696e05b312330e45f9cb40bfa6e28531fb0070ee70",
       "kind": "mixed",
       "spans": [
         {
@@ -929,6 +929,14 @@
           "contentHash": "cd7b88fbc5fa90cfbe775bda4989af4abaf4a777adfb48f8f51d96353fbc7894",
           "kind": "instruction",
           "mode": "procedural",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Checklist",
+          "contentHash": "023025b149c3205c3dad01aec5daeac3f1e3bb0eada15c525c5779322acc3655",
+          "kind": "instruction",
+          "mode": "descriptive",
           "reason": "guidance prose",
           "sentenceModes": []
         },
@@ -975,10 +983,10 @@
       ],
       "review": {
         "reviewer": "Codex, approved Blueprint skill proposal revision 1",
-        "reviewedHash": "71f11b609718e607a66843cd853bbfe3fac736209549685e86dbfb5d22f34987",
+        "reviewedHash": "5799a50070584ed02b9407696e05b312330e45f9cb40bfa6e28531fb0070ee70",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "4ad7a88ab2da4a4cd01f43f32c7eca3427d03a4e41c9d257a65f2b709ab887a9",
+        "classificationHash": "a1c74bdd02e94c252bec0752e4bed7168c4323bc2ee06ce496558714a49b1662",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {
@@ -1313,7 +1321,7 @@
     },
     {
       "path": "skills/plan/SKILL.md",
-      "contentHash": "3cf6c8ffd749003b6a8ef4b3439f645ba2997e7d3d9738902bfa63ce7ea1eca7",
+      "contentHash": "d8c4f4554415104a0dfe32eae05f4bb51545fd9001bb19a8ab582cbdd7d55365",
       "kind": "instruction",
       "spans": [
         {
@@ -1334,7 +1342,7 @@
         },
         {
           "selector": "fence:1",
-          "contentHash": "0032fc9cfd8daf88d1dfcffd52c88fd124b795eaacc3417c4615469f1b366ebe",
+          "contentHash": "a851dfc2e627da3d4fb5505f439313ab095da43b5a254c78114ec87aa09f10b9",
           "kind": "literal",
           "mode": "descriptive",
           "reason": "fenced code or example: preserved, not counted",
@@ -1422,7 +1430,7 @@
         },
         {
           "selector": "heading:F. Third-party integration research (capability grounding)",
-          "contentHash": "8a4a53c582640448bda8771c231c01dc919d7ba9d1d5470fa75366d0ea73f78b",
+          "contentHash": "0b1f93d399473a05b7f6b1d9ae7f0d7351b1dec6b02e0ce9189607faf2f4b687",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "guidance prose",
@@ -1527,10 +1535,10 @@
       ],
       "review": {
         "reviewer": "Codex, approved Step 6 planning prose correction review",
-        "reviewedHash": "3cf6c8ffd749003b6a8ef4b3439f645ba2997e7d3d9738902bfa63ce7ea1eca7",
+        "reviewedHash": "d8c4f4554415104a0dfe32eae05f4bb51545fd9001bb19a8ab582cbdd7d55365",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "182bc7f34d0358a867d141dc539503afee51116aed257a4dd12a1c0b9cef6a1b",
+        "classificationHash": "4652f79be71a61a66cf4541eaab77687e182c25310dd195254c7385819c36e0c",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {

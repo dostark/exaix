@@ -8,6 +8,14 @@ description: Create, review, or maintain Blueprint skill files and sidecars. Use
 Write skills that improve decisions for a defined task. Keep instructions accurate, discoverable, and testable.
 Use the catalog's current authoring format and production loader as the format contract.
 
+## Checklist
+
+- State the task boundary and the deliverable before writing instructions.
+- Ground every reference in the catalog's current format and production loader.
+- Test the decisions the skill should improve with a plausible incorrect control.
+- Separate format validity, delivery, behavior, and measured benefit.
+- Record proposed changes and exclusions before an approved revision changes.
+
 ## Define the skill boundary
 
 State the skill's purpose, intended requests, and expected deliverable.

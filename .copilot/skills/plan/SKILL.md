@@ -156,7 +156,7 @@ Do / Don't
   Use a backticked path. Deferred criteria use `- ⚠️ deferred <text> → <LedgerSymbol>` with a backticked token.
   The gate blocks open checkboxes in a committed step. They may remain on unimplemented steps.
 
-- ✅ When moving a deliverable to a later step, revise the source step's criteria.
+- ✅ Relocating a step's deliverable into a later step (a folded step): revise the source step's criteria.
   Use a deferred criterion with a ledger row, or a met criterion pointing to the absorbing step's changed file.
   Use the arrow formats above. Remove open checkboxes from the source step.
   The gate blocks commits whose plan diff includes open checkboxes in an implemented step.
@@ -359,7 +359,7 @@ Prefer the documented first-class path. Proxies, scraping, and undocumented flag
 If no official path exists, state that limit and justify the stop-gap.
 Expose real provider options through configuration: routing, fallback, caching, rate/cost, and retention.
 Keep model, provider, endpoint, and authentication realm distinct. Record caveats and minimum versions.
-Probe multiplicity and edge cases, not just the happy path.
+Probe the multiplicity and edge shapes, not just the happy path.
 For example, a Gemini parallel batch signed only its first call despite that detail being absent from documentation.
 Record observed responses and the date. Cite official and community URLs separately in a Sources block.
 
