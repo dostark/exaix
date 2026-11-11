@@ -95,7 +95,7 @@ export function createStubDisplay(): IDisplayService {
 }
 
 export function createStubProvider(
-  overrides: Partial<IModelProvider> = {},
+  overrides: Opt<Partial<IModelProvider>, Reason.TestOverride> = {},
 ): IModelProvider {
   return {
     id: "stub",
