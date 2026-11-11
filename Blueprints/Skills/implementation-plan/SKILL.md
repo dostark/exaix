@@ -9,6 +9,11 @@ Give an implementer enough detail to execute the work without making unresolved 
 Reuse an existing plan when it already meets the task's requirements.
 Use the project's required output format and approval process.
 
+The plan may be a phase plan, RFC, design document, ADR set, or ticket breakdown.
+Use the project's format. Do not assume Exaix's phase-plan structure.
+Use the project's language, commands, test runner, and conventions.
+Do not assume Deno, TypeScript, or any framework.
+
 ## Establish scope and evidence
 
 Read the supplied request, specification, and accessible linked decisions.
@@ -21,11 +26,25 @@ State the goal, exclusions, current behavior, and required behavior with concret
 Verify existing paths, symbols, signatures, and call sites before relying on them.
 Mark proposed files and symbols as new. Do not present invented components as existing code.
 
+## Ground external integrations
+
+Read the current official documentation for each third-party integration.
+Record the endpoint, authentication, limits, version, and retrieval date.
+Prefer the documented first-class path.
+State the limit when no official path exists.
+Do not rely on memory, a wrapper, or an undocumented flag.
+
 ## Choose the smallest workable design
 
 Compare custom implementation with available configuration, existing tools, and simpler changes when the choice materially affects cost or risk.
 Record the chosen approach, its rationale, and what the simpler alternative gives up.
 Reuse settled cost decisions. Explain changed evidence before reopening an affected decision.
+For each requirement that forces runtime code, record the configuration-only alternative.
+State what that alternative gives up.
+Prefer deep modules: a small interface over substantial behavior.
+Place the seam where behavior can change without editing callers.
+Use the deletion test. If deleting the module removes no complexity, it is a pass-through.
+Compare two interface shapes when the choice is material.
 
 Trace changed inputs and outputs through their production consumers.
 Specify contract values, error behavior, compatibility, and relevant security boundaries.
@@ -43,12 +62,17 @@ Split work whose implementation and validation cannot fit a bounded checkpoint.
 Do not create dependencies merely to force an arbitrary sequence.
 
 For each behavior, identify its production entry point, changed contracts, affected consumers, and required wiring.
+Record a consumer ledger for runtime changes: symbol, consumer, and wiring checkpoint.
 Specify focused tests at the boundary where the behavior is observable.
 Use an independent expected result. Name the regression failure before the fix when behavior changes.
 Retain contract-relevant interaction checks when retries, ordering, or authorization are the behavior.
 A unit test alone cannot establish production wiring. Name an integration check through the real entry point.
 If a prerequisite cannot be connected immediately, identify the concrete later wiring checkpoint and its acceptance test.
 Do not declare the feature complete while required consumers remain unconnected.
+
+End with a documentation and handoff checkpoint.
+Update user documentation, operations notes, and migration instructions.
+Record the owner and the validation command.
 
 ## Handle broad mechanical migrations
 
