@@ -14,7 +14,8 @@ import { ConfigService } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
-import { readFixtureTextSync } from "@exaix/testing";
+import { join } from "@std/path";
+import { readFixtureTextSync, REPO_ROOT } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 
 /** Loosely-typed raw config object used to exercise ConfigSchema parsing. */
@@ -735,7 +736,8 @@ Deno.test("ConfigSchema accepts provider_strategy.task_routing", () => {
 
 // Regression: most settings live in the Config DB; sample TOML is bootstrap-only.
 Deno.test("[regression] Sample config includes bootstrap entries", () => {
-  const samplePath = "templates/exa.config.sample.toml";
+  // Resolve from the repository root: a neighbour test may change the working directory.
+  const samplePath = join(REPO_ROOT, "templates", "exa.config.sample.toml");
   const sampleContent = Deno.readTextFileSync(samplePath);
   interface ConfigToml {
     [section: string]: JSONValue;

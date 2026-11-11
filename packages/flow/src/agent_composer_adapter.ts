@@ -15,8 +15,6 @@
  * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts", "packages/execution/src/agent_composer.ts"]
  */
 
-import { prepareFlowSkillPins } from "./flow_skill_pins.ts";
-import type { ISkillOperationContext, ISkillPin } from "@exaix/core/skills";
 import type { ISkillsService } from "@exaix/core/types";
 import { AgentComposer, type IAgentExecutionResult, type IBlueprint } from "@exaix/execution";
 import type { StrategyRegistry } from "@exaix/execution";
@@ -58,6 +56,7 @@ import {
 } from "@exaix/ai";
 import { strategyLane } from "./contracts/flow_recording_context.ts";
 import { buildSharedNamespacePrompt } from "./shared_namespace_prompt.ts";
+import { buildStrategyStepOptions, prepareStrategySkills } from "./flow_strategy_skills.ts";
 import { FlowWriteAuthorization, type IFlowWriteAuthorization } from "./flow_write_authorization.ts";
 import {
   type EffortDeclaration,
@@ -67,7 +66,7 @@ import {
   toolsRoundPolicyReader,
 } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
-import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 /**
  * Minimal request context type for converting IFlowStepRequest to IParsedRequest.
@@ -115,11 +114,6 @@ export interface IRunner {
     jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalContext>,
   ): Promise<IAgentExecutionResult>;
   withProvider?(provider: IModelProvider, selectedModel: { provider: string; model: string }): IRunner;
-}
-
-interface IStrategyStepDeclaration {
-  effort: Opt<EffortDeclaration, Reason.OptionalContext>;
-  thinking: Opt<ThinkingDeclaration, Reason.OptionalContext>;
 }
 
 /** For constructing a fresh, per-call `AgentComposer` — never a shared instance, since
@@ -359,7 +353,13 @@ export class AgentComposerAdapter {
       gitServiceFactory,
     });
     const planWrittenFiles = await this.writeAuthorization.get(traceId, baseDir);
-    const selected = await this.prepareStrategySkills(agentRole, request, traceId, strategy);
+    const selected = await prepareStrategySkills(
+      { loader: this.loader, skillsService: this.orchestratorDeps.skillsService, config, logger },
+      agentRole,
+      request,
+      traceId,
+      strategy,
+    );
     const orchestrator = new AgentComposer({
       config,
       db,
@@ -394,10 +394,13 @@ export class AgentComposerAdapter {
         plan: userPrompt,
         portal: request.portal,
       };
-      const options = this.strategyStepOptions(agentRole, request.portal, strategy, {
-        effort: boundResolution.boundEffort ?? request.effort,
-        thinking: boundResolution.boundThinking ?? request.thinking,
-      });
+      const options = buildStrategyStepOptions(
+        agentRole,
+        request.portal,
+        strategy,
+        boundResolution.boundEffort ?? request.effort,
+        boundResolution.boundThinking ?? request.thinking,
+      );
       options.resolved_skills = selected?.pins;
       const result = await orchestrator.executeStep(context, options);
       // A flow step's prompt requires wrapping the answer in <thought>/<content> tags. ReAct
@@ -412,47 +415,6 @@ export class AgentComposerAdapter {
     } finally {
       orchestrator.dispose();
     }
-  }
-
-  /** Prepares declared skills only on the injected CLI transport path. */
-  private async prepareStrategySkills(
-    agentRole: string,
-    request: IFlowStepRequest,
-    traceId: string,
-    strategy: ExecutionStrategyName,
-  ): Promise<{ pins: ISkillPin[]; operation: ISkillOperationContext } | undefined> {
-    const deps = this.orchestratorDeps;
-    if (
-      strategy !== ExecutionStrategyName.CLI_DELEGATE || !deps?.skillsService || !deps.config.skills.inject_in_prompt
-    ) {
-      return undefined;
-    }
-    const blueprint = await this.loader.load(agentRole);
-    if (!blueprint) throw new Error(`Blueprint not found for agent_role: ${agentRole}`);
-    return await prepareFlowSkillPins({
-      skills: deps.skillsService,
-      config: deps.config,
-      logger: deps.logger,
-      blueprint,
-      request,
-      traceId,
-    });
-  }
-
-  /** Preserves request declarations when no binding overrides them. */
-  private strategyStepOptions(
-    agentRole: string,
-    portal: string,
-    strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
-    declaration: IStrategyStepDeclaration,
-  ): IAgentExecutionOptionsInput {
-    return {
-      agent_role: agentRole,
-      portal,
-      strategy,
-      ...(declaration.effort === undefined ? {} : { effort: declaration.effort }),
-      ...(declaration.thinking === undefined ? {} : { thinking: declaration.thinking }),
-    };
   }
 
   /** The strategy step's bound target: the bound provider, the bound cli-delegate tool, or

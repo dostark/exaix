@@ -397,6 +397,17 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     reasons: [IsolationReason.sharedPath],
     exclusive: true,
   },
+  // Runs a whole-tree `deno lint`. Bounded workers can starve it, so it runs alone.
+  {
+    file: "packages/lint-policy/tests/god_objects_cutover_test.ts",
+    reasons: [IsolationReason.pressure],
+    exclusive: true,
+  },
+  // Timing-sensitive stability checks lose the race under worker load, so it runs alone.
+  {
+    file: "apps/daemon/tests/watcher_test.ts",
+    reasons: [IsolationReason.pressure],
+  },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

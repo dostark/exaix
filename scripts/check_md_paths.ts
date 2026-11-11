@@ -114,6 +114,7 @@ export const IGNORE_DIRS: Record<string, true> = {
   "build": true,
   ".copilot/chunks": true,
   ".copilot/embeddings": true,
+  ".architectme": true,
 };
 
 /** Frozen historical-documentation prefixes (repo-relative). These trees record past project state, such as pre-monorepo paths and resolved reports.

@@ -359,29 +359,37 @@ interface ISelectorProse {
 }
 
 const ProseYamlSchema = z.json();
+const ProseObjectSchema = z.record(z.string(), ProseYamlSchema);
+const ProseStringSchema = z.string();
 type ProseYaml = z.infer<typeof ProseYamlSchema>;
 
 async function extractSidecarProse(content: string): Promise<ISelectorProse[]> {
   const values: ISelectorProse[] = [];
   async function visit(value: ProseYaml, path: string): Promise<void> {
-    if (typeof value === "string") {
-      if (value.trim().split(/\s+/).length < 2) return;
+    const asString = ProseStringSchema.safeParse(value);
+    if (asString.success) {
+      const text = asString.data;
+      if (text.trim().split(/\s+/).length < 2) return;
       values.push({
         span: {
           selector: `yaml:${path}`,
-          contentHash: await sha256(value),
+          contentHash: await sha256(text),
           kind: "instruction",
-          mode: modeOf(value),
+          mode: modeOf(text),
           reason: "sidecar prose value",
           sentenceModes: [],
         },
-        text: value,
+        text,
       });
-    } else if (Array.isArray(value)) {
-      for (const [index, item] of value.entries()) await visit(item, `${path}[${index}]`);
-    } else if (value !== null && typeof value === "object") {
-      for (const [key, item] of Object.entries(value)) await visit(item, path ? `${path}.${key}` : key);
+      return;
     }
+    if (Array.isArray(value)) {
+      for (const [index, item] of value.entries()) await visit(item, `${path}[${index}]`);
+      return;
+    }
+    const asObject = ProseObjectSchema.safeParse(value);
+    if (!asObject.success) return;
+    for (const [key, item] of Object.entries(asObject.data)) await visit(item, path ? `${path}.${key}` : key);
   }
   await visit(ProseYamlSchema.parse(parseYaml(content)), "");
   return values;
@@ -391,7 +399,7 @@ function isStructuredLiteral(language: string, text: string): boolean {
   if (!["yaml", "yml", "json"].includes(language)) return false;
   try {
     const value = language === "json" ? JSON.parse(text) : parseYaml(text);
-    return value !== null && typeof value === "object";
+    return Array.isArray(value) || ProseObjectSchema.safeParse(value).success;
   } catch {
     return false;
   }
