@@ -16,6 +16,7 @@ constraints:
   - Prefer complete production slices with bounded checkpoints and actual blocking dependencies
   - Identify production consumers, wiring owners, and integration checks for runtime behavior
   - Record a consumer ledger for runtime changes and end with a documentation and handoff checkpoint
+  - Include one non-deferrable integration and cutover checkpoint that wires new behavior into the real production entry point
   - Use compatible expand, migrate, and contract stages only for justified broad mechanical migrations
   - Specify focused tests, independent expectations, failure cases, compatibility checks, and rollback conditions
   - Ground third-party integrations in current official documentation and record the source date
@@ -27,6 +28,7 @@ output_requirements:
   - The chosen planning format and the project-specific language or tooling assumptions
   - Grounded changes, decision rationale, and material alternatives
   - Bounded checkpoints with dependencies, production consumers, a consumer ledger, wiring, and testable acceptance criteria
+  - A non-deferrable integration and cutover checkpoint with an end-to-end check through the real production entry point
   - Focused validation, relevant failure cases, documentation, handoff, and migration rollback where applicable
   - Current official sources and retrieval dates for each third-party integration
   - Requirement cost and the configuration-only alternative where runtime code is forced

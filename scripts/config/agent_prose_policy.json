@@ -433,7 +433,7 @@
     },
     {
       "path": "Skills/implementation-plan/SKILL.md",
-      "contentHash": "40aa851c7aaebadba163de99ed46d300ce4c9a7f99865521329c745e50ba1cb7",
+      "contentHash": "c4cb3fc569570594d97728293868c9fb93edd5bcc410661cfb1e2c55616041fb",
       "kind": "mixed",
       "spans": [
         {
@@ -478,7 +478,7 @@
         },
         {
           "selector": "heading:Order bounded checkpoints",
-          "contentHash": "1637cc09626c80dc65bdc5da6ed23c0af0b37f42402a599a201f0f0071118da8",
+          "contentHash": "d396d7b1b80cdf40b35268a80fa86802d21b5f46387b8b5a3abcdf3b008d3e3c",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "guidance prose",
@@ -503,10 +503,10 @@
       ],
       "review": {
         "reviewer": "Codex, approved Blueprint skill proposal revision 1",
-        "reviewedHash": "40aa851c7aaebadba163de99ed46d300ce4c9a7f99865521329c745e50ba1cb7",
+        "reviewedHash": "c4cb3fc569570594d97728293868c9fb93edd5bcc410661cfb1e2c55616041fb",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "82aab78bcf8dda7a22bd29702444db97ff593e530117634ebe7f0671235c6163",
+        "classificationHash": "bbdf3b2fe3e556f16654a25709a71cdbef4651758e45751ac90339dbbcafcbac",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {
@@ -581,7 +581,7 @@
     },
     {
       "path": "Skills/implementation-plan/exaix.yaml",
-      "contentHash": "c2b8241cd6b893208503609ea7dbcaea8812ac23a3b249a1eeb519512c66f247",
+      "contentHash": "095df05237b7bc298b6ba14cbdba5677459a65ce413474dfc709df9aef0582c4",
       "kind": "mixed",
       "spans": [
         {
@@ -642,6 +642,14 @@
         },
         {
           "selector": "yaml:constraints[6]",
+          "contentHash": "3b8df6bd29dd04e57b4abb959e68ad66b757c588cee5f5ea8579759f267c0e5e",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[7]",
           "contentHash": "a6bd41e39e9889fa89a57da838eef3443b5c571ab81fa9b5ba433b105f58541d",
           "kind": "instruction",
           "mode": "procedural",
@@ -649,7 +657,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[7]",
+          "selector": "yaml:constraints[8]",
           "contentHash": "483c2d4ad3537aa8e7a333bf48e96ca5e033663d2f027475c7cdb1454847d4a8",
           "kind": "instruction",
           "mode": "descriptive",
@@ -657,7 +665,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[8]",
+          "selector": "yaml:constraints[9]",
           "contentHash": "59cf1d0e4fe0672c2f884d904e25da799ec1d9e1047eab5d2181ff99dd4ec707",
           "kind": "instruction",
           "mode": "descriptive",
@@ -665,7 +673,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[9]",
+          "selector": "yaml:constraints[10]",
           "contentHash": "bc631d70416a644f02d691b564c29c71e037019d866cf8b6bc9541218b7ff284",
           "kind": "instruction",
           "mode": "descriptive",
@@ -673,7 +681,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[10]",
+          "selector": "yaml:constraints[11]",
           "contentHash": "66de90a5c7b00abd86e928104800e5812f64f94331525206298e4436cbb5c6c4",
           "kind": "instruction",
           "mode": "procedural",
@@ -681,7 +689,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[11]",
+          "selector": "yaml:constraints[12]",
           "contentHash": "6bd4f7c9364b4e0118d747171a4a33901f13323184d271bc0647ff13b9499c97",
           "kind": "instruction",
           "mode": "descriptive",
@@ -722,7 +730,7 @@
         },
         {
           "selector": "yaml:output_requirements[4]",
-          "contentHash": "9f8477ad3e1529d4aad74359b932eeb243f6c21c8abaa40ab28edd4d64f4373b",
+          "contentHash": "0363b5abe4da067eff5702817053d19b43f2e908f3c71e15b454e704d9a4ceec",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -730,7 +738,7 @@
         },
         {
           "selector": "yaml:output_requirements[5]",
-          "contentHash": "0104770564e36a09e5fc43bdfa72669122c0f89f7b87637397be57e97439d9a9",
+          "contentHash": "9f8477ad3e1529d4aad74359b932eeb243f6c21c8abaa40ab28edd4d64f4373b",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -738,6 +746,14 @@
         },
         {
           "selector": "yaml:output_requirements[6]",
+          "contentHash": "0104770564e36a09e5fc43bdfa72669122c0f89f7b87637397be57e97439d9a9",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:output_requirements[7]",
           "contentHash": "ffd0eefe450104907f445af795104c681bb001012ba751b524fc8be862bd7b64",
           "kind": "instruction",
           "mode": "procedural",
@@ -745,7 +761,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:output_requirements[7]",
+          "selector": "yaml:output_requirements[8]",
           "contentHash": "5aa77d8f60208b3aab5419ae0eb3c7e65123c17d6bf3067b36a65e58de67e563",
           "kind": "instruction",
           "mode": "descriptive",
@@ -819,10 +835,10 @@
       ],
       "review": {
         "reviewer": "Codex, approved Blueprint skill proposal revision 1",
-        "reviewedHash": "c2b8241cd6b893208503609ea7dbcaea8812ac23a3b249a1eeb519512c66f247",
+        "reviewedHash": "095df05237b7bc298b6ba14cbdba5677459a65ce413474dfc709df9aef0582c4",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "859a7925fc0cc01f93745c65ab9cd568bf2a9798e42f6bef1ffb17b8a6b4964c",
+        "classificationHash": "659e50f25d616669db0e7179268d25eae846e7d3255c459fca8d44419a0cce32",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {

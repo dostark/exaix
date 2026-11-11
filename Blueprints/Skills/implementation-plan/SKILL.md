@@ -70,6 +70,11 @@ A unit test alone cannot establish production wiring. Name an integration check 
 If a prerequisite cannot be connected immediately, identify the concrete later wiring checkpoint and its acceptance test.
 Do not declare the feature complete while required consumers remain unconnected.
 
+Include one non-deferrable integration and cutover checkpoint.
+It wires the new behavior into the real production entry point and every required consumer.
+It proves the path with an observable end-to-end check through that entry point.
+Do not move this checkpoint to a later plan or declare completion before it passes.
+
 End with a documentation and handoff checkpoint.
 Update user documentation, operations notes, and migration instructions.
 Record the owner and the validation command.
