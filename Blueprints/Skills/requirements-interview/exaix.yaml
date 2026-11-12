@@ -1,0 +1,45 @@
+title: Requirements Interview
+triggers:
+  keywords:
+    - requirements-interview
+    - grill-me
+    - requirements-elicitation
+  task_types:
+    - requirements
+    - interview
+  tags:
+    - requirements
+    - elicitation
+constraints:
+  - Link requirements-analysis for the record format, glossary, and ADR threshold
+  - Rank the decision frontier by effect on acceptance criteria, then cost of delay
+  - Offer at least two feasible answers, including keep-current where it exists
+  - Name the criteria before recommending an answer
+  - Mark dependent decisions, assumptions, and criteria stale when an answer changes
+  - Record PENDING USER DECISION rather than inventing an answer
+  - Change nothing before explicit confirmation
+output_requirements:
+  - Requirement, affected criteria, baseline, and decision type
+  - Evidence with a source per fact
+  - Decision ledger of facts, decisions, assumptions, and pending questions
+  - Ranked decision frontier with each decision's dependents
+  - One question at a time with alternatives, criteria, and a recommendation
+  - Staleness list after a changed answer
+  - Decision record in the requirements-analysis format
+  - Explicit confirmation of shared understanding
+quality_criteria:
+  - name: decision_ordering
+    description: The next question is the open decision with the greatest effect on acceptance criteria
+    weight: 30
+  - name: option_quality
+    description: At least two feasible answers with criteria named before the recommendation
+    weight: 25
+  - name: answer_integrity
+    description: Changed answers invalidate dependents; unanswered questions stay pending
+    weight: 25
+  - name: delegation
+    description: Record format, glossary, and ADR practice stay with requirements-analysis
+    weight: 20
+related_skills:
+  - requirements-analysis
+  - implementation-plan

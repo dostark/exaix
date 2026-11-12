@@ -54,6 +54,7 @@ const TRIGGER_MATCHED_SKILLS: string[] = [
   "error-handling",
   "response-contract-security-analysis",
   "technical-writing",
+  "requirements-interview",
 ];
 
 /** Skills loaded directly by background services rather than through agent-role defaults or request matching. */
