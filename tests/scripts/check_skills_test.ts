@@ -2,9 +2,9 @@
  * @module CheckSkillsTest
  * @path tests/scripts/check_skills_test.ts
  * @description Phase 206 Step 3 — the retained `check:skill-index` gate validates skill
- *   folders through the production loader: the repository catalog passes with its 28 Blueprint and
- *   project folders plus the 29 dogfood folders, and invalid folders, legacy JSON, flat skill files and executable content fail
- *   with typed reasons.
+ *   folders through the production loader and compares each root's folder set with the
+ *   checked-in membership lock. Invalid folders, legacy JSON, flat skill files and executable
+ *   content fail with typed reasons; an added or removed folder fails with its name.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing, scripts/check_skills.ts]
  * @related-files [scripts/check_skills.ts]
@@ -12,13 +12,31 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { REPO_ROOT, withTempDir } from "@exaix/testing";
-import { checkSkillCatalog, REPOSITORY_EXPECTED_COUNTS } from "../../scripts/check_skills.ts";
+import {
+  buildSkillCatalogSnapshot,
+  checkSkillCatalog,
+  type ISkillCatalogLock,
+  loadSkillCatalogLock,
+  writeSkillCatalogLock,
+} from "../../scripts/check_skills.ts";
 
-const CATALOG_SIZE = 28 + 29;
-const NO_COUNTS = undefined;
+/** Every tracked root, in the order the lock records them. */
+const ROOTS = ["Blueprints/Skills", ".copilot/skills", "Memory/Skills/project/Exaix"] as const;
+
+function emptyLock(roots: ISkillCatalogLock["roots"] = {}): ISkillCatalogLock {
+  return {
+    version: "1",
+    roots: {
+      "Blueprints/Skills": [],
+      ".copilot/skills": [],
+      "Memory/Skills/project/Exaix": [],
+      ...roots,
+    },
+  };
+}
 
 async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
   await withTempDir(async (root) => {
@@ -33,11 +51,60 @@ async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
   }, { prefix: "exa-check-skills-" });
 }
 
-Deno.test("[check-skills] the repository catalog passes with all Blueprint, project and dogfood folders", async () => {
-  const result = await checkSkillCatalog(REPO_ROOT, REPOSITORY_EXPECTED_COUNTS);
+Deno.test("[check-skills] the repository corpus matches the checked-in membership lock", async () => {
+  const lock = await loadSkillCatalogLock(REPO_ROOT);
+  const result = await checkSkillCatalog(REPO_ROOT, lock);
   assertEquals(result.errors, []);
   assertEquals(result.ok, true);
-  assertEquals(result.skillCount, CATALOG_SIZE);
+  assertArrayIncludes(lock.roots["Blueprints/Skills"], ["architecture-review"]);
+  assertArrayIncludes(lock.roots[".copilot/skills"], ["refactor"]);
+  assertArrayIncludes(lock.roots["Memory/Skills/project/Exaix"], ["portal-grounding"]);
+});
+
+Deno.test("[check-skills] the snapshot lists sorted folder names for every tracked root", async () => {
+  await withRepo(async (root) => {
+    const snapshot = await buildSkillCatalogSnapshot(root);
+    assertEquals(snapshot.errors, []);
+    assertEquals(snapshot.roots["Blueprints/Skills"], ["good-skill"]);
+    assertEquals(snapshot.roots[".copilot/skills"], []);
+    assertEquals(snapshot.roots["Memory/Skills/project/Exaix"], []);
+    assertEquals(Object.keys(snapshot.roots).sort(), [...ROOTS].sort());
+  });
+});
+
+Deno.test("[check-skills] a folder absent from the lock fails with its name", async () => {
+  await withRepo(async (root) => {
+    const result = await checkSkillCatalog(root, emptyLock());
+    assertEquals(result.ok, false);
+    assertEquals(result.errors, ["Blueprints/Skills: added good-skill"]);
+  });
+});
+
+Deno.test("[check-skills] a lock entry with no folder fails with its name", async () => {
+  await withRepo(async (root) => {
+    const result = await checkSkillCatalog(root, emptyLock({ "Blueprints/Skills": ["good-skill", "stale-skill"] }));
+    assertEquals(result.ok, false);
+    assertEquals(result.errors, ["Blueprints/Skills: removed stale-skill"]);
+  });
+});
+
+Deno.test("[check-skills] the lock round-trips through write and load", async () => {
+  await withRepo(async (root) => {
+    const snapshot = await buildSkillCatalogSnapshot(root);
+    await writeSkillCatalogLock(root, snapshot);
+    const loaded = await loadSkillCatalogLock(root);
+    assertEquals(loaded.version, "1");
+    assertEquals(loaded.roots["Blueprints/Skills"], ["good-skill"]);
+    assertEquals((await checkSkillCatalog(root, loaded)).errors, []);
+  });
+});
+
+Deno.test("[check-skills] a missing lock file is an error that names the update command", async () => {
+  await withRepo(async (root) => {
+    const lock = await loadSkillCatalogLock(root).catch((error: Error) => error);
+    assert(lock instanceof Error);
+    assertStringIncludes(lock.message, "--update");
+  });
 });
 
 Deno.test("[check-skills] a valid minimal folder passes", async () => {
@@ -98,17 +165,6 @@ Deno.test("[check-skills] a dogfood folder with an invalid sidecar is reported u
   });
 });
 
-Deno.test("[check-skills] a required corpus with the wrong or zero count fails with the expected and found counts", async () => {
-  await withRepo(async (root) => {
-    const result = await checkSkillCatalog(root, { catalog: 27, dogfood: 28 });
-    assertEquals(result.ok, false);
-    assertEquals(result.errors, [
-      "Blueprint and project skills: expected 27 folders, found 1",
-      ".copilot/skills: expected 28 folders, found 0",
-    ]);
-  });
-});
-
 Deno.test("[check-skills] learned roots, operator portal roots and developer config never affect the gate", async () => {
   await withRepo(async (root) => {
     const learned = pathBuilders.memoryPath(root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "operator-draft");
@@ -122,7 +178,7 @@ Deno.test("[check-skills] learned roots, operator portal roots and developer con
     const previous = Deno.env.get("EXA_CONFIG_PATH");
     Deno.env.set("EXA_CONFIG_PATH", config);
     try {
-      assertEquals(await checkSkillCatalog(root, NO_COUNTS), { ok: true, skillCount: 1, errors: [] });
+      assertEquals(await checkSkillCatalog(root), { ok: true, skillCount: 1, errors: [] });
     } finally {
       if (previous === undefined) Deno.env.delete("EXA_CONFIG_PATH");
       else Deno.env.set("EXA_CONFIG_PATH", previous);

@@ -159,6 +159,7 @@
     "check:optional-params:staged": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=optional-params --staged",
     "check:runtime-artifacts": "deno run --allow-read --allow-run=git scripts/check_runtime_artifacts.ts",
     "check:skill-index": "deno run -A scripts/check_skills.ts",
+    "skill-index:update": "deno run -A scripts/check_skills.ts --update",
     "check:blueprint-integrity": "deno run --allow-read scripts/check_blueprint_integrity.ts Blueprints",
     "check:memory-ability-coverage": "deno run --allow-read scripts/check_memory_ability_coverage.ts",
     "check:artefact-decision-coverage": "deno run --allow-read scripts/check_artefact_decision_coverage.ts",
