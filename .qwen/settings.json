@@ -28,7 +28,8 @@
     ".copilot/skills/test-development",
     ".copilot/skills/upgrade-version",
     ".copilot/skills/run-scenario-test",
-    ".copilot/skills/github-actions-ci"
+    ".copilot/skills/github-actions-ci",
+    ".copilot/skills/brainstorm"
   ],
   "permissions": {
     "allow": [

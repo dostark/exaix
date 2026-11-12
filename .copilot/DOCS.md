@@ -36,6 +36,7 @@ topics: ["reference", "docs", "catalog"]
 | Scenario Framework Testing & Evaluation (#run-scenario-test) | [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)       |
 | Dogfood Development Skill (#dogfood-development)             | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)   |
 | Test Development Skill (#test-development)                   | [skills/test-development/SKILL.md](skills/test-development/SKILL.md)         |
+| Brainstorming Skill (#brainstorm)                            | [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)                     |
 | Next Phase Selection (#next-phase)                           | [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)                     |
 | Codebase Exploration (#explore)                              | [skills/explore/SKILL.md](skills/explore/SKILL.md)                           |
 | Comparative Analysis Skill (#comparative-analysis)           | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
@@ -63,6 +64,7 @@ topics: ["reference", "docs", "catalog"]
 - **`audit`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`auth`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`best-practices`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`brainstorming`** → [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)
 - **`bug-fix`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`build`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`catalog`** → [DOCS.md](DOCS.md)
@@ -85,6 +87,7 @@ topics: ["reference", "docs", "catalog"]
 - **`corpus`** → [docs/README.md](docs/README.md)
 - **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`debugging`** → [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)
+- **`decisions`** → [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)
 - **`delegation`** → [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`deno-permissions`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`dependencies`** → [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md), [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
@@ -96,6 +99,7 @@ topics: ["reference", "docs", "catalog"]
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
+- **`elicitation`** → [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)
 - **`enterprise`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`evaluation`** → [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)
 - **`exploration`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
@@ -140,6 +144,7 @@ topics: ["reference", "docs", "catalog"]
 - **`reference`** → [docs/README.md](docs/README.md), [DOCS.md](DOCS.md)
 - **`regression`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md)
 - **`remediation`** → [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)
+- **`requirements`** → [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)
 - **`retrospective`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`review`** → [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md)
 - **`risk`** → [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md)
@@ -171,6 +176,7 @@ topics: ["reference", "docs", "catalog"]
 - **`tool-use`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tools`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`tradeoffs`** → [skills/brainstorm/SKILL.md](skills/brainstorm/SKILL.md)
 - **`triage`** → [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md)
 - **`typescript`** → [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md)
 - **`upgrade`** → [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md)

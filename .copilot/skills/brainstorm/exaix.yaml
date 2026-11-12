@@ -1,0 +1,49 @@
+applies_to:
+  agents:
+    - general
+triggers:
+  keywords:
+    - brainstorm
+    - ideation
+    - options
+    - tradeoffs
+    - decision
+    - alternatives
+  task_types:
+    - planning
+    - design
+  tags:
+    - brainstorming
+    - decisions
+constraints:
+  - Classify the decision as reversible or irreversible before comparing options
+  - Generate at least three options, including do-nothing, before judging any
+  - Name criteria and weights before scoring any option
+  - Give every option a failure mode and a reversal cost
+  - Record every assumption with a falsifying test or a stated reason not to test it
+  - Do not edit code, skills, or plans before explicit confirmation
+output_requirements:
+  - Decision frame with owner, deadline, cost of delay, and blast radius
+  - Evidence with a source per fact
+  - Grouped options including do-nothing
+  - Criteria and weights with disqualifiers
+  - Option table with failure mode, blast radius, and reversal cost
+  - Assumption ledger with falsifying tests
+  - Recommendation with consequences and what would change it
+  - Decision record, plus an ADR candidate only when it qualifies
+quality_criteria:
+  - name: option_breadth
+    description: At least three options including do-nothing, generated before judging
+    weight: 30
+  - name: evidence_fidelity
+    description: Repository facts are read and cited before the user is asked
+    weight: 25
+  - name: decision_record_quality
+    description: Criteria precede scores; failure modes, reversal cost, and what would change the choice are recorded
+    weight: 25
+  - name: interaction_discipline
+    description: One question at a time, no reopened decisions, no edits before confirmation
+    weight: 20
+related_skills:
+  - requirements-analysis
+  - plan

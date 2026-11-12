@@ -380,6 +380,94 @@
       "outcome": "not run",
       "reason": "provider-live case; operator authorization for token spend not granted",
       "evidence": null
+    },
+    {
+      "id": "p235-s7-c1",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c2",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c3",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c4",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c5",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c6",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c7",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
+    },
+    {
+      "id": "p235-s7-c8",
+      "step": 7,
+      "skill": "brainstorm",
+      "skillRoot": ".copilot/skills/brainstorm",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/brainstorm.md"
     }
   ]
 }
