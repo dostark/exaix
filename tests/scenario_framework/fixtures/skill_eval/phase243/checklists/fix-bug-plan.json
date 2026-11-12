@@ -1,0 +1,118 @@
+{
+  "id": "fix-bug-plan",
+  "artifactType": "plan",
+  "version": "1.0.0",
+  "unsurePolicy": "exclude",
+  "questions": [
+    {
+      "id": "fb1",
+      "question": "Does the plan name the exact reported symptom?",
+      "critical": true,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The plan names the reported symptom.",
+        "no": "The plan names a different or vague symptom."
+      }
+    },
+    {
+      "id": "fb2",
+      "question": "Does the plan use a bounded reproduction command?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "One command asserts the symptom within a stated bound.",
+        "no": "The command is absent or unbounded."
+      }
+    },
+    {
+      "id": "fb3",
+      "question": "Does the plan rank falsifiable causes?",
+      "critical": false,
+      "derivation": true,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Causes are ranked with testable predictions.",
+        "no": "Causes are absent or untestable."
+      }
+    },
+    {
+      "id": "fb4",
+      "question": "Does the plan keep regression RED before the patch?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The regression fails before any patch.",
+        "no": "The patch precedes RED or no regression exists."
+      }
+    },
+    {
+      "id": "fb5",
+      "question": "Does the plan withhold an unverified performance verdict?",
+      "critical": true,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "An unequal workload withholds the verdict.",
+        "no": "The plan claims an improvement from unequal runs."
+      }
+    },
+    {
+      "id": "fb6",
+      "question": "Does the plan record environment controls?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Inputs, seed, time, or network controls are recorded.",
+        "no": "No control is recorded."
+      }
+    },
+    {
+      "id": "fb7",
+      "question": "Does the plan minimize the failing reproduction?",
+      "critical": false,
+      "derivation": true,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The plan reduces the case while the symptom remains.",
+        "no": "The plan keeps an unreduced case."
+      }
+    },
+    {
+      "id": "fb8",
+      "question": "Does the plan remove temporary instrumentation?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Cleanup is stated.",
+        "no": "Cleanup is absent."
+      }
+    },
+    {
+      "id": "fb9",
+      "question": "Does the plan verify the original reproduction after the fix?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The original case is rerun after the fix.",
+        "no": "Only the new test is rerun."
+      }
+    },
+    {
+      "id": "fb10",
+      "question": "Does the plan state what remains uncertain?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Residual uncertainty is stated.",
+        "no": "Uncertainty is omitted."
+      }
+    }
+  ]
+}

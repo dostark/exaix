@@ -1,0 +1,118 @@
+{
+  "id": "test-development-plan",
+  "artifactType": "plan",
+  "version": "1.0.0",
+  "unsurePolicy": "zero",
+  "questions": [
+    {
+      "id": "td1",
+      "question": "Does the plan name the behavior under test?",
+      "critical": true,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "One observable behavior is named.",
+        "no": "The behavior is vague or absent."
+      }
+    },
+    {
+      "id": "td2",
+      "question": "Does the plan name the production entry point?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The production entry point is named.",
+        "no": "The entry point is absent."
+      }
+    },
+    {
+      "id": "td3",
+      "question": "Does the plan use an independent oracle?",
+      "critical": false,
+      "derivation": true,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The expected value comes from a contract or reference.",
+        "no": "The expected value copies the implementation."
+      }
+    },
+    {
+      "id": "td4",
+      "question": "Does the plan choose a method for a named defect?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The method matches a named defect.",
+        "no": "A costly method is added without a defect model."
+      }
+    },
+    {
+      "id": "td5",
+      "question": "Does the plan keep a canary for the new assertion?",
+      "critical": true,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "A canary is planned.",
+        "no": "No canary is planned."
+      }
+    },
+    {
+      "id": "td6",
+      "question": "Does the plan record substituted dependencies?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Substitutes and what they hide are recorded.",
+        "no": "Substitutes are omitted."
+      }
+    },
+    {
+      "id": "td7",
+      "question": "Does the plan keep bounded runtime?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Seeds and bounds are stated.",
+        "no": "The run is unbounded."
+      }
+    },
+    {
+      "id": "td8",
+      "question": "Does the plan test observable behavior after a refactor?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "The public contract survives the refactor.",
+        "no": "The test asserts internal calls."
+      }
+    },
+    {
+      "id": "td9",
+      "question": "Does the plan keep contract-relevant interactions?",
+      "critical": false,
+      "derivation": true,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Retry or authorization interactions are observed.",
+        "no": "All substitutes or interactions are banned."
+      }
+    },
+    {
+      "id": "td10",
+      "question": "Does the plan state what the test cannot establish?",
+      "critical": false,
+      "derivation": false,
+      "weight": 0.1,
+      "criteria": {
+        "yes": "Limitations are stated.",
+        "no": "Limitations are omitted."
+      }
+    }
+  ]
+}
