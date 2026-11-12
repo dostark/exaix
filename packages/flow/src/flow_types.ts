@@ -292,6 +292,7 @@ export interface IStepContext {
   gateFeedback?: string;
 }
 
+// unslop-ignore-next-line unused-type
 export type TFormatStepSuccessField = "flowRunId" | "step" | "request" | "startedAt";
 
 export type IFormatStepSuccessContext = Pick<IStepContext, TFormatStepSuccessField>;
@@ -303,6 +304,7 @@ export interface IStepRecoveryMetadata {
   compensationRan?: boolean;
 }
 
+// unslop-ignore-next-line unused-type
 export interface IFlowEventRequestContext {
   traceId?: string;
   requestId?: string;
@@ -312,6 +314,7 @@ export interface IFlowEventLogBase extends IFlowEventRequestContext {
   flowId: string;
 }
 
+// unslop-ignore-next-line unused-type
 export interface IFlowProviderTokenStats {
   calls: number;
   inputTokens: number;
@@ -319,6 +322,7 @@ export interface IFlowProviderTokenStats {
   costUsd: number;
 }
 
+// unslop-ignore-next-line unused-type
 export interface IFlowWaveErrorPayload {
   stepId: string;
   error: string;
@@ -669,6 +673,7 @@ export interface IFlowEventLogger {
   log<TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void;
 }
 
+// unslop-ignore-next-line unused-type
 /** How far a flow has progressed, for a milestone summary. */
 export interface IFlowProgressHint {
   stepsCompleted?: number;

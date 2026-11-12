@@ -23,6 +23,7 @@ import {
   ExaCtlVerb,
 } from "../exactl_constants.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the approval command tree reads from the runtime. */
 export interface IApprovalCommandRuntime {
   readonly approvalCommands: ApprovalCommands;

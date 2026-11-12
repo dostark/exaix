@@ -9,6 +9,7 @@
 
 import { ExaCtlError, ExaCtlExitCode } from "../exactl_errors.ts";
 
+// unslop-ignore-next-line unused-type
 /** Either every item of the kind, or the listed ids. */
 export type BulkTargets = { readonly all: true } | { readonly all: false; readonly ids: readonly string[] };
 

@@ -10,7 +10,14 @@
  */
 
 import { configurable } from "@exaix/core/config";
-import { ConfigValueType, SwapClass } from "@exaix/core";
+import {
+  ConfigValueType,
+  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+  DEFAULT_GIT_STATUS_TIMEOUT_MS,
+  SwapClass,
+} from "@exaix/core";
 
 export const GIT_EMPTY_SHA = "0000000000000000000000000000000000000000";
 
@@ -29,6 +36,23 @@ export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT: number = configurable({
   max: 10,
   swap: SwapClass.RESTART,
 });
+
+/** The timeout and concurrency policy that git revert operations use. */
+export function gitRevertLimits(): {
+  readonly statusTimeoutMs: number;
+  readonly lsFilesTimeoutMs: number;
+  readonly checkoutTimeoutMs: number;
+  readonly cleanTimeoutMs: number;
+  readonly concurrency: number;
+} {
+  return {
+    statusTimeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
+    lsFilesTimeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+    checkoutTimeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+    cleanTimeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+    concurrency: DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
+  };
+}
 export const DEFAULT_GIT_EXIT_CODE_FATAL = 128;
 export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS: number = configurable({
   key: "git.rev_parse_timeout_ms",

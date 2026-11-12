@@ -14,7 +14,7 @@ export {
 } from "./src/context/workspace_execution_context.ts";
 
 // Portal service modules
-export { PathResolver } from "./src/path_resolver.ts";
-export { PortalPermissionsService } from "./src/portal_permissions.ts";
+export { createPathResolver, type IPathResolverConfig, PathResolver } from "./src/path_resolver.ts";
+export { checkPortalOperationAllowed, PortalPermissionsService } from "./src/portal_permissions.ts";
 
 export { PortalService } from "./src/portal.ts";

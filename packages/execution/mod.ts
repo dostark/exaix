@@ -8,7 +8,7 @@
  */
 
 export * from "./src/agent_runner.ts";
-export { EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "./src/agent_runner_skills.ts";
+export { EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR, readSuppressedSkillIds } from "./src/agent_runner_skills.ts";
 // The blueprint contract lives in @exaix/core/blueprint, so re-export it for the package surface.
 export type { IBlueprint } from "@exaix/core/blueprint";
 export * from "./src/agent_composer.ts";

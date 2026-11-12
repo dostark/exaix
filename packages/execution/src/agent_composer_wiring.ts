@@ -22,6 +22,7 @@ import { ReActLoopAdapter } from "./react_loop_adapter.ts";
 import type { AgentComposer, IAgentComposerDeps } from "./agent_composer.ts";
 import { buildCliDelegateStrategy } from "./agent_composer_strategies.ts";
 
+// unslop-ignore-next-line unused-type
 /** The collaborators of one composer that the deps may override. */
 export interface IComposerServices {
   blueprintService: BlueprintService;

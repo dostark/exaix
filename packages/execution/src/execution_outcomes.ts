@@ -32,6 +32,7 @@ import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { ExecutionReporting } from "./execution_reporting.ts";
 
+// unslop-ignore-next-line unused-type
 export interface ISuccessArtifactContext {
   isReadOnly: boolean;
   planAgentId?: string;

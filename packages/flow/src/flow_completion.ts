@@ -34,6 +34,7 @@ import type { FlowTokenUsage } from "./flow_token_usage.ts";
 import { getFlowLogBase } from "./flow_log_base.ts";
 import { FlowExecutionError } from "./flow_errors.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the flow validation and completion of one flow runner needs from it. */
 export interface IFlowCompletionDependencies {
   readonly agentExecutor: IAgentExecutor;

@@ -109,8 +109,10 @@ export type IRunCliDelegateProcess = (
   options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
+// unslop-ignore-next-line unused-type
 /** Codex sandbox mode for direct provider calls. */
 export type CliProviderCodexSandbox = "read-only" | "workspace-write";
+// unslop-ignore-next-line unused-type
 /** OpenCode bash permission for direct provider calls. */
 export type CliProviderOpencodeBash = "allow" | "deny";
 

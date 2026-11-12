@@ -27,6 +27,7 @@ export {
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
   GIT_EMPTY_SHA,
   GIT_ERROR_NOTHING_TO_COMMIT,
+  gitRevertLimits,
 } from "./src/constants.ts";
 
 export {

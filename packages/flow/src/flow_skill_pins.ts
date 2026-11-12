@@ -19,7 +19,7 @@ import {
 } from "@exaix/core/skills";
 import type { ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { createPinnedSkillPrompt, EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
+import { createPinnedSkillPrompt, readSuppressedSkillIds } from "@exaix/execution";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowStepRequest } from "./flow_types.ts";
 
@@ -61,10 +61,7 @@ export async function prepareFlowSkillPins(
   const pinned = request.skills ?? [];
   const defaults = blueprint.frontmatter.default_skills ?? [];
   const declared = [...new Set([...pinned, ...defaults])];
-  const suppressed = new Set(
-    (Deno.env.get(EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR) ?? "")
-      .split(",").map((id) => id.trim()).filter(Boolean),
-  );
+  const suppressed = readSuppressedSkillIds();
   const names = declared.filter((name) => !suppressed.has(name));
   const entries = [];
   for (const name of names) {

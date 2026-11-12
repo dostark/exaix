@@ -28,6 +28,16 @@ import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
+/** Checks one operation against a set of portal records, without constructing the service. */
+export function checkPortalOperationAllowed(
+  portals: readonly IPortalPermissions[],
+  portalAlias: string,
+  agentRole: string,
+  operation: PortalOperation,
+): IPermissionCheckResult {
+  return new PortalPermissionsService([...portals]).checkOperationAllowed(portalAlias, agentRole, operation);
+}
+
 /**
  * Service for validating portal permissions
  */

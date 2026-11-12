@@ -28,7 +28,7 @@ import {
   RequestStatusInvalidError,
 } from "@exaix/core/errors";
 import { type IRequestCancelResult, MIN_REQUEST_ID_PREFIX_CHARS } from "@exaix/core/request";
-import { PathResolver } from "@exaix/portal";
+import { createPathResolver } from "@exaix/portal";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -301,7 +301,7 @@ export class RequestService {
     if (!VALID_EXECUTION_TRACE_ID_PATTERN.test(entry.trace_id)) {
       throw new RequestIdError(`Request ${entry.filename} has no valid trace id.`, []);
     }
-    const path = await new PathResolver(this.config).validatePath(entry.path!, [this.requestsDir]);
+    const path = await createPathResolver(this.config).validatePath(entry.path!, [this.requestsDir]);
     const previousStatus = await this.writeCancelled(path, entry);
     const payload: IRequestCancelledPayload = {
       request_id: entry.trace_id,

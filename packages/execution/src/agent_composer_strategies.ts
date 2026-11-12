@@ -14,6 +14,7 @@ import type { SessionTool } from "@exaix/schemas";
 import { SESSION_BIN_CLAUDE_CODE, SESSION_BIN_CODEX, SESSION_BIN_OPENCODE } from "@exaix/core";
 import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the cli-delegate strategy needs from the composer that builds it. */
 export interface ICliDelegateWiring {
   readonly resolvePortalPath: (portalAlias: string) => string | undefined;

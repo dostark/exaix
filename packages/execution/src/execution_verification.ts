@@ -30,10 +30,11 @@ import {
   VERIFICATION_REPAIR_PHASE,
 } from "@exaix/core";
 import { listChangedFilesBetween, readHeadSha, resolveImmutableCommit } from "@exaix/git";
-import { PathResolver } from "@exaix/portal";
+import { createPathResolver } from "@exaix/portal";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
+// unslop-ignore-next-line unused-type
 /** Status and last verified commit returned by the verification stage. */
 export interface IVerificationOutcome {
   status: VerificationStatus;
@@ -287,7 +288,7 @@ export class ExecutionVerification {
     logger: IEventLogger,
     secrets: readonly string[],
   ): IVerificationRunner {
-    const pathResolver = new PathResolver(this.config, { logger });
+    const pathResolver = createPathResolver(this.config, { logger });
     const denoLint = new DenoLintCheckRunner(logger, {
       settings: this.defaultLintSettings(),
       systemRoot: this.config.system.root,

@@ -6,14 +6,9 @@
  * @related-files [packages/execution/src/git_audit_service.ts, packages/execution/tests/git_audit_service_test.ts]
  */
 
-import {
-  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
-} from "@exaix/git";
+import { gitRevertLimits } from "@exaix/git";
 import { join } from "@std/path";
 import { SafeSubprocess } from "@exaix/core";
-import { DEFAULT_GIT_CHECKOUT_TIMEOUT_MS, DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT } from "@exaix/git";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { AgentExecutionError } from "@exaix/execution";
@@ -48,20 +43,21 @@ export class UnauthorizedChangeReverter {
       return;
     }
 
+    const limits = gitRevertLimits();
     const results = { successful: [] as string[], failed: [] as Array<{ file: string; error: string }> };
-    const chunks = this.chunkArray(validatedFiles, DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT);
+    const chunks = this.chunkArray(validatedFiles, limits.concurrency);
 
     for (const chunk of chunks) {
       const promises = chunk.map(async (file) => {
         try {
           const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", file], {
             cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+            timeoutMs: limits.lsFilesTimeoutMs,
           });
           if (lsResult.code === 0) {
             const restoreResult = await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", file], {
               cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+              timeoutMs: limits.checkoutTimeoutMs,
             });
             if (restoreResult.code === 0) {
               results.successful.push(file);
@@ -74,7 +70,7 @@ export class UnauthorizedChangeReverter {
           } else {
             const cleanResult = await SafeSubprocess.run("git", ["clean", "-f", file], {
               cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+              timeoutMs: limits.checkoutTimeoutMs,
             });
             if (cleanResult.code === 0) {
               results.successful.push(file);
@@ -110,6 +106,7 @@ export class UnauthorizedChangeReverter {
     portalPath: string,
     authorizedFiles: string[],
   ): Promise<{ reverted: string[]; failed: string[] }> {
+    const limits = gitRevertLimits();
     const lockFile = join(portalPath, ".exa-git-lock");
     const lock = await this.acquireLock(lockFile);
 
@@ -123,7 +120,7 @@ export class UnauthorizedChangeReverter {
         ".",
       ], {
         cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
+        timeoutMs: limits.statusTimeoutMs,
       });
 
       if (result.code !== 0) {
@@ -163,19 +160,19 @@ export class UnauthorizedChangeReverter {
         try {
           const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", validated], {
             cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+            timeoutMs: limits.lsFilesTimeoutMs,
           });
 
           if (lsResult.code === 0) {
             await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", validated], {
               cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+              timeoutMs: limits.checkoutTimeoutMs,
             });
             results.reverted.push(filename);
           } else {
             await SafeSubprocess.run("git", ["clean", "-f", "--", validated], {
               cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+              timeoutMs: limits.cleanTimeoutMs,
             });
             results.reverted.push(filename);
           }

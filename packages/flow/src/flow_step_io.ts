@@ -30,6 +30,7 @@ import type {
 import type { EmitFlowMilestone } from "./flow_types.ts";
 import { flowStepOutputInstruction, isFinalJsonStrategyStep, resolveAggregateSources } from "./flow_step_prompts.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the step input and output handling of one flow runner needs from it. */
 export interface IFlowStepIoDependencies {
   readonly eventLogger: IFlowEventLogger;

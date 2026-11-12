@@ -34,6 +34,7 @@ import type {
 import type { FlowStepIo } from "./flow_step_io.ts";
 import { FlowAbortError } from "./flow_errors.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the step failure recovery of one flow runner needs from it. */
 export interface IFlowStepRecoveryDependencies {
   readonly compensationService: CompensationService;

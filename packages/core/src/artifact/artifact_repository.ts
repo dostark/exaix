@@ -34,6 +34,7 @@ interface IArtifactRecordFilters {
   type?: string;
 }
 
+// unslop-ignore-next-line unused-type
 /** The fields of a new artifact row. The update time and the rejection reason start empty. */
 export interface INewArtifactRecord {
   id: string;

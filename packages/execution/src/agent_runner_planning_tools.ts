@@ -12,7 +12,7 @@ import { toolsRoundPolicyReader } from "@exaix/schemas";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation } from "@exaix/core";
-import { PortalPermissionsService } from "@exaix/portal";
+import { checkPortalOperationAllowed } from "@exaix/portal";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PlanningToolLoop } from "./planning_tool_loop.ts";
@@ -111,11 +111,7 @@ export class AgentRunnerPlanningTools {
       return { engage: false, reason: PlanningToolsSkipReason.NO_REGISTRY };
     }
 
-    const permission = new PortalPermissionsService([portal]).checkOperationAllowed(
-      portal.alias,
-      agentRole,
-      PortalOperation.READ,
-    );
+    const permission = checkPortalOperationAllowed([portal], portal.alias, agentRole, PortalOperation.READ);
     if (!permission.allowed) return { engage: false, reason: PlanningToolsSkipReason.PORTAL_READ_DENIED };
 
     return { engage: true, portal };

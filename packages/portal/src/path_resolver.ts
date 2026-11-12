@@ -16,12 +16,20 @@ import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
-interface IPathResolverConfig {
+export interface IPathResolverConfig {
   /** Optional: Event logger for activity and security event routing */
   logger?: IEventLogger;
 
   /** Optional: Trace ID for logging */
   traceId?: string;
+}
+
+/** Creates the resolver that maps a portal alias to an absolute path inside the security boundary. */
+export function createPathResolver(
+  config: Config,
+  options?: Opt<IPathResolverConfig, Reason.OptionalContext>,
+): PathResolver {
+  return new PathResolver(config, options);
 }
 
 export class PathResolver {

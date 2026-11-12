@@ -12,6 +12,7 @@ import { DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IFlowEventLogger, IFlowResult } from "./flow_types.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the token accounting of one flow runner needs from it. */
 export interface IFlowTokenUsageDependencies {
   readonly db: IDatabaseService | undefined;

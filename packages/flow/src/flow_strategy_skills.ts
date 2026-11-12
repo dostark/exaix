@@ -17,6 +17,7 @@ import type { IAgentExecutionOptionsInput } from "@exaix/schemas/agent_composer.
 import { prepareFlowSkillPins } from "./flow_skill_pins.ts";
 import type { IFlowStepRequest } from "./flow_types.ts";
 
+// unslop-ignore-next-line unused-type
 /** The collaborators a strategy step needs to prepare its declared skills. */
 export interface IStrategySkillSource {
   loader: IBlueprintLoader;

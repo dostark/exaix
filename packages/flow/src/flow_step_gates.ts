@@ -43,6 +43,7 @@ import type { FlowStepHandlerRegistry } from "./step_handlers/step_handler_regis
 import type { FlowControlStateStore } from "./flow_control_state_store.ts";
 import { toGateConfig } from "./flow_step_prompts.ts";
 
+// unslop-ignore-next-line unused-type
 /** What the condition and gate evaluation of one flow runner needs from it. */
 export interface IFlowStepGatesDependencies {
   readonly checkpointCoordinator: FlowCheckpointCoordinator;

@@ -25,6 +25,7 @@ import { EXECUTION_REPORT_FILENAME } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
+// unslop-ignore-next-line unused-type
 /** Options for registerReview. */
 export interface IRegisterReviewOptions {
   requestId: string;

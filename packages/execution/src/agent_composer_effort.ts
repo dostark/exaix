@@ -26,6 +26,7 @@ import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts"
 import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
 import type { IAgentComposerOptions, IAgentFileBlueprint } from "./agent_composer.ts";
 
+// unslop-ignore-next-line unused-type
 /** The declaration-time effort and thinking of one step, projected onto the call options. */
 export interface IStepEffort {
   resolution: IEffortResolution;

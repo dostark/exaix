@@ -49,6 +49,7 @@ interface ISkillJournal {
   record(action: string, target: string, payload: Record<string, JSONValue>): void;
 }
 
+// unslop-ignore-next-line unused-type
 /** What the skill steps of one runner need from it. */
 export interface IAgentRunnerSkillsDependencies {
   readonly skillsService: Opt<ISkillsService, Reason.OptionalDependency>;
@@ -62,7 +63,8 @@ export interface IAgentRunnerSkillsDependencies {
  *  A skill-ablation arm sets it. The scenario framework runs one scenario per daemon process. */
 export const EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR = "EXA_EVAL_SUPPRESS_SKILLS";
 
-function readSuppressedSkillIds(): Set<string> {
+/** The skill ids that `EXA_EVAL_SUPPRESS_SKILLS` excludes from this process. */
+export function readSuppressedSkillIds(): Set<string> {
   const raw = Deno.env.get(EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR) ?? "";
   return new Set(raw.split(",").map((id) => id.trim()).filter((id) => id.length > 0));
 }
