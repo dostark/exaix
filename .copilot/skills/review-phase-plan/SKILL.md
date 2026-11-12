@@ -63,6 +63,10 @@ Key points
 - Phase 4A step workload balance is MANDATORY: compare implementation effort across
   steps. Flag overloaded steps and propose smaller steps with their own criteria and
   planned tests. Keep the first complete production path small.
+- Phase 2D is MANDATORY: plan sufficiency is not runtime completion, and pending code is
+  not a defect.
+- A blocker cites the exact requirement and plan evidence; a preference without a violated
+  requirement is a suggestion.
 - Reviewing > ~20 files: batches of 5–10.
 - **Trivial gaps (typos, wrong paths, formatting, clarifying sentences) are fixed
   IN-PLACE — no gap entry.** Only non-trivial gaps (underspecified algorithms, missing
@@ -104,6 +108,9 @@ Do / Don't
 - ✅ Verify value-specification depth — which value each component emits, not just the set.
 - ✅ Survey module conventions before accepting pattern choices.
 - ✅ Trace every prose behavioral claim to a named test.
+- ✅ Check decision records, terminology, and the ADR threshold before calling a plan ready.
+- ❌ Require expand/migrate/contract for ordinary feature work.
+- ❌ Treat a design preference as a blocker without a cited requirement.
 - ✅ Compare every step's workload under Phase 4A and specify concrete splits for
   overloaded steps before implementation.
 - ❌ Treat sub-bullets inside one large step as separate acceptance checkpoints.
@@ -292,6 +299,29 @@ Classify: 🟢 ACCEPTABLE (boot-scoped); 🟡 UNMENTIONED (model incomplete); �
 (plan replaces X but a side effect in it isn't handled); 🔴 VESTIGIAL (a method existing
 only to set env before `createByName` — a bypass). A plan-proposed new impure pattern:
 boot-time or request-time? Lifecycle? Concurrent access?
+
+### Phase 2D — Plan sufficiency, decisions, and migrations
+
+Run this on every plan. It decides whether the plan is ready to implement, not whether
+the feature already works.
+
+1. **Decision record** — verify the plan carries the decision and terminology guidance
+   accepted in Phase 234 (`Blueprints/Skills/requirements-analysis/SKILL.md` § Resolve
+   material uncertainty, and the `p234-s5`/`p234-s6` cases): accepted terms, recorded
+   decisions, and the selective ADR threshold. A term the plan redefines without evidence
+   is a blocker; a reversible label choice is not.
+1. **Migration form** — expand/migrate/contract belongs to a broad migration with mixed
+   callers. Reject it for ordinary feature work. When a migration is real, verify
+   compatibility and dependency edges, per-batch tests, rollback conditions, and the final
+   contraction evidence. A migrate batch that depends on an unlisted batch is a blocker.
+   Contracting while an old caller remains is a blocker.
+1. **Sufficiency, not status** — check that decisions, contracts, dependency edges, and
+   planned verification are sufficient for implementation. Pending code alone is not a
+   planning defect; plan readiness is not runtime completion. Do not demand implemented
+   behavior from a pre-implementation plan.
+1. **Evidence rule** — a blocker cites the exact requirement and the plan location that
+   fails it. An unsupported design preference is a suggestion, not a blocker. A missing
+   contract is a cited blocker.
 
 ### Phase 3 — Source Verification (exhaustive file-by-file)
 

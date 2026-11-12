@@ -18,13 +18,19 @@ constraints:
   - Assess step workload balance; require concrete splits for overloaded steps before readiness
   - Flag underspecified fields
   - Do not modify source files — report gaps only
-  - 'Fix trivial gaps in-place in plan, register non-trivial as gap entries'
+  - "Fix trivial gaps in-place in plan, register non-trivial as gap entries"
+  - Separate plan readiness from runtime completion; pending implementation is not a defect
+  - Require expand/migrate/contract only for a broad migration with mixed callers
+  - Cite the requirement and plan evidence for every blocker; classify unsupported preferences as suggestions
 output_requirements:
   - Gap summary table sorted by severity
   - Step Workload Assessment with justified effort differences and bounded split proposals
-  - 'Detailed gap entries with Finding, Impact, Resolution'
+  - "Detailed gap entries with Finding, Impact, Resolution"
   - Pre-Implementation Actions list with grep verification
   - In-Place fixes subsection listing trivial corrections
+  - Plan-sufficiency verdict with decision, terminology, and ADR-threshold evidence
+  - Migration review with compatibility, dependency edges, per-batch tests, rollback, and contraction evidence
+  - Blockers separated from heuristic suggestions, each with its cited requirement
 quality_criteria:
   - name: completeness
     description: Every plan step verified against codebase

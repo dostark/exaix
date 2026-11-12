@@ -176,6 +176,61 @@
       "outcome": "not run",
       "reason": "provider-live case; operator authorization for token spend not granted",
       "evidence": null
+    },
+    {
+      "id": "p235-s4-c1",
+      "step": 4,
+      "skill": "review-phase-plan",
+      "skillRoot": ".copilot/skills/review-phase-plan",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
+    },
+    {
+      "id": "p235-s4-c2",
+      "step": 4,
+      "skill": "review-phase-plan",
+      "skillRoot": ".copilot/skills/review-phase-plan",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
+    },
+    {
+      "id": "p235-s4-c3",
+      "step": 4,
+      "skill": "review-phase-plan",
+      "skillRoot": ".copilot/skills/review-phase-plan",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
+    },
+    {
+      "id": "p235-s4-c4",
+      "step": 4,
+      "skill": "review-phase-plan",
+      "skillRoot": ".copilot/skills/review-phase-plan",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
+    },
+    {
+      "id": "p235-s4-c5",
+      "step": 4,
+      "skill": "review-phase-plan",
+      "skillRoot": ".copilot/skills/review-phase-plan",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
     }
   ]
 }
