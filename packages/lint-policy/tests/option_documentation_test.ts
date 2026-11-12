@@ -18,7 +18,7 @@ import {
   TYPESCRIPT_RULE_PACK,
 } from "@dostark/unslop-ts";
 
-const ENGINE_README = new URL("../../../unslop-ts/README.md", import.meta.url);
+const ENGINE_CONFIG = new URL("../../../unslop-ts/docs/reference/config.md", import.meta.url);
 const POLICY_README = new URL("../README.md", import.meta.url);
 const MAGIC_HOST = new URL("../src/checkers/check_magic_values.ts", import.meta.url);
 const SECTION_HEADING = "## Option validation";
@@ -31,9 +31,9 @@ const DOCUMENTED_PATTERN = String.raw`"pattern": "\\btried\\b"`;
 const DOCUMENTED_FLAGS = '"flags": "gi"';
 
 async function documentedBlock(): Promise<string> {
-  const text = await Deno.readTextFile(ENGINE_README);
+  const text = await Deno.readTextFile(ENGINE_CONFIG);
   const start = text.indexOf(SECTION_HEADING);
-  assert(start >= 0, "the engine README has no option validation section");
+  assert(start >= 0, "the engine configuration reference has no option validation section");
   const block = JSON_FENCE.exec(text.slice(start));
   assert(block !== null, "the option validation section has no json example");
   assertStringIncludes(block[1], DOCUMENTED_PATTERN);
@@ -61,7 +61,7 @@ Deno.test("regex_and_magic_option_documentation_matches_runtime", async () => {
   assertThrows(() => parse(repeatedFlag), CatalogError, "flags");
   for (const flags of ["g", "y"]) parse(JSON.parse(block.replace(DOCUMENTED_FLAGS, `"flags": "${flags}"`)));
 
-  assertStringIncludes(await Deno.readTextFile(ENGINE_README), "no flag turns them on");
+  assertStringIncludes(await Deno.readTextFile(ENGINE_CONFIG), "no flag turns them on");
   const policyText = await Deno.readTextFile(POLICY_README);
   const hostText = await Deno.readTextFile(MAGIC_HOST);
   for (const flag of DISABLE_FLAGS) {

@@ -70,11 +70,11 @@ Deno.test({
   },
 });
 
-Deno.test("both lint READMEs agree on packaging, provenance and redeploy", async () => {
+Deno.test("the lint policy README and the engine host guide agree on packaging, provenance and redeploy", async () => {
   const policyReadme = await Deno.readTextFile(join(ROOT, "packages", "lint-policy", "README.md"));
-  const engineReadme = await Deno.readTextFile(join(ROOT, "unslop-ts", "README.md"));
+  const engineDocs = await Deno.readTextFile(join(ROOT, "unslop-ts", "docs", "how-to", "hosts.md"));
   assertStringIncludes(policyReadme, "unslop-ts:policy");
-  for (const readme of [policyReadme, engineReadme]) {
+  for (const readme of [policyReadme, engineDocs]) {
     for (const token of ["unslop_engine.js", "manifest.json", "checksum", "redeploy", "offline"]) {
       assertStringIncludes(readme, token);
     }

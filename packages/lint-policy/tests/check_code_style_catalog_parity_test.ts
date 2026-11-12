@@ -221,5 +221,6 @@ Deno.test("the engine README records the measured pack counts and the guide it o
   const readme = await Deno.readTextFile(join(REPO_ROOT, "unslop-ts", "README.md"));
   assertStringIncludes(readme, `holds ${Object.keys(TYPESCRIPT_RULE_PACK.rules).length} rules`);
   assertStringIncludes(readme, `holds ${Object.keys(DENO_RULE_PACK.rules).length} rules`);
-  assertStringIncludes(readme, "docs/style_guide.md#strict-type-safety");
+  const rules = await Deno.readTextFile(join(REPO_ROOT, "unslop-ts", "docs", "reference", "rules.md"));
+  assertStringIncludes(rules, "style_guide.md#strict-type-safety");
 });
