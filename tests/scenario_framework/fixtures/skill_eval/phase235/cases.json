@@ -1,0 +1,66 @@
+{
+  "phase": 235,
+  "updatedAt": "2026-11-12",
+  "cases": [
+    {
+      "id": "p235-s1-c1",
+      "step": 1,
+      "skill": "architecture-review",
+      "skillRoot": "Blueprints/Skills/architecture-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s1-c1.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s1-c1.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s1-c2",
+      "step": 1,
+      "skill": "architecture-review",
+      "skillRoot": "Blueprints/Skills/architecture-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s1-c2.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s1-c2.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s1-c3",
+      "step": 1,
+      "skill": "architecture-review",
+      "skillRoot": "Blueprints/Skills/architecture-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s1-c3.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s1-c3.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s1-c4",
+      "step": 1,
+      "skill": "architecture-review",
+      "skillRoot": "Blueprints/Skills/architecture-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s1-c4.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s1-c4.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s1-c5",
+      "step": 1,
+      "skill": "architecture-review",
+      "skillRoot": "Blueprints/Skills/architecture-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s1-c5.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s1-c5.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    }
+  ]
+}

@@ -10,11 +10,15 @@ constraints:
   - Evaluate against SOLID principles and quality attributes
   - Map current state and target state with a migration plan
   - Consider backward compatibility in every design change
+  - Compare the current design with two feasible alternatives for every material interface choice
+  - Treat depth and locality as heuristics subordinate to security contracts and required dependency injection
 output_requirements:
   - Current-state assessment with pain points and technical debt
   - Target architecture with required changes
   - Migration path with backward compatibility considerations
-  - 'Quality-attribute trade-off analysis (scalability, maintainability, testability, security, performance, reliability)'
+  - "Quality-attribute trade-off analysis (scalability, maintainability, testability, security, performance, reliability)"
+  - "Caller usage, invariants, error behavior, hidden complexity, dependency strategy, and test boundary for each material interface option"
+  - A reasoned recommendation that preserves required permission adapters and existing test evidence
 quality_criteria:
   - name: SOLID Compliance
     description: >-
@@ -27,9 +31,9 @@ quality_criteria:
       are addressed
     weight: 30
   - name: Migration Realism
-    description: 'The migration path is practical, incremental, and considers backward compatibility'
+    description: "The migration path is practical, incremental, and considers backward compatibility"
     weight: 40
 applies_to:
   agents:
     - software-architect
-    - '*'
+    - "*"
