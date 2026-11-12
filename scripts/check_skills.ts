@@ -18,7 +18,9 @@
 import { dirname, join } from "@std/path";
 import { SkillDiagnosticSeverity, SkillRootKind } from "@exaix/core";
 import type { IResolvedSkillRoot, ISkillDiagnostic } from "@exaix/core/skills";
+import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { z } from "zod";
 import { CATALOG_CONTEXT, createCatalogLoader } from "./skill_catalog_loader.ts";
 
 /** The reviewed membership contract: every tracked root and its sorted folder names. */
@@ -48,6 +50,11 @@ interface ISkillCatalogRoot {
   path: readonly string[];
   project: string | null;
 }
+
+const SkillCatalogLockSchema = z.object({
+  version: z.string(),
+  roots: z.record(z.string(), z.array(z.string())),
+});
 
 /** Every tracked root. Order is the lock's key order. */
 const ROOTS: readonly ISkillCatalogRoot[] = [
@@ -131,24 +138,24 @@ export async function loadSkillCatalogLock(repoRoot: string): Promise<ISkillCata
   } catch {
     throw new Error(`${SKILL_CATALOG_LOCK_PATH} is missing. Regenerate it with --update.`);
   }
-  let parsed: Partial<ISkillCatalogLock> | undefined;
+  let value: JSONValue;
   try {
-    parsed = JSON.parse(raw) as Partial<ISkillCatalogLock>;
+    value = JSON.parse(raw);
   } catch {
     throw new Error(`${SKILL_CATALOG_LOCK_PATH} is malformed. Regenerate it with --update.`);
   }
-  if (parsed?.version !== "1" || typeof parsed.roots !== "object" || parsed.roots === null) {
+  const parsed = SkillCatalogLockSchema.safeParse(value);
+  if (!parsed.success || parsed.data.version !== "1") {
     throw new Error(`${SKILL_CATALOG_LOCK_PATH} is malformed. Regenerate it with --update.`);
   }
-  for (const [label, names] of Object.entries(parsed.roots)) {
-    if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
-      throw new Error(`${SKILL_CATALOG_LOCK_PATH} root "${label}" is not a string array. Regenerate it with --update.`);
-    }
+  const roots: Record<string, string[]> = {};
+  for (const [label, names] of Object.entries(parsed.data.roots)) {
     if (names.length !== new Set(names).size) {
       throw new Error(`${SKILL_CATALOG_LOCK_PATH} root "${label}" has duplicate names. Regenerate it with --update.`);
     }
+    roots[label] = names;
   }
-  return { version: "1", roots: parsed.roots as Record<string, string[]> };
+  return { version: "1", roots };
 }
 
 /** Writes the lock in stable order so a corpus change is a one-line diff. */
@@ -194,7 +201,7 @@ if (import.meta.main) {
   try {
     lock = await loadSkillCatalogLock(repoRoot);
   } catch (error) {
-    console.error(`❌ ${(error as Error).message}`);
+    console.error(`❌ ${error instanceof Error ? error.message : String(error)}`);
     Deno.exit(1);
   }
   const result = await checkSkillCatalog(repoRoot, lock);
