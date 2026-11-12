@@ -1,0 +1,61 @@
+schema_version: "1.0.0"
+id: p235-s6-c6
+title: "Technical writing — concept document and navigation"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:technical-writing", nightly-quality]
+request_fixture: fixtures/requests/skill_eval/phase235/p235-s6-c6.md
+mode_support: [auto]
+portals: []
+bindings:
+  judge:
+    service: claude-cli
+    model: claude-cli/claude-haiku-4-5
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: ["create", "--agent", "technical-writer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+  - id: verify-pinned-skill
+    type: exactl
+    command: log
+    args: [wait, --event, skills.resolved, --since-rowid, "$JOURNAL_BASELINE", --timeout, "60"]
+    timeout_sec: 65
+    output_criteria:
+      - id: skill-injected
+        kind: journal-event-exists
+        event_type: skills.resolved
+        payload_includes:
+          pinned_skill_ids: [technical-writing]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: judge-effectiveness
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    step_pass_threshold: 0.7
+    output_criteria:
+      - id: skill-effectiveness
+        kind: llm-judge
+        rubric: "Treat the document as a concept document: purpose, mental model, boundaries, examples. Name applicable standards or state why none applies, define 'scope' on first use, and update the index and navigation. Score zero if it is written as a how-to or the index update is omitted."
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

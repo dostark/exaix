@@ -1,0 +1,48 @@
+title: Technical Writing
+triggers:
+  keywords:
+    - technical-writing
+    - documentation
+    - readme
+    - how-to
+    - reference
+    - changelog
+    - glossary
+    - plain-language
+  task_types:
+    - documentation
+    - docs
+  tags:
+    - documentation
+    - writing
+constraints:
+  - Ground every behavioral claim in code, configuration, or an existing document
+  - Name the document type, reader, and task before drafting
+  - Provide a runnable example and the expected output for every procedure
+  - Mark a claim unverified when no source supports it
+  - Reuse the project glossary and one term per concept
+  - Name the applicable standard, or state why none applies, without claiming conformance
+output_requirements:
+  - Document type, reader, task, and scope
+  - Source-grounded claims with file or section citations
+  - Runnable example, environment, and expected output, or the reason none exists
+  - Parameters, return values, errors, limits, and defaults for reference documents
+  - Standards map for the document type
+  - Index, navigation, and link updates
+  - Unverified claims stated separately
+quality_criteria:
+  - name: source_grounding
+    description: Every behavioral claim cites its source
+    weight: 35
+  - name: task_focus
+    description: Procedures start with the task and include a runnable example
+    weight: 25
+  - name: plain_language
+    description: Text follows ISO 24495-1 principles with one term per concept
+    weight: 20
+  - name: structure_and_links
+    description: Document type, structure, index, and links match the reader's task
+    weight: 20
+related_skills:
+  - documentation-driven
+  - commit-message

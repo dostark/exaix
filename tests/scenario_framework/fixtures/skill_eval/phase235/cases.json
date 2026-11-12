@@ -308,6 +308,78 @@
       "outcome": "pass",
       "reason": "prompt and Qwen entry resolve the canonical folder",
       "evidence": ".copilot/prompts/github-actions-ci.prompt.md"
+    },
+    {
+      "id": "p235-s6-c1",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c1.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c1.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s6-c2",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c2.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c2.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s6-c3",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c3.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c3.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s6-c4",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c4.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c4.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s6-c5",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c5.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c5.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s6-c6",
+      "step": 6,
+      "skill": "technical-writing",
+      "skillRoot": "Blueprints/Skills/technical-writing",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s6-c6.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s6-c6.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
     }
   ]
 }
