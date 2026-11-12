@@ -30,6 +30,7 @@ topics: ["reference", "docs", "catalog"]
 | Refactoring Skill (#refactor)                                | [skills/refactor/SKILL.md](skills/refactor/SKILL.md)                         |
 | Upgrade-Version Skill (#upgrade-version)                     | [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md)           |
 | Clean Codebase Skill (#clean-codebase)                       | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)             |
+| GitHub Actions CI Diagnosis (#github-actions-ci)             | [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md)       |
 | Remediate Plan Gaps Skill (#remediate-plan-gaps)             | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md)   |
 | Commit Skill (#commit)                                       | [skills/commit/SKILL.md](skills/commit/SKILL.md)                             |
 | Scenario Framework Testing & Evaluation (#run-scenario-test) | [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)       |
@@ -65,7 +66,7 @@ topics: ["reference", "docs", "catalog"]
 - **`bug-fix`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`build`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`catalog`** → [DOCS.md](DOCS.md)
-- **`ci`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`ci`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`clarity`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
 - **`cleanup`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`code-identifiers`** → [docs/GLOSSARY.md](docs/GLOSSARY.md)
@@ -89,6 +90,7 @@ topics: ["reference", "docs", "catalog"]
 - **`dependencies`** → [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md), [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`development`** → [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md)
+- **`diagnosis`** → [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md)
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`docs`** → [docs/README.md](docs/README.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [DOCS.md](DOCS.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
@@ -99,6 +101,7 @@ topics: ["reference", "docs", "catalog"]
 - **`exploration`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`gap-analysis`** → [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md), [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)
 - **`git`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`github-actions`** → [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md)
 - **`glossary`** → [docs/GLOSSARY.md](docs/GLOSSARY.md), [../GLOSSARY.md](../GLOSSARY.md)
 - **`helpers`** → [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`implementation`** → [docs/GLOSSARY.md](docs/GLOSSARY.md)
@@ -168,6 +171,7 @@ topics: ["reference", "docs", "catalog"]
 - **`tool-use`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tools`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`triage`** → [skills/github-actions-ci/SKILL.md](skills/github-actions-ci/SKILL.md)
 - **`typescript`** → [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md)
 - **`upgrade`** → [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md)
 - **`validation`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)

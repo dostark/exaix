@@ -1,0 +1,38 @@
+applies_to:
+  agents:
+    - general
+triggers:
+  keywords:
+    - github-actions
+    - workflow-run
+    - failing-check
+    - red-ci
+    - ci-diagnosis
+  task_types:
+    - diagnosis
+  tags:
+    - ci
+    - diagnosis
+constraints:
+  - Diagnose one repository and one commit; never mix results from another SHA
+  - Keep monitoring read-only; rerun, cancel, push, PR and merge need explicit authorization
+  - Distinguish absent, unavailable, pending and failed checks
+  - Name the command and evidence for every claim
+output_requirements:
+  - Repository and full commit SHA under review
+  - Per-check status, conclusion and job link
+  - First substantive failing step with its log excerpt
+  - Local reproduction command or an exact not-reproducible reason
+quality_criteria:
+  - name: evidence_fidelity
+    description: Every claim names its command, commit and output
+    weight: 40
+  - name: commit_precision
+    description: Results belong to the reported SHA only
+    weight: 30
+  - name: read_only_conduct
+    description: No action beyond read-only inspection without authorization
+    weight: 30
+related_skills:
+  - infra
+  - fix-bug

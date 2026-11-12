@@ -231,6 +231,83 @@
       "outcome": "pass",
       "reason": "document review of the guidance; no live model run",
       "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/review-phase-plan.md"
+    },
+    {
+      "id": "p235-s5-c1",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md"
+    },
+    {
+      "id": "p235-s5-c2",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md"
+    },
+    {
+      "id": "p235-s5-c3",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md"
+    },
+    {
+      "id": "p235-s5-c4",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/github-actions-ci.md"
+    },
+    {
+      "id": "p235-s5-c5",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "test",
+      "test": "tests/scripts/check_skills_test.ts",
+      "outcome": "pass",
+      "reason": "RED before the folder and the count update, GREEN after",
+      "evidence": "tests/scripts/check_skills_test.ts"
+    },
+    {
+      "id": "p235-s5-c6",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "command",
+      "command": "deno task check:qwen-skills-sync",
+      "outcome": "pass",
+      "reason": "Qwen entry and prompt are present and in sync",
+      "evidence": ".qwen/settings.json"
+    },
+    {
+      "id": "p235-s5-c7",
+      "step": 5,
+      "skill": "github-actions-ci",
+      "skillRoot": ".copilot/skills/github-actions-ci",
+      "method": "command",
+      "command": "deno task check:qwen-skills-sync",
+      "outcome": "pass",
+      "reason": "prompt and Qwen entry resolve the canonical folder",
+      "evidence": ".copilot/prompts/github-actions-ci.prompt.md"
     }
   ]
 }

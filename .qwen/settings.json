@@ -27,7 +27,8 @@
     ".copilot/skills/tdd-workflow",
     ".copilot/skills/test-development",
     ".copilot/skills/upgrade-version",
-    ".copilot/skills/run-scenario-test"
+    ".copilot/skills/run-scenario-test",
+    ".copilot/skills/github-actions-ci"
   ],
   "permissions": {
     "allow": [

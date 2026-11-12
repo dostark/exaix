@@ -3,7 +3,7 @@
  * @path tests/scripts/check_skills_test.ts
  * @description Phase 206 Step 3 — the retained `check:skill-index` gate validates skill
  *   folders through the production loader: the repository catalog passes with its 28 Blueprint and
- *   project folders plus the 28 dogfood folders, and invalid folders, legacy JSON, flat skill files and executable content fail
+ *   project folders plus the 29 dogfood folders, and invalid folders, legacy JSON, flat skill files and executable content fail
  *   with typed reasons.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing, scripts/check_skills.ts]
@@ -17,7 +17,7 @@ import { join } from "@std/path";
 import { REPO_ROOT, withTempDir } from "@exaix/testing";
 import { checkSkillCatalog, REPOSITORY_EXPECTED_COUNTS } from "../../scripts/check_skills.ts";
 
-const CATALOG_SIZE = 28 + 28;
+const CATALOG_SIZE = 28 + 29;
 const NO_COUNTS = undefined;
 
 async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {

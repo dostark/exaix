@@ -145,6 +145,10 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/github-actions-ci.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/comparative-analysis.prompt.md",
       "short_summary": ""
     },
@@ -416,6 +420,21 @@
         "architecture"
       ],
       "qwen_skill": "clean-codebase"
+    },
+    {
+      "path": ".copilot/skills/github-actions-ci/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "GitHub Actions CI Diagnosis (#github-actions-ci)",
+      "short_summary": "Report commit-specific CI checks with evidence, classify absent, unavailable, pending and failed, and never act beyond read-only inspection.",
+      "version": "1.0.0",
+      "topics": [
+        "ci",
+        "github-actions",
+        "diagnosis",
+        "triage"
+      ],
+      "qwen_skill": "github-actions-ci"
     },
     {
       "path": ".copilot/skills/remediate-plan-gaps/SKILL.md",
