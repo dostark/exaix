@@ -61,6 +61,61 @@
       "outcome": "not run",
       "reason": "provider-live case; operator authorization for token spend not granted",
       "evidence": null
+    },
+    {
+      "id": "p235-s2-c1",
+      "step": 2,
+      "skill": "refactor",
+      "skillRoot": ".copilot/skills/refactor",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
+    },
+    {
+      "id": "p235-s2-c2",
+      "step": 2,
+      "skill": "refactor",
+      "skillRoot": ".copilot/skills/refactor",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
+    },
+    {
+      "id": "p235-s2-c3",
+      "step": 2,
+      "skill": "refactor",
+      "skillRoot": ".copilot/skills/refactor",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
+    },
+    {
+      "id": "p235-s2-c4",
+      "step": 2,
+      "skill": "refactor",
+      "skillRoot": ".copilot/skills/refactor",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
+    },
+    {
+      "id": "p235-s2-c5",
+      "step": 2,
+      "skill": "refactor",
+      "skillRoot": ".copilot/skills/refactor",
+      "method": "manual",
+      "record": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md",
+      "outcome": "pass",
+      "reason": "document review of the guidance; no live model run",
+      "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
     }
   ]
 }

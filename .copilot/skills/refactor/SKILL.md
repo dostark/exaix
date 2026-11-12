@@ -15,6 +15,7 @@ version: "1.0.0"
 topics: ["refactoring", "code-quality", "maintenance"]
 qwen_skill: refactor
 ---
+
 ```text
 Key points
 
@@ -26,6 +27,9 @@ Key points
     Test code       → tests/config/constants.ts (TEST_ prefix)
 - PathResolver wraps all file path operations — never raw string concatenation.
 - Magic-value and duplication cleanup is a first-class pass here (see below).
+- Depth and locality first: a wrapper that only forwards calls is not an improvement.
+- Material interface change? Compare the current design and two feasible alternatives
+  before extracting.
 
 Canonical prompt (short):
 "Refactor {component} for {goal: clarity | performance | DI compliance | interface extraction}.
@@ -89,6 +93,24 @@ Patterns
      Example: AgentExecutor went from ~1750 lines / 16 deps to ~950 lines / 11 deps by
      extracting 7 services (ExecutionContext, Blueprint, PromptBuilder, GitAudit,
      OutputParser, HistoryManager, ReActLoopAdapter), each with TDD, 100-250 lines at a time.
+
+Depth and locality (before extracting)
+  Ask these before adding a facade, service, or interface:
+  - Depth — does the new interface hide necessary complexity, or only forward calls?
+  - Locality — does the change put related decisions in one place?
+  - Caller cost — does it reduce or increase what each caller must know and sequence?
+  - Deletion question — if the module vanished, would its complexity spread across callers?
+  A pass-through wrapper that adds a concept and hides nothing is not an improvement.
+  Fewer methods or parameters alone do not prove a better interface.
+
+  Material interface change — compare the current design and two feasible alternatives
+  before extraction. For each, record: one caller, one failure path, invariants, error
+  behavior, hidden complexity, dependency strategy, and the test boundary. Recommend one
+  with reasons. A routine mechanical refactor does not need this record.
+
+  Boundaries stay: never remove a permission or governance adapter for being thin; never
+  delete required tests because a deeper interface is proposed; keep constructor DI and
+  owning-package placement.
 
 Security check (refactor touching portal code or any boundary: input parsing, file paths,
 SQL queries, subprocesses, HTTP handlers, auth, secrets)
@@ -174,6 +196,9 @@ Do / Don't
 - ❌ Fix them by inlining the raw value. The value IS the constant; inlining loses the
   name and creates the same divergence. Inject the owning service's interface instead.
 - ❌ Refactor and add features in the same commit.
+- ✅ Check depth, locality, and caller cost before extracting a facade.
+- ❌ Extract an interface only because it is smaller. A thin adapter that enforces a
+  boundary stays.
 - ✅ Run the magic-value & duplication pass above when check:magic violations are the goal.
 
 Related

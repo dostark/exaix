@@ -19,11 +19,15 @@ constraints:
   - Use IFoo naming for extracted interfaces
   - Place constants in the correct file (prod vs. test)
   - Do not use as any to resolve type errors introduced by refactor
+  - Check depth, locality, and caller cost before extracting a facade or interface
+  - Keep permission and governance adapters even when they only delegate
 output_requirements:
-  - 'Baseline evidence: tests pass before refactor'
-  - 'Verification evidence: tests pass after refactor (same count)'
-  - 'CI gates clean (lint, type-check, style, arch, fmt)'
+  - "Baseline evidence: tests pass before refactor"
+  - "Verification evidence: tests pass after refactor (same count)"
+  - "CI gates clean (lint, type-check, style, arch, fmt)"
   - Structured commit with refactoring type and files changed
+  - "Caller cost, invariants, error behavior, dependency strategy, and test boundary for a material extraction"
+  - A reasoned recommendation that compares the current design with two feasible alternatives
 quality_criteria:
   - name: behavior_preservation
     description: Test count and results identical before and after
