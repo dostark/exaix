@@ -24,10 +24,16 @@ constraints:
   - Consider the context and constraints
   - "Focus on important issues, not style nitpicks"
   - "Check assertion rewrites preserve equality, identity, truth direction, messages, and call order and count"
+  - Report specification compliance and standards compliance as separate axes
+  - Mark specification compliance unverified when no requirement exists
+  - Classify each finding as a violation or a heuristic, independently of severity
 output_requirements:
   - Clear summary of findings
   - "Categorized issues (critical, major, minor)"
   - Specific suggestions for improvement
+  - Reviewed base and target revision, plus the working changes included in scope
+  - "Each finding with id, axis, class, severity, cited rule, evidence, resolution, response, and recheck result"
+  - A recheck result for every finding affected by a new target revision
 quality_criteria:
   - name: Thoroughness
     description: All aspects of the code are reviewed

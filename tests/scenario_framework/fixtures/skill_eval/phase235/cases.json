@@ -116,6 +116,66 @@
       "outcome": "pass",
       "reason": "document review of the guidance; no live model run",
       "evidence": "tests/scenario_framework/fixtures/skill_eval/phase235/manual/refactor.md"
+    },
+    {
+      "id": "p235-s3-c1",
+      "step": 3,
+      "skill": "code-review",
+      "skillRoot": "Blueprints/Skills/code-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s3-c1.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s3-c1.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s3-c2",
+      "step": 3,
+      "skill": "code-review",
+      "skillRoot": "Blueprints/Skills/code-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s3-c2.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s3-c2.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s3-c3",
+      "step": 3,
+      "skill": "code-review",
+      "skillRoot": "Blueprints/Skills/code-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s3-c3.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s3-c3.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s3-c4",
+      "step": 3,
+      "skill": "code-review",
+      "skillRoot": "Blueprints/Skills/code-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s3-c4.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s3-c4.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
+    },
+    {
+      "id": "p235-s3-c5",
+      "step": 3,
+      "skill": "code-review",
+      "skillRoot": "Blueprints/Skills/code-review",
+      "method": "scenario",
+      "scenario": "tests/scenario_framework/scenarios/skill_eval/p235-s3-c5.yaml",
+      "fixture": "tests/scenario_framework/fixtures/requests/skill_eval/phase235/p235-s3-c5.md",
+      "outcome": "not run",
+      "reason": "provider-live case; operator authorization for token spend not granted",
+      "evidence": null
     }
   ]
 }

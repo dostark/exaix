@@ -78,6 +78,46 @@ Before reviewing code:
 - [ ] **README updates** - Setup/usage docs current?
 - [ ] **Changelog** - Notable changes documented?
 
+## Review Scope and Findings
+
+### Scope
+
+- Name the base and target revisions.
+- State which working changes are included, and which are excluded.
+- Note out-of-scope findings; do not fix them.
+
+### Two axes
+
+Report these separately. Never merge them.
+
+- **Specification compliance** — does the code meet the stated requirement?
+- **Standards compliance** — does the code follow documented repository rules and general quality standards?
+
+If no specification exists, report specification compliance as **unverified**. Do not infer a pass from a clean standards review.
+
+### Finding record
+
+Every finding carries:
+
+- a stable id (`SPEC-01`, `STD-01`);
+- the axis: specification or standards;
+- the class: violation or heuristic;
+- the severity: critical, major, minor, or suggestion;
+- the cited requirement or documented rule;
+- the observed revision and hunk evidence;
+- proposed resolution, response, and recheck result.
+
+Class and severity are independent. A minor violation is still a violation; a major preference is still a heuristic.
+
+A documented repository rule overrides a generic smell. Without a violated rule, a preference is a suggestion, not a mandatory fix.
+
+### Recheck and closure
+
+- A finding stays open until recheck evidence shows the fix on a named revision.
+- An implementer's claim alone does not close a finding.
+- A new target revision requires a recheck of every affected finding.
+- Stay read-only unless fixes are authorized. Do not spawn agents.
+
 ## Feedback Guidelines
 
 **Be Specific:**
@@ -101,6 +141,8 @@ Before reviewing code:
 ```
 
 **Prioritize Issues:**
+
+Severity does not replace the finding class; record the axis and class from Review Scope and Findings.
 
 - 🔴 **Critical** - Must fix (security, data loss, crashes)
 - 🟠 **Major** - Should fix (bugs, significant issues)
