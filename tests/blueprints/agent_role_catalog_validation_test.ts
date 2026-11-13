@@ -17,6 +17,7 @@ import { parse as parseYaml } from "@std/yaml";
 import {
   AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
+  effectiveDefaultSkills,
   type IAgentRoleFrontmatter,
   READ_ONLY_AGENT_ROLES,
   ROLE_REQUIRED_SKILLS,
@@ -96,7 +97,7 @@ Deno.test({
     for (const { id, fm } of agentRoles) {
       const expected = required[id];
       assert(expected !== undefined, `${id}: no role-required entry in the agent-role matrix`);
-      const skills = new Set(fm.default_skills ?? []);
+      const skills = new Set(effectiveDefaultSkills(fm));
       for (const s of expected) {
         assert(
           skills.has(s),

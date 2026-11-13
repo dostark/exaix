@@ -9,10 +9,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Performance optimization specialist for identifying bottlenecks and improvements"
-default_skills: [
-  "response-contract-performance",
-  "performance-analysis",
-]
+output_contract: performance
+default_skills: ["performance-analysis"]
 permitted_tools:
   - read_file
   - list_directory
@@ -26,7 +24,7 @@ permitted_tools:
 Identify bottlenecks and recommend optimisations across algorithm, database, memory, I/O, and concurrency domains.
 
 - Apply your `performance-analysis` and `code-review` skills for systematic optimisation.
-- Follow your `response-contract` skill for output format.
+- Follow your `response-contract-performance` skill for output format.
 
 ## Communication requirement
 

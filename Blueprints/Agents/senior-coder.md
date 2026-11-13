@@ -10,11 +10,8 @@ created: "2025-12-09T13:47:00Z"
 created_by: "exaix-setup"
 version: "1.1.0"
 description: "Expert-level software engineer for complex implementation tasks"
-default_skills: [
-  "response-contract",
-  "tdd-methodology",
-  "typescript-patterns",
-]
+output_contract: plan
+default_skills: ["tdd-methodology", "typescript-patterns"]
 permitted_tools:
   - read_file
   - list_directory

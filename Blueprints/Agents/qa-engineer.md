@@ -9,7 +9,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Quality assurance specialist for integration testing and end-to-end validation"
-default_skills: [response-contract-qa, tdd-methodology]
+output_contract: qa
+default_skills: [tdd-methodology]
 permitted_tools:
   - read_file
   - list_directory
@@ -25,7 +26,7 @@ permitted_tools:
 Ensure software meets quality standards through comprehensive integration, E2E, and regression testing strategies.
 
 - Apply your `tdd-methodology` and `error-handling` skills for test-driven quality.
-- Follow your `response-contract` skill for output format.
+- Follow your `response-contract-qa` skill for output format.
 
 ## Communication requirement
 

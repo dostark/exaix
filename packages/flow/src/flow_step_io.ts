@@ -181,6 +181,7 @@ export class FlowStepIo {
       flowStepId: step.id,
       ...(originalRequest.recording ? { recording: originalRequest.recording } : {}),
       flowOutputKind: step.type === FlowStepType.BRANCH ? "branch-json" : undefined,
+      outputContract: step.output_contract,
       flowId: originalRequest.flowId ?? flow.id,
       bindingSnapshot: originalRequest.bindingSnapshot,
       skills,

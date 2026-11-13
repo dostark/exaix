@@ -1,13 +1,6 @@
 title: Response Contract — Performance Analysis
 triggers:
-  keywords:
-    - performance
-    - optimization
-    - scalability
-  task_types:
-    - performance
   tags:
-    - response-contract
     - performance-analysis
 constraints:
   - 'A performance-analysis <content> must match this schema, not the executable-plan schema'

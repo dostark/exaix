@@ -1510,6 +1510,16 @@ export enum SkillRootKind {
   EVAL_OVERLAY = "eval-overlay",
 }
 
+/** The kind of deliverable an agent run returns. Each kind names one response-contract skill. */
+export enum OutputContract {
+  PLAN = "plan",
+  ANALYSIS = "analysis",
+  SECURITY = "security",
+  QA = "qa",
+  PERFORMANCE = "performance",
+  VERDICT = "verdict",
+}
+
 /** Why a skill entered a resolved set. Priority is plan_pinned over pinned over default over matched. */
 export enum SkillMatchSource {
   MATCHED = "matched",

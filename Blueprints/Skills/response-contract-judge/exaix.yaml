@@ -1,20 +1,6 @@
 title: LLM-as-Judge — Evaluation Method & Contract
 triggers:
-  keywords:
-    - evaluate
-    - judge
-    - verdict
-    - score
-    - assess
-    - assessment
-    - rubric
-    - grade
-  task_types:
-    - evaluation
-    - judge
-    - review
   tags:
-    - response-contract
     - judge
     - evaluation
 constraints:

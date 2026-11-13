@@ -26,6 +26,8 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import type { OutputContract } from "@exaix/core";
+import { resolveDefaultSkillIds } from "@exaix/core/output-contract";
 
 /** The kinds of blueprint integrity violation. */
 type TBlueprintViolationKind = "dangling-agent-role" | "dangling-skill" | "orphan-agent-role" | "orphan-skill";
@@ -76,11 +78,13 @@ interface IAgentRoleRecord {
   defaultSkills: string[];
 }
 
-function readFrontmatter(filePath: string): { model?: string; default_skills?: string[] } | null {
+function readFrontmatter(
+  filePath: string,
+): { model?: string; default_skills?: string[]; output_contract?: OutputContract } | null {
   const content = Deno.readTextFileSync(filePath);
   const m = content.match(/^---\n([\s\S]*?)\n---/);
   if (!m) return null;
-  return parseYaml(m[1]) as { model?: string; default_skills?: string[] };
+  return parseYaml(m[1]) as { model?: string; default_skills?: string[]; output_contract?: OutputContract };
 }
 
 /** Load every active agent role (top-level `*.md`, excluding README). */
@@ -93,7 +97,10 @@ function loadAgentRoles(agentRolesDir: string): IAgentRoleRecord[] {
     out.push({
       id: e.name.replace(/\.md$/, ""),
       model: fm.model ?? "",
-      defaultSkills: Array.isArray(fm.default_skills) ? fm.default_skills.map(String) : [],
+      defaultSkills: resolveDefaultSkillIds(
+        fm.output_contract,
+        Array.isArray(fm.default_skills) ? fm.default_skills.map(String) : [],
+      ),
     });
   }
   return out;

@@ -16,6 +16,7 @@ import { McpToolName } from "@exaix/core";
 import {
   AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
+  effectiveDefaultSkills,
   type IAgentRoleFrontmatter,
   READ_ONLY_AGENT_ROLES,
   readRawFrontmatter,
@@ -136,7 +137,7 @@ Deno.test({
         required !== undefined,
         `${id}: no role-required entry in the agent-role matrix`,
       );
-      const declared = new Set(fm.default_skills ?? []);
+      const declared = new Set(effectiveDefaultSkills(fm));
       for (const s of required) {
         if (!declared.has(s)) {
           missing.push({ id, skill: s });

@@ -1,13 +1,6 @@
 title: Response Contract — Security Analysis
 triggers:
-  keywords:
-    - security
-    - vulnerability
-    - security review
-  task_types:
-    - security
   tags:
-    - response-contract
     - security-analysis
 constraints:
   - 'A security-analysis <content> must match this schema, not the executable-plan schema'

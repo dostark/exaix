@@ -10,11 +10,8 @@ created: "2026-06-18T00:00:00Z"
 created_by: "opencode"
 version: "1.1.0"
 description: "Solo developer agent role for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
-default_skills: [
-  "response-contract",
-  "tdd-methodology",
-  "step-execution",
-]
+output_contract: plan
+default_skills: ["tdd-methodology", "step-execution"]
 permitted_tools:
   - read_file
   - write_file

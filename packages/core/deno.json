@@ -26,6 +26,7 @@
     "@exaix/core/cost": "./src/cost/mod.ts",
     "@exaix/core/func": "./src/func/mod.ts",
     "@exaix/core/skills": "./src/skills/mod.ts",
+    "@exaix/core/output-contract": "./src/skills/output_contract.ts",
     "@exaix/core/parsing": "./src/parsing/mod.ts",
     "@exaix/core/context": "./src/context/mod.ts",
     "@exaix/core/notification": "./src/notification/mod.ts",

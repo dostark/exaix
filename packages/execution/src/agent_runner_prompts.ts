@@ -35,7 +35,7 @@ import {
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 import { lineBoundedPrefix } from "./context/token_bounded_prefix.ts";
-import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION } from "@exaix/core";
+import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, OutputContract } from "@exaix/core";
 import type { IParsedRequest } from "./agent_runner.ts";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { PromptBudgetAllocator } from "@exaix/core";
@@ -130,6 +130,14 @@ export class AgentRunnerPrompts {
     };
   }
 
+  /** The output-shape instruction of a run. A verdict run carries none, because its contract skill defines the shape. */
+  private schemaInstructions(blueprint: IBlueprint, request: IParsedRequest): string | undefined {
+    if ((request.outputContract ?? blueprint.outputContract) === OutputContract.VERDICT) return undefined;
+    return request.flowOutputKind === "branch-json"
+      ? FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION
+      : this.planAdapter.getSchemaInstructions();
+  }
+
   /** Builds every segment except the adaptive knowledge entry. The caller sizes and appends that one. */
   private async buildBaseEntries(
     blueprint: IBlueprint,
@@ -151,10 +159,10 @@ export class AgentRunnerPrompts {
     if (skillContext?.trim()) {
       entries.push({ content: skillContext, kind: k.skills, priority: 50, nonCompactable: false });
     }
-    const schemaInstructions = request.flowOutputKind === "branch-json"
-      ? FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION
-      : this.planAdapter.getSchemaInstructions();
-    entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
+    const schemaInstructions = this.schemaInstructions(blueprint, request);
+    if (schemaInstructions !== undefined) {
+      entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
+    }
 
     let directoryListingEntryIndex = -1;
     const portalContext = request.context?.[PORTAL_CONTEXT_KEY];

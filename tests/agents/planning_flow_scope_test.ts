@@ -9,6 +9,7 @@ import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 import { createBlueprintLoader } from "@exaix/core/blueprint";
+import { OutputContract } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { REPO_ROOT } from "@exaix/testing";
 
@@ -23,8 +24,8 @@ Deno.test("planning guidance belongs to implementation-planning flow steps and n
   const loader = createBlueprintLoader(join(REPO_ROOT, "Blueprints"));
   const architect = await loader.load("software-architect");
   assertExists(architect);
+  assertEquals(architect.frontmatter.output_contract, OutputContract.PLAN);
   assertEquals(architect.frontmatter.default_skills, [
-    "response-contract",
     "architecture-review",
     "collaborative-flow",
   ]);

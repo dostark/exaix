@@ -21,6 +21,7 @@ import {
   type ISkillPin,
   type ISkillSubmissionItem,
   orderSkillPins,
+  resolveDefaultSkillIds,
   skillToContextEntry,
 } from "@exaix/core/skills";
 import { extractKeywords } from "@exaix/core/func";
@@ -130,7 +131,10 @@ export class AgentRunnerSkills {
         }
       }
 
-      const defaults = blueprint.defaultSkills ?? [];
+      const defaults = resolveDefaultSkillIds(
+        request.outputContract ?? blueprint.outputContract,
+        blueprint.defaultSkills,
+      );
       for (const id of defaults) add(id, 0.5, SkillMatchSource.DEFAULT);
 
       // Suppression applies to the final set, so pinned and default skills are suppressed too.

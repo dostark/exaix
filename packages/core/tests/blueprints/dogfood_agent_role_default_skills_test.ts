@@ -9,6 +9,7 @@ import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
+import { resolveDefaultSkillIds } from "@exaix/core/skills";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
@@ -23,7 +24,7 @@ Deno.test("[dogfood-agent-role-skills] dogfood-coder carries the skills its role
   const blueprint = await loader.load("dogfood-coder");
 
   assertExists(blueprint);
-  const skills = blueprint.frontmatter.default_skills ?? [];
+  const skills = resolveDefaultSkillIds(blueprint.frontmatter.output_contract, blueprint.frontmatter.default_skills);
 
   const missing = DOGFOOD_CODER_REQUIRED_SKILLS.filter((skill) => !skills.includes(skill));
   assertEquals(missing, [], `dogfood-coder is missing role-required default_skills: ${missing.join(", ")}`);

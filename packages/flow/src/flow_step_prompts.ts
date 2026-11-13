@@ -7,7 +7,7 @@
  */
 
 import type { IFlow, IFlowStep, IGateEvaluate } from "@exaix/schemas/flow.ts";
-import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, FlowOutputFormat, FlowStepType } from "@exaix/core";
+import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, FlowOutputFormat, FlowStepType, OutputContract } from "@exaix/core";
 import type { IGateConfig } from "@exaix/core/types";
 
 /** The steps an `aggregate` input draws from: an explicit `from`, else the step's `dependsOn`. An explicit `from`
@@ -41,13 +41,21 @@ export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string 
       "the flow's aggregated output and must parse as a plan."
     : "You are a step in a multi-agent flow: your response's <content> block is consumed " +
       "programmatically by the next step.";
-  return `\n\n${purpose}\nThis flow-specific output contract supersedes the agent's default response format. ` +
-    `Respond exactly in this format — no other text outside the tags:\n` +
-    `<thought>\nBrief reasoning (1-3 sentences).\n</thought>\n\n` +
-    `<content>\n${planShape}\n</content>\n` +
-    `The <content> block MUST be valid JSON: the first character after <content> must be ` +
+  const overrides =
+    `\n\n${purpose}\nThis flow-specific output contract supersedes the agent's default response format. ` +
+    `Respond exactly in this format — no other text outside the tags:\n`;
+  const jsonRule = `The <content> block MUST be valid JSON: the first character after <content> must be ` +
     `{ and the last before </content> must be }, with no prose, explanation, or markdown ` +
     `fences inside it.`;
+  const specialised = step.output_contract !== undefined && step.output_contract !== OutputContract.PLAN;
+  const shape = specialised
+    ? `<content>\nThe single report object that your response-contract skill defines\n</content>\n`
+    : `<content>\n${planShape}\n</content>\n` +
+      (step.output_contract === undefined
+        ? `If your response-contract skill defines a report shape for this deliverable, ` +
+          `<content> holds that single report object instead of the plan shape.\n`
+        : "");
+  return `${overrides}<thought>\nBrief reasoning (1-3 sentences).\n</thought>\n\n${shape}${jsonRule}`;
 }
 
 /** Converts an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator input),

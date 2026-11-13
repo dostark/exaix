@@ -14,12 +14,15 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
+import type { OutputContract } from "@exaix/core";
+import { resolveDefaultSkillIds } from "@exaix/core/skills";
 import { parse as parseYaml } from "@std/yaml";
 
 export interface IAgentRoleFrontmatter {
   agent_role?: string;
   capabilities?: string[];
   default_skills?: string[];
+  output_contract?: OutputContract;
   permitted_tools?: string[];
 }
 
@@ -29,6 +32,7 @@ export interface IRawFrontmatter {
   model?: string;
   capabilities?: string[];
   default_skills?: string[];
+  output_contract?: OutputContract;
   permitted_tools?: string[];
   created?: string;
   created_by?: string;
@@ -90,4 +94,9 @@ export function readRawFrontmatter(filePath: string): IRawFrontmatter | null {
   const m = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) return null;
   return parseYaml(m[1]) as IRawFrontmatter;
+}
+
+/** The skills a role carries at run time: its output-contract skill first, then its declared defaults. */
+export function effectiveDefaultSkills(fm: Pick<IRawFrontmatter, "default_skills" | "output_contract">): string[] {
+  return resolveDefaultSkillIds(fm.output_contract, fm.default_skills);
 }

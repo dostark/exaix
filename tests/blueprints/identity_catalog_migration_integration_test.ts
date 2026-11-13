@@ -16,7 +16,8 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { initTestDbService } from "@exaix/testing";
-import { SkillsService } from "@exaix/core/skills";
+import { resolveDefaultSkillIds, SkillsService } from "@exaix/core/skills";
+import type { OutputContract } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
@@ -92,7 +93,7 @@ const PRE_EXISTING_SCHEMA_ISSUES = new Set([
 
 interface ILoadedIdentityView {
   agentRole: string;
-  frontmatter: { default_skills?: string[] };
+  frontmatter: { default_skills?: string[]; output_contract?: OutputContract };
   systemPrompt: string;
 }
 
@@ -128,11 +129,14 @@ Deno.test({
         `${agentRole}: agentRole mismatch`,
       );
 
-      const skills = blueprint.frontmatter.default_skills ?? [];
+      const skills = resolveDefaultSkillIds(
+        blueprint.frontmatter.output_contract,
+        blueprint.frontmatter.default_skills,
+      );
       assertEquals(
         skills.includes("response-contract") || skills.includes("response-contract-judge"),
         true,
-        `${agentRole}: default_skills must include "response-contract" or "response-contract-judge"`,
+        `${agentRole}: the resolved skills must include "response-contract" or "response-contract-judge"`,
       );
     });
   },

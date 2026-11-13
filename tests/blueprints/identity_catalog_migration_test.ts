@@ -18,6 +18,8 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import type { OutputContract } from "@exaix/core";
+import { resolveDefaultSkillIds } from "@exaix/core/skills";
 import { AGENTS_DIR, FRAGMENTS_DIR, SKILLS_DIR } from "./test_helpers.ts";
 
 const CONTRACT_FRAGMENTS = new Set([
@@ -34,6 +36,7 @@ const FRAGMENT_INCLUDES = [
 
 interface IFrontmatter {
   default_skills?: string[];
+  output_contract?: OutputContract;
 }
 
 /** Uses a real YAML parser so single-line and multi-line block-array `default_skills`
@@ -44,7 +47,10 @@ function parseFrontmatter(filePath: string): IFrontmatter {
   if (!m) throw new Error(`malformed frontmatter in ${filePath}`);
   const fm = parseYaml(m[1]) as Record<string, string[] | string | undefined>;
   const ds = fm.default_skills;
-  return { default_skills: Array.isArray(ds) ? ds.map(String) : undefined };
+  return {
+    default_skills: Array.isArray(ds) ? ds.map(String) : undefined,
+    output_contract: fm.output_contract as OutputContract | undefined,
+  };
 }
 
 /** List all active identity files (non-example, non-template, non-README). */
@@ -85,15 +91,15 @@ const RESPONSE_CONTRACT_SKILLS = new Set([
 ]);
 
 Deno.test({
-  name: "[step7] every active identity has response-contract in default_skills",
+  name: "[step7] every active identity resolves a response-contract skill",
   fn() {
     const files = listActiveIdentityFiles();
     assert(files.length > 0, "no active identity files found");
     const missing: string[] = [];
     for (const fp of files) {
       const fm = parseFrontmatter(fp);
-      const skills = fm.default_skills;
-      if (!skills || !skills.some((s) => RESPONSE_CONTRACT_SKILLS.has(s))) {
+      const skills = resolveDefaultSkillIds(fm.output_contract, fm.default_skills);
+      if (!skills.some((s) => RESPONSE_CONTRACT_SKILLS.has(s))) {
         missing.push(fp);
       }
     }

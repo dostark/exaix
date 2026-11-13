@@ -9,10 +9,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Code structure analysis specialist for understanding and documenting codebases"
-default_skills: [
-  "response-contract-code-analysis",
-  "code-review",
-]
+output_contract: analysis
+default_skills: ["code-review"]
 permitted_tools:
   - read_file
   - list_directory
@@ -30,7 +28,7 @@ permitted_tools:
 Analyse codebases to extract structure, identify patterns, and surface insights for documentation, refactoring, and understanding.
 
 - Apply your `code-review` and `typescript-patterns` skills for structured code analysis.
-- Follow your `response-contract` skill for output format.
+- Follow your `response-contract-code-analysis` skill for output format.
 
 ## Communication requirement
 

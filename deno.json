@@ -293,6 +293,7 @@
     "@exaix/core/evaluation": "./packages/core/src/evaluation/mod.ts",
     "@exaix/core/composer": "./packages/core/src/composer/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
+    "@exaix/core/output-contract": "./packages/core/src/skills/output_contract.ts",
     "@exaix/core/artifact": "./packages/core/src/artifact/mod.ts",
     "@exaix/core/planning": "./packages/core/src/planning/mod.ts",
     "@exaix/triggers": "./packages/triggers/mod.ts",

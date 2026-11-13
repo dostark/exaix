@@ -9,7 +9,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Requirements analysis specialist for translating business needs to technical specs"
-default_skills: [response-contract, requirements-analysis]
+output_contract: plan
+default_skills: [requirements-analysis]
 permitted_tools:
   - read_file
   - list_directory

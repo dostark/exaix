@@ -14,7 +14,14 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { canonicalizeToolName, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpToolName, ToolName } from "@exaix/core";
+import {
+  canonicalizeToolName,
+  DEFAULT_AI_MODEL,
+  DEFAULT_BLUEPRINT_VERSION,
+  McpToolName,
+  OutputContract,
+  ToolName,
+} from "@exaix/core";
 import type { EffortDeclaration, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 
 /**
@@ -55,6 +62,8 @@ export interface IBlueprint {
   agentRole?: string;
   /** Default skills to apply for all requests, sourced from frontmatter.default_skills. */
   defaultSkills?: string[];
+  /** The deliverable kind, sourced from frontmatter.output_contract. It names the contract skill the runtime adds. */
+  outputContract?: OutputContract;
   /** Extended-thinking declaration, sourced from frontmatter.thinking. "auto" defers to
    *  EffortResolver; a boolean is final. */
   thinking?: ThinkingDeclaration;
@@ -204,6 +213,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
+
+  /** The kind of deliverable this role returns. It names the response-contract skill that the runtime adds. */
+  output_contract: z.nativeEnum(OutputContract).optional(),
 
   /** Tools this agent role is permitted to use (from McpToolName or ToolName). Preprocessed
    *  through canonicalizeToolName, so an alias like `Read` resolves to its canonical name.
@@ -541,6 +553,7 @@ export class IBlueprintLoader {
       systemPrompt: loaded.systemPrompt,
       agentRole: loaded.agentRole,
       defaultSkills: loaded.frontmatter.default_skills,
+      outputContract: loaded.frontmatter.output_contract,
       thinking: loaded.frontmatter.thinking,
       effort: loaded.frontmatter.effort,
       modelSize: loaded.frontmatter.model_size,

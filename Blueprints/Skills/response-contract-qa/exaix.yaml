@@ -1,14 +1,6 @@
 title: Response Contract — QA/Testing
 triggers:
-  keywords:
-    - qa
-    - test plan
-    - testing strategy
-  task_types:
-    - qa
-    - testing
   tags:
-    - response-contract
     - qa
 constraints:
   - 'A QA <content> must match this schema, not the executable-plan schema'

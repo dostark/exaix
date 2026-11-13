@@ -21,7 +21,7 @@ import type { StrategyRegistry } from "@exaix/execution";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_types.ts";
-import type { IDatabaseService, JSONValue } from "@exaix/core";
+import type { IDatabaseService, JSONValue, OutputContract } from "@exaix/core";
 import { ConfigValueType, ExecutionStrategyName, SwapClass, ToolsRoundLoop } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
 import type {
@@ -95,6 +95,7 @@ interface IParsedRequest {
   flowId?: string;
   flowStepId?: string;
   flowOutputKind?: "branch-json";
+  outputContract?: OutputContract;
   recordingLane?: IRecordingLane;
   flowStepEffort?: EffortDeclaration;
   flowStepThinking?: ThinkingDeclaration;
@@ -264,6 +265,7 @@ export class AgentComposerAdapter {
       flowId: request.flowId,
       flowStepId: request.flowStepId,
       flowOutputKind: request.flowOutputKind,
+      outputContract: request.outputContract,
       recordingLane: request.flowStepId
         ? request.recording?.lane(request.recordingLaneId ?? request.flowStepId)
         : undefined,

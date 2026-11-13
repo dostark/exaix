@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { createBlueprintLoader } from "@exaix/core/blueprint";
-import { SkillRootKind, SkillStatus } from "@exaix/core";
+import { OutputContract, SkillRootKind, SkillStatus } from "@exaix/core";
 import { REPO_ROOT } from "@exaix/testing";
 import { CATALOG_CONTEXT, createCatalogLoader } from "../../scripts/skill_catalog_loader.ts";
 
@@ -16,8 +16,8 @@ Deno.test("the architect loads a response contract without global implementation
   const loader = createBlueprintLoader(join(REPO_ROOT, "Blueprints"));
   const architect = await loader.load("software-architect");
   assertExists(architect);
+  assertEquals(loader.toLegacyBlueprint(architect).outputContract, OutputContract.PLAN);
   assertEquals(loader.toLegacyBlueprint(architect).defaultSkills, [
-    "response-contract",
     "architecture-review",
     "collaborative-flow",
   ]);

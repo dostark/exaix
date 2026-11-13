@@ -10,10 +10,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Security specialist for in-depth vulnerability analysis and remediation"
-default_skills: [
-  "response-contract",
-  "security-first",
-]
+output_contract: plan
+default_skills: ["security-first"]
 permitted_tools:
   - read_file
   - list_directory

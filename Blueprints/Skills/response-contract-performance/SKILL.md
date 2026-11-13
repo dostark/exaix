@@ -1,6 +1,6 @@
 ---
 name: response-contract-performance
-description: "The <content> JSON template for a performance/scalability deliverable (findings, priorities, scalability). Applies alongside response-contract, only for performance-analysis requests."
+description: "The <content> JSON template for a performance/scalability deliverable (findings, priorities, scalability). Replaces response-contract when a role, flow step or request declares output_contract performance."
 ---
 # Response Contract — Performance Analysis
 

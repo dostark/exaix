@@ -43,6 +43,7 @@ const StrictBlueprintFrontmatterSchema = z.object({
   version: z.string().optional(),
   description: z.string().optional(),
   default_skills: z.array(z.string()).optional(),
+  output_contract: z.string().optional(),
   permitted_tools: z.array(z.string()).optional(),
   preferred_provider: z.string().optional(),
   model_size: z.string().optional(),

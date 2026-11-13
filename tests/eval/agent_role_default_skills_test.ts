@@ -17,6 +17,8 @@ import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { OutputContract } from "@exaix/core";
+import { OUTPUT_CONTRACT_SKILL } from "@exaix/core/skills";
 import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -39,13 +41,18 @@ const TRIGGER_MATCHED_SKILL_IDS: ReadonlySet<string> = new Set([
   "error-handling",
 ]);
 
+const CONTRACT_SKILL_IDS: ReadonlySet<string> = new Set(Object.values(OUTPUT_CONTRACT_SKILL));
+
 interface IAgentRoleFrontmatter {
   default_skills?: string[];
+  output_contract?: OutputContract;
 }
 
 interface IAgentRoleDefaults {
   agentRole: string;
   defaults: string[];
+  outputContract?: OutputContract;
+  body: string;
 }
 
 // Every runtime skill id, across every scope. Delegates to the shared scope declaration: this
@@ -65,6 +72,8 @@ async function readAgentRoleDefaults(): Promise<IAgentRoleDefaults[]> {
     rows.push({
       agentRole: entry.name.replace(/\.md$/, ""),
       defaults: frontmatter.default_skills ?? [],
+      outputContract: frontmatter.output_contract,
+      body: text.slice(match ? match[0].length : 0),
     });
   }
   rows.sort((a, b) => a.agentRole.localeCompare(b.agentRole));
@@ -94,19 +103,30 @@ Deno.test("agent_role_default_skills — no agent role exceeds the default-skill
   );
 });
 
-Deno.test("agent_role_default_skills — no agent role carries both the generic and a specialised response contract", async () => {
-  const doubled: string[] = [];
+Deno.test("agent_role_default_skills — every agent role declares one valid output contract", async () => {
+  const valid = new Set<string>(Object.values(OutputContract));
+  const problems: string[] = [];
   for (const agentRole of await readAgentRoleDefaults()) {
-    const contracts = agentRole.defaults.filter((id) => id.startsWith("response-contract"));
-    if (contracts.includes("response-contract") && contracts.length > 1) {
-      doubled.push(`${agentRole.agentRole}: ${contracts.join(" + ")}`);
+    if (!agentRole.outputContract || !valid.has(agentRole.outputContract)) {
+      problems.push(`${agentRole.agentRole}: output_contract is missing or unknown`);
+    }
+    for (const id of agentRole.defaults.filter((entry) => CONTRACT_SKILL_IDS.has(entry))) {
+      problems.push(`${agentRole.agentRole}: lists ${id} in default_skills, so declare output_contract instead`);
     }
   }
-  assertEquals(
-    doubled.sort(),
-    [],
-    `agent roles paying for two overlapping output contracts on every request:\n${doubled.join("\n")}`,
-  );
+  assertEquals(problems.sort(), [], problems.join("\n"));
+});
+
+Deno.test("agent_role_default_skills — the role body names the contract skill the role carries", async () => {
+  const mismatched: string[] = [];
+  for (const agentRole of await readAgentRoleDefaults()) {
+    if (!agentRole.outputContract) continue;
+    const expected = OUTPUT_CONTRACT_SKILL[agentRole.outputContract];
+    const named = [...agentRole.body.matchAll(/`(response-contract[a-z-]*)` skill/g)].map((match) => match[1]);
+    const wrong = named.filter((id) => id !== expected);
+    if (wrong.length > 0) mismatched.push(`${agentRole.agentRole}: names ${wrong.join(", ")}, carries ${expected}`);
+  }
+  assertEquals(mismatched.sort(), [], mismatched.join("\n"));
 });
 
 Deno.test("agent_role_default_skills — the README's authoring example obeys the rules a real agent role must", async () => {
@@ -136,9 +156,8 @@ Deno.test("agent_role_default_skills — the README's authoring example obeys th
     if (entries.length > MAX_DEFAULT_SKILLS) {
       problems.push(`example ${index + 1}: ${entries.length} entries exceeds the cap of ${MAX_DEFAULT_SKILLS}`);
     }
-    const contracts = entries.filter((id) => id.startsWith("response-contract"));
-    if (contracts.includes("response-contract") && contracts.length > 1) {
-      problems.push(`example ${index + 1}: carries two overlapping output contracts`);
+    for (const id of entries.filter((entry) => CONTRACT_SKILL_IDS.has(entry))) {
+      problems.push(`example ${index + 1}: lists ${id}, so it should declare output_contract instead`);
     }
   }
 

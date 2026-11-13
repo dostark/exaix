@@ -1,13 +1,6 @@
 title: Response Contract — Code Analysis
 triggers:
-  keywords:
-    - analyze
-    - analysis
-    - codebase structure
-  task_types:
-    - analysis
   tags:
-    - response-contract
     - code-analysis
 constraints:
   - 'A codebase-analysis <content> must match this schema, not the executable-plan schema'

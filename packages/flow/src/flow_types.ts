@@ -13,7 +13,7 @@ import type {
   ISessionDelegateCycleRejectionReason,
 } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { JSONValue } from "@exaix/core";
+import type { JSONValue, OutputContract } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
@@ -121,6 +121,8 @@ export interface IFlowStepRequest {
   flowStepId?: string;
   flowId?: string;
   flowOutputKind?: "branch-json";
+  /** The deliverable kind of the step. It overrides the role's output contract. */
+  outputContract?: OutputContract;
   bindingSnapshot?: IBindingRunSnapshot;
   /** Run-local fixture recording allocator of an opted-in scenario run. */
   recording?: IRecordingLaneSource;

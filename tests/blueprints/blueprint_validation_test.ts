@@ -23,6 +23,7 @@ interface BlueprintFrontmatter {
   version: string;
   description?: string;
   default_skills?: string[];
+  output_contract?: string;
 }
 
 /**
@@ -290,8 +291,8 @@ Deno.test("Blueprint validation: every active agent role declares default_skills
 
     if (frontmatter) {
       assertExists(
-        frontmatter.default_skills,
-        `${file}: should have default_skills field`,
+        frontmatter.default_skills ?? frontmatter.output_contract,
+        `${file}: should have default_skills or output_contract field`,
       );
     }
   }

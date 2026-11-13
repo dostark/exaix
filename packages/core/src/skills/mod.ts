@@ -6,6 +6,7 @@
  * @description Skills — merged into @exaix/core as a sub-domain.
  */
 
+export { OUTPUT_CONTRACT_SKILL, resolveDefaultSkillIds } from "./output_contract.ts";
 export { CriteriaGenerator } from "./criteria_generator.ts";
 export { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "./skills.ts";
 export type { ISkillsConfig } from "./skills.ts";

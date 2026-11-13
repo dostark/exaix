@@ -22,6 +22,7 @@ import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import type { JSONValue } from "@exaix/core";
+import { OutputContract } from "@exaix/core";
 import {
   INVALID_NATIVE_TOOL_NAME_MESSAGE,
   invalidNativeToolNamesMessage,
@@ -94,6 +95,7 @@ const BlueprintSchema = z.object({
   version: z.string().optional(),
   description: z.string().optional(),
   default_skills: z.array(z.string()).optional(),
+  output_contract: z.nativeEnum(OutputContract).optional(),
 }).passthrough();
 
 /** Splits one `provider:model` declaration, or keeps the provider empty. */

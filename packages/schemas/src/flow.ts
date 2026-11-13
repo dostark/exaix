@@ -30,7 +30,7 @@ import {
   StepExecutionDisposition,
   StepSideEffectClass,
 } from "@exaix/core";
-import { JSONValueSchema } from "@exaix/core";
+import { JSONValueSchema, OutputContract } from "@exaix/core";
 import { VotingGroupConfigSchema } from "./voting.ts";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 import { BindingSpecSchema, StepPinSchema } from "./model_binding.ts";
@@ -279,6 +279,8 @@ const FlowStepSchemaBase = z.object({
   voting: VotingGroupConfigSchema.optional(),
   /** Skills to apply for this step */
   skills: z.array(z.string()).optional(),
+  /** The deliverable kind of this step. It overrides the role's output contract. */
+  output_contract: z.nativeEnum(OutputContract).optional(),
   /** Cost tier annotation for provider routing (Gap UF-3) */
   tier: z.nativeEnum(ProviderCostTier).optional(),
   namespace: ZFlowStepNamespace.optional(),

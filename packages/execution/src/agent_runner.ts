@@ -23,7 +23,7 @@ import { projectResolvedCallOptions } from "@exaix/ai";
 import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 
 import type { IToolRegistryFactory } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
+import type { JSONValue, OutputContract } from "@exaix/core";
 import type { TaskComplexity } from "@exaix/core";
 
 import { CallSiteCounter } from "./agent_runner_call_sites.ts";
@@ -87,6 +87,8 @@ export interface IParsedRequest {
   /** The user's request/prompt */
   userPrompt: string;
   flowOutputKind?: "branch-json";
+  /** The deliverable kind for this run. It overrides the role's declared output contract. */
+  outputContract?: OutputContract;
 
   /** Additional context (e.g., file contents, environment info) */
   context: IRequestContextContext;

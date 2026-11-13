@@ -24,7 +24,7 @@ injection opt-out remains effective.
 The shipped feature-development, migration-planning, refactoring, and
 self-correcting implementation flows select `implementation-plan` at their
 planning steps. Other architect tasks do not inherit this skill. The architect's
-`response-contract` default supplies the executable output format.
+`output_contract: plan` supplies the executable output format.
 
 Deterministic integration checks use real selection, storage, composition, and
 `FlowRunner` with a captured CLI process. They do not execute a provider or external

@@ -10,7 +10,8 @@ created: "2026-06-30T00:00:00Z"
 created_by: "phase-131-catalog-reconciliation"
 version: "1.1.0"
 description: "Research analysis and information synthesis specialist"
-default_skills: [response-contract, research-methodology]
+output_contract: plan
+default_skills: [research-methodology]
 permitted_tools:
   - read_file
   - list_directory

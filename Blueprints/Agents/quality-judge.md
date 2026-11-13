@@ -10,11 +10,8 @@ created: "2026-01-04T10:00:00Z"
 created_by: "exaix-system"
 version: "1.1.0"
 description: "LLM-as-a-Judge agent for evaluating code and content quality"
-default_skills: [
-  "response-contract-judge",
-  "verdict-rubric",
-  "reflexive-critique",
-]
+output_contract: verdict
+default_skills: ["verdict-rubric", "reflexive-critique"]
 ---
 
 # Quality Judge Agent

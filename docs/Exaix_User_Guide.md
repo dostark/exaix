@@ -841,6 +841,10 @@ insufficient space for an explicit or critical skill stop the launch.
 The role's critical `response-contract` requires `<thought>` and raw JSON inside
 `<content>`; the planning skill uses that contract.
 
+A role declares its deliverable with `output_contract`: `plan`, `analysis`, `security`, `qa`, `performance` or `verdict`.
+The runtime adds the matching `response-contract*` skill. A flow step can set `output_contract` to override the role.
+A `verdict` run returns one raw JSON verdict and does not receive the plan-schema instruction.
+
 The skill context budget defaults to 32,000 characters. To set it explicitly:
 
 ```toml
@@ -2881,7 +2885,8 @@ agent_role: "senior-coder"
 name: "Senior Coder"
 model: "anthropic:claude-3-sonnet"
 capabilities: ["code_generation", "debugging"]
-default_skills: ["response-contract", "code-review", "portal-grounding"]
+output_contract: plan
+default_skills: ["code-review", "portal-grounding"]
 created: "2025-12-02T10:00:00Z"
 created_by: "user@example.com"
 version: "1.0.0"
@@ -4516,7 +4521,8 @@ model_size: L              # large model for thorough evaluation
 thinking: true             # extended reasoning for critique
 effort: high               # high token budget for deep analysis
 capabilities: ["review", "evaluation"]
-default_skills: ["response-contract", "reflexive-critique", "portal-grounding"]
+output_contract: plan
+default_skills: ["reflexive-critique", "portal-grounding"]
 permitted_tools: ["read_file", "search_text"]
 reflexive: true
 max_reflexion_iterations: 3

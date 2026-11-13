@@ -9,7 +9,8 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Testing specialist for comprehensive test design and implementation"
-default_skills: [response-contract, tdd-methodology]
+output_contract: plan
+default_skills: [tdd-methodology]
 permitted_tools:
   - read_file
   - write_file

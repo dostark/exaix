@@ -1,6 +1,6 @@
 ---
 name: response-contract-code-analysis
-description: "The <content> JSON template for a codebase-analysis deliverable (structure, modules, patterns, metrics). Applies alongside response-contract, only for analysis requests."
+description: "The <content> JSON template for a codebase-analysis deliverable (structure, modules, patterns, metrics). Replaces response-contract when a role, flow step or request declares output_contract analysis."
 ---
 # Response Contract — Code Analysis
 

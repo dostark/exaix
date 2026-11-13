@@ -7,6 +7,7 @@
  */
 import { isAbsolute, join } from "@std/path";
 import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
+import { resolveDefaultSkillIds } from "@exaix/core/skills";
 import { SKILL_EVENT_RESOLVED, SkillMatchSource, SkillRenderOutcome, SkillRootKind } from "@exaix/core";
 import {
   buildSkillPin,
@@ -59,7 +60,10 @@ export async function prepareFlowSkillPins(
     configGeneration: skills.currentConfigGeneration(),
   });
   const pinned = request.skills ?? [];
-  const defaults = blueprint.frontmatter.default_skills ?? [];
+  const defaults = resolveDefaultSkillIds(
+    request.outputContract ?? blueprint.frontmatter.output_contract,
+    blueprint.frontmatter.default_skills,
+  );
   const declared = [...new Set([...pinned, ...defaults])];
   const suppressed = readSuppressedSkillIds();
   const names = declared.filter((name) => !suppressed.has(name));

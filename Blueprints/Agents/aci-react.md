@@ -10,7 +10,7 @@ created: "2026-08-25T00:00:00Z"
 created_by: "exaix-test-suite"
 version: "1.0.0"
 description: "Agent role blueprint for Phase 112 Step 7's real-daemon ACI injection scenarios"
-default_skills: [response-contract]
+output_contract: plan
 ---
 
 # ACI ReAct Scenario Agent

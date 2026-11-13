@@ -42,8 +42,8 @@ Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills
   const md = await Deno.readTextFile(join(AGENTS, "test-engineer.md"));
   const { fm, body } = parseFrontmatter(md);
 
-  // default_skills carries the contract + methodology.
-  assertStringIncludes(fm, "response-contract", "default_skills must include the critical response-contract skill");
+  // output_contract names the contract skill and default_skills carries the methodology.
+  assertStringIncludes(fm, "output_contract: plan", "output_contract must name the critical response-contract skill");
   assertStringIncludes(fm, "tdd-methodology", "default_skills must still include tdd-methodology");
 
   // Methodology has LEFT the persona body.

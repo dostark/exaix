@@ -262,6 +262,7 @@ export class FlowStepGates {
         flowStepId: stepRequest.flowStepId,
         flowId: stepRequest.flowId,
         flowOutputKind: stepRequest.flowOutputKind,
+        outputContract: stepRequest.outputContract,
         recording: stepRequest.recording,
         bindingSnapshot: stepRequest.bindingSnapshot,
         requestAnalysis: stepRequest.requestAnalysis,

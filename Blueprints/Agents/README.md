@@ -26,7 +26,8 @@ effort: "high" # reasoning token budget: low | medium | high | auto (auto resolv
 characteristics: [] # ["fastest", "cheapest"] — soft ranking hints
 preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
-default_skills: ["response-contract-code-analysis"] # keep short — see §Skills
+output_contract: analysis # plan | analysis | security | qa | performance | verdict — see §Output contract
+default_skills: ["architecture-review"] # keep short — see §Skills
 permitted_tools: ["read_file", "search_text"] # least-privilege tool allowlist
 created: "2026-01-01T00:00:00Z"
 created_by: "you@example.com"
@@ -37,15 +38,15 @@ version: "1.0.0"
 
 You are a … (role, scope, and voice — keep this short; methodology lives in skills).
 
-Apply your `code-review` skill for systematic review; follow your
-`response-contract` skill for output format.
+Apply your `architecture-review` skill for systematic review; follow your
+`response-contract-code-analysis` skill for output format.
 ```
 
 - `capabilities` are **behavioural tags** (e.g. `evaluation`, `analysis`), never tool names. Tools of an agent role may invoke go in `permitted_tools` (valid
   `McpToolName` / `ToolName` values), kept least-privilege — read-only roles
   (analysts, judges, reviewers) carry no `write_file`/`run_command`/`delete_file`.
-- Every agent role should include `response-contract` in `default_skills` — it
-  defines the mandatory `<thought>`/`<content>` output contract.
+- Every agent role declares `output_contract`. The runtime adds the matching
+  response-contract skill, so a role does not list it in `default_skills`.
 
 See `Blueprints/Skills/` for the full skill library and `docs/Reference_Data.md`
 for the authoritative field reference.
@@ -113,7 +114,8 @@ Skills are the modern, versioned, criticality-aware replacement for the retired
 fragment includes. Reference them via `default_skills`:
 
 ```yaml
-default_skills: ["response-contract", "tdd-methodology"]
+output_contract: plan
+default_skills: ["tdd-methodology"]
 ```
 
 ### Keep `default_skills` short
@@ -138,19 +140,36 @@ Two rules the catalog enforces (`tests/eval/agent_role_default_skills_test.ts`):
 - **At most five entries**, matching the `max_per_request` cap on matched skills.
   Skills are always concatenated — pinned ∪ trigger-matched ∪ defaults — so a
   long default list is the one thing that cannot be trimmed at request time.
-- **Exactly one output contract.** Carry either the generic `response-contract`
-  or a specialised variant (`response-contract-qa`, `response-contract-judge`, …),
-  never both.
+- **One declared output contract.** Set `output_contract` and keep every
+  `response-contract*` skill out of `default_skills`. The test also checks that the
+  role body names the contract skill the role carries.
 
 Key skills:
 
 - `response-contract` — the mandatory `<thought>`/`<content>` output contract and
-  executable-plan JSON schema. A good default for every agent role.
+  executable-plan JSON schema. The runtime adds it for `output_contract: plan`.
 - `tdd-methodology` — Red-Green-Refactor cycle and test design.
 - `security-first` — secure coding and vulnerability assessment.
 - `code-review` — comprehensive code-review checklist (**trigger-matched**).
 - `portal-grounding` — grounding responses in the portal's real files/symbols
   (**trigger-matched**).
+
+### Output contract
+
+`output_contract` names the deliverable of a role:
+
+| Value         | Contract skill                        | Deliverable                   |
+| ------------- | ------------------------------------- | ----------------------------- |
+| `plan`        | `response-contract`                   | Executable plan               |
+| `analysis`    | `response-contract-code-analysis`     | Code analysis report          |
+| `security`    | `response-contract-security-analysis` | Security report               |
+| `qa`          | `response-contract-qa`                | QA report                     |
+| `performance` | `response-contract-performance`       | Performance report            |
+| `verdict`     | `response-contract-judge`             | One raw JSON verdict, no tags |
+
+Precedence: the request, then the flow step (`output_contract`), then the role.
+A `verdict` run does not receive the plan-schema instruction. A flow step that
+declares a report kind gets the report shape in its output instruction.
 
 Skills whose content must survive context compaction carry `critical: true`; that
 flag is a **retention** marker, not a selection one, and the whole

@@ -10,11 +10,8 @@ created: "2026-07-29T00:00:00Z"
 created_by: "opencode"
 version: "1.0.0"
 description: "Reviewer agent role for the dogfood meta-workflow — reads and assesses phase-plan output; read-only tools, no HITL, no delegation"
-default_skills: [
-  "code-review",
-  "security-first",
-  "response-contract",
-]
+output_contract: plan
+default_skills: ["code-review", "security-first"]
 permitted_tools:
   - read_file
   - list_directory

@@ -20,7 +20,8 @@ Blueprints/Skills/<name>/
 - `SKILL.md` frontmatter holds only Agent Skills spec fields. `name` equals the folder name.
 - `exaix.yaml` holds what the spec cannot carry: `title`, `status`, `triggers`, `constraints`,
   `output_requirements`, `quality_criteria`, `critical`, `effort`, `thinking`, `tools`,
-  `applies_to`, `derived_from` and `related_skills`.
+  `applies_to`, `derived_from` and `related_skills`. `related_skills` is
+  metadata for readers and tools. Skill selection and delivery do not read it.
 - `scripts/` and `assets/` directories make a skill invalid. Flat `*.skill.md` and `*.json`
   files in a skill root are load errors.
 - A skill's revision id derives from the hash of its files, so an edit is a new revision.
@@ -78,7 +79,8 @@ and durable usage without a model call. They prove transport and contract
 presence. They do not measure the quality of a model-generated plan or skill.
 
 Agent roles reference skills by name in their `default_skills` list, e.g.
-`default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
+`default_skills: ["tdd-methodology", "typescript-patterns"]`. A role also declares
+`output_contract`, and the runtime adds the matching `response-contract*` skill. At
 request time the skill service loads the matching skill folder and injects each skill's
 instructions into the agent's prompt.
 

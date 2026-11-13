@@ -12,7 +12,7 @@ import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { JSONValue } from "@exaix/core";
+import type { JSONValue, OutputContract } from "@exaix/core";
 import type { IRecordingLaneSource } from "@exaix/core/types";
 import type { IConditionContext } from "../condition_evaluator.ts";
 
@@ -60,6 +60,7 @@ export interface IStepExecutionContext {
     readonly flowStepId?: string;
     readonly flowId?: string;
     readonly flowOutputKind?: "branch-json";
+    readonly outputContract?: OutputContract;
     readonly bindingSnapshot?: IBindingRunSnapshot;
     /** Run-local fixture recording allocator of an opted-in scenario run. */
     readonly recording?: IRecordingLaneSource;

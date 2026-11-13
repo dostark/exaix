@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION, OutputContract } from "@exaix/core";
 import {
   ActivityActor,
   type BlueprintStatus,
@@ -131,6 +131,9 @@ export const BlueprintFrontmatterSchema = z.object({
 
   /** Default skills to apply to all requests for this agent. */
   default_skills: z.array(z.string()).optional(),
+
+  /** The kind of deliverable this agent returns. It names the response-contract skill the runtime adds. */
+  output_contract: z.nativeEnum(OutputContract).optional(),
 
   /** Tools this agent role may use in dynamic execution steps (McpToolName or ToolName). Flow steps may narrow but not expand the set. Omitting it means no dynamic tool permissions.
    *  Each entry goes through canonicalizeToolName, so an alias like `grep` resolves to its canonical name. Retired native names and case variants fail validation. */

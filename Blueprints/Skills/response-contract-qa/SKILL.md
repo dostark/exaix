@@ -1,6 +1,6 @@
 ---
 name: response-contract-qa
-description: "The <content> JSON template for a QA/testing-strategy deliverable (test summary, coverage, issues). Applies alongside response-contract, only for QA/testing requests."
+description: "The <content> JSON template for a QA/testing-strategy deliverable (test summary, coverage, issues). Replaces response-contract when a role, flow step or request declares output_contract qa."
 ---
 # Response Contract — QA/Testing
 
