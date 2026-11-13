@@ -15,6 +15,7 @@ import {
   type CostSource,
   type ICostFilter,
   type IGroupedCostRecord,
+  type IModelPricing,
   type IModelPricingLookup,
   type IProviderCostRecord,
 } from "../types/mod.ts";
@@ -38,7 +39,7 @@ import {
 } from "../../mod.ts";
 import { ProviderType } from "../../mod.ts";
 import type { IEventLogger } from "../logger/mod.ts";
-import { DomainEventType, type IModelCostDivergencePayload } from "../events/mod.ts";
+import { DomainEventType, type IModelCostDivergencePayload, type IModelPricingStalePayload } from "../events/mod.ts";
 import type { LogMetadata, Opt, Reason } from "../types/mod.ts";
 import type {
   CostBudgetDenialReason,
@@ -48,6 +49,8 @@ import type {
 } from "../types/mod.ts";
 
 /** USD-per-Mtok → USD-per-token divisor (pricing is quoted per 1M tokens). */
+/** Milliseconds in one day, for price age. */
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Percent → fraction divisor. */
 const PERCENT = 100;
 
@@ -85,6 +88,7 @@ export class CostTracker implements ICostTracker {
   private pendingRecords: IPendingCostRecord[] = [];
   private batchTimeout: ReturnType<typeof setTimeout> | null = null;
   private pricingLookup?: IModelPricingLookup;
+  private readonly stalePricingReported = new Set<string>();
   /** Active reservations by id, counted against the caps before a new reserve. */
   private readonly reservations = new Map<string, {
     service: string;
@@ -241,6 +245,7 @@ export class CostTracker implements ICostTracker {
       options.model,
       options.promptTokens ?? 0,
       options.completionTokens ?? 0,
+      options.traceId,
     );
     if (reported !== undefined && computed !== undefined) {
       await this.emitDivergence(provider, options.model, reported, computed, options.traceId);
@@ -317,13 +322,39 @@ export class CostTracker implements ICostTracker {
     model: Opt<string, Reason.OptionalInput>,
     promptTokens: number,
     completionTokens: number,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<number | undefined> {
     if (!this.pricingLookup || !model) return undefined;
     const pricing = await this.pricingLookup.getModelPricing(provider, model);
+    await this.reportStalePricing(pricing, traceId);
     if (pricing.inputPerMtok === undefined && pricing.outputPerMtok === undefined) return undefined;
     const inputCost = ((pricing.inputPerMtok ?? 0) * promptTokens) / TOKENS_PER_MTOK;
     const outputCost = ((pricing.outputPerMtok ?? 0) * completionTokens) / TOKENS_PER_MTOK;
     return inputCost + outputCost;
+  }
+
+  /** Journals model.pricing.stale once per model for each tracker when a static price is older than the configured threshold. */
+  private async reportStalePricing(
+    pricing: IModelPricing,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void> {
+    const maxDays = this.config?.model_registry?.price_staleness_max_days;
+    if (!this.eventLogger || maxDays === undefined) return;
+    if (pricing.provenance !== "static" || pricing.verifiedAt === undefined) return;
+    const ageDays = (Date.now() - pricing.verifiedAt) / MS_PER_DAY;
+    const key = `${pricing.provider}:${pricing.model}`;
+    if (ageDays <= maxDays || this.stalePricingReported.has(key)) return;
+    this.stalePricingReported.add(key);
+    const payload: IModelPricingStalePayload = {
+      provider: pricing.provider,
+      model: pricing.model,
+      provenance: pricing.provenance,
+      verified_at: pricing.verifiedAt,
+      age_days: Math.round(ageDays),
+      staleness_max_days: maxDays,
+    };
+    const metadata: LogMetadata = { ...payload };
+    await this.eventLogger.info(DomainEventType.ModelPricingStale, key, metadata, traceId);
   }
 
   private async emitDivergence(
