@@ -87,7 +87,7 @@ Deno.test("caller-supplied costUsd recorded verbatim with cost_source provider_r
   }
 });
 
-Deno.test("unpriced model with a lookup falls back to the legacy estimate with cost_source null", async () => {
+Deno.test("unpriced model with a lookup falls back to the blended estimate labelled estimated", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const tracker = new CostTracker(db, config);
@@ -99,15 +99,15 @@ Deno.test("unpriced model with a lookup falls back to the legacy estimate with c
     }, TRACE);
     await tracker.flush();
     const row = await costRow(db);
-    // Legacy blended estimate path (non-zero for a known provider rate) with null source.
-    assertEquals(row.cost_source, null);
+    // The blended estimate path (non-zero for a known provider rate) carries the estimated source.
+    assertEquals(row.cost_source, "estimated");
   } finally {
     await db.close();
     await cleanup();
   }
 });
 
-Deno.test("no lookup injected: legacy blended estimate, cost_source null (library compat)", async () => {
+Deno.test("no lookup injected: blended estimate labelled estimated (library compat)", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const tracker = new CostTracker(db, config); // no setPricingLookup
@@ -118,7 +118,7 @@ Deno.test("no lookup injected: legacy blended estimate, cost_source null (librar
     }, TRACE);
     await tracker.flush();
     const row = await costRow(db);
-    assertEquals(row.cost_source, null);
+    assertEquals(row.cost_source, "estimated");
   } finally {
     await db.close();
     await cleanup();
@@ -243,6 +243,25 @@ Deno.test("[edge][roundtrip] cost_source values survive a DB write→read round-
       );
       assertEquals(row?.cost_source, spec.expect);
     }
+  } finally {
+    await db.close();
+    await cleanup();
+  }
+});
+
+Deno.test("fix(cost): estimated spend counts toward the daily budget", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const tracker = new CostTracker(db, config);
+    await tracker.trackGeneration("anthropic", "claude-haiku-5-5", {
+      promptTokens: 500,
+      completionTokens: 500,
+      totalTokens: 1000,
+    }, TRACE);
+    await tracker.flush();
+    const spent = await tracker.getDailyCost("anthropic");
+    assertEquals(await tracker.isWithinBudget("anthropic", spent), false);
+    assertEquals(await tracker.isWithinBudget("anthropic", spent * 2), true);
   } finally {
     await db.close();
     await cleanup();

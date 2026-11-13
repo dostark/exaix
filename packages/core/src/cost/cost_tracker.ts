@@ -217,7 +217,7 @@ export class CostTracker implements ICostTracker {
     return priced.cost;
   }
 
-  /** Precedence: reported cost → registry-computed split price → legacy blended estimate.
+  /** Precedence: reported cost → registry-computed split price → blended estimate, labelled estimated.
    * Emits model.cost.divergence when reported and computed differ beyond tolerance. */
   private async resolveCost(
     provider: string,
@@ -251,8 +251,7 @@ export class CostTracker implements ICostTracker {
     if (computed !== undefined) {
       return { cost: computed, source: "registry_computed" };
     }
-    // Legacy blended estimate (library-compat path).
-    return { cost: this.estimateCost(provider, tokens, options.model, options.promptTokens), source: null };
+    return { cost: this.estimateCost(provider, tokens, options.model, options.promptTokens), source: "estimated" };
   }
 
   async recordUnpricedGeneration(

@@ -81,8 +81,8 @@ export interface IProviderCostRecord {
    *  completionTokens, billed as output). undefined when it doesn't report one — never 0
    *  for "no reasoning happened". */
   reasoningTokens?: number;
-  /** How this record's cost was priced (provider_costs.cost_source):
-   *  undefined means the legacy blended estimate (no reported or computed figure). */
+  /** How this record's cost was priced (provider_costs.cost_source).
+   *  undefined only on rows written before the source was recorded. */
   costSource?: CostSource;
   /** Binding service identity the generation ran under. Absent on legacy rows. */
   service?: string;

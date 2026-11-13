@@ -11,8 +11,8 @@
  */
 import type { IModelPricing } from "./i_model_registry.ts";
 
-/** How a persisted cost was priced (provider_costs.cost_source). */
-export type CostSource = "provider_reported" | "registry_computed";
+/** How a persisted cost was priced (provider_costs.cost_source). An estimated cost is a flat per-provider rate. */
+export type CostSource = "provider_reported" | "registry_computed" | "estimated";
 
 /** Minimal pricing surface CostTracker needs — a subset of IModelRegistry. */
 export interface IModelPricingLookup {

@@ -6393,6 +6393,11 @@ anthropic_claude_sonnet = 0.000015  # $15 per million tokens
 openai_gpt4 = 0.00003               # $30 per million tokens
 ```
 
+Each cost record carries a `cost_source`: `provider_reported` (the provider returned the cost),
+`registry_computed` (a registry price split by input and output tokens) or `estimated`
+(one flat per-provider rate, used when neither of the others is available).
+An estimated cost counts toward the daily budget like any other cost, so treat it as a guess.
+
 Prompt-window enforcement is configured separately through the context window management
 `[budget_enforcement]` section. This controls whether Exaix applies strict
 prompt-budget caps before execution; it does not replace monetary cost limits.
