@@ -6724,3 +6724,82 @@ is the step-by-step source of truth. It covers:
 
 Start at [Quick Start](Exaix_Dogfooding.md#2-quick-start). Do not run dogfood work in
 your everyday checkout, and do not merge a result until a person has reviewed it.
+
+### 9.1 Linting with unslop-ts
+
+Exaix uses `unslop-ts` as its lint engine. The repository vendors it as the `unslop-ts/` Git
+submodule, and `deno.json` loads `packages/lint-policy/plugin.ts`, which compiles the Exaix rule
+catalog. `deno task lint` runs that plugin inside `deno lint`; the separate `unslop` CLI below
+queries and edits the same catalog.
+
+The package is not published to JSR yet. Install the CLI from the checkout:
+
+```sh
+git submodule update --init unslop-ts
+cd unslop-ts
+deno install --global --name unslop \
+  --allow-read --allow-env --allow-run=deno,git,node \
+  --config=deno.json ./src/cli/unslop.ts
+cd ..
+unslop config validate
+```
+
+`unslop config validate` prints the plugin name and the resolved rule count, for example
+`ok exaix 67 rules`.
+
+#### Query the rule catalog
+
+```sh
+unslop rules list --status=parked
+unslop rules show exaix/max-params
+unslop presets show unslop:recommended
+unslop rules list --select=tag:comments
+unslop config print --resolved
+```
+
+#### Measure and report
+
+```sh
+unslop health --descriptor=packages/lint-policy/unslop.project.ts --format=json
+unslop report --format=markdown packages/request
+```
+
+`unslop health` prints the schema 2 health report. `unslop report` runs the real lint host and
+exits with its result: `1` when the host reports at least one error and `0` when it reports none.
+
+#### Edit the catalog
+
+Dry-run first. A real edit needs write access; use the Exaix task, which grants it:
+
+```sh
+unslop rules set exaix/max-params max=8 --dry-run
+deno task unslop:write rules set exaix/max-params max=8
+```
+
+#### Use the Exaix wrappers
+
+The global install is optional. The repository tasks run the same entry:
+
+```sh
+deno task unslop rules list
+deno task lint
+deno task check:unused-exports
+deno task lint:report --format=json packages/request
+```
+
+| Task                             | Purpose                           |
+| -------------------------------- | --------------------------------- |
+| `deno task unslop`               | Read-only CLI queries             |
+| `deno task unslop:write`         | Edits and migration               |
+| `deno task lint`                 | `deno lint` with the Exaix plugin |
+| `deno task check:unused-exports` | Whole-tree unused-export gate     |
+| `deno task lint:report`          | Per-rule coverage report          |
+
+Permissions: queries need `--allow-read` and `--allow-env`; `health` and `report` also need
+`--allow-run`; edits need `--allow-write`. The install command above grants read, environment and
+the required runtimes, not write.
+
+The engine's user guide, rule reference, whole-tree checks and report schema are in
+[unslop-ts](../unslop-ts/docs/user-guide.md), [rules](../unslop-ts/docs/reference/rules.md),
+[whole-tree checks](../unslop-ts/docs/reference/whole-tree-checks.md) and
+[report schema](../unslop-ts/docs/reference/report-schema.md).
