@@ -386,6 +386,35 @@ const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
 /** The scenario declares a scenario judge binding, so an operator `--bind` can move it. */
 const REVIEWED_JUDGE_BINDING_TEST_SCENARIOS = new Set(["operator-override-axes"]);
 
+/** The phase-235 skill-eval quality cells bind the judge explicitly so each cell is graded by it. */
+const REVIEWED_JUDGE_BINDING_QUALITY_SCENARIOS = new Set([
+  "p235-s1-c1",
+  "p235-s1-c2",
+  "p235-s1-c3",
+  "p235-s1-c4",
+  "p235-s1-c5",
+  "p235-s3-c1",
+  "p235-s3-c2",
+  "p235-s3-c3",
+  "p235-s3-c4",
+  "p235-s3-c5",
+  "p235-s6-c1",
+  "p235-s6-c2",
+  "p235-s6-c3",
+  "p235-s6-c4",
+  "p235-s6-c5",
+  "p235-s6-c6",
+  "p235-s8-c1",
+  "p235-s8-c2",
+  "p235-s8-c3",
+  "p235-s8-c4",
+  "p235-s8-c5",
+  "p235-s8-c6",
+  "p235-s8-c7",
+  "p235-s8-c8",
+  "p235-s8-c9",
+]);
+
 Deno.test("[judge][regression] only reviewed quality scenarios and fixture presets declare judge bindings", async () => {
   const scenarios = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const offenders: string[] = [];
@@ -393,7 +422,11 @@ Deno.test("[judge][regression] only reviewed quality scenarios and fixture prese
   for (const scenario of scenarios) {
     for (const selector of bindingSelectorsOf(scenario)) {
       if (selector !== "judge" && !selector.startsWith("judge:")) continue;
-      if (REVIEWED_JUDGE_BINDING_SCENARIOS.has(scenario.id) || REVIEWED_JUDGE_BINDING_TEST_SCENARIOS.has(scenario.id)) {
+      if (
+        REVIEWED_JUDGE_BINDING_SCENARIOS.has(scenario.id) ||
+        REVIEWED_JUDGE_BINDING_TEST_SCENARIOS.has(scenario.id) ||
+        REVIEWED_JUDGE_BINDING_QUALITY_SCENARIOS.has(scenario.id)
+      ) {
         reviewedScenarios.add(`${scenario.id}: ${selector}`);
         continue;
       }
@@ -422,7 +455,11 @@ Deno.test("[judge][regression] only reviewed quality scenarios and fixture prese
   assertEquals([...reviewed].sort(), ["self-hosted-fixture: judge"]);
   assertEquals(
     [...reviewedScenarios].sort(),
-    [...REVIEWED_JUDGE_BINDING_SCENARIOS, ...REVIEWED_JUDGE_BINDING_TEST_SCENARIOS].map((id) => `${id}: judge`).sort(),
+    [
+      ...REVIEWED_JUDGE_BINDING_SCENARIOS,
+      ...REVIEWED_JUDGE_BINDING_TEST_SCENARIOS,
+      ...REVIEWED_JUDGE_BINDING_QUALITY_SCENARIOS,
+    ].map((id) => `${id}: judge`).sort(),
   );
   assert(scenarios.length > 0, "the shipped scenario corpus must load");
 });

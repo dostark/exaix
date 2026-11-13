@@ -3,7 +3,7 @@
  * @path tests/scripts/dogfood_bootstrap_skills_root_test.ts
  * @description The dogfood bootstrap names the external worktree `.copilot/skills` folder as a dogfood skills
  *   root in the generated config and writes no skill JSON. A real `SkillsService` over that config resolves
- *   all 28 folders, and a skills folder that escapes the worktree through a symlink is refused.
+ *   all 30 folders, and a skills folder that escapes the worktree through a symlink is refused.
  * @architectural-layer Test
  * @related-files [scripts/dogfood_bootstrap.ts]
  */
@@ -20,7 +20,7 @@ import { SkillRootKind } from "@exaix/core";
 import { initTestDbService, REPO_ROOT } from "@exaix/testing";
 import { admitDogfoodSkillRoot } from "../../scripts/dogfood_bootstrap.ts";
 
-const DOGFOOD_SKILL_COUNT = 28;
+const DOGFOOD_SKILL_COUNT = 30;
 
 async function git(cwd: string, ...args: string[]): Promise<void> {
   const output = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "piped" }).output();
@@ -29,7 +29,7 @@ async function git(cwd: string, ...args: string[]): Promise<void> {
 
 Deno.test({
   name:
-    "[dogfood bootstrap] the generated config names the worktree skills root and a real service resolves all 28 folders",
+    "[dogfood bootstrap] the generated config names the worktree skills root and a real service resolves all 30 folders",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

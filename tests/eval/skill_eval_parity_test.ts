@@ -34,6 +34,7 @@ const BATCH_SKILLS_3 = [
   "performance-analysis",
   "reflexive-critique",
   "requirements-analysis",
+  "requirements-interview",
 ];
 const BATCH_SKILLS_4 = [
   "research-methodology",
@@ -50,6 +51,7 @@ const BATCH_SKILLS_5 = [
   "response-contract-qa",
   "response-contract-security-analysis",
   "conversational-dialogue",
+  "technical-writing",
 ];
 const BATCH_SKILLS_6 = ["memory-extraction-content-policy"];
 

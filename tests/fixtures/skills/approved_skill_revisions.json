@@ -21,8 +21,8 @@
   {
     "name": "test-development",
     "source_commit": "275edc770",
-    "instructions_prefix": "```text\nKey points\n\n- A test that cannot fail is worse than no test — it certifies the subsystem as covered\n  and stops anyone looking again. Canary every test: break what it names, confirm red,\n  res",
-    "constraints_after": "Canary every new or edited test — break what it names, confirm red, restore",
+    "instructions_prefix": "```text\nKey points\n\n- A test that cannot fail is worse than no test \u2014 it certifies the subsystem as covered\n  and stops anyone looking again. Canary every test: break what it names, confirm red,\n  res",
+    "constraints_after": "Canary every new or edited test \u2014 break what it names, confirm red, restore",
     "constraint_additions": [
       "Choose a verification method only for a named defect; example-based tests remain the default",
       "Record behavior, production entry point, independent oracle, substitutes, and what the test cannot establish",
@@ -33,7 +33,7 @@
       "Target test files created or modified",
       "Helpers and patterns used",
       "Test command and coverage check results",
-      "Canary evidence for each new assertion — what was broken and that it went red",
+      "Canary evidence for each new assertion \u2014 what was broken and that it went red",
       "Verification method and the defect it detects",
       "Independent oracle or contract and what the test cannot establish",
       "For a slow test fixed: before/after per-test duration and pass counts"
@@ -68,6 +68,46 @@
       "Sources for settled choices and any material unanswered decisions",
       "Migration justification and stage dependencies, compatibility evidence, tests, rollback conditions, and integration checkpoint when applicable",
       "Alternatives, consequences, and rationale for a qualifying ADR proposal when applicable"
+    ]
+  },
+  {
+    "name": "refactor",
+    "constraints_after": "Do not use as any to resolve type errors introduced by refactor",
+    "constraint_additions": [
+      "Check depth, locality, and caller cost before extracting a facade or interface",
+      "Keep permission and governance adapters even when they only delegate"
+    ],
+    "output_requirements": [
+      "Baseline evidence: tests pass before refactor",
+      "Verification evidence: tests pass after refactor (same count)",
+      "CI gates clean (lint, type-check, style, arch, fmt)",
+      "Structured commit with refactoring type and files changed",
+      "Caller cost, invariants, error behavior, dependency strategy, and test boundary for a material extraction",
+      "A reasoned recommendation that compares the current design with two feasible alternatives"
+    ]
+  },
+  {
+    "name": "review-phase-plan",
+    "constraints": [
+      "Validate every behavioural claim against the codebase",
+      "Check Reachability Ledger for missing production consumers",
+      "Assess step workload balance; require concrete splits for overloaded steps before readiness",
+      "Flag underspecified fields",
+      "Do not modify source files \u2014 report gaps only",
+      "Fix trivial gaps in-place in plan, register non-trivial as gap entries",
+      "Separate plan readiness from runtime completion; pending implementation is not a defect",
+      "Require expand/migrate/contract only for a broad migration with mixed callers",
+      "Cite the requirement and plan evidence for every blocker; classify unsupported preferences as suggestions"
+    ],
+    "output_requirements": [
+      "Gap summary table sorted by severity",
+      "Step Workload Assessment with justified effort differences and bounded split proposals",
+      "Detailed gap entries with Finding, Impact, Resolution",
+      "Pre-Implementation Actions list with grep verification",
+      "In-Place fixes subsection listing trivial corrections",
+      "Plan-sufficiency verdict with decision, terminology, and ADR-threshold evidence",
+      "Migration review with compatibility, dependency edges, per-batch tests, rollback, and contraction evidence",
+      "Blockers separated from heuristic suggestions, each with its cited requirement"
     ]
   }
 ]
