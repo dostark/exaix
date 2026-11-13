@@ -9,7 +9,8 @@
  */
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { CostTracker } from "@exaix/core/cost";
-import { DefaultModelRegistry } from "@exaix/model-registry";
+import { DefaultModelRegistry, getOverlayEntry } from "@exaix/model-registry";
+import { TOKENS_PER_MTOK } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 
 const HEALTHY = { checkProvider: (_p: string) => Promise.resolve(true) };
@@ -22,8 +23,9 @@ Deno.test("[d9] Solo floor injected as pricing lookup prices from static overlay
     // The edition-selected registry in Solo IS the DefaultModelRegistry floor.
     tracker.setPricingLookup(new DefaultModelRegistry(HEALTHY));
 
-    // claude-sonnet-5 overlay: input 3.00/Mtok, output 15.00/Mtok.
-    // 2000 prompt @ 3.00 + 1000 completion @ 15.00 = 0.006 + 0.015 = 0.021
+    // The claude-sonnet-5 overlay prices input and output tokens separately.
+    const price = getOverlayEntry("anthropic", "claude-sonnet-5");
+    const expected = (2000 * (price?.inputPerMtok ?? 0) + 1000 * (price?.outputPerMtok ?? 0)) / TOKENS_PER_MTOK;
     await tracker.trackGeneration("anthropic", "claude-sonnet-5", {
       promptTokens: 2000,
       completionTokens: 1000,
@@ -35,7 +37,7 @@ Deno.test("[d9] Solo floor injected as pricing lookup prices from static overlay
       "SELECT estimated_cost_usd, cost_source FROM provider_costs WHERE trace_id = ?",
       [TRACE],
     );
-    assertAlmostEquals(row?.estimated_cost_usd ?? -1, 0.021, 1e-9);
+    assertAlmostEquals(row?.estimated_cost_usd ?? -1, expected, 1e-9);
     assertEquals(row?.cost_source, "registry_computed");
   } finally {
     await db.close();

@@ -26,7 +26,10 @@ interface IOverlayEntry {
 
 type StaticOverlay = Record<string, IOverlayEntry>;
 
-const VERIFIED_AT_TIMESTAMP = 1_720_000_000_000;
+/** Every overlay price was verified in this year. */
+const VERIFICATION_YEAR = 2026;
+const ANTHROPIC_PRICING_URL = "https://platform.claude.com/docs/en/about-claude/pricing";
+const ANTHROPIC_VERIFIED_AT = Date.UTC(VERIFICATION_YEAR, 10, 13);
 
 export const STATIC_OVERLAY: StaticOverlay = {
   // Short-context rates only. Prompts over 272K input tokens cost more.
@@ -35,7 +38,7 @@ export const STATIC_OVERLAY: StaticOverlay = {
     outputPerMtok: 0.50,
     cacheReadPerMtok: 0.01,
     cacheCreationPerMtok: 0.125,
-    verifiedAt: Date.UTC(2026, 8, 28),
+    verifiedAt: Date.UTC(VERIFICATION_YEAR, 8, 28),
     sourceUrl: "https://developers.openai.com/api/docs/models/gpt-6-luna",
   },
   // Peak-hour rates. Off-peak is lower, so estimates are an upper bound.
@@ -43,15 +46,50 @@ export const STATIC_OVERLAY: StaticOverlay = {
     inputPerMtok: 1.32,
     outputPerMtok: 3.96,
     cacheReadPerMtok: 0.044,
-    verifiedAt: Date.UTC(2026, 8, 29),
+    verifiedAt: Date.UTC(VERIFICATION_YEAR, 8, 29),
     sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing",
   },
   "anthropic:claude-sonnet-5": {
-    inputPerMtok: 3.00,
-    outputPerMtok: 15.00,
+    inputPerMtok: 2.00,
+    outputPerMtok: 10.00,
+    cacheReadPerMtok: 0.20,
+    cacheCreationPerMtok: 2.50,
     contextWindow: 1_000_000,
-    verifiedAt: VERIFIED_AT_TIMESTAMP,
-    sourceUrl: "https://anthropic.com/pricing/",
+    verifiedAt: ANTHROPIC_VERIFIED_AT,
+    sourceUrl: ANTHROPIC_PRICING_URL,
+  },
+  "anthropic:claude-sonnet-5-5": {
+    inputPerMtok: 2.00,
+    outputPerMtok: 10.00,
+    cacheReadPerMtok: 0.10,
+    cacheCreationPerMtok: 2.50,
+    verifiedAt: ANTHROPIC_VERIFIED_AT,
+    sourceUrl: ANTHROPIC_PRICING_URL,
+  },
+  "anthropic:claude-opus-5-5": {
+    inputPerMtok: 4.00,
+    outputPerMtok: 20.00,
+    cacheReadPerMtok: 0.20,
+    cacheCreationPerMtok: 5.00,
+    verifiedAt: ANTHROPIC_VERIFIED_AT,
+    sourceUrl: ANTHROPIC_PRICING_URL,
+  },
+  // Rates for prompts up to 100,000 tokens. Longer prompts cost more, so estimates are a lower bound.
+  "anthropic:claude-haiku-5-5": {
+    inputPerMtok: 0.10,
+    outputPerMtok: 0.50,
+    cacheReadPerMtok: 0.01,
+    cacheCreationPerMtok: 0.125,
+    verifiedAt: ANTHROPIC_VERIFIED_AT,
+    sourceUrl: ANTHROPIC_PRICING_URL,
+  },
+  // Standard tier. The page lists no cache-write price.
+  "openai:gpt-5-mini": {
+    inputPerMtok: 0.25,
+    outputPerMtok: 2.00,
+    cacheReadPerMtok: 0.025,
+    verifiedAt: Date.UTC(VERIFICATION_YEAR, 10, 13),
+    sourceUrl: "https://developers.openai.com/api/docs/pricing",
   },
   // `gemini-3.8-flash` on the Google AI API, standard paid tier, text.
   // The rates apply through the end of 2026 and double at the start of 2027 (see sourceUrl).
@@ -59,7 +97,7 @@ export const STATIC_OVERLAY: StaticOverlay = {
     inputPerMtok: 0.75,
     outputPerMtok: 3.75,
     contextWindow: 1_048_576,
-    verifiedAt: Date.UTC(2026, 9, 11),
+    verifiedAt: Date.UTC(VERIFICATION_YEAR, 9, 11),
     sourceUrl: "https://ai.google.dev/gemini-api/docs/pricing",
   },
 };

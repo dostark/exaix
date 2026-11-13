@@ -15,6 +15,7 @@
  */
 
 import { assertAlmostEquals, assertEquals } from "@std/assert";
+import { getOverlayEntry } from "@exaix/model-registry";
 import { computeRegistryPredictedCost } from "../src/registry_computed_cost.ts";
 
 Deno.test("a per-model price gives a predicted cost with separate input and output rates", () => {
@@ -42,12 +43,13 @@ Deno.test("a per-model price gives a predicted cost with separate input and outp
 });
 
 Deno.test("the static overlay takes precedence over a supplied catalog price", () => {
+  const price = getOverlayEntry("anthropic", "claude-sonnet-5");
   assertEquals(
     computeRegistryPredictedCost("anthropic", "claude-sonnet-5", {
       promptTokens: 1_000_000,
       completionTokens: 1_000_000,
     }, { inputPerMtok: 100, outputPerMtok: 100 }),
-    18,
+    (price?.inputPerMtok ?? 0) + (price?.outputPerMtok ?? 0),
   );
 });
 
@@ -94,7 +96,7 @@ Deno.test("partial catalog prices do not turn unpriced token usage into free usa
 });
 
 Deno.test("[RegistryComputedPredictedCost] a known model's cost matches promptTokens*inputRate + completionTokens*outputRate, not the old flat rate", () => {
-  // anthropic:claude-sonnet-5 in static_overlay.ts: inputPerMtok 3.00, outputPerMtok 15.00.
+  const price = getOverlayEntry("anthropic", "claude-sonnet-5");
   const cost = computeRegistryPredictedCost("anthropic", "claude-sonnet-5", {
     promptTokens: 1_000_000,
     completionTokens: 1_000_000,
@@ -102,8 +104,8 @@ Deno.test("[RegistryComputedPredictedCost] a known model's cost matches promptTo
     cacheCreationTokens: 0,
   });
 
-  // 1M prompt tokens @ $3/MTok + 1M completion tokens @ $15/MTok = $18.
-  assertEquals(cost, 3.0 + 15.0);
+  // 1M prompt tokens at the input rate plus 1M completion tokens at the output rate.
+  assertEquals(cost, (price?.inputPerMtok ?? 0) + (price?.outputPerMtok ?? 0));
   // The old flat rate (COST_RATE_ANTHROPIC = $0.005/1K on combined 2M tokens) would be $10 —
   // confirm the new figure is NOT that.
   const oldFlatRateResult = 0.005 * (2_000_000 / 1000);
@@ -118,8 +120,9 @@ Deno.test("[RegistryComputedPredictedCost] cache-read tokens are discounted at A
     cacheCreationTokens: 0,
   });
 
-  // 1M cache-read tokens @ $3/MTok * 0.1 = $0.30, not $3.00.
-  assertAlmostEquals(withCacheRead!, 0.3);
+  // 1M cache-read tokens cost a tenth of the input rate, not the full input rate.
+  const price = getOverlayEntry("anthropic", "claude-sonnet-5");
+  assertAlmostEquals(withCacheRead!, (price?.inputPerMtok ?? 0) * 0.1);
 });
 
 Deno.test("[RegistryComputedPredictedCost] an unknown model (no static_overlay entry) returns undefined, never a fabricated figure", () => {

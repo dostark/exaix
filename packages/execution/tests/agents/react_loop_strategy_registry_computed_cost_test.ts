@@ -18,6 +18,7 @@ import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IReActLoopExecutor } from "../../src/react_loop_adapter.ts";
 import { castAny } from "@exaix/testing";
+import { getOverlayEntry } from "@exaix/model-registry";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
@@ -105,7 +106,7 @@ async function loggedCostUsd(turn: IPricedTurn): Promise<number | undefined> {
 }
 
 Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is re-priced from the real per-model split rate, not the old flat rate", async () => {
-  // 1M prompt + 1M completion tokens on claude-sonnet-5 ($3/$15 per MTok) = $18 real.
+  // 1M prompt + 1M completion tokens on claude-sonnet-5 cost the overlay input rate plus its output rate.
   // The old flat COST_RATE_ANTHROPIC ($0.005/1K on 2M combined tokens) would be $10.
   const cost = await loggedCostUsd({
     providerId: "registry-cost-mock-provider",
@@ -114,7 +115,8 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is
     reportedCostUsd: 10, // the OLD flat-rate figure, simulating what performProviderCall used to return
   });
 
-  assertAlmostEquals(cost!, 18);
+  const price = getOverlayEntry("anthropic", "claude-sonnet-5");
+  assertAlmostEquals(cost!, (price?.inputPerMtok ?? 0) + (price?.outputPerMtok ?? 0));
 });
 
 Deno.test("[ReActLoopStrategyRegistryComputedCost] an unknown model falls back to response.cost_usd unchanged (no overlay entry)", async () => {
