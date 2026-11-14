@@ -18,7 +18,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore, EXTERNAL_BENCHMARK_CAVEAT } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 const BENCHMARK = "terminal-bench";
 const BENCHMARK_VERSION = "v1";
@@ -121,8 +121,9 @@ Deno.test("[EvalReportExternalView] renders per-cell comparability with explicit
 
   const manifestPath = writeManifest(tempDir, 12);
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() =>
-    cmds.report({ view: "external", dbPath, externalManifestPath: manifestPath })
+  const { output } = await withEvalOutput(
+    cmds,
+    () => cmds.report({ view: "external", dbPath, externalManifestPath: manifestPath }),
   );
   const text = output.join("\n");
 
@@ -162,8 +163,9 @@ Deno.test("[EvalReportExternalView] --format json renders rows plus caveat for t
 
   const manifestPath = writeManifest(tempDir, 12);
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() =>
-    cmds.report({ view: "external", format: "json", dbPath, externalManifestPath: manifestPath })
+  const { output } = await withEvalOutput(
+    cmds,
+    () => cmds.report({ view: "external", format: "json", dbPath, externalManifestPath: manifestPath }),
   );
   const parsed = JSON.parse(output.join("\n")) as {
     caveat: string;
@@ -195,7 +197,7 @@ Deno.test("[EvalReportExternalView] empty history prints a message", async () =>
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "external", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "external", dbPath }));
   assertStringIncludes(output.join("\n"), "No external-benchmark runs found in history.");
   await cleanup();
 });

@@ -16,6 +16,7 @@ import { BLUEPRINT_DOCS, BLUEPRINT_NOUN_DOC } from "./blueprint_docs.ts";
 import { FLOW_DOCS, FLOW_NOUN_DOC } from "./flow_docs.ts";
 import { CONFIG_DOCS, CONFIG_NOUN_DOC } from "./config_docs.ts";
 import { DASHBOARD_DOCS } from "./dashboard_docs.ts";
+import { EVAL_DOCS, EVAL_NOUN_DOC } from "./eval_docs.ts";
 import { GIT_DOCS, GIT_NOUN_DOC } from "./git_docs.ts";
 import { LOG_DOCS, LOG_NOUN_DOC } from "./log_docs.ts";
 import { MCP_DOCS, MCP_NOUN_DOC } from "./mcp_docs.ts";
@@ -43,6 +44,7 @@ export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   CONFIG_NOUN_DOC,
   LOG_NOUN_DOC,
   MODEL_NOUN_DOC,
+  EVAL_NOUN_DOC,
 ];
 
 export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
@@ -62,6 +64,7 @@ export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
   ...CONFIG_DOCS,
   ...LOG_DOCS,
   ...MODEL_DOCS,
+  ...EVAL_DOCS,
 ];
 
 const PATH_SEPARATOR = " ";

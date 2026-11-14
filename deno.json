@@ -325,6 +325,8 @@
     "@exaix/lint-policy/": "./packages/lint-policy/src/",
     "@exaix/lint-policy/catalog.json": "./packages/lint-policy/tests/fixtures/catalog_v1.json",
     "@exaix/app-exactl/exactl": "./apps/exactl/src/exactl.ts",
+    "@exaix/app-exactl/command-docs": "./apps/exactl/src/command_docs/mod.ts",
+    "@exaix/app-exactl/command-tree": "./apps/exactl/src/docs/command_tree_walk.ts",
     "@exaix-team/voting": "./exaix-team/packages/voting/mod.ts",
     "@exaix-team/voting/": "./exaix-team/packages/voting/src/",
     "@exaix-team/hitl": "./exaix-team/packages/hitl/mod.ts",

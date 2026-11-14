@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "exports": {
     ".": "./main.ts",
-    "./exactl": "./src/exactl.ts"
+    "./exactl": "./src/exactl.ts",
+    "./command-docs": "./src/command_docs/mod.ts",
+    "./command-tree": "./src/docs/command_tree_walk.ts"
   }
 }

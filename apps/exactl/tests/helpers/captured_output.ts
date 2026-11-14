@@ -27,6 +27,15 @@ export function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ outpu
     });
 }
 
+/** Runs `fn` and returns the report lines that the eval commands collected while it ran. */
+export async function withEvalOutput<T>(
+  commands: { takeOutput(): string[] },
+  fn: () => T | Promise<T>,
+): Promise<{ output: string[]; result: T }> {
+  const result = await fn();
+  return { output: commands.takeOutput(), result };
+}
+
 /** A renderer over an array sink, and the text it wrote so far. */
 export function createTestRenderer(
   format: ExaCtlOutputFormat = ExaCtlOutputFormat.TEXT,

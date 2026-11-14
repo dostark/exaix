@@ -18,7 +18,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeRobustnessRows, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedAdversarialRun(
   store: EvalSqliteStore,
@@ -139,7 +139,7 @@ Deno.test("[EvalReportRobustnessView] --view robustness renders the triple per v
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "robustness", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "robustness", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "portal-readme");

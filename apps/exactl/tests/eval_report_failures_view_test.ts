@@ -15,7 +15,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedRun(
   store: EvalSqliteStore,
@@ -90,7 +90,7 @@ Deno.test("[EvalReportFailuresView] renders class × family × cell counts with 
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "failures", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "failures", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "execution.failed", "class must render");
@@ -108,7 +108,7 @@ Deno.test("[EvalReportFailuresView] empty history renders a notice, not a crash"
   const { context, tempDir, cleanup } = await createCliTestContext();
   const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "failures", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "failures", dbPath }));
   const text = output.join("\n");
   assertStringIncludes(text, "No", "must render a notice");
   await cleanup();
@@ -130,7 +130,7 @@ Deno.test("[EvalReportFailuresView] --format json renders machine-readable rows"
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "failures", format: "json", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "failures", format: "json", dbPath }));
   const parsed = JSON.parse(output.join("\n")) as { classes: Array<{ className: string; count: number }> };
   assertEquals(parsed.classes.length, 1);
   assertEquals(parsed.classes[0].className, "execution.failed");

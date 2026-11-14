@@ -17,7 +17,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedRun(
   store: EvalSqliteStore,
@@ -104,7 +104,7 @@ Deno.test("[EvalReportFrontierView] renders per-cell score/cost/cost-per-solved 
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "frontier", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "frontier", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "cell-a", "cell A must render");
@@ -141,7 +141,7 @@ Deno.test("[EvalReportFrontierView] --format json renders machine-readable front
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "frontier", format: "json", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "frontier", format: "json", dbPath }));
   const text = output.join("\n");
   const parsed = JSON.parse(text) as Array<{ cell: string; meanScore: number; meanCost: number }>;
   assertEquals(parsed.length, 1, "one frontier row in json");

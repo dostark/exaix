@@ -13,7 +13,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore, type IFamilySummaryRow } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedRun(store: EvalSqliteStore, runId: string, scenarioId: string, score: number): void {
   store.writeRun({
@@ -41,7 +41,7 @@ Deno.test("[EvalReportFamiliesView] --format json renders parseable family rows"
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "families", format: "json", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "families", format: "json", dbPath }));
   const parsed = JSON.parse(output.join("\n")) as IFamilySummaryRow[];
   assertEquals(parsed.length, 1, "one family row in json");
   assertEquals(parsed[0].taskCount, 2, "both tasks count toward the family");

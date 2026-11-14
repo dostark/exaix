@@ -5,28 +5,14 @@
   "compound-leaf": [],
   "duplicate-handler": [],
   "doc-record": [
-    "eval calibration generate",
-    "eval calibration score",
-    "eval compare",
-    "eval history",
-    "eval report",
-    "eval run",
     "migrate check",
     "version"
   ],
   "doc-example": [],
   "doc-see-also": [],
   "doc-noun": [
-    "eval",
     "migrate"
   ],
   "doc-output-kind": [],
-  "short-flag": [
-    "eval calibration generate -s",
-    "eval calibration generate -t",
-    "eval history -l",
-    "eval report -l",
-    "eval run -s",
-    "eval run -t"
-  ]
+  "short-flag": []
 }

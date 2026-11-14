@@ -17,7 +17,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeInteractiveRows, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function interactiveTags(persona: string, rounds: number, converged: boolean, adherent: boolean): string[] {
   return ["interactive", `persona:${persona}`, `rounds:${rounds}`, `converged:${converged}`, `adherent:${adherent}`];
@@ -77,7 +77,7 @@ Deno.test("[EvalReportInteractiveView] --view interactive renders per-persona co
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "interactive", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "interactive", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "cooperative");

@@ -143,8 +143,6 @@ export enum ExaCtlSubNoun {
   CALIBRATION = "calibration",
 }
 
-export const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
-
 export const DEFAULT_CAPABILITIES_LABEL = "general";
 
 export const CLI_LIMIT_OPTION = "-n, --limit <limit:number>";

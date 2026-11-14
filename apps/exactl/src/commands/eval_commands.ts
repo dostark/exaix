@@ -168,9 +168,36 @@ function withEvalStore(dbPath: string, body: (store: EvalSqliteStore) => void): 
   }
 }
 
+interface IJsonCompareStep {
+  step_id: string;
+  score_a: number | null;
+  score_b: number | null;
+}
+
+interface IJsonCompare {
+  run_a: string;
+  run_b: string;
+  found: boolean;
+  score_delta: number | null;
+  steps: IJsonCompareStep[];
+}
+
+/** Receives one line of report text. */
+type TEmit = (text: string) => void;
+
 export class EvalCommands extends BaseCommand {
+  private readonly output: string[] = [];
+  private readonly emit: TEmit = (text) => {
+    this.output.push(text);
+  };
+
   constructor(context: ICommandContext) {
     super(context);
+  }
+
+  /** The report lines that the last commands produced. The builder writes them through the renderer. */
+  takeOutput(): string[] {
+    return this.output.splice(0);
   }
 
   async run(options: {
@@ -184,9 +211,11 @@ export class EvalCommands extends BaseCommand {
     maxCostUsd?: number;
     verbose?: boolean;
     captureCalibrationEvidence?: string;
+    /** Sends the scenario output to stderr, so that stdout carries only the command's own JSON. */
+    childOutputToStderr?: boolean;
   }): Promise<void> {
     const args = buildRunArgs(options);
-    await this.spawnAndPropagateExit(DENO_BIN, args);
+    await this.spawnAndPropagateExit(DENO_BIN, args, options.childOutputToStderr);
   }
 
   /** `eval calibration generate` — accumulates real judge-call evidence for calibration by
@@ -199,6 +228,7 @@ export class EvalCommands extends BaseCommand {
     maxCostUsd?: number;
     verbose?: boolean;
     captureCalibrationEvidence: string;
+    childOutputToStderr?: boolean;
   }): Promise<void> {
     await this.run(options);
   }
@@ -238,9 +268,14 @@ export class EvalCommands extends BaseCommand {
     await this.spawnAndPropagateExit(DENO_BIN, args);
   }
 
-  private async spawnAndPropagateExit(command: string, args: string[]): Promise<void> {
-    const cmd = new Deno.Command(command, { args, cwd: Deno.cwd() });
+  private async spawnAndPropagateExit(
+    command: string,
+    args: string[],
+    childOutputToStderr?: Opt<boolean, Reason.OptionalInput>,
+  ): Promise<void> {
+    const cmd = new Deno.Command(command, { args, cwd: Deno.cwd(), stdout: childOutputToStderr ? "piped" : "inherit" });
     const proc = cmd.spawn();
+    if (childOutputToStderr) void proc.stdout.pipeTo(Deno.stderr.writable, { preventClose: true });
     const status = await proc.status;
 
     if (!status.success) {
@@ -268,13 +303,13 @@ export class EvalCommands extends BaseCommand {
         const content = await Deno.readTextFile(historyFile);
         lines = content.trim().split("\n").filter(Boolean);
       } catch {
-        console.log("No evaluation history found.");
+        this.emit("No evaluation history found.");
         return;
       }
       const entries: IHistoryEntry[] = lines.map((line) => JSON.parse(line));
       const filtered = this.applyHistoryFilters(entries, options);
       if (filtered.length === 0) {
-        console.log("No matching history entries found.");
+        this.emit("No matching history entries found.");
         return;
       }
       this.renderHistory(filtered, options.format);
@@ -290,7 +325,7 @@ export class EvalCommands extends BaseCommand {
         since: options.since,
       });
       if (runs.length === 0) {
-        console.log("No evaluation history found in SQLite.");
+        this.emit("No evaluation history found in SQLite.");
         return;
       }
       const entries: IHistoryEntry[] = runs.map((r) => ({
@@ -332,9 +367,9 @@ export class EvalCommands extends BaseCommand {
   private renderHistory(entries: IHistoryEntry[], format?: Opt<string, Reason.OptionalInput>): void {
     const fmt = format ?? "table";
     if (fmt === JSON_FORMAT) {
-      console.log(JSON.stringify(entries, null, 2));
+      this.emit(JSON.stringify(entries, null, 2));
     } else {
-      renderHistoryTable(entries);
+      renderHistoryTable(this.emit, entries);
     }
   }
 
@@ -375,10 +410,10 @@ export class EvalCommands extends BaseCommand {
       withEvalStore(resolveDb(), (store) => {
         const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
         if (runs.length === 0) {
-          console.log("No evaluation history found for cost report.");
+          this.emit("No evaluation history found for cost report.");
           return;
         }
-        renderCostReportTable(groupRunsByCell(runs));
+        renderCostReportTable(this.emit, groupRunsByCell(runs));
       });
       return;
     }
@@ -396,22 +431,22 @@ export class EvalCommands extends BaseCommand {
       withEvalStore(resolveDb(), (store) => {
         const summary = store.summarizeByTag("task:", { pack: options.pack });
         if (summary.length === 0) {
-          console.log("No family summary data found.");
+          this.emit("No family summary data found.");
           return;
         }
         if (options.format === JSON_FORMAT) {
-          console.log(JSON.stringify(summary, null, 2));
+          this.emit(JSON.stringify(summary, null, 2));
           return;
         }
-        console.log("Family Report");
-        console.log("-------------");
-        console.log(
+        this.emit("Family Report");
+        this.emit("-------------");
+        this.emit(
           `  ${FAMILY_COLUMN.padEnd(25)} ${TASKS_COLUMN.padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
             "Reconcile".padEnd(10)
           } ${"Duration".padEnd(10)}`,
         );
         for (const row of summary) {
-          console.log(
+          this.emit(
             `  ${row.family.padEnd(25)} ${String(row.taskCount).padEnd(6)} ${row.meanScore.toFixed(3).padEnd(7)} ${
               row.meanPassAt1.toFixed(3).padEnd(8)
             } ${(row.reconcileRate * 100).toFixed(0).padEnd(9)}% ${
@@ -443,7 +478,7 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
-    console.log(
+    this.emit(
       `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness, interactive, memory`,
     );
   }
@@ -468,13 +503,13 @@ export class EvalCommands extends BaseCommand {
         runIds: options.runIds,
       });
       if (rows.length === 0) {
-        console.log("No adversarial-pack run data found for robustness report.");
+        this.emit("No adversarial-pack run data found for robustness report.");
         return;
       }
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify(rows, null, 2));
+        this.emit(JSON.stringify(rows, null, 2));
       } else {
-        renderRobustnessTable(rows);
+        renderRobustnessTable(this.emit, rows);
       }
     });
   }
@@ -493,13 +528,13 @@ export class EvalCommands extends BaseCommand {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const rows = computeInteractiveRows(runs, { runIds: options.runIds });
       if (rows.length === 0) {
-        console.log("No interactive-pack run data found for interactive report.");
+        this.emit("No interactive-pack run data found for interactive report.");
         return;
       }
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify(rows, null, 2));
+        this.emit(JSON.stringify(rows, null, 2));
       } else {
-        renderInteractiveTable(rows);
+        renderInteractiveTable(this.emit, rows);
       }
     });
   }
@@ -513,14 +548,14 @@ export class EvalCommands extends BaseCommand {
       const tagPrefix = options.groupBy === "subsystem" ? "subsystem:" : "entity:";
       const summary = store.summarizeByTag(tagPrefix, { pack: options.pack });
       if (summary.length === 0) {
-        console.log("No matching summary data found for the requested group.");
+        this.emit("No matching summary data found for the requested group.");
         return;
       }
-      console.log(
+      this.emit(
         `${options.groupBy === "subsystem" ? "Subsystem" : "Entity"} Report`,
       );
-      console.log("-".repeat(70));
-      console.log(
+      this.emit("-".repeat(70));
+      this.emit(
         `  ${"Name".padEnd(30)} ${TASKS_COLUMN.padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${
           "Delta".padEnd(8)
         } ${"Pass@1".padEnd(8)} ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
@@ -533,7 +568,7 @@ export class EvalCommands extends BaseCommand {
         // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
         // would read as "no change" rather than "no comparison".
         const delta = row.delta === null ? "—" : `${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(3)}`;
-        console.log(
+        this.emit(
           `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${
             `${row.passedCount}/${row.taskCount}`.padEnd(8)
           } ${mean.padEnd(7)} ${delta.padEnd(8)} ${row.meanPassAt1.toFixed(3).padEnd(8)} ${
@@ -554,13 +589,13 @@ export class EvalCommands extends BaseCommand {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const rows = computeFrontierRows(runs);
       if (rows.length === 0) {
-        console.log("No frontier data found in history.");
+        this.emit("No frontier data found in history.");
         return;
       }
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify(rows, null, 2));
+        this.emit(JSON.stringify(rows, null, 2));
       } else {
-        renderFrontierTable(rows);
+        renderFrontierTable(this.emit, rows);
       }
     });
   }
@@ -571,14 +606,14 @@ export class EvalCommands extends BaseCommand {
       const rows = computeMemoryAbilityRows(runs);
       const metricRows = computeMemoryMetricRows(runs);
       if (rows.length === 0 && metricRows.length === 0) {
-        console.log("No memory evaluation history found.");
+        this.emit("No memory evaluation history found.");
         return;
       }
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify(rows, null, 2));
+        this.emit(JSON.stringify(rows, null, 2));
       } else {
-        if (rows.length > 0) renderMemoryAbilityTable(rows);
-        renderMemoryMetricTable(metricRows);
+        if (rows.length > 0) renderMemoryAbilityTable(this.emit, rows);
+        renderMemoryMetricTable(this.emit, metricRows);
       }
     });
   }
@@ -593,9 +628,9 @@ export class EvalCommands extends BaseCommand {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const report = computeFailuresReport(runs);
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify(report, null, 2));
+        this.emit(JSON.stringify(report, null, 2));
       } else {
-        renderFailuresTable(report);
+        renderFailuresTable(this.emit, report);
       }
     });
   }
@@ -612,7 +647,7 @@ export class EvalCommands extends BaseCommand {
     withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryExternalRuns({ pack: options.pack });
       if (runs.length === 0) {
-        console.log("No external-benchmark runs found in history.");
+        this.emit("No external-benchmark runs found in history.");
         return;
       }
       const subsetByVersion = new Map<string, number>();
@@ -629,9 +664,9 @@ export class EvalCommands extends BaseCommand {
       }
       const rows = computeExternalRows(runs, subsetByVersion);
       if (options.format === JSON_FORMAT) {
-        console.log(JSON.stringify({ caveat: EXTERNAL_BENCHMARK_CAVEAT, rows }, null, 2));
+        this.emit(JSON.stringify({ caveat: EXTERNAL_BENCHMARK_CAVEAT, rows }, null, 2));
       } else {
-        renderExternalTable(rows);
+        renderExternalTable(this.emit, rows);
       }
     });
   }
@@ -661,33 +696,37 @@ export class EvalCommands extends BaseCommand {
     }
     const stdout = new TextDecoder().decode(output.stdout);
     if (isLift) {
-      renderHarnessLiftTable(stdout);
+      renderHarnessLiftTable(this.emit, stdout);
     } else {
-      renderAblationTable(stdout);
+      renderAblationTable(this.emit, stdout);
     }
   }
 
-  compare(runA: string, runB: string): void {
+  compare(runA: string, runB: string, format?: Opt<string, Reason.OptionalInput>): void {
     withEvalStore(resolveEvalDbPath(), (store) => {
       const result = store.compareRuns(runA, runB);
-      if (!result.runA && !result.runB) {
-        console.log("Neither run found in SQLite history.");
+      if (format === JSON_FORMAT) {
+        this.emit(JSON.stringify(compareReport(runA, runB, result), null, 2));
         return;
       }
-      console.log(`Comparing run A (${runA}) vs run B (${runB}):`);
-      console.log(`  Score delta: ${result.scoreDelta > 0 ? "+" : ""}${result.scoreDelta.toFixed(3)}`);
+      if (!result.runA && !result.runB) {
+        this.emit("Neither run found in SQLite history.");
+        return;
+      }
+      this.emit(`Comparing run A (${runA}) vs run B (${runB}):`);
+      this.emit(`  Score delta: ${result.scoreDelta > 0 ? "+" : ""}${result.scoreDelta.toFixed(3)}`);
       if (result.runA) {
-        console.log(
+        this.emit(
           `  Run A: scenario=${result.runA.scenario_id}, score=${result.runA.suite_score}, timestamp=${result.runA.run_timestamp}`,
         );
       }
       if (result.runB) {
-        console.log(
+        this.emit(
           `  Run B: scenario=${result.runB.scenario_id}, score=${result.runB.suite_score}, timestamp=${result.runB.run_timestamp}`,
         );
       }
       if (result.stepsA.length > 0 || result.stepsB.length > 0) {
-        console.log(`\nSteps comparison:`);
+        this.emit(`\nSteps comparison:`);
         const maxSteps = Math.max(result.stepsA.length, result.stepsB.length);
         for (let i = 0; i < maxSteps; i++) {
           const stepA = result.stepsA[i];
@@ -695,7 +734,7 @@ export class EvalCommands extends BaseCommand {
           const stepId = stepA?.step_id ?? stepB?.step_id ?? `step-${i}`;
           const scoreA = stepA?.score ?? 0;
           const scoreB = stepB?.score ?? 0;
-          console.log(
+          this.emit(
             `  ${stepId}: ${scoreA.toFixed(2)} → ${scoreB.toFixed(2)} (${(scoreB - scoreA > 0 ? "+" : "")}${
               (scoreB - scoreA).toFixed(2)
             })`,
@@ -704,6 +743,23 @@ export class EvalCommands extends BaseCommand {
       }
     });
   }
+}
+
+/** The comparison of two runs as data: both run ids, the score delta and one row per step. */
+function compareReport(runA: string, runB: string, result: ReturnType<EvalSqliteStore["compareRuns"]>): IJsonCompare {
+  const steps: IJsonCompareStep[] = [];
+  const maxSteps = Math.max(result.stepsA.length, result.stepsB.length);
+  for (let i = 0; i < maxSteps; i++) {
+    const stepA = result.stepsA[i];
+    const stepB = result.stepsB[i];
+    steps.push({
+      step_id: stepA?.step_id ?? stepB?.step_id ?? `step-${i}`,
+      score_a: stepA?.score ?? null,
+      score_b: stepB?.score ?? null,
+    });
+  }
+  const found = Boolean(result.runA ?? result.runB);
+  return { run_a: runA, run_b: runB, found, score_delta: found ? result.scoreDelta : null, steps };
 }
 
 function resolveFrameworkPath(): string {
@@ -884,16 +940,16 @@ function computeFrontierRows(runs: IFrontierRunRow[]): IFrontierCellRow[] {
 }
 
 /** Render the frontier table: per-cell score/cost/cost-per-solved with Pareto markers. */
-function renderFrontierTable(rows: IFrontierCellRow[]): void {
-  console.log("Accuracy vs Cost Frontier");
-  console.log("-".repeat(100));
-  console.log(
+function renderFrontierTable(emit: TEmit, rows: IFrontierCellRow[]): void {
+  emit("Accuracy vs Cost Frontier");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Cell", 24)} ${padRight(RUNS_COLUMN, 6)} ${padRight("Solved", 8)} ${padRight("MeanScore", 10)} ${
       padRight("MeanCost", 10)
     } ${padRight("Cost/Solved", 12)} Pareto`,
   );
   for (const row of rows) {
-    console.log(
+    emit(
       `  ${padRight(row.cell.slice(0, 24), 24)} ${padRight(String(row.runCount), 6)} ${
         padRight(String(row.passedCount), 8)
       } ${padRight(formatNumberOrAbsent(row.meanScore, 3), 10)} ${
@@ -1032,16 +1088,16 @@ export function computeMemoryMetricRows(runs: IMemoryAbilityRunRow[]): IMemoryMe
 }
 
 /** Render the memory-ability table: per (ability, provider) score/pass-count/efficiency. */
-function renderMemoryAbilityTable(rows: IMemoryAbilityRow[]): void {
-  console.log("Memory Evaluation — Per Ability");
-  console.log("-".repeat(100));
-  console.log(
+function renderMemoryAbilityTable(emit: TEmit, rows: IMemoryAbilityRow[]): void {
+  emit("Memory Evaluation — Per Ability");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Ability", 26)} ${padRight(PROVIDER_COLUMN, 14)} ${padRight(RUNS_COLUMN, 6)} ${
       padRight("Passed", 8)
     } ${padRight("MeanScore", 10)} ${padRight("Tokens/Q", 10)} Ms/Q`,
   );
   for (const row of rows) {
-    console.log(
+    emit(
       `  ${padRight(row.ability.slice(0, 26), 26)} ${padRight(row.provider.slice(0, 14), 14)} ${
         padRight(String(row.runCount), 6)
       } ${padRight(String(row.passedCount), 8)} ${padRight(formatNumberOrAbsent(row.meanScore, 3), 10)} ${
@@ -1053,18 +1109,18 @@ function renderMemoryAbilityTable(rows: IMemoryAbilityRow[]): void {
 
 /** Render the memory-metric table: per (metric, provider) score/pass-count for signals
  *  outside the five-ability taxonomy (consolidation-quality, learning-effectiveness). */
-function renderMemoryMetricTable(rows: IMemoryMetricRow[]): void {
+function renderMemoryMetricTable(emit: TEmit, rows: IMemoryMetricRow[]): void {
   if (rows.length === 0) return;
-  console.log();
-  console.log("Memory Evaluation — Consolidation & Learning-Effectiveness");
-  console.log("-".repeat(100));
-  console.log(
+  emit("");
+  emit("Memory Evaluation — Consolidation & Learning-Effectiveness");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Metric", 26)} ${padRight(PROVIDER_COLUMN, 14)} ${padRight(RUNS_COLUMN, 6)} ${
       padRight("Passed", 8)
     } MeanScore`,
   );
   for (const row of rows) {
-    console.log(
+    emit(
       `  ${padRight(row.metric.slice(0, 26), 26)} ${padRight(row.provider.slice(0, 14), 14)} ${
         padRight(String(row.runCount), 6)
       } ${padRight(String(row.passedCount), 8)} ${formatNumberOrAbsent(row.meanScore, 3)}`,
@@ -1131,27 +1187,27 @@ function computeFailuresReport(runs: IFailuresRunRow[]): IFailuresReport {
 }
 
 /** Render the failures report: per-class rows with family/cell counts + top class per cell. */
-function renderFailuresTable(report: IFailuresReport): void {
+function renderFailuresTable(emit: TEmit, report: IFailuresReport): void {
   if (report.classes.length === 0) {
-    console.log("No failure classes found in history.");
+    emit("No failure classes found in history.");
     return;
   }
-  console.log("Failure Classes");
-  console.log("-".repeat(100));
-  console.log(
+  emit("Failure Classes");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Class", 32)} ${padRight("Count", 6)} ${padRight("Families", 30)} ${padRight("Cells", 28)}`,
   );
   for (const row of report.classes) {
-    console.log(
+    emit(
       `  ${padRight(row.className.slice(0, 32), 32)} ${padRight(String(row.count), 6)} ${
         padRight(row.familyCounts.map((f) => `${f.family}(${f.count})`).join(", ").slice(0, 30), 30)
       } ${padRight(row.cellCounts.map((c) => `${c.cell}(${c.count})`).join(", ").slice(0, 28), 28)}`,
     );
   }
   if (report.topClassByCell.length > 0) {
-    console.log("\nTop class per cell:");
+    emit("\nTop class per cell:");
     for (const top of report.topClassByCell) {
-      console.log(`  ${top.cell}: ${top.className} (${top.count})`);
+      emit(`  ${top.cell}: ${top.className} (${top.count})`);
     }
   }
 }
@@ -1280,23 +1336,23 @@ export function computeRobustnessRows(
 
 /** Render the robustness report: the AgentDojo triple per vector/family; unmatched groups
  *  (only one side of the clean/attacked pair present) render as an excluded warning line. */
-function renderRobustnessTable(rows: IRobustnessRow[]): void {
-  console.log("Adversarial Robustness Report (AgentDojo triple)");
-  console.log("-".repeat(100));
-  console.log(
+function renderRobustnessTable(emit: TEmit, rows: IRobustnessRow[]): void {
+  emit("Adversarial Robustness Report (AgentDojo triple)");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Vector", 18)} ${padRight(FAMILY_COLUMN, 20)} ${padRight("Clean", 7)} ${padRight("Attacked", 9)} ${
       padRight("AttackSucc", 10)
     } ${padRight("Gap", 7)}`,
   );
   for (const row of rows) {
     if (!row.matched) {
-      console.log(
+      emit(
         `  ${padRight(row.vector, 18)} ${padRight(row.family, 20)} ` +
           `excluded: unmatched twin (clean=${row.cleanRunCount}, attacked=${row.attackedRunCount})`,
       );
       continue;
     }
-    console.log(
+    emit(
       `  ${padRight(row.vector, 18)} ${padRight(row.family, 20)} ${
         padRight(formatNumberOrAbsent(row.cleanUtility, 3), 7)
       } ${padRight(formatNumberOrAbsent(row.utilityUnderAttack, 3), 9)} ${
@@ -1392,16 +1448,16 @@ export function computeInteractiveRows(
 
 /** Render the interactive report: per-persona rounds-to-converge, non-convergence rate,
  *  policy-adherence rate, and pass^k. */
-function renderInteractiveTable(rows: IInteractiveRow[]): void {
-  console.log("Interactive Pack Report (per persona)");
-  console.log("-".repeat(100));
-  console.log(
+function renderInteractiveTable(emit: TEmit, rows: IInteractiveRow[]): void {
+  emit("Interactive Pack Report (per persona)");
+  emit("-".repeat(100));
+  emit(
     `  ${padRight("Persona", 14)} ${padRight(RUNS_COLUMN, 6)} ${padRight("MeanRounds", 11)} ${
       padRight("NonConverge", 12)
     } ${padRight("Adherence", 10)} ${padRight("Pass^K", 8)}`,
   );
   for (const row of rows) {
-    console.log(
+    emit(
       `  ${padRight(row.persona, 14)} ${padRight(String(row.runCount), 6)} ${
         padRight(formatNumberOrAbsent(row.meanRoundsToConverge, 3), 11)
       } ${padRight(formatNumberOrAbsent(row.nonConvergenceRate, 3), 12)} ${
@@ -1505,10 +1561,10 @@ function computeExternalRows(
 }
 
 /** Render the external-benchmark comparability table + the single-sourced caveat block. */
-function renderExternalTable(rows: IExternalCellRow[]): void {
-  console.log("External Benchmark Comparability");
-  console.log("-".repeat(120));
-  console.log(
+function renderExternalTable(emit: TEmit, rows: IExternalCellRow[]): void {
+  emit("External Benchmark Comparability");
+  emit("-".repeat(120));
+  emit(
     `  ${padRight("Benchmark", 14)} ${padRight("Version", 12)} ${padRight("Cell", 22)} ${
       padRight(PROVIDER_COLUMN, 10)
     } ${padRight("Model", 16)} ${padRight(TASKS_COLUMN, 6)} ${padRight("Resolved", 9)} ${padRight("Rate", 7)} ${
@@ -1517,7 +1573,7 @@ function renderExternalTable(rows: IExternalCellRow[]): void {
   );
   for (const row of rows) {
     const coverage = row.coveragePct === undefined ? COST_REPORT_ABSENT_VALUE : `${row.coveragePct.toFixed(0)}%`;
-    console.log(
+    emit(
       `  ${padRight(row.benchmark.slice(0, 14), 14)} ${padRight(row.benchmarkVersion.slice(0, 12), 12)} ${
         padRight(row.cell.slice(0, 22), 22)
       } ${padRight(row.provider.slice(0, 10), 10)} ${padRight(row.model.slice(0, 16), 16)} ${
@@ -1529,16 +1585,16 @@ function renderExternalTable(rows: IExternalCellRow[]): void {
       } ${row.latestRunAt.slice(0, 10)}`,
     );
   }
-  console.log(`\nCaveat: ${EXTERNAL_BENCHMARK_CAVEAT}`);
+  emit(`\nCaveat: ${EXTERNAL_BENCHMARK_CAVEAT}`);
 }
 
-function renderCostReportTable(groups: ICostReportCellGroup[]): void {
+function renderCostReportTable(emit: TEmit, groups: ICostReportCellGroup[]): void {
   const header = `${padRight("CELL", 24)} | ${padRight("PROVIDER", 14)} | ${padRight("MODEL", 18)} | ${
     padRight("MEAN DURATION_MS", 16)
   } | ${padRight("MEAN LLM_MS", 12)} | ${padRight("TOKENS (P/C)", 16)} | ${padRight("TOTAL COST", 12)} | MEAN COST`;
   const sep = "-".repeat(header.length);
-  console.log(header);
-  console.log(sep);
+  emit(header);
+  emit(sep);
 
   for (const group of groups) {
     const durations = group.runs.map((r) => r.duration_ms).filter((v): v is number => v !== null);
@@ -1551,7 +1607,7 @@ function renderCostReportTable(groups: ICostReportCellGroup[]): void {
     const totalCost = sum(trackedCosts);
     const meanCost = mean(trackedCosts);
 
-    console.log(
+    emit(
       `${padRight(group.cellId, 24)} | ${padRight(group.provider, 14)} | ${padRight(group.model, 18)} | ${
         padRight(formatNumberOrAbsent(mean(durations)), 16)
       } | ${padRight(formatNumberOrAbsent(mean(llmDurations)), 12)} | ${
@@ -1561,20 +1617,20 @@ function renderCostReportTable(groups: ICostReportCellGroup[]): void {
   }
 }
 
-function renderHistoryTable(entries: IHistoryEntry[]): void {
+function renderHistoryTable(emit: TEmit, entries: IHistoryEntry[]): void {
   const header = `${padRight("RUN ID", 36)} | ${padRight("SCENARIO", 28)} | ${padRight("OUTCOME", 16)} | ${
     padRight("SCORE", 8)
   } | ${padRight("PASSED", 8)} | ${padRight("SCORING", 9)} | TIMESTAMP`;
   const sep = "-".repeat(header.length);
-  console.log(header);
-  console.log(sep);
+  emit(header);
+  emit(sep);
 
   for (const entry of entries) {
     const score = entry.suite_score !== undefined ? entry.suite_score.toFixed(2) : "N/A";
     const passed = entry.passed ? "✓" : "✗";
     const scoring = entry.scoring_mode ?? "additive";
     const ts = entry.timestamp.slice(0, 19).replace("T", " ");
-    console.log(
+    emit(
       `${padRight(entry.run_id.slice(0, 36), 36)} | ${padRight(entry.scenario_id.slice(0, 28), 28)} | ${
         padRight(entry.outcome.slice(0, 16), 16)
       } | ${padRight(score, 8)} | ${padRight(passed, 8)} | ${padRight(scoring, 9)} | ${ts}`,
@@ -1616,26 +1672,26 @@ function formatMeanDelta(family: IViewFamilyBase): string {
   return `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
 }
 
-function renderFamilyBasis(family: IViewFamilyBase): void {
-  console.log(
+function renderFamilyBasis(emit: TEmit, family: IViewFamilyBase): void {
+  emit(
     `  basis: control=${family.basis.controlCell} (runs: ${
       family.basis.controlRunIds.join(", ") || "—"
     }) | treatment=${family.basis.treatmentCell} (runs: ${family.basis.treatmentRunIds.join(", ") || "—"})`,
   );
   if (family.basis.unmatchedTaskIds.length > 0) {
-    console.log(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
+    emit(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
   }
 }
 
-function renderUnmatchedWarning(unmatchedWarningCount: number): void {
+function renderUnmatchedWarning(emit: TEmit, unmatchedWarningCount: number): void {
   if (unmatchedWarningCount > 0) {
-    console.log(
+    emit(
       `Warning: ${unmatchedWarningCount} unmatched task(s) had no matched pair and were excluded`,
     );
   }
 }
 
-function renderHarnessLiftTable(stdout: string): void {
+function renderHarnessLiftTable(emit: TEmit, stdout: string): void {
   let report: IHarnessLiftViewReport;
   try {
     report = JSON.parse(stdout) as IHarnessLiftViewReport;
@@ -1644,12 +1700,12 @@ function renderHarnessLiftTable(stdout: string): void {
     return;
   }
   if (report.families.length === 0) {
-    console.log("No harness-lift comparisons found in history.");
+    emit("No harness-lift comparisons found in history.");
     return;
   }
-  console.log(`Harness Lift Report (${report.arm.kind} / ${report.arm.metric})`);
-  console.log("-".repeat(100));
-  console.log(
+  emit(`Harness Lift Report (${report.arm.kind} / ${report.arm.metric})`);
+  emit("-".repeat(100));
+  emit(
     `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Tool", 12)} ${padRight(PROVIDER_COLUMN, 10)} ${
       padRight("Model", 20)
     } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
@@ -1657,16 +1713,16 @@ function renderHarnessLiftTable(stdout: string): void {
   for (const family of report.families) {
     const meanDelta = formatMeanDelta(family);
     const verdict = family.comparison.noEffect ? "no-effect" : "effect";
-    console.log(
+    emit(
       `  ${padRight(family.family, 24)} ${padRight(family.tool, 12)} ${padRight(family.provider, 10)} ${
         padRight(family.model ?? "—", 20)
       } ${padRight(String(family.taskCount), 6)} ${padRight(meanDelta, 10)} ${
         padRight(family.comparison.stdevDelta.toFixed(3), 10)
       } ${verdict}`,
     );
-    renderFamilyBasis(family);
+    renderFamilyBasis(emit, family);
   }
-  renderUnmatchedWarning(report.unmatchedWarningCount);
+  renderUnmatchedWarning(emit, report.unmatchedWarningCount);
 }
 
 interface IAblationViewFamilyRow extends IViewFamilyBase {
@@ -1679,7 +1735,7 @@ interface IAblationViewReport {
   unmatchedWarningCount: number;
 }
 
-function renderAblationTable(stdout: string): void {
+function renderAblationTable(emit: TEmit, stdout: string): void {
   let report: IAblationViewReport;
   try {
     report = JSON.parse(stdout) as IAblationViewReport;
@@ -1688,15 +1744,15 @@ function renderAblationTable(stdout: string): void {
     return;
   }
   if (report.families.length === 0) {
-    console.log("No ablation comparisons found in history.");
+    emit("No ablation comparisons found in history.");
     return;
   }
   const armLabel = report.subsystems
     .map((s) => `${s.subsystem} (${s.kind})`)
     .join(", ");
-  console.log(`Ablation Report — arms: ${armLabel}`);
-  console.log("-".repeat(100));
-  console.log(
+  emit(`Ablation Report — arms: ${armLabel}`);
+  emit("-".repeat(100));
+  emit(
     `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Subsystem", 16)} ${padRight("Tool", 12)} ${
       padRight(PROVIDER_COLUMN, 10)
     } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
@@ -1704,14 +1760,14 @@ function renderAblationTable(stdout: string): void {
   for (const family of report.families) {
     const meanDelta = formatMeanDelta(family);
     const verdict = family.comparison.noEffect ? "no-effect" : "effect";
-    console.log(
+    emit(
       `  ${padRight(family.family, 24)} ${padRight(family.subsystem, 16)} ${padRight(family.tool, 12)} ${
         padRight(family.provider, 10)
       } ${padRight(String(family.taskCount), 6)} ${padRight(meanDelta, 10)} ${
         padRight(family.comparison.stdevDelta.toFixed(3), 10)
       } ${verdict}`,
     );
-    renderFamilyBasis(family);
+    renderFamilyBasis(emit, family);
   }
-  renderUnmatchedWarning(report.unmatchedWarningCount);
+  renderUnmatchedWarning(emit, report.unmatchedWarningCount);
 }

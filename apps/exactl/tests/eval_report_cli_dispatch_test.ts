@@ -43,20 +43,20 @@ Deno.test("eval report defaults --view to cost when omitted", async () => {
   });
 });
 
-Deno.test("eval report --view external --format json dispatches format through the real command tree (Phase 144 Step 4)", async () => {
+Deno.test("eval report --view external -o json dispatches format json through the real command tree (Phase 144 Step 4)", async () => {
   await withTestMod(async (mod, ctx) => {
     let receivedOptions: { view?: string; format?: string } | undefined;
     ctx.evalCommands.report = (options: { view?: string; format?: string }) => {
       receivedOptions = options;
     };
 
-    await mod.__test_command.parse(["eval", "report", "--view", "external", "--format", "json"]);
+    await mod.__test_command.parse(["eval", "report", "--view", "external", "-o", "json"]);
 
     assertEquals(receivedOptions?.view, "external");
     assertEquals(
       receivedOptions?.format,
       "json",
-      "--format must reach evalCommands.report — it was previously unwired on this command",
+      "-o json must reach evalCommands.report as format json",
     );
   });
 });

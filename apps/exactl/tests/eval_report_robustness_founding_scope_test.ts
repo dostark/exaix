@@ -15,7 +15,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeRobustnessRows, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 Deno.test("[EvalReportRobustnessFoundingScope] runIds allowlist excludes runs added after the founding set", () => {
   const rows = computeRobustnessRows(
@@ -94,8 +94,9 @@ Deno.test("[EvalReportRobustnessFoundingScope] --view robustness --run-ids rende
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() =>
-    cmds.report({ view: "robustness", dbPath, runIds: ["founding-clean", "founding-attacked"] })
+  const { output } = await withEvalOutput(
+    cmds,
+    () => cmds.report({ view: "robustness", dbPath, runIds: ["founding-clean", "founding-attacked"] }),
   );
   const text = output.join("\n");
   assertStringIncludes(text, "portal-readme");

@@ -34,6 +34,7 @@ const FOLLOWED_NOUNS = [
   "log",
   "model",
   "daemon",
+  "eval",
 ];
 
 function unlisted() {

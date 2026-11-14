@@ -137,6 +137,7 @@ const DOCUMENTED_NOUNS = [
   "dashboard",
   "log",
   "model",
+  "eval",
 ];
 
 function unlisted(rule: (typeof DOC_RULES)[number], violations = liveDocViolations()) {
@@ -164,7 +165,7 @@ Deno.test("every record declares an output kind and only the named leaves are PR
   const protocol = EXACTL_COMMAND_DOCS.filter((doc) => doc.output === ExaCtlOutputKind.PROTOCOL).map((doc) =>
     doc.path.join(" ")
   );
-  assertEquals(protocol, ["daemon logs", "mcp serve", "dashboard"]);
+  assertEquals(protocol, ["daemon logs", "mcp serve", "dashboard", "eval report", "eval calibration score"]);
 });
 
 Deno.test("the doc rules have no allow-list entries for the documented nouns", () => {

@@ -144,7 +144,13 @@ export function findLegacyPaths(nodes: readonly ICommandTreeNode[], renames: rea
 }
 
 /** The leaves that own the terminal or a protocol on stdout. Every other leaf prints data. */
-const PROTOCOL_LEAVES: ReadonlySet<string> = new Set(["dashboard", "mcp serve", "daemon logs"]);
+const PROTOCOL_LEAVES: ReadonlySet<string> = new Set([
+  "dashboard",
+  "mcp serve",
+  "daemon logs",
+  "eval report",
+  "eval calibration score",
+]);
 const SUMMARY_MAX_CHARS = 72;
 const EXACTL_PREFIX = "exactl ";
 const NON_IMPERATIVE_ENDINGS = ["ing", "ed"];

@@ -17,7 +17,7 @@ import { assert, assertStringIncludes } from "@std/assert";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 import { seedOutcomeRun } from "./helpers/eval_outcome_seed.ts";
 
 Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/noEffect with basis from seeded runs", async () => {
@@ -116,7 +116,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "ablation", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "ablation", dbPath }));
 
   const text = output.join("\n");
   assertStringIncludes(text, "task:bug-fix", "family name must be rendered");
@@ -142,7 +142,7 @@ Deno.test("[EvalReportAblationView] empty history renders the no-history notice,
   const { context, tempDir, cleanup } = await createCliTestContext();
   const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "ablation", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "ablation", dbPath }));
   const text = output.join("\n");
   assert(
     text.length > 0 && !text.includes("Error"),

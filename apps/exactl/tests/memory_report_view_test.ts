@@ -17,7 +17,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeMemoryAbilityRows, computeMemoryMetricRows, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedMemoryRun(
   store: EvalSqliteStore,
@@ -132,7 +132,7 @@ Deno.test("[EvalReportMemoryView] renders per-ability/provider score, pass count
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "memory", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "memory", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "information-extraction");
@@ -169,7 +169,7 @@ Deno.test("[EvalReportMemoryView] also renders consolidation/learning-effectiven
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "memory", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "memory", dbPath }));
   const text = output.join("\n");
 
   assertStringIncludes(text, "Per Ability");
@@ -193,7 +193,7 @@ Deno.test("[EvalReportMemoryView] --format json renders machine-readable per-abi
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "memory", dbPath, format: "json" }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "memory", dbPath, format: "json" }));
   const parsed = JSON.parse(output.join("\n"));
 
   assertEquals(Array.isArray(parsed), true);
@@ -209,7 +209,7 @@ Deno.test("[EvalReportMemoryView] no memory-tagged history reports cleanly, not 
   store.close();
 
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "memory", dbPath }));
+  const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "memory", dbPath }));
   assertStringIncludes(output.join("\n"), "No memory");
   await cleanup();
 });

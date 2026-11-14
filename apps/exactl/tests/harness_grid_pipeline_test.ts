@@ -33,7 +33,7 @@ import {
 import { SCHEMA_VERSION } from "../../../tests/scenario_framework/schema/version.ts";
 import type { IRunManifest } from "../../../tests/scenario_framework/runner/evidence_collector.ts";
 import type { IScenarioVerdict } from "../../../tests/scenario_framework/runner/scoring.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 const GRID_STEPS = [
   {
@@ -187,7 +187,7 @@ Deno.test("[HarnessGridPipeline] the grid pipeline runs token-free, attributes t
       { view: "failures", expect: ["Failure Classes", "execution.failed"] },
     ];
     for (const { view, expect } of views) {
-      const { output } = await withCapturedOutput(() => cmds.report({ view, dbPath }));
+      const { output } = await withEvalOutput(cmds, () => cmds.report({ view, dbPath }));
       const text = output.join("\n");
       assert(text.length > 0 && !text.includes("Error"), `${view} view must render without error`);
       for (const needle of expect) {

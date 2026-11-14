@@ -15,7 +15,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { withEvalOutput } from "./helpers/captured_output.ts";
 
 function seedRun(
   store: EvalSqliteStore,
@@ -87,7 +87,7 @@ Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/mo
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "cost", scenario: "report-test", dbPath }));
+    const { output } = await withEvalOutput(cmds, () => cmds.report({ view: "cost", scenario: "report-test", dbPath }));
     const text = output.join("\n");
 
     assertStringIncludes(text, "claude-code-anthropic");
@@ -118,8 +118,9 @@ Deno.test("[EvalReportCostView] a cell with no tracked cost data renders — nev
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() =>
-      cmds.report({ view: "cost", scenario: "report-test-untracked", dbPath })
+    const { output } = await withEvalOutput(
+      cmds,
+      () => cmds.report({ view: "cost", scenario: "report-test-untracked", dbPath }),
     );
     const text = output.join("\n");
 
@@ -156,8 +157,9 @@ Deno.test("[EvalReportCostView] renders per-cell comparison for at least two mat
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() =>
-      cmds.report({ view: "cost", scenario: "multi-cell-test", dbPath })
+    const { output } = await withEvalOutput(
+      cmds,
+      () => cmds.report({ view: "cost", scenario: "multi-cell-test", dbPath }),
     );
     const text = output.join("\n");
 

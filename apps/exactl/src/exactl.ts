@@ -54,13 +54,22 @@ import type { IExaCtlRuntime } from "./exactl_runtime.ts";
 import { ExaCtlCommandName } from "./exactl_constants.ts";
 import { handleExaCtlError } from "./exactl_error_handler.ts";
 import { buildLogCommand } from "./command_builders/log_command.ts";
-import { defaultOutputSink, isColorDisabled, normalizeGlobalOptions } from "./output/exactl_output.ts";
+import {
+  createExaCtlRenderer,
+  defaultOutputSink,
+  isColorDisabled,
+  normalizeGlobalOptions,
+} from "./output/exactl_output.ts";
 import { EXACTL_NOUN_DOCS } from "./command_docs/mod.ts";
 import { renderRootDescription } from "./docs/root_help.ts";
-import type { IExaCtlOutputSink } from "@exaix/cli";
+import type { IExaCtlContributionServices, IExaCtlOutputSink } from "@exaix/cli";
 
 export interface IExaCtlCommandOptions {
-  registerEditionCommands?: (root: typeof baseCommand, context: ICliApplicationContext) => void;
+  registerEditionCommands?: (
+    root: typeof baseCommand,
+    context: ICliApplicationContext,
+    services: IExaCtlContributionServices,
+  ) => void;
 }
 
 // Allow tests to run the CLI entrypoint without initializing heavy services
@@ -307,13 +316,18 @@ rootCommand.description(
 // cliffy attaches .error() to the last registered command unless reset() runs first.
 baseCommand.reset().error((error) => handleExaCtlError(error, Deno.args, Deno.exit, baseCommand));
 
+/** What an edition contribution needs to render like every other command. */
+const contributionServices: IExaCtlContributionServices = {
+  createRenderer: (options) => createExaCtlRenderer(options, ExaCtlOutputFormat.TEXT, outputSink),
+};
+
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
 
 /** Returns the single initialized CLI command tree, applying edition contributions before parsing. */
 export function createExaCtlCommand(options: IExaCtlCommandOptions = {}): typeof baseCommand {
   const registration = options.registerEditionCommands;
   if (registration !== undefined && !editionRegistrations.has(registration)) {
-    registration(baseCommand, context);
+    registration(baseCommand, context, contributionServices);
     editionRegistrations.add(registration);
   }
   return baseCommand;
