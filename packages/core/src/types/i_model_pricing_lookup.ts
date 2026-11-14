@@ -18,3 +18,6 @@ export type CostSource = "provider_reported" | "registry_computed" | "estimated"
 export interface IModelPricingLookup {
   getModelPricing(provider: string, model: string): Promise<IModelPricing>;
 }
+
+/** The source of a flat-rate estimate. A row stored before sources were recorded has none and counts as this. */
+export const COST_SOURCE_ESTIMATE = "estimated";

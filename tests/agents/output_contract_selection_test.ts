@@ -6,10 +6,8 @@
  * @related-files [packages/core/src/skills/output_contract.ts, packages/core/src/skills/skills.ts]
  */
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
-import { EventLogger } from "@exaix/core/logger";
-import { OUTPUT_CONTRACT_SKILL, SkillsService } from "@exaix/core/skills";
-import { initTestDbService, REPO_ROOT } from "@exaix/testing";
+import { OUTPUT_CONTRACT_SKILL } from "@exaix/core/skills";
+import { createRealSkillsService } from "./helpers/real_skills_service.ts";
 
 const CONTRACT_SKILLS = new Set(Object.values(OUTPUT_CONTRACT_SKILL));
 
@@ -22,17 +20,8 @@ const WORDINGS = [
 ];
 
 Deno.test("fix(skills): request wording never selects a response-contract skill", async () => {
-  const environment = await initTestDbService();
+  const { service, cleanup } = await createRealSkillsService();
   try {
-    const service = new SkillsService(
-      {
-        memoryDir: join(environment.tempDir, "Memory"),
-        blueprintSkillsDir: join(REPO_ROOT, "Blueprints", "Skills"),
-      },
-      environment.db,
-      undefined,
-      new EventLogger({ db: environment.db }),
-    );
     for (const wording of WORDINGS) {
       const result = await service.matchSkills({
         keywords: wording.keywords,
@@ -43,6 +32,6 @@ Deno.test("fix(skills): request wording never selects a response-contract skill"
       assertEquals(selected, [], `wording "${wording.keywords[0]}" selected a contract skill`);
     }
   } finally {
-    await environment.cleanup();
+    await cleanup();
   }
 });

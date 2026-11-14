@@ -69,7 +69,7 @@ export const DAEMON_DOCS: readonly IExaCtlCommandDoc[] = [
     description:
       "Prints the last lines of the daemon log. With `--follow` it keeps printing new lines until you stop it.",
     examples: [
-      { title: "Show the last 50 lines", command: "exactl daemon logs --lines 50" },
+      { title: "Show the last 50 lines", command: "exactl daemon logs --limit 50" },
       { title: "Follow the log", command: "exactl daemon logs --follow" },
     ],
     seeAlso: [exactlCommand(DAEMON, ExaCtlVerb.STATUS), exactlCommand(DAEMON, ExaCtlVerb.RESTART)],

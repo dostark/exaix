@@ -29,9 +29,12 @@ const MUTATION_NOUNS = [
   "memory",
   "config",
   "git",
+  "model",
+  "daemon",
 ];
 const WAIT_REF = "wait:tok-1";
 const WAIT_STATUS = "fulfilled";
+const REFRESH_GUIDANCE = "Refresh is available with the live model registry.";
 
 interface IMutationCase {
   readonly args: readonly string[];
@@ -52,6 +55,10 @@ function cancelled(): ReturnType<ExaCtlTestContext["requestCommands"]["cancel"]>
     previous_status: RequestStatus.PENDING,
     status: "cancelled",
   });
+}
+
+function daemonStatus(running: boolean): ReturnType<ExaCtlTestContext["daemonCommands"]["status"]> {
+  return Promise.resolve({ running, version: "test", workspace_schema_version: "test" });
 }
 
 function resolved(): Promise<void> {
@@ -102,6 +109,45 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     args: ["memory", "proposal", "reject", "p-1", "--reason", "No"],
     stub: (ctx) => void (ctx.memoryCommands.pendingReject = resolved),
     expected: { id: "p-1", action: "reject", status: "rejected", reason: "No" },
+  }],
+  ["model refresh", {
+    args: ["model", "refresh"],
+    stub: (ctx) => void (ctx.modelCommands.refreshModels = () => Promise.resolve(REFRESH_GUIDANCE)),
+    expected: { id: "model-registry", action: "refresh", status: "deferred", guidance: REFRESH_GUIDANCE },
+  }],
+  ["model use", {
+    args: ["model", "use", "ollama:llama3.2"],
+    stub: (ctx) => {
+      ctx.configCommands.setProvider = resolved;
+      ctx.configCommands.setModel = resolved;
+    },
+    expected: { id: "ollama", action: "use", status: "active", model: "llama3.2" },
+  }],
+  ["model candidates", {
+    args: ["model", "candidates", "--size", "M", "anthropic"],
+    stub: (ctx) => void (ctx.modelCommands.setCandidates = resolved),
+    expected: { id: "M", action: "candidates", status: "set", characteristic: null, count: 1 },
+  }],
+  ["daemon start", {
+    args: ["daemon", "start"],
+    stub: (ctx) => {
+      ctx.daemonCommands.status = () => daemonStatus(false);
+      ctx.daemonCommands.start = resolved;
+    },
+    expected: { id: "daemon", action: "start", status: "started" },
+  }],
+  ["daemon stop", {
+    args: ["daemon", "stop"],
+    stub: (ctx) => {
+      ctx.daemonCommands.status = () => daemonStatus(true);
+      ctx.daemonCommands.stop = resolved;
+    },
+    expected: { id: "daemon", action: "stop", status: "stopped" },
+  }],
+  ["daemon restart", {
+    args: ["daemon", "restart"],
+    stub: (ctx) => void (ctx.daemonCommands.restart = resolved),
+    expected: { id: "daemon", action: "restart", status: "restarted" },
   }],
   ["config set", {
     args: ["config", "set", CONFIG_KEY, "5"],

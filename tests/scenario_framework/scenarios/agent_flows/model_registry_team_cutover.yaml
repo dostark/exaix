@@ -116,7 +116,7 @@ steps:
     type: "exactl"
     name: "model.resolved journalled with reason best_ranked (Step 8 scoring reachable from real plan execution)"
     command: "log"
-    args: ["list", "--filter", "action_type=model.resolved", "--format", "json"]
+    args: ["list", "--filter", "action_type=model.resolved", "-o", "json"]
     output_criteria:
       - id: "model-resolved-present"
         score_weight: 1.0

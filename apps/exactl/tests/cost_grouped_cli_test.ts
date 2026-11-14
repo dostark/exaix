@@ -6,7 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/cost_commands.ts]
  */
 
-import { assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CostTracker } from "@exaix/core/cost";
 import { CostCommands } from "../src/commands/cost_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -60,13 +60,13 @@ Deno.test("cost role grouping rejects while role attribution is unavailable", as
   const { context, cleanup } = await createCliTestContext();
   try {
     const command = new CostCommands(context);
-    await assertRejects(() => command.show({ groupBy: "role" }), Error, "not available in this build");
+    await assertRejects(() => command.report({ groupBy: "role" }), Error, "not available in this build");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("CostCommands.show renders grouped totals directly", async () => {
+Deno.test("CostCommands.report returns grouped totals directly", async () => {
   const { context, db, cleanup } = await createCliTestContext();
   try {
     const tracker = new CostTracker(db);
@@ -80,18 +80,12 @@ Deno.test("CostCommands.show renders grouped totals directly", async () => {
       cacheCreationTokens: 3,
     });
     await tracker.flush();
-    const output: string[] = [];
-    const originalLog = console.log;
-    console.log = (...args) => output.push(args.join(" "));
-    try {
-      await new CostCommands(context).show({ groupBy: "model" });
-    } finally {
-      console.log = originalLog;
-    }
-    const rendered = output.join("\n");
-    assertStringIncludes(rendered, "sonnet");
-    assertStringIncludes(rendered, "12");
-    assertStringIncludes(rendered, "$0.125000");
+    const { groups } = await new CostCommands(context).report({ groupBy: "model" });
+    assertEquals(groups?.map((group) => [group.group, group.cacheReadTokens, group.estimatedCostUsd]), [[
+      "sonnet",
+      12,
+      0.125,
+    ]]);
   } finally {
     await cleanup();
   }
@@ -101,7 +95,7 @@ Deno.test("[security] cost grouping rejects unknown dimensions before querying",
   const { context, cleanup } = await createCliTestContext();
   try {
     await assertRejects(
-      () => new CostCommands(context).show({ groupBy: "model; DROP TABLE provider_costs" }),
+      () => new CostCommands(context).report({ groupBy: "model; DROP TABLE provider_costs" }),
       Error,
       "Invalid cost group",
     );
@@ -136,18 +130,9 @@ Deno.test("exactl log cost --group-by model reports persisted request cardinalit
       ],
     );
     await db.waitForFlush();
-    const output: string[] = [];
-    const originalLog = console.log;
-    console.log = (...args) => output.push(args.join(" "));
-    try {
-      await new CostCommands(context).show({ groupBy: "model" });
-    } finally {
-      console.log = originalLog;
-    }
-    const rendered = output.join("\n");
-    assertStringIncludes(rendered, "sonnet");
-    // The grouped table must show the 5 persisted requests, not the single row.
-    assertStringIncludes(rendered, "5");
+    const { groups } = await new CostCommands(context).report({ groupBy: "model" });
+    // The grouped report must count the 5 persisted requests, not the single row.
+    assertEquals(groups?.map((group) => [group.group, group.calls]), [["sonnet", 5]]);
   } finally {
     await cleanup();
   }

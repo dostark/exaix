@@ -10,7 +10,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { createStubConfig, createStubContext, initTestDbService } from "@exaix/testing";
 import { JournalCommands } from "../src/commands/journal_commands.ts";
 
-Deno.test("security: log verify exit code is 0 for an intact chain and 1 for a broken link", async () => {
+Deno.test("security: log verify reports an intact chain as ok and a broken link as failed", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const cmd = new JournalCommands(createStubContext({ config: createStubConfig(config), db }));
@@ -19,7 +19,7 @@ Deno.test("security: log verify exit code is 0 for an intact chain and 1 for a b
     await db.logActivity("b", "plan.created", "target", { foo: "bar" }, "t1");
     await db.waitForFlush();
 
-    assertEquals(await cmd.verify(), 0, "an intact chain must exit 0");
+    assertEquals((await cmd.verify()).ok, true, "an intact chain must verify");
 
     await db.waitForFlush();
     const verified = await db.queryActivity({ actionType: DomainEventType.JournalIntegrityVerified });
@@ -30,7 +30,9 @@ Deno.test("security: log verify exit code is 0 for an intact chain and 1 for a b
       '{"foo":"tampered"}',
       "plan.created",
     ]);
-    assertEquals(await cmd.verify(), 1, "a tampered chain must exit 1");
+    const broken = await cmd.verify();
+    assertEquals(broken.ok, false, "a tampered chain must fail");
+    assert(broken.first_broken_id !== null, "the report names the first broken row");
   } finally {
     await cleanup();
   }
@@ -48,7 +50,9 @@ Deno.test("security: log verify reports an unhashed prefix without failing", asy
     await db.logActivity("a", "request.created", "target", { foo: "bar" }, "t1");
     await db.waitForFlush();
 
-    assertEquals(await cmd.verify(), 0, "an unhashed legacy prefix must not fail verification");
+    const report = await cmd.verify();
+    assertEquals(report.ok, true, "an unhashed legacy prefix must not fail verification");
+    assert(report.unhashed_prefix > 0, "the report counts the unverifiable prefix");
   } finally {
     await cleanup();
   }

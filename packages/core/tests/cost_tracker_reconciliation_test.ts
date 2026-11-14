@@ -87,42 +87,32 @@ Deno.test("caller-supplied costUsd recorded verbatim with cost_source provider_r
   }
 });
 
-Deno.test("unpriced model with a lookup falls back to the blended estimate labelled estimated", async () => {
+/** The cost source stored for one openai call on a model that has no price, with or without a lookup. */
+async function blendedCallSource(lookup?: IModelPricingLookup): Promise<string | null> {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const tracker = new CostTracker(db, config);
-    tracker.setPricingLookup(lookupWith({})); // lookup present but returns unknown provenance
+    if (lookup) tracker.setPricingLookup(lookup);
     await tracker.trackGeneration("openai", "gpt-x", {
       promptTokens: 500,
       completionTokens: 500,
       totalTokens: 1000,
     }, TRACE);
     await tracker.flush();
-    const row = await costRow(db);
-    // The blended estimate path (non-zero for a known provider rate) carries the estimated source.
-    assertEquals(row.cost_source, "estimated");
+    return (await costRow(db)).cost_source;
   } finally {
     await db.close();
     await cleanup();
   }
+}
+
+Deno.test("unpriced model with a lookup falls back to the blended estimate labelled estimated", async () => {
+  // A lookup is present but returns unknown provenance, so the flat provider rate prices the call.
+  assertEquals(await blendedCallSource(lookupWith({})), "estimated");
 });
 
 Deno.test("no lookup injected: blended estimate labelled estimated (library compat)", async () => {
-  const { db, config, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db, config); // no setPricingLookup
-    await tracker.trackGeneration("openai", "gpt-x", {
-      promptTokens: 500,
-      completionTokens: 500,
-      totalTokens: 1000,
-    }, TRACE);
-    await tracker.flush();
-    const row = await costRow(db);
-    assertEquals(row.cost_source, "estimated");
-  } finally {
-    await db.close();
-    await cleanup();
-  }
+  assertEquals(await blendedCallSource(), "estimated");
 });
 
 Deno.test("divergence beyond tolerance emits model.cost.divergence with delta_pct; within tolerance silent", async () => {

@@ -22,6 +22,9 @@ import type {
 } from "@exaix/core/types";
 import { HealthStatus } from "@exaix/core/types";
 import { ModelCommands } from "../src/commands/model_commands.ts";
+import { renderModelList } from "../src/command_builders/model_command.ts";
+import { ExaCtlOutputFormat } from "@exaix/cli";
+import { createTestRenderer } from "./helpers/captured_output.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
@@ -103,22 +106,16 @@ async function withTomlConfig(
   }
 }
 
-function captureLog(): { lines: string[]; restore: () => void } {
-  const lines: string[] = [];
-  const original = console.log;
-  console.log = (...args: string[]) => lines.push(args.map(String).join(" "));
-  return { lines, restore: () => (console.log = original) };
+/** The list of the command rendered as a table, the way `exactl model list` prints it. */
+async function renderListText(cmd: ModelCommands, options?: { model?: string; benchmark?: string }): Promise<string> {
+  const { renderer, text } = createTestRenderer(ExaCtlOutputFormat.TABLE);
+  await renderModelList(renderer, await cmd.listModels(options), options?.benchmark);
+  return text();
 }
 
 Deno.test("[model-cli] model list renders provider:model, provenance and verified_at staleness", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
-  const cap = captureLog();
-  try {
-    await cmd.listModels();
-  } finally {
-    cap.restore();
-  }
-  const out = cap.lines.join("\n");
+  const out = await renderListText(cmd);
   assertStringIncludes(out, "anthropic:claude-sonnet-4");
   assertStringIncludes(out, "static");
   assertStringIncludes(out, "ollama:llama3.2");
@@ -132,51 +129,27 @@ Deno.test("[step135.8] model list --benchmark <name> shows the advisory score co
         p === "anthropic" && m === "claude-sonnet-4" && benchmark === "swe_bench_verified" ? 0.727 : undefined,
       ),
   });
-  const cap = captureLog();
-  try {
-    await cmd.listModels({ benchmark: "swe_bench_verified" });
-  } finally {
-    cap.restore();
-  }
-  const out = cap.lines.join("\n");
+  const out = await renderListText(cmd, { benchmark: "swe_bench_verified" });
   assertStringIncludes(out, "0.727");
   assertStringIncludes(out, "swe_bench_verified");
 });
 
 Deno.test("[step135.8] model list --benchmark with no reader wired shows '-' for every row (Solo/CLI-without-Team degrades gracefully)", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
-  const cap = captureLog();
-  try {
-    await cmd.listModels({ benchmark: "swe_bench_verified" });
-  } finally {
-    cap.restore();
-  }
-  const out = cap.lines.join("\n");
+  const out = await renderListText(cmd, { benchmark: "swe_bench_verified" });
   assertStringIncludes(out, "anthropic:claude-sonnet-4");
   assertStringIncludes(out, "-");
 });
 
 Deno.test("[step135.8] model list without --benchmark omits the benchmark column entirely (no behavior change)", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
-  const cap = captureLog();
-  try {
-    await cmd.listModels();
-  } finally {
-    cap.restore();
-  }
-  const out = cap.lines.join("\n");
+  const out = await renderListText(cmd);
   assertFalse(out.includes("Benchmark"));
 });
 
 Deno.test("model list shows the models list columns and the models pricing columns in one table", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
-  const cap = captureLog();
-  try {
-    await cmd.listModels();
-  } finally {
-    cap.restore();
-  }
-  const out = cap.lines.join("\n");
+  const out = await renderListText(cmd);
   for (const header of ["Model", "Provenance", "Verified", "Input $/Mtok", "Output $/Mtok"]) {
     assertStringIncludes(out, header);
   }
@@ -227,13 +200,7 @@ function createPricedRegistry(rows: IPricedModel[]): IModelRegistry {
 }
 
 async function renderList(cmd: ModelCommands, options?: { model?: string; benchmark?: string }): Promise<string[]> {
-  const cap = captureLog();
-  try {
-    await cmd.listModels(options);
-  } finally {
-    cap.restore();
-  }
-  return cap.lines.join("\n").split("\n");
+  return (await renderListText(cmd, options)).split("\n");
 }
 
 function lineOf(lines: string[], text: string): string {
@@ -305,10 +272,9 @@ Deno.test("model list --model <author/model> lists every serving edge of that mo
   assertFalse(out.includes("ollama:llama3.2"));
 });
 
-Deno.test("model list --model says so when no service serves the model", async () => {
+Deno.test("model list --model returns no row when no service serves the model", async () => {
   const registry = createPricedRegistry([{ provider: "ollama", model: "llama3.2", daysSinceVerified: 1 }]);
-  const out = (await renderList(new ModelCommands(registry), { model: "anthropic/none" })).join("\n");
-  assertStringIncludes(out, "No service serves anthropic/none");
+  assertEquals(await new ModelCommands(registry).listModels({ model: "anthropic/none" }), []);
 });
 
 Deno.test("model list --model without an author is a usage error", async () => {
@@ -443,17 +409,10 @@ Deno.test("[model-cli][step5] model refresh refuses when model_registry is disab
   });
 });
 
-Deno.test("[model-cli][step5] model refresh with model_registry.enabled=true prints daemon-refresh guidance", async () => {
+Deno.test("[model-cli][step5] model refresh with model_registry.enabled=true returns daemon-refresh guidance", async () => {
   await withTomlConfig(async (configPath, _read) => {
     Deno.writeTextFileSync(configPath, readConfigFixture("exactl-model-refresh-guidance"));
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
-    const cap = captureLog();
-    try {
-      await cmd.refreshModels();
-    } finally {
-      cap.restore();
-    }
-    const out = cap.lines.join("\n");
-    assertStringIncludes(out, "daemon");
+    assertStringIncludes(await cmd.refreshModels(), "daemon");
   });
 });

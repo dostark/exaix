@@ -73,7 +73,6 @@ export class DaemonCommands extends BaseCommand {
       const status = await this.status();
       if (status.running) {
         await this.logger.info(DomainEventType.DaemonStarting, DAEMON_ACTOR, { pid: status.pid ?? null });
-        console.log("daemon.already_running");
         return;
       }
 
@@ -235,7 +234,6 @@ export class DaemonCommands extends BaseCommand {
 
       if (!status.running) {
         await this.logger.info(DomainEventType.DaemonNotRunning, DAEMON_ACTOR);
-        console.log("daemon.not_running");
         return;
       }
 
@@ -405,14 +403,14 @@ export class DaemonCommands extends BaseCommand {
     return exitCode;
   }
 
-  async logs(lines: number = CLI_DEFAULTS.LOG_LINES, follow: boolean = false): Promise<void> {
+  /** Streams the daemon log to the terminal. It returns false when the daemon wrote no log yet. */
+  async logs(lines: number = CLI_DEFAULTS.LOG_LINES, follow: boolean = false): Promise<boolean> {
     try {
       const logFile = join(this.config.system.root!, this.config.paths.runtime!, "daemon.log");
 
       if (!await exists(logFile)) {
         await this.logger.info(DomainEventType.DaemonNoLogs, logFile, { hint: "Daemon may not have been started yet" });
-        console.log("daemon.no_logs");
-        return;
+        return false;
       }
 
       const args = ["-n", lines.toString()];
@@ -436,6 +434,7 @@ export class DaemonCommands extends BaseCommand {
         error: error as Error | string | object | null | undefined,
       });
     }
+    return true;
   }
 
   private async waitForProcessState(

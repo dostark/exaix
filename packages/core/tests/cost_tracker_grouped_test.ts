@@ -66,6 +66,8 @@ Deno.test("CostTracker groups persisted model costs and cache tokens", async () 
         cacheReadTokens: 0,
         cacheCreationTokens: 0,
         estimatedCostUsd: 0.05,
+        costBySource: { provider_reported: 0.05, registry_computed: 0, estimated: 0 },
+        unpricedCalls: 0,
       },
       {
         group: "sonnet",
@@ -75,6 +77,8 @@ Deno.test("CostTracker groups persisted model costs and cache tokens", async () 
         cacheReadTokens: 15,
         cacheCreationTokens: 2,
         estimatedCostUsd: 0.1 + 0.2,
+        costBySource: { provider_reported: 0.1 + 0.2, registry_computed: 0, estimated: 0 },
+        unpricedCalls: 0,
       },
     ]);
     const portalGroups = await tracker.queryGroupedByCriteria({ portal: "portal-a" }, CostGroupBy.PORTAL);

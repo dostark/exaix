@@ -7,30 +7,14 @@
  * @related-files [apps/exactl/src/command_builders/model_command.ts, apps/exactl/src/commands/config_commands.ts]
  */
 
-import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { readFixtureTextSync } from "@exaix/testing";
 import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { runExactlSeededWorkspace, runExactlSequenceInTempWorkspace } from "./helpers/exactl_cli_process.ts";
+import { ROUTING_REQUEST_FILE, seedRoutingWorkspace } from "./helpers/operations_b_seed.ts";
 
 const FAILURE_EXIT_CODE = 1;
 const USAGE_EXIT_CODE = 2;
 const CANDIDATE_ENTRY = "anthropic";
-const REQUEST_FILE = "request.md";
-
-async function seedRoutingWorkspace(root: string): Promise<void> {
-  const blueprintsDir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
-  await Deno.mkdir(blueprintsDir, { recursive: true });
-  const fixture = (name: string) =>
-    readFixtureTextSync(import.meta.url, "cli", "commands", "routing_commands_test", name);
-  await Deno.writeTextFile(join(blueprintsDir, "senior-coder.md"), fixture("fixture_1.md"));
-  await Deno.writeTextFile(join(blueprintsDir, "default-agent.md"), fixture("fixture_2.md"));
-  await Deno.writeTextFile(
-    join(root, REQUEST_FILE),
-    "---\ntrace_id: trace-1\nagent_role: senior-coder\nallow_dynamic_routing: true\n---\nPlease generate code for the new feature.\n",
-  );
-}
 
 Deno.test("model use sets the provider the way config set-provider did", async () => {
   const [use, provider, model] = await runExactlSequenceInTempWorkspace([
@@ -75,12 +59,12 @@ Deno.test("model route explain prints the ranking that routing explain printed",
     "route",
     "explain",
     "--request",
-    REQUEST_FILE,
+    ROUTING_REQUEST_FILE,
   ]]);
   assertEquals(run.code, 0, run.stderr);
-  assertStringIncludes(run.stdout + run.stderr, "selected_agent_role");
-  assertStringIncludes(run.stdout, "senior-coder@");
-  assertStringIncludes(run.stdout, "score=");
+  assertStringIncludes(run.stdout, "Selected agent role: senior-coder");
+  assertStringIncludes(run.stdout, "Strategy: explicit");
+  assertStringIncludes(run.stdout, "senior-coder\t1.0.0");
 });
 
 Deno.test("model route explain without --request exits 1 and names the option", async () => {
@@ -134,4 +118,10 @@ Deno.test("model list --model without an author exits 2", async () => {
   const [run] = await runExactlSequenceInTempWorkspace([["model", "list", "--model", "gemini"]]);
   assertEquals(run.code, USAGE_EXIT_CODE, run.stderr);
   assertStringIncludes(run.stderr, "Expected <author>/<model>");
+});
+
+Deno.test("model list --model names the missing service when no service serves it", async () => {
+  const [run] = await runExactlSequenceInTempWorkspace([["model", "list", "--model", "anthropic/none"]]);
+  assertEquals(run.code, 0, run.stderr);
+  assertStringIncludes(run.stdout + run.stderr, "No service serves anthropic/none.");
 });

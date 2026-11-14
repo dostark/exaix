@@ -122,6 +122,9 @@ const EXACTL_OPTION_RENAMES: readonly IExaCtlOptionRename[] = [
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "--agent-role", canonicalOption: AGENT_OPTION },
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "-a", canonicalOption: AGENT_OPTION },
   { path: ["eval", "calibration", "score"], legacyOption: OUTPUT_OPTION, canonicalOption: REPORT_FILE_OPTION },
+  { path: ["log", "list"], legacyOption: "--tail", canonicalOption: "-n, --limit" },
+  { path: ["log", "cost"], legacyOption: "--trace-id", canonicalOption: "--trace" },
+  { path: ["daemon", "logs"], legacyOption: "--lines", canonicalOption: "-n, --limit" },
 ];
 
 /** True for `-o`, `--output` or an attached `-ovalue` or `--output=value`. */

@@ -214,9 +214,6 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
 
-  /** The kind of deliverable this role returns. It names the response-contract skill that the runtime adds. */
-  output_contract: z.nativeEnum(OutputContract).optional(),
-
   /** Tools this agent role is permitted to use (from McpToolName or ToolName). Preprocessed
    *  through canonicalizeToolName, so an alias like `Read` resolves to its canonical name.
    *  Retired native names and case variants fail validation. */
@@ -226,6 +223,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
       z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
     ),
   ).optional(),
+
+  /** The kind of deliverable this role returns. It names the response-contract skill that the runtime adds. */
+  output_contract: z.nativeEnum(OutputContract).optional(),
 
   /** Deprecation flag for outdated blueprints; consumed by routing/capability matching */
   deprecated: z.boolean().default(false),

@@ -18,7 +18,6 @@ export * from "./src/validation/validation_chain.ts";
 export * from "./src/helpers/command_utils.ts";
 export * from "./src/helpers/subject_generator.ts";
 export * from "./src/command_builders/display_helpers.ts";
-export * from "./src/formatters/journal_formatter.ts";
 export * from "./src/formatters/memory_formatter.ts";
 export * from "./src/formatters/portal_knowledge.ts";
 export * from "./src/base/command.ts";

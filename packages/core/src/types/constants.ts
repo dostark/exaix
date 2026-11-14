@@ -1262,6 +1262,9 @@ export const RATE_LIMIT_WINDOW_DAY_MS = 86_400_000; // 1 day
 /** Tokens per million, for cost math. */
 export const TOKENS_PER_MTOK = 1_000_000;
 
+/** The factor that turns a fraction into a percent. */
+export const PERCENT_SCALE = 100;
+
 /** Estimated characters per token for the heuristic counter. */
 export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;

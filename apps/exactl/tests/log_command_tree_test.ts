@@ -33,8 +33,7 @@ Deno.test("log list keeps the journal query options", () => {
   const flags = (list?.options ?? []).flatMap((option) => option.flags);
   assertArrayIncludes(flags, [
     "--filter",
-    "--tail",
-    "--format",
+    "--limit",
     "--distinct",
     "--count",
     "--payload",
@@ -43,9 +42,15 @@ Deno.test("log list keeps the journal query options", () => {
   ]);
 });
 
+Deno.test("log list has no --format option", () => {
+  const list = nodes.find((node) => node.path.join(" ") === "log list");
+  const flags = (list?.options ?? []).flatMap((option) => option.flags);
+  assertEquals(flags.filter((flag) => flag === "--format" || flag === "--tail"), []);
+});
+
 Deno.test("log wait keeps the barrier options and log cost keeps the report options", () => {
   const flagsOf = (path: string) =>
     (nodes.find((node) => node.path.join(" ") === path)?.options ?? []).flatMap((option) => option.flags);
   assertArrayIncludes(flagsOf("log wait"), ["--event", "--since", "--since-rowid", "--timeout", "--payload"]);
-  assertArrayIncludes(flagsOf("log cost"), ["--trace-id", "--portal", "--since", "--model", "--group-by"]);
+  assertArrayIncludes(flagsOf("log cost"), ["--trace", "--portal", "--since", "--model", "--group-by"]);
 });

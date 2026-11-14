@@ -54,7 +54,7 @@ Deno.test("request cancel on a pending request sets cancelled and journals one r
   const [cancel, show, journal] = await runExactlSeededWorkspace(seed, [
     ["request", "cancel", PENDING_TRACE, "--reason", "no longer needed"],
     ["request", "show", PENDING_TRACE],
-    ["log", "list", "--filter", "request.cancelled", "--format", "json"],
+    ["log", "list", "--filter", "request.cancelled", "-o", "json"],
   ]);
   assertEquals(cancel.code, 0, cancel.stderr);
   assertStringIncludes(show.stdout, "cancelled");

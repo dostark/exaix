@@ -64,7 +64,7 @@ async function seed(root: string): Promise<void> {
 Deno.test("approval approve tool:<id> resolves the confirmation and journals one tool_confirmation.decided with approved true", async () => {
   const [approve, journal] = await runExactlSeededWorkspace(seed, [
     ["approval", "approve", `tool:${TOOL_ID}`],
-    ["log", "list", "--filter", "tool_confirmation.decided", "--format", "json"],
+    ["log", "list", "--filter", "tool_confirmation.decided", "-o", "json"],
   ]);
   assertEquals(approve.code, 0, approve.stderr);
   assertEquals(journal.stdout.split("tool_confirmation.decided").length - 1, 1);

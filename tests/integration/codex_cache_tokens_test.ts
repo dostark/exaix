@@ -8,7 +8,6 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { stub } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "@exaix/ai-clidelegate";
 import { RateLimitedProvider } from "../../packages/ai/src/rate_limited_provider.ts";
 import { TracedProvider } from "../../packages/ai/src/traced_provider.ts";
@@ -17,7 +16,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { CostTracker } from "@exaix/core/cost";
 import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
-import { CostCommands } from "../../apps/exactl/src/commands/cost_commands.ts";
+import { CostCommands, costTotals } from "../../apps/exactl/src/commands/cost_commands.ts";
 
 interface ICodexCacheActivityRow {
   prompt_tokens: number;
@@ -77,24 +76,16 @@ Deno.test("[Codex cache tokens] live exec JSONL survives provider wrappers, dedi
     assertEquals(records[0].cacheReadTokens, 11136);
     assertEquals(records[0].cacheCreationTokens, undefined);
 
-    const output: string[] = [];
-    const logSpy = stub(console, "log", (...args: Parameters<typeof console.log>): void => {
-      output.push(args.join(" "));
-    });
-    try {
-      await new CostCommands({
-        db,
-        cost,
-        provider,
-        config: createStubConfig(config),
-        git: createStubGit(),
-        display: createStubDisplay(db),
-      }).show({});
-    } finally {
-      logSpy.restore();
-    }
-    const rendered: string = output.join("\n");
-    assertStringIncludes(rendered, "11136/-");
+    const report = await new CostCommands({
+      db,
+      cost,
+      provider,
+      config: createStubConfig(config),
+      git: createStubGit(),
+      display: createStubDisplay(db),
+    }).report({});
+    assertEquals(report.records[0].cacheReadTokens, 11136);
+    const rendered: string = costTotals(report.records).join("\n");
     assertStringIncludes(rendered, "Total Cache Tokens:  Read: 11136, Creation: 0");
   } finally {
     await cost.flush();

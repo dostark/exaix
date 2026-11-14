@@ -662,7 +662,7 @@ Deno.test("daemon logs supports --follow option", async () => {
     let calledWithFollow = false;
     ctx.daemonCommands.logs = (_lines?: number, follow?: boolean) => {
       calledWithFollow = follow === true;
-      return Promise.resolve();
+      return Promise.resolve(true);
     };
     await mod.__test_command.parse(["daemon", "logs", "--follow"]);
     assert(calledWithFollow);

@@ -8,12 +8,11 @@
  *   scenario steps to replace the framework's wait-for-journal-event step type.
  */
 
-import { assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { JournalCommands } from "../src/commands/journal_commands.ts";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
-import { captureConsoleOutput } from "./helpers/console_utils.ts";
-import { expectExitWithLogs } from "./helpers/test_utils.ts";
 import type { IJournalWaitOptions } from "../src/commands/journal_commands.ts";
 
 function waitCommand(
@@ -40,10 +39,10 @@ Deno.test({
       const since = await currentMaxRowid(db);
       db.logActivity("system", "daemon.ready", "", {}, "t-1");
       await db.waitForFlush();
-      const out = await captureConsoleOutput(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 2 })),
+      assertEquals(
+        await waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 2 }),
+        "daemon.ready",
       );
-      assertStringIncludes(out, "Journal event present: daemon.ready");
     } finally {
       await cleanup();
     }
@@ -62,10 +61,10 @@ Deno.test({
         ["a1", "t-1", "system", "daemon.ready", "{}", "2020-01-02T00:00:00.000Z"],
       );
       await db.waitForFlush();
-      const out = await captureConsoleOutput(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 })),
+      assertEquals(
+        await waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 }),
+        "daemon.ready",
       );
-      assertStringIncludes(out, "Journal event present: daemon.ready");
     } finally {
       await cleanup();
     }
@@ -84,10 +83,11 @@ Deno.test({
         ["a1", "t-1", "system", "daemon.ready", "{}", "2020-01-01T00:00:00.000Z"],
       );
       await db.waitForFlush();
-      const result = await expectExitWithLogs(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 })),
+      const error = await assertRejects(
+        () => waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 }),
+        ExaCtlError,
       );
-      assertStringIncludes(result.errors.join("\n"), "Timeout");
+      assertStringIncludes(error.message, "Timeout");
     } finally {
       await cleanup();
     }
@@ -104,10 +104,11 @@ Deno.test({
       db.logActivity("system", "daemon.ready", "", {}, "t-1");
       await db.waitForFlush();
       const since = await currentMaxRowid(db);
-      const result = await expectExitWithLogs(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 1 })),
+      const error = await assertRejects(
+        () => waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 1 }),
+        ExaCtlError,
       );
-      assertStringIncludes(result.errors.join("\n"), "Timeout");
+      assertStringIncludes(error.message, "Timeout");
     } finally {
       await cleanup();
     }
@@ -123,10 +124,11 @@ Deno.test({
     try {
       db.logActivity("system", "request.created", "", {}, "t-1");
       await db.waitForFlush();
-      const result = await expectExitWithLogs(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", timeout: 1 })),
+      const error = await assertRejects(
+        () => waitCommand(db, config).wait({ event: "daemon.ready", timeout: 1 }),
+        ExaCtlError,
       );
-      assertStringIncludes(result.errors.join("\n"), "Timeout");
+      assertStringIncludes(error.message, "Timeout");
     } finally {
       await cleanup();
     }
@@ -145,16 +147,14 @@ Deno.test({
       const since = await currentMaxRowid(db);
       db.logActivity("system", "flow.failed", "", {}, "t-1");
       await db.waitForFlush();
-      const out = await captureConsoleOutput(
-        () => (
-          waitCommand(db, config).wait({
-            event: ["flow.completed", "flow.failed"],
-            sinceRowid: since,
-            timeout: 2,
-          })
-        ),
+      assertEquals(
+        await waitCommand(db, config).wait({
+          event: ["flow.completed", "flow.failed"],
+          sinceRowid: since,
+          timeout: 2,
+        }),
+        "flow.failed",
       );
-      assertStringIncludes(out, "Journal event present: flow.failed");
     } finally {
       await cleanup();
     }
@@ -170,17 +170,13 @@ Deno.test({
     try {
       db.logActivity("system", "request.created", "", {}, "t-1");
       await db.waitForFlush();
-      const result = await expectExitWithLogs(
-        () => (
-          waitCommand(db, config).wait({
-            event: ["flow.completed", "flow.failed"],
-            timeout: 1,
-          })
-        ),
-      );
-      const errorText: string = result.errors.join("\n");
-      assertStringIncludes(errorText, "Timeout");
-      assertStringIncludes(errorText, "flow.completed, flow.failed");
+      const error = await assertRejects(() =>
+        waitCommand(db, config).wait({
+          event: ["flow.completed", "flow.failed"],
+          timeout: 1,
+        }), ExaCtlError);
+      assertStringIncludes(error.message, "Timeout");
+      assertStringIncludes(error.message, "flow.completed, flow.failed");
     } finally {
       await cleanup();
     }
@@ -194,10 +190,12 @@ Deno.test({
   async fn() {
     const { db, config, cleanup } = await initTestDbService();
     try {
-      const result = await expectExitWithLogs(
-        () => (waitCommand(db, config).wait({ timeout: 1 } as IJournalWaitOptions)),
+      const error = await assertRejects(
+        () => waitCommand(db, config).wait({ timeout: 1 } as IJournalWaitOptions),
+        ExaCtlError,
       );
-      assertStringIncludes(result.errors.join("\n"), "log wait requires --event");
+      assertEquals(error.code, ExaCtlExitCode.USAGE);
+      assertStringIncludes(error.message, "log wait requires --event");
     } finally {
       await cleanup();
     }

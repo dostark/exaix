@@ -8,17 +8,19 @@
 
 import { Command } from "@cliffy/command";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
-import { BINARY_VERSION, DEFAULT_UNKNOWN_ERROR_MESSAGE, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { JSONValue } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlCommandName } from "../exactl_constants.ts";
+import { ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
+import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
-import { actionOutput, ColumnHeader, createExaCtlRenderer, readGlobalOptions } from "../output/exactl_output.ts";
+import { actionOutput, ColumnHeader, readGlobalOptions } from "../output/exactl_output.ts";
 
+const DAEMON_ID = "daemon";
 const NOT_AVAILABLE_LABEL = "(not available)";
 const RUNNING_LABEL = "Running ✓";
 const STOPPED_LABEL = "Stopped ✗";
@@ -51,54 +53,61 @@ const DAEMON_STATUS_FIELDS: readonly IExaCtlColumn<IDaemonStatusRow>[] = [
 ];
 
 function createDaemonCommand(runtime: IExaCtlRuntime) {
-  const { display, daemonCommands, outputSink } = runtime;
+  const { display, daemonCommands } = runtime;
   const noun = nounDocFor(ExaCtlCommandName.DAEMON);
+  const mutate = async <T extends object | void>(
+    action: string,
+    options: T,
+    work: (renderer: ReturnType<typeof actionOutput>["renderer"]) => Promise<void>,
+  ): Promise<void> => {
+    try {
+      await work(actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer);
+    } catch (error) {
+      failCommand(display, action, error as Error);
+    }
+  };
   const command = documentedNoun(new Command(), noun)
     .command(
-      "start",
+      ExaCtlVerb.START,
       new Command()
         .option(
           "--ready-timeout <ms:number>",
           "Milliseconds to wait for daemon.ready (default: daemon.ready_timeout_ms)",
         )
-        .action(async (options) => {
-          try {
+        .action((options) =>
+          mutate("daemon start", options, async (renderer) => {
+            const wasRunning = (await daemonCommands.status()).running;
             await daemonCommands.start({ readyTimeoutMs: options.readyTimeout });
-          } catch (error) {
-            display.error("cli.error", "daemon start", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+            const status = wasRunning ? MutationStatus.ALREADY_RUNNING : MutationStatus.STARTED;
+            display.info("cli.daemon.start", DAEMON_ID, { status });
+            await renderer.mutation([{ id: DAEMON_ID, action: ExaCtlVerb.START, status }], false);
+          })
+        ),
     )
     .command(
-      "stop",
-      new Command()
-        .action(async () => {
-          try {
-            await daemonCommands.stop();
-          } catch (error) {
-            display.error("cli.error", "daemon stop", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+      ExaCtlVerb.STOP,
+      new Command().action((options) =>
+        mutate("daemon stop", options, async (renderer) => {
+          const wasRunning = (await daemonCommands.status()).running;
+          await daemonCommands.stop();
+          const status = wasRunning ? MutationStatus.STOPPED : MutationStatus.NOT_RUNNING;
+          display.info("cli.daemon.stop", DAEMON_ID, { status });
+          await renderer.mutation([{ id: DAEMON_ID, action: ExaCtlVerb.STOP, status }], false);
+        })
+      ),
     )
     .command(
-      "restart",
-      new Command()
-        .action(async () => {
-          try {
-            await daemonCommands.restart();
-          } catch (error) {
-            display.error("cli.error", "daemon restart", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
-          }
-        }),
+      ExaCtlVerb.RESTART,
+      new Command().action((options) =>
+        mutate("daemon restart", options, async (renderer) => {
+          await daemonCommands.restart();
+          display.info("cli.daemon.restart", DAEMON_ID, { status: MutationStatus.RESTARTED });
+          await renderer.mutation(
+            [{ id: DAEMON_ID, action: ExaCtlVerb.RESTART, status: MutationStatus.RESTARTED }],
+            false,
+          );
+        })
+      ),
     )
     .command(
       GIT_CMD_STATUS,
@@ -113,31 +122,25 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
               binary_version: status.version,
               workspace_schema_version: status.workspace_schema_version,
             };
-            await createExaCtlRenderer(readGlobalOptions(options), ExaCtlOutputFormat.TEXT, outputSink).item(
-              row,
-              DAEMON_STATUS_FIELDS,
-            );
+            await actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer.item(row, DAEMON_STATUS_FIELDS);
           } catch (error) {
-            display.error("cli.error", "daemon status", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            failCommand(display, "daemon status", error as Error);
           }
         }),
     )
     .command(
-      "logs",
+      ExaCtlVerb.LOGS,
       new Command()
-        .option("-n, --lines <lines:number>", "Number of lines to show", { default: CLI_DEFAULTS.LOG_LINES })
+        .option("-n, --limit <lines:number>", "Number of lines to show", { default: CLI_DEFAULTS.LOG_LINES })
         .option("-f, --follow", "Follow log output")
         .action(async (options) => {
           try {
-            await daemonCommands.logs(options.lines, options.follow);
+            const hasLogs = await daemonCommands.logs(options.limit, options.follow);
+            if (!hasLogs) {
+              display.warn("cli.daemon.logs", DAEMON_ID, { message: "The daemon has not written a log yet." });
+            }
           } catch (error) {
-            display.error("cli.error", "daemon logs", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            failCommand(display, "daemon logs", error as Error);
           }
         }),
     );

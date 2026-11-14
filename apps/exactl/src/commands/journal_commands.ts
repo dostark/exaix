@@ -8,21 +8,24 @@
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
-import type { IJournalFilterOptions } from "@exaix/core/types";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType, type IJournalIntegrityPayload } from "@exaix/core/events";
-import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
-import type { UIOutputFormat } from "@exaix/tui";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 export interface IJournalCommandOptions {
   filter?: string[];
-  tail?: number;
-  format?: UIOutputFormat;
+  limit?: number;
   distinct?: string;
   count?: boolean;
   payload?: string;
   actor?: string;
   target?: string;
+}
+
+/** The outcome of an activity hash chain check. */
+export interface IJournalVerifyReport extends IJournalIntegrityPayload {
+  ok: boolean;
 }
 
 export interface IJournalWaitOptions {
@@ -55,23 +58,14 @@ export class JournalCommands extends BaseCommand {
     super(context);
   }
 
-  /**
-   * Query and display journal activities
-   */
-  async show(options: IJournalCommandOptions): Promise<void> {
-    const { db } = this;
-    const filterOptions = this.parseFilterOptions(options);
-
-    // Execute query
-    const results = await db.queryActivity(filterOptions);
-
-    // Format output
-    JournalFormatter.render(results, filterOptions, options.format);
+  /** The journal rows that match the options, with the filter the query used. */
+  async query(options: IJournalCommandOptions): Promise<{ rows: IActivityRecord[]; filter: IJournalFilterOptions }> {
+    const filter = this.parseFilterOptions(options);
+    return { rows: await this.db.queryActivity(filter), filter };
   }
 
-  /** Verify the activity hash chain. Returns 0 when intact, 1 on the first broken link.
-   *  Rows written before the chain existed are reported as an unverifiable prefix. */
-  async verify(): Promise<number> {
+  /** Verifies the activity hash chain and journals the outcome. Rows from before the chain existed are an unverifiable prefix. */
+  async verify(): Promise<IJournalVerifyReport> {
     const report = await this.db.verifyJournalIntegrity();
     const traceId = crypto.randomUUID();
     const payload: IJournalIntegrityPayload = {
@@ -81,34 +75,23 @@ export class JournalCommands extends BaseCommand {
       expected_hash: report.expected_hash,
       actual_hash: report.actual_hash,
     };
-
-    if (report.ok) {
-      const prefixNote = report.unhashed_prefix > 0
-        ? ` (${report.unhashed_prefix} legacy row(s) before the chain are unverifiable)`
-        : "";
-      console.log(colors.green(`Journal integrity verified: ${report.rows_checked} row(s) checked${prefixNote}`));
-      await this.logger.info(DomainEventType.JournalIntegrityVerified, JOURNAL_VERIFY_ACTOR, { ...payload }, traceId);
-      return 0;
-    }
-
-    console.error(
-      colors.red(
-        `Journal integrity FAILED at row ${report.first_broken_id}: expected ${report.expected_hash}, actual ${report.actual_hash}`,
-      ),
+    await this.logger.info(
+      report.ok ? DomainEventType.JournalIntegrityVerified : DomainEventType.JournalIntegrityFailed,
+      JOURNAL_VERIFY_ACTOR,
+      { ...payload },
+      traceId,
     );
-    await this.logger.info(DomainEventType.JournalIntegrityFailed, JOURNAL_VERIFY_ACTOR, { ...payload }, traceId);
-    return 1;
+    return { ok: report.ok, ...payload };
   }
 
   /** Readiness barrier: blocks until `event` is journalled after `since` (default: the max
-   *  rowid at call time). Exits 0 on match, 1 on timeout. */
-  async wait(options: IJournalWaitOptions): Promise<void> {
+   *  rowid at call time). Returns the matched event, and fails on a missing event or on timeout. */
+  async wait(options: IJournalWaitOptions): Promise<string> {
     const events = this.normalizeEvents(options.event);
     const timeoutSec = options.timeout ?? JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC;
     const payload = options.payload;
     if (events.length === 0) {
-      console.error(colors.red("log wait requires --event <action_type>"));
-      Deno.exit(1);
+      throw new ExaCtlError(ExaCtlExitCode.USAGE, "log wait requires --event <action_type>");
     }
     // Baseline: `--since-rowid` (internal) wins over `--since` (timestamp); with neither, the
     // current max rowid at call time — so only events that arrive while waiting count.
@@ -122,15 +105,14 @@ export class JournalCommands extends BaseCommand {
 
     while (Date.now() - startTime < timeoutMs) {
       const matched = await this.journalHasEvent(events, baseline, payload);
-      if (matched) {
-        console.log(`Journal event present: ${matched}`);
-        return;
-      }
+      if (matched) return matched;
       await new Promise((resolve) => setTimeout(resolve, JOURNAL_WAIT_POLL_INTERVAL_MS));
     }
 
-    console.error(colors.red(`Timeout after ${timeoutSec}s waiting for journal event: ${events.join(", ")}`));
-    Deno.exit(1);
+    throw new ExaCtlError(
+      ExaCtlExitCode.FAILURE,
+      `Timeout after ${timeoutSec}s waiting for journal event: ${events.join(", ")}`,
+    );
   }
 
   /** Normalizes the `--event` option (single value, repeated values, or absent) into a list. */
@@ -176,8 +158,8 @@ export class JournalCommands extends BaseCommand {
   private parseFilterOptions(options: IJournalCommandOptions): IJournalFilterOptions {
     const filterOptions: IJournalFilterOptions = {};
 
-    if (options.tail) {
-      filterOptions.limit = options.tail;
+    if (options.limit) {
+      filterOptions.limit = options.limit;
     }
 
     if (options.distinct) {

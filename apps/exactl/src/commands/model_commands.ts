@@ -13,11 +13,28 @@
  */
 
 import { parse, stringify } from "@std/toml";
-import * as colors from "@std/fmt/colors";
 import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MODEL_PRESETS, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
-import { NO_VALUE, renderModelTable, renderPrice, renderStale, renderVerifiedAt } from "./model_list_rendering.ts";
+
+/** One serving edge of the registry: a model on a service with its price and provenance. */
+export interface IModelListRow {
+  model: string;
+  author: string;
+  service: string;
+  route: string;
+  /** Where the price came from. */
+  price_source: string;
+  source_url: string | null;
+  /** The date the price was last verified, as YYYY-MM-DD. */
+  verified_at: string | null;
+  /** True when the price is older than the staleness limit. Null when it has no verification date. */
+  stale: boolean | null;
+  input_per_mtok: number | null;
+  output_per_mtok: number | null;
+  /** The advisory score of the benchmark that was asked for. */
+  benchmark?: string;
+}
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
 interface ICuratedEntryStatus {
@@ -79,6 +96,9 @@ const DEFAULT_PRICE_STALENESS_MAX_DAYS = ModelRegistryConfigSchema.unwrap().shap
   undefined,
 );
 
+const NO_VALUE = "-";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const VERIFIED_DATE_LENGTH = 10;
 const MODEL_ID_SEPARATOR = "/";
 const PROVIDER_NAME_SEPARATOR = "-";
 const SUBSCRIPTION_SUFFIX = "-cli";
@@ -120,40 +140,38 @@ export class ModelCommands {
 
   // Display: model list
 
-  /** Prints one row per serving edge. `--model` keeps one model and `--benchmark` adds a score. */
-  async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
+  /** One row per serving edge. `--model` keeps one model and `--benchmark` adds a score. */
+  async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<IModelListRow[]> {
     const wanted = options?.model === undefined ? undefined : this.parseWantedModel(options.model);
-    const rows = await this.collectRows(wanted, options?.benchmark);
-    if (wanted !== undefined && rows.length === 0) {
-      console.log(`No service serves ${wanted.author}${MODEL_ID_SEPARATOR}${wanted.name}.`);
-      return;
-    }
-    renderModelTable(rows, options?.benchmark);
+    return await this.collectRows(wanted, options?.benchmark);
   }
 
   private async collectRows(
     wanted: Opt<IWantedModel, Reason.OptionalInput>,
     benchmark: Opt<string, Reason.OptionalInput>,
-  ): Promise<string[][]> {
-    const rows: string[][] = [];
+  ): Promise<IModelListRow[]> {
+    const rows: IModelListRow[] = [];
     for (const provider of await this.registry.getAllProviders()) {
       for (const m of await this.registry.getProviderModels(provider)) {
         const author = deriveAuthor(m.provider, m.model);
         if (wanted !== undefined && (author !== wanted.author || modelName(m.model) !== wanted.name)) continue;
         const pricing = await this.registry.getModelPricing(m.provider, m.model);
-        const row = [
-          `${m.provider}:${m.model}`,
+        const verifiedAt = pricing.verifiedAt;
+        const row: IModelListRow = {
+          model: `${m.provider}:${m.model}`,
           author,
-          m.provider,
-          deriveRoute(m.provider),
-          pricing.provenance,
-          pricing.sourceUrl ?? NO_VALUE,
-          renderVerifiedAt(pricing.verifiedAt),
-          renderStale(pricing.verifiedAt, this.priceStalenessMaxDays),
-          renderPrice(pricing.inputPerMtok),
-          renderPrice(pricing.outputPerMtok),
-        ];
-        if (benchmark) row.push(await this.renderBenchmarkScore(m.provider, m.model, benchmark));
+          service: m.provider,
+          route: deriveRoute(m.provider),
+          price_source: pricing.provenance,
+          source_url: pricing.sourceUrl ?? null,
+          verified_at: verifiedAt === undefined
+            ? null
+            : new Date(verifiedAt).toISOString().slice(0, VERIFIED_DATE_LENGTH),
+          stale: verifiedAt === undefined ? null : Date.now() - verifiedAt > this.priceStalenessMaxDays * MS_PER_DAY,
+          input_per_mtok: pricing.inputPerMtok ?? null,
+          output_per_mtok: pricing.outputPerMtok ?? null,
+        };
+        if (benchmark) row.benchmark = await this.renderBenchmarkScore(m.provider, m.model, benchmark);
         rows.push(row);
       }
     }
@@ -174,7 +192,7 @@ export class ModelCommands {
    *  RegistryRefreshScheduler; the CLI holds only the Solo floor, so this reads
    *  `model_registry.enabled` to decide whether to refuse or guide. */
   // deno-lint-ignore require-await -- async so the guard's synchronous throw rejects the promise
-  async refreshModels(): Promise<void> {
+  async refreshModels(): Promise<string> {
     const cfg = this.readConfig();
     if (cfg.model_registry?.enabled !== true) {
       throw new Error(
@@ -182,13 +200,9 @@ export class ModelCommands {
           "in exa.config.toml and run a Team daemon (EXAIX_EDITION=team). It is a no-op in Solo.",
       );
     }
-    console.log(
-      colors.cyan(
-        "The Team daemon refreshes the model catalog on its configured cron " +
-          "(`model_registry.catalog_refresh_cron`). To refresh immediately, set " +
-          "`model_registry.refresh_on_start = true` and restart the daemon.",
-      ),
-    );
+    return "The Team daemon refreshes the model catalog on its configured cron " +
+      "(`model_registry.catalog_refresh_cron`). To refresh immediately, set " +
+      "`model_registry.refresh_on_start = true` and restart the daemon.";
   }
 
   // Curation: model candidates

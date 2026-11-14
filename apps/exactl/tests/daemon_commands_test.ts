@@ -196,26 +196,15 @@ describe("DaemonCommands", {
       assertExists(status.pid);
     });
 
-    it("should show clear error if already running", async () => {
-      // Start daemon first time
+    it("should not start a second daemon when one is already running", async () => {
+      await daemonCommands.start();
+      const first = await daemonCommands.status();
+
       await daemonCommands.start();
 
-      // Capture console output
-      const originalLog = console.log;
-      let logOutput = "";
-      console.log = (...args: string[]) => {
-        logOutput += args.join(" ") + "\n";
-      };
-
-      try {
-        // Try to start again
-        await daemonCommands.start();
-
-        // Verify error message about already running (EventLogger format)
-        assertStringIncludes(logOutput, "daemon.already_running");
-      } finally {
-        console.log = originalLog;
-      }
+      const second = await daemonCommands.status();
+      assertEquals(second.running, true);
+      assertEquals(second.pid, first.pid);
     });
 
     it("should create daemon process that stays alive", async () => {
@@ -335,22 +324,9 @@ describe("DaemonCommands", {
     });
 
     it("should handle daemon not running gracefully", async () => {
-      // Capture console output
-      const originalLog = console.log;
-      let logOutput = "";
-      console.log = (...args: string[]) => {
-        logOutput += args.join(" ") + "\n";
-      };
+      await daemonCommands.stop();
 
-      try {
-        // Try to stop when not running
-        await daemonCommands.stop();
-
-        // Verify friendly message (EventLogger format)
-        assertStringIncludes(logOutput, "daemon.not_running");
-      } finally {
-        console.log = originalLog;
-      }
+      assertEquals((await daemonCommands.status()).running, false);
     });
 
     it("should have force-kill capability", async () => {
@@ -558,21 +534,7 @@ describe("DaemonCommands", {
       // Don't create log file
       assertEquals(await exists(logFile), false);
 
-      // Capture console output
-      const originalLog = console.log;
-      let logOutput = "";
-      console.log = (...args: string[]) => {
-        logOutput += args.join(" ") + "\n";
-      };
-
-      try {
-        await daemonCommands.logs(50, false);
-
-        // Should show friendly message (EventLogger format)
-        assertStringIncludes(logOutput, "daemon.no_logs");
-      } finally {
-        console.log = originalLog;
-      }
+      assertEquals(await daemonCommands.logs(50, false), false);
     });
 
     it("should support --follow option", async () => {

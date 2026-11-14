@@ -17,7 +17,9 @@ import { FLOW_DOCS, FLOW_NOUN_DOC } from "./flow_docs.ts";
 import { CONFIG_DOCS, CONFIG_NOUN_DOC } from "./config_docs.ts";
 import { DASHBOARD_DOCS } from "./dashboard_docs.ts";
 import { GIT_DOCS, GIT_NOUN_DOC } from "./git_docs.ts";
+import { LOG_DOCS, LOG_NOUN_DOC } from "./log_docs.ts";
 import { MCP_DOCS, MCP_NOUN_DOC } from "./mcp_docs.ts";
+import { MODEL_DOCS, MODEL_NOUN_DOC } from "./model_docs.ts";
 import { MEMORY_DOCS, MEMORY_NOUN_DOC } from "./memory_docs.ts";
 import { PLAN_DOCS, PLAN_NOUN_DOC } from "./plan_docs.ts";
 import { PORTAL_DOCS, PORTAL_NOUN_DOC } from "./portal_docs.ts";
@@ -39,6 +41,8 @@ export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   GIT_NOUN_DOC,
   MCP_NOUN_DOC,
   CONFIG_NOUN_DOC,
+  LOG_NOUN_DOC,
+  MODEL_NOUN_DOC,
 ];
 
 export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
@@ -56,6 +60,8 @@ export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
   ...MCP_DOCS,
   ...DASHBOARD_DOCS,
   ...CONFIG_DOCS,
+  ...LOG_DOCS,
+  ...MODEL_DOCS,
 ];
 
 const PATH_SEPARATOR = " ";

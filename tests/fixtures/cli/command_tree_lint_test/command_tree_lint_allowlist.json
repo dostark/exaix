@@ -11,40 +11,22 @@
     "eval history",
     "eval report",
     "eval run",
-    "log cost",
-    "log list",
-    "log verify",
-    "log wait",
     "migrate check",
-    "model candidates",
-    "model list",
-    "model refresh",
-    "model route explain",
-    "model route validate",
-    "model use",
     "version"
   ],
   "doc-example": [],
   "doc-see-also": [],
   "doc-noun": [
     "eval",
-    "log",
-    "migrate",
-    "model"
+    "migrate"
   ],
   "doc-output-kind": [],
   "short-flag": [
-    "daemon logs -n",
     "eval calibration generate -s",
     "eval calibration generate -t",
     "eval history -l",
     "eval report -l",
     "eval run -s",
-    "eval run -t",
-    "log cost -p",
-    "log cost -s",
-    "log cost -t",
-    "log list -f",
-    "log list -n"
+    "eval run -t"
   ]
 }

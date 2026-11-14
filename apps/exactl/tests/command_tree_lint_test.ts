@@ -135,6 +135,8 @@ const DOCUMENTED_NOUNS = [
   "git",
   "mcp",
   "dashboard",
+  "log",
+  "model",
 ];
 
 function unlisted(rule: (typeof DOC_RULES)[number], violations = liveDocViolations()) {

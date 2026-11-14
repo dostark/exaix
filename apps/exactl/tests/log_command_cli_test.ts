@@ -8,6 +8,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { runExactlInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
 const FAILURE_EXIT_CODE = 1;
@@ -18,16 +19,16 @@ Deno.test("log wait exits 1 with a timeout message when the event never appears"
   assertStringIncludes(run.stderr, "Timeout after 1s waiting for journal event: never.happens");
 });
 
-Deno.test("log wait without --event exits 1 and names the log command", async () => {
+Deno.test("log wait without --event is a usage error and names the log command", async () => {
   const run = await runExactlInTempWorkspace(["log", "wait"]);
-  assertEquals(run.code, FAILURE_EXIT_CODE, run.stderr);
+  assertEquals(run.code, ExaCtlExitCode.USAGE, run.stderr);
   assertStringIncludes(run.stderr, "log wait requires --event <action_type>");
 });
 
 Deno.test("log verify exits 0 on the journal of a fresh workspace", async () => {
   const run = await runExactlInTempWorkspace(["log", "verify"]);
   assertEquals(run.code, 0, run.stderr);
-  assertStringIncludes(run.stdout, "Journal integrity verified");
+  assertStringIncludes(run.stdout, "OK: true");
 });
 
 Deno.test("log cost exits 0 on a workspace without recorded costs", async () => {

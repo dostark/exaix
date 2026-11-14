@@ -39,9 +39,3 @@ export const CLI_DEFAULTS = {
   LOG_LINES: 50,
   DAEMON_CHECK_INTERVAL_MS: 50,
 };
-
-export const CLI_OUTPUT_FORMATS = {
-  TABLE: UIOutputFormat.TABLE,
-  JSON: UIOutputFormat.JSON,
-  TEXT: "text",
-};

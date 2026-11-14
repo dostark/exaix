@@ -7,11 +7,26 @@
  */
 
 import { Command } from "@cliffy/command";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
-import { ExaCtlSubNoun, ExaCtlVerb } from "../exactl_constants.ts";
+import { ExaCtlCommandName, ExaCtlSubNoun, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
+import {
+  actionOutput,
+  cellText,
+  ColumnHeader,
+  EMPTY_CELL,
+  type ExaCtlOutputRenderer,
+  type IJsonRow,
+  toRow,
+} from "../output/exactl_output.ts";
+import type { IModelListRow } from "../commands/model_commands.ts";
+import { failCommand } from "./command_failure.ts";
+import { documentLeaves } from "./documented_children.ts";
+import { documentedNoun } from "../docs/exactl_noun_doc.ts";
+import { nounDocFor } from "../command_docs/mod.ts";
 
 const DEFAULT_MODEL_NAME = "default";
 const PROVIDER_MODEL_SEPARATOR = ":";
@@ -28,47 +43,102 @@ function parseProviderTarget(target: string): { provider: string; model: Opt<str
   return { provider, model };
 }
 
+const MODEL_REGISTRY_ID = "model-registry";
+
+function priceText(price: JSONValue): string {
+  return typeof price === "number" ? `$${price}` : EMPTY_CELL;
+}
+
+const MODEL_BASE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Model", value: (row) => cellText(row.model) },
+  { header: "Author", value: (row) => cellText(row.author) },
+  { header: "Service", value: (row) => cellText(row.service) },
+  { header: "Route", value: (row) => cellText(row.route) },
+  { header: "Provenance", value: (row) => cellText(row.price_source) },
+  { header: "Source URL", value: (row) => cellText(row.source_url) },
+  { header: "Verified", value: (row) => cellText(row.verified_at) },
+  { header: "Stale", value: (row) => row.stale === null ? EMPTY_CELL : row.stale ? "yes" : "no" },
+  { header: "Input $/Mtok", value: (row) => priceText(row.input_per_mtok) },
+  { header: "Output $/Mtok", value: (row) => priceText(row.output_per_mtok) },
+];
+
+const EXPLAIN_FIELDS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Selected agent role", value: (row) => cellText(row.selected_agent_role) },
+  { header: "Selected version", value: (row) => cellText(row.selected_version) },
+  { header: "Strategy", value: (row) => cellText(row.strategy) },
+  { header: "Matched rule", value: (row) => cellText(row.matched_rule_id) },
+  { header: "Candidates", value: (row) => String(row.candidate_count) },
+];
+
+const CANDIDATE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: ColumnHeader.AGENT, value: (row) => cellText(row.agent_role) },
+  { header: "Version", value: (row) => cellText(row.version) },
+  { header: "Score", value: (row) => typeof row.score === "number" ? row.score.toFixed(2) : EMPTY_CELL },
+];
+
+const VALIDATE_FIELDS: readonly IExaCtlColumn<IJsonRow>[] = [
+  { header: "Path", value: (row) => cellText(row.path) },
+  { header: "Valid", value: (row) => String(row.valid) },
+];
+
+function modelColumns(benchmark: Opt<string, Reason.OptionalInput>): readonly IExaCtlColumn<IJsonRow>[] {
+  return benchmark
+    ? [...MODEL_BASE_COLUMNS, { header: `Benchmark (${benchmark}, advisory)`, value: (row) => cellText(row.benchmark) }]
+    : MODEL_BASE_COLUMNS;
+}
+
+/** Prints the registry rows. A benchmark name adds an advisory score column. */
+export async function renderModelList(
+  renderer: ExaCtlOutputRenderer,
+  rows: readonly IModelListRow[],
+  benchmark: Opt<string, Reason.OptionalInput>,
+): Promise<void> {
+  await renderer.list(rows.map(toRow), modelColumns(benchmark), (row) => cellText(row.model));
+}
+
 function createListCommand(runtime: IExaCtlRuntime) {
   const { display, modelCommands } = runtime;
   return new Command()
-    .description("List registry models with provenance, verified date and per-Mtok prices")
     .option("--model <model:string>", "Only the services that serve this model, as <author>/<model>")
     .option("--benchmark <benchmark:string>", "Show the advisory score column for a tracked benchmark (Team)")
     .action(async (options) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
       try {
-        await modelCommands.listModels(options);
+        const rows = await modelCommands.listModels(options);
+        if (rows.length === 0 && options.model !== undefined) {
+          display.info("cli.model.list", options.model, { message: `No service serves ${options.model}.` });
+        }
+        await renderModelList(renderer, rows, options.benchmark);
       } catch (error) {
         if (error instanceof ExaCtlError) throw error;
-        display.error("cli.error", "model list", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
+        failCommand(display, "model list", error as Error);
       }
     });
 }
 
 function createRefreshCommand(runtime: IExaCtlRuntime) {
   const { display, modelCommands } = runtime;
-  return new Command()
-    .description("Trigger a Team live-registry catalog refresh (Team + model_registry.enabled only)")
-    .action(async () => {
-      try {
-        await modelCommands.refreshModels();
-      } catch (error) {
-        display.error("cli.error", "model refresh", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
-      }
-    });
+  return new Command().action(async (options) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+    try {
+      const guidance = await modelCommands.refreshModels();
+      display.info("cli.model.refresh", MODEL_REGISTRY_ID, { guidance });
+      await renderer.mutation(
+        [{ id: MODEL_REGISTRY_ID, action: ExaCtlVerb.REFRESH, status: MutationStatus.DEFERRED, guidance }],
+        false,
+      );
+    } catch (error) {
+      failCommand(display, "model refresh", error as Error);
+    }
+  });
 }
 
 function createUseCommand(runtime: IExaCtlRuntime) {
   const { display, configCommands } = runtime;
   return new Command()
-    .description("Set the provider and its default model")
     .arguments("<target:string>")
-    .action(async (_options, target: string) => {
+    .action(async (options, target: string) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       const { provider, model } = parseProviderTarget(target);
       try {
         await configCommands.setProvider(provider);
@@ -77,11 +147,12 @@ function createUseCommand(runtime: IExaCtlRuntime) {
           await configCommands.setModel(DEFAULT_MODEL_NAME, model);
           display.info("config.set-model", DEFAULT_MODEL_NAME, { model });
         }
+        await renderer.mutation(
+          [{ id: provider, action: ExaCtlVerb.USE, status: MutationStatus.ACTIVE, model: model ?? null }],
+          false,
+        );
       } catch (error) {
-        display.error("cli.error", "model use", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
+        failCommand(display, "model use", error as Error);
       }
     });
 }
@@ -89,20 +160,24 @@ function createUseCommand(runtime: IExaCtlRuntime) {
 function createCandidatesCommand(runtime: IExaCtlRuntime) {
   const { display, modelCommands } = runtime;
   return new Command()
-    .description("Curate the per-size model candidate list the resolver reads")
     .option("--size <size:string>", "Capability tier: S|M|L|XL")
     .option("--characteristic <name:string>", "Write a characteristic sub-list instead of the base list")
     .option("--clear", "Reset the size's candidate list to empty")
     .option("--list", "Show curated lists per size with unconfigured flags")
     .arguments("[entries...:string]")
     .action(async (options, ...entries: string[]) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       try {
         if (options.list) {
           const lists = await modelCommands.listCandidates();
+          if (renderer.machine) {
+            await renderer.item(toRow(lists), []);
+            return;
+          }
           for (const [size, view] of Object.entries(lists)) {
-            console.log(`  ${size}:`);
+            await renderer.text(`  ${size}:`);
             for (const e of view.entries) {
-              console.log(`    ${e.entry}${e.unconfigured ? "  (unconfigured)" : ""}`);
+              await renderer.text(`    ${e.entry}${e.unconfigured ? "  (unconfigured)" : ""}`);
             }
           }
           return;
@@ -113,6 +188,10 @@ function createCandidatesCommand(runtime: IExaCtlRuntime) {
         if (options.clear) {
           await modelCommands.clearCandidates(options.size);
           display.info("config.model.clear", options.size, {});
+          await renderer.mutation(
+            [{ id: options.size, action: ExaCtlVerb.CANDIDATES, status: MutationStatus.CLEARED }],
+            false,
+          );
           return;
         }
         if (options.characteristic) {
@@ -121,15 +200,22 @@ function createCandidatesCommand(runtime: IExaCtlRuntime) {
             characteristic: options.characteristic,
             count: entries.length,
           });
-          return;
+        } else {
+          await modelCommands.setCandidates(options.size, entries);
+          display.info("config.model.set", options.size, { count: entries.length });
         }
-        await modelCommands.setCandidates(options.size, entries);
-        display.info("config.model.set", options.size, { count: entries.length });
+        await renderer.mutation(
+          [{
+            id: options.size,
+            action: ExaCtlVerb.CANDIDATES,
+            status: MutationStatus.SET,
+            characteristic: options.characteristic ?? null,
+            count: entries.length,
+          }],
+          false,
+        );
       } catch (error) {
-        display.error("cli.error", "model candidates", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
+        failCommand(display, "model candidates", error as Error);
       }
     });
 }
@@ -137,9 +223,9 @@ function createCandidatesCommand(runtime: IExaCtlRuntime) {
 function createExplainCommand(runtime: IExaCtlRuntime) {
   const { display, routingCommands } = runtime;
   return new Command()
-    .description("Explain dynamic routing for a request without executing it")
     .option("--request <request:string>", "Path to a request file")
     .action(async (options) => {
+      const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       const requestFile = options.request;
       if (!requestFile) {
         display.error("cli.error", "model route explain", { message: "The --request option is required." });
@@ -147,62 +233,60 @@ function createExplainCommand(runtime: IExaCtlRuntime) {
       }
       try {
         const result = await routingCommands.explainRequest(requestFile);
-        display.info("routing.explain", requestFile, {
+        const candidates = result.candidates.slice(0, MAX_EXPLAINED_CANDIDATES).map((candidate) =>
+          toRow({ agent_role: candidate.agentRole, version: candidate.version, score: candidate.score })
+        );
+        const summary = toRow({
           selected_agent_role: result.selectedAgentRole,
           selected_version: result.selectedVersion,
           strategy: result.strategy,
           matched_rule_id: result.matchedRuleId ?? null,
           candidate_count: result.candidates.length,
+          candidates,
         });
-        for (const candidate of result.candidates.slice(0, MAX_EXPLAINED_CANDIDATES)) {
-          console.log(`${candidate.agentRole}@${candidate.version} score=${candidate.score.toFixed(2)}`);
-        }
+        await renderer.item(summary, EXPLAIN_FIELDS);
+        if (!renderer.machine) await renderer.list(candidates, CANDIDATE_COLUMNS, (row) => cellText(row.agent_role));
       } catch (error) {
-        display.error("cli.error", "model route explain", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
+        failCommand(display, "model route explain", error as Error);
       }
     });
 }
 
 function createValidateCommand(runtime: IExaCtlRuntime) {
   const { display, routingCommands } = runtime;
-  return new Command()
-    .description("Validate a routing policy YAML file")
-    .action(async (_options, ...args: string[]) => {
-      try {
-        const result = await routingCommands.validatePolicy(args[0]);
-        if (result.success) {
-          display.info("routing.policy.valid", result.path, { status: "valid" });
-          return;
-        }
+  return new Command().action(async (options, ...args: string[]) => {
+    const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+    try {
+      const result = await routingCommands.validatePolicy(args[0]);
+      await renderer.item(
+        toRow({ path: result.path, valid: result.success, errors: result.success ? [] : result.errors }),
+        VALIDATE_FIELDS,
+      );
+      if (!result.success) {
         display.error("routing.policy.invalid", result.path, { errors: result.errors });
         Deno.exit(1);
-      } catch (error) {
-        display.error("cli.error", "model route validate", {
-          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-        });
-        Deno.exit(1);
       }
-    });
-}
-
-function createRouteCommand(runtime: IExaCtlRuntime) {
-  return new Command()
-    .description("Inspect routing policy behavior and candidate ranking")
-    .command(ExaCtlVerb.EXPLAIN, createExplainCommand(runtime))
-    .command(`${ExaCtlVerb.VALIDATE} [policy-file:string]`, createValidateCommand(runtime));
+    } catch (error) {
+      failCommand(display, "model route validate", error as Error);
+    }
+  });
 }
 
 function createModelCommand(runtime: IExaCtlRuntime) {
-  return new Command()
-    .description("Inspect the model registry, select the provider and curate model candidates")
+  const noun = nounDocFor(ExaCtlCommandName.MODEL);
+  const route = new Command()
+    .description("Inspect routing policy behavior and candidate ranking")
+    .command(ExaCtlVerb.EXPLAIN, createExplainCommand(runtime))
+    .command(`${ExaCtlVerb.VALIDATE} [policy-file:string]`, createValidateCommand(runtime));
+  const command = documentedNoun(new Command(), noun)
     .command(ExaCtlVerb.LIST, createListCommand(runtime))
     .command(ExaCtlVerb.REFRESH, createRefreshCommand(runtime))
     .command(ExaCtlVerb.USE, createUseCommand(runtime))
     .command(ExaCtlVerb.CANDIDATES, createCandidatesCommand(runtime))
-    .command(ExaCtlSubNoun.ROUTE, createRouteCommand(runtime));
+    .command(ExaCtlSubNoun.ROUTE, route);
+  documentLeaves(command, [ExaCtlCommandName.MODEL], noun.lifecycle);
+  documentLeaves(route, [ExaCtlCommandName.MODEL, ExaCtlSubNoun.ROUTE], noun.lifecycle);
+  return command;
 }
 
 export function buildModelCommand(runtime: IExaCtlRuntime): ReturnType<typeof createModelCommand> {

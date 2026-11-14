@@ -31,6 +31,9 @@ const FOLLOWED_NOUNS = [
   "config",
   "git",
   "mcp",
+  "log",
+  "model",
+  "daemon",
 ];
 
 function unlisted() {

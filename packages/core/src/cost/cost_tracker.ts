@@ -11,6 +11,7 @@ import type { IDatabaseService } from "../types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "../types/mod.ts";
 import {
+  COST_SOURCE_ESTIMATE,
   CostGroupBy,
   type CostSource,
   type ICostFilter,
@@ -35,6 +36,7 @@ import {
   DEFAULT_COST_DIVERGENCE_TOLERANCE_PCT,
   DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
   DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
+  PERCENT_SCALE,
   TOKENS_PER_COST_UNIT,
 } from "../../mod.ts";
 import { ProviderType } from "../../mod.ts";
@@ -51,8 +53,6 @@ import type {
 /** USD-per-Mtok → USD-per-token divisor (pricing is quoted per 1M tokens). */
 /** Milliseconds in one day, for price age. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-/** Percent → fraction divisor. */
-const PERCENT = 100;
 
 /** The cost record fields that a pending record replaces or leaves to the database. */
 type TPendingCostOmittedField = "id" | "costSource";
@@ -62,6 +62,40 @@ type IPendingCostRecord = Omit<IProviderCostRecord, TPendingCostOmittedField> & 
   requests: number;
   costSource: CostSource | null;
 };
+
+/** The group name of a cost record that has no portal or no service. */
+const COST_GROUP_UNKNOWN = "(unknown)";
+
+function emptyCostGroup(group: string): IGroupedCostRecord {
+  return {
+    group,
+    calls: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    cacheReadTokens: 0,
+    cacheCreationTokens: 0,
+    estimatedCostUsd: 0,
+    costBySource: { provider_reported: 0, registry_computed: 0, [COST_SOURCE_ESTIMATE]: 0 },
+    unpricedCalls: 0,
+  };
+}
+
+/** Adds one record to its group. A record with no price counts as unpriced and makes the group total unknown. */
+function addRecordToCostGroup(row: IGroupedCostRecord, record: IProviderCostRecord): void {
+  const calls = record.requests ?? 1;
+  row.calls += calls;
+  row.promptTokens += record.promptTokens;
+  row.completionTokens += record.completionTokens;
+  row.cacheReadTokens += record.cacheReadTokens ?? 0;
+  row.cacheCreationTokens += record.cacheCreationTokens ?? 0;
+  if (record.estimatedCostUsd === null) {
+    row.unpricedCalls += calls;
+    row.estimatedCostUsd = null;
+    return;
+  }
+  row.costBySource[record.costSource ?? COST_SOURCE_ESTIMATE] += record.estimatedCostUsd;
+  if (row.estimatedCostUsd !== null) row.estimatedCostUsd += record.estimatedCostUsd;
+}
 
 /** Tracks and manages LLM provider costs; enforces budgets and analytics.
  * @visible
@@ -365,7 +399,7 @@ export class CostTracker implements ICostTracker {
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     if (!this.eventLogger || computed === 0) return;
-    const deltaPct = Math.abs(reported - computed) / computed * PERCENT;
+    const deltaPct = Math.abs(reported - computed) / computed * PERCENT_SCALE;
     if (deltaPct <= this.divergenceTolerancePct) return;
     const payload: IModelCostDivergencePayload = {
       provider,
@@ -508,33 +542,24 @@ export class CostTracker implements ICostTracker {
     if (groupBy === CostGroupBy.ROLE) {
       throw new Error("Role cost grouping is not available in this build: generation calls have no role attribution.");
     }
-    if (groupBy !== CostGroupBy.MODEL && groupBy !== CostGroupBy.PORTAL) {
+    if (groupBy !== CostGroupBy.MODEL && groupBy !== CostGroupBy.PORTAL && groupBy !== CostGroupBy.SERVICE) {
       throw new Error(`Invalid cost group: ${groupBy}`);
     }
     const records = await this.queryByCriteria(filter);
     const grouped = new Map<string, IGroupedCostRecord>();
     for (const record of records) {
-      const group = groupBy === CostGroupBy.MODEL ? record.model : record.portal ?? "(unknown)";
-      const row = grouped.get(group) ?? {
-        group,
-        calls: 0,
-        promptTokens: 0,
-        completionTokens: 0,
-        cacheReadTokens: 0,
-        cacheCreationTokens: 0,
-        estimatedCostUsd: 0,
-      };
-      row.calls += record.requests ?? 1;
-      row.promptTokens += record.promptTokens;
-      row.completionTokens += record.completionTokens;
-      row.cacheReadTokens += record.cacheReadTokens ?? 0;
-      row.cacheCreationTokens += record.cacheCreationTokens ?? 0;
-      row.estimatedCostUsd = row.estimatedCostUsd === null || record.estimatedCostUsd === null
-        ? null
-        : row.estimatedCostUsd + record.estimatedCostUsd;
+      const group = this.costGroupKey(record, groupBy);
+      const row = grouped.get(group) ?? emptyCostGroup(group);
+      addRecordToCostGroup(row, record);
       grouped.set(group, row);
     }
     return [...grouped.values()].sort((a, b) => a.group.localeCompare(b.group));
+  }
+
+  private costGroupKey(record: { model: string; portal?: string; service?: string }, groupBy: CostGroupBy): string {
+    if (groupBy === CostGroupBy.MODEL) return record.model;
+    if (groupBy === CostGroupBy.SERVICE) return record.service ?? COST_GROUP_UNKNOWN;
+    return record.portal ?? COST_GROUP_UNKNOWN;
   }
 
   getTotalCost(

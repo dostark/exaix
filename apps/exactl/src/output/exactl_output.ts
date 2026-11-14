@@ -171,10 +171,10 @@ export function resolveOutputFormat(
   return options.output ?? verbDefault;
 }
 
-/** Rejects `--json` with another `-o` format. Sets `json` for `-o json` and `-o jsonl`, so `options.json` readers follow `-o`. */
+/** Rejects `--json` with another `-o` format. Sets `json` for `-o json`, so `options.json` readers follow `-o`. */
 export function normalizeGlobalOptions(options: Partial<IExaCtlGlobalOptions>): void {
   const format = resolveOutputFormat(readGlobalOptions(options), ExaCtlOutputFormat.TABLE);
-  if (format === ExaCtlOutputFormat.JSON || format === ExaCtlOutputFormat.JSONL) {
+  if (format === ExaCtlOutputFormat.JSON) {
     Object.assign(options, { json: true });
   }
 }

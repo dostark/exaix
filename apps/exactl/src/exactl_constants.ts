@@ -115,6 +115,13 @@ export enum MutationStatus {
   LOCKED = "locked",
   UNLOCKED = "unlocked",
   ACTIVE = "active",
+  DEFERRED = "deferred",
+  CLEARED = "cleared",
+  STARTED = "started",
+  ALREADY_RUNNING = "already_running",
+  STOPPED = "stopped",
+  NOT_RUNNING = "not_running",
+  RESTARTED = "restarted",
 }
 
 /** Sub-nouns: a command that owns verbs but is not a root. */
@@ -152,7 +159,6 @@ export const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 
 export const CLI_OPTION_MODEL = "-m, --model <model:string>";
 
-export const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
 /** The portal option without a short letter, for the nouns that follow the short-flag policy. */
 export const CLI_OPTION_PORTAL_LONG = "--portal <portal:string>";
 

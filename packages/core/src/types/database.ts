@@ -94,8 +94,12 @@ export interface IProviderCostRecord {
 export enum CostGroupBy {
   MODEL = "model",
   PORTAL = "portal",
+  SERVICE = "service",
   ROLE = "role",
 }
+
+/** The cost per source of one group. */
+type CostBySource = Record<CostSource, number>;
 
 /** Aggregate of persisted generation calls for one dimension value. */
 export interface IGroupedCostRecord {
@@ -106,6 +110,10 @@ export interface IGroupedCostRecord {
   cacheReadTokens: number;
   cacheCreationTokens: number;
   estimatedCostUsd: number | null;
+  /** Priced cost per source. A record with no cost adds nothing here. */
+  costBySource: CostBySource;
+  /** Calls whose cost is not priced. They are not part of any source share. */
+  unpricedCalls: number;
 }
 
 /**
