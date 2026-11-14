@@ -8,7 +8,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { TEST_MODEL_ANTHROPIC, TEST_PROVIDER_ID_ANTHROPIC } from "@exaix/testing";
 import {
   handleRequestAnalyze,
@@ -70,16 +70,18 @@ function createDisplay() {
 function requestActionContext<TStub extends object>(
   requestCommands: TStub,
   display: IRequestActionContext["display"],
+  renderer: IRequestActionContext["renderer"] = createTestRenderer().renderer,
 ): IRequestActionContext {
   return {
     requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
     display,
-    renderer: createTestRenderer().renderer,
+    renderer,
   };
 }
 
 Deno.test("handleRequestShow: includes token stats when present", async () => {
   const { display, calls } = createDisplay();
+  const { renderer, text } = createTestRenderer();
   const requestCommands = {
     show: () =>
       Promise.resolve({
@@ -101,26 +103,27 @@ Deno.test("handleRequestShow: includes token stats when present", async () => {
       }),
   };
 
-  const context = requestActionContext(requestCommands, display);
+  const context = requestActionContext(requestCommands, display, renderer);
   await handleRequestShow(context, "trace-1");
 
-  assertEquals(calls.length, 2);
-  assertEquals(calls[0].a, "request.show");
-  if (calls[0].c) {
-    assertEquals(calls[0].c.input_tokens, 200);
-    assertEquals(calls[0].c.output_tokens, 80);
-    assertEquals(calls[0].c.total_tokens, 280);
-    assertEquals(calls[0].c.token_provider, TEST_PROVIDER_ID_ANTHROPIC);
-    assertEquals(calls[0].c.token_model, TEST_MODEL_ANTHROPIC);
-    assertEquals(calls[0].c.token_cost_usd, 0.0042);
-  } else {
-    throw new Error("calls[0].c is undefined");
-  }
-  assertEquals(calls[1].a, "request.content");
+  assertEquals(calls, []);
+  const shown = text();
+  for (
+    const line of [
+      "input_tokens: 200",
+      "output_tokens: 80",
+      "total_tokens: 280",
+      `token_provider: ${TEST_PROVIDER_ID_ANTHROPIC}`,
+      `token_model: ${TEST_MODEL_ANTHROPIC}`,
+      "token_cost_usd: 0.0042",
+      "Hello world",
+    ]
+  ) assertStringIncludes(shown, line);
 });
 
 Deno.test("handleRequestShow: includes analysis when present", async () => {
   const { display, calls } = createDisplay();
+  const { renderer, text } = createTestRenderer();
   const requestCommands = {
     show: () =>
       Promise.resolve({
@@ -149,21 +152,14 @@ Deno.test("handleRequestShow: includes analysis when present", async () => {
       }),
   };
 
-  const context = requestActionContext(requestCommands, display);
+  const context = requestActionContext(requestCommands, display, renderer);
   await handleRequestShow(context, "trace-2");
 
-  // Should have 3 calls: request.show, request.analysis, request.content
-  assertEquals(calls.length, 3);
-  assertEquals(calls[0].a, "request.show");
-  assertEquals(calls[1].a, "request.analysis");
-  if (calls[1].c) {
-    assertEquals(calls[1].c.complexity, "medium");
-    assertEquals(calls[1].c.actionability, "80%");
-    assertEquals(calls[1].c.ambiguity, "1 items");
-  } else {
-    throw new Error("calls[1].c is undefined");
+  assertEquals(calls, []);
+  const shown = text();
+  for (const line of ["complexity: medium", "actionability: 80%", "ambiguity: 1 items", "Hello analysis"]) {
+    assertStringIncludes(shown, line);
   }
-  assertEquals(calls[2].a, "request.content");
 });
 
 Deno.test("handleRequestAnalyze: trigger and display analysis", async () => {

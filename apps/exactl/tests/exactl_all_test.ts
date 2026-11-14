@@ -775,7 +775,7 @@ Deno.test("blueprint create successful prints created message", async () => {
     const outs = await captureAllOutputs(async () => {
       await mod.__test_command.parse(["blueprint", "create", "agent-y", "--name", "N", "-m", "mock:test"]);
     });
-    assert(outs.logs.some((l) => l.includes("blueprint.created") || l.includes("agent-y")));
+    assert([...outs.logs, ...outs.errs].some((l) => l.includes("blueprint.created") || l.includes("agent-y")));
   });
 });
 

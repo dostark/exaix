@@ -923,7 +923,7 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
   it("migrate({check:true}) returns 0 when versions match", () => {
     // Both binary and on-disk are WORKSPACE_SCHEMA_VERSION == "1.0.0"
     const cmd = makeCommandsWithOnDiskSchema(WORKSPACE_SCHEMA_VERSION);
-    const exitCode = cmd.migrate({ check: true });
+    const exitCode = cmd.migrate({ check: true }).exitCode;
     assertEquals(exitCode, 0);
   });
 
@@ -931,37 +931,31 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
     // Binary declares higher version, on-disk is lower
     const cmd = makeCommandsWithOnDiskSchema("1.0.0");
     // When on-disk is lower than binary, it returns 1 (migration required)
-    const exitCode = cmd.migrate({ check: true });
+    const exitCode = cmd.migrate({ check: true }).exitCode;
     assertEquals(exitCode, 1);
   });
 
   it("migrate({check:true}) returns 2 when on-disk minor > binary minor", () => {
     // Simulate workspace is ahead: on-disk = 9.9.0 > binary = 1.0.0
     const cmd = makeCommandsWithOnDiskSchema("9.9.0");
-    const exitCode = cmd.migrate({ check: true });
+    const exitCode = cmd.migrate({ check: true }).exitCode;
     assertEquals(exitCode, 2);
   });
 
   it("migrate({check:false}) returns 0 immediately", () => {
-    const exitCode = daemonCommands.migrate({ check: false });
+    const exitCode = daemonCommands.migrate({ check: false }).exitCode;
     assertEquals(exitCode, 0);
   });
 
-  it("migrate --json produces parseable JSON with required keys", () => {
-    const originalLog = console.log;
-    let captured = "";
-    console.log = (s: string) => {
-      captured = s;
-    };
-    try {
-      daemonCommands.migrate({ check: true, json: true });
-      const parsed = JSON.parse(captured);
-      assert("status" in parsed);
-      assert("exit_code" in parsed);
-      assert("message" in parsed);
-    } finally {
-      console.log = originalLog;
-    }
+  it("migrate({check:true}) returns a status and a message with the exit code", () => {
+    const check = makeCommandsWithOnDiskSchema(WORKSPACE_SCHEMA_VERSION).migrate({ check: true });
+    assertEquals([check.exitCode, check.status], [0, "ok"]);
+    assertStringIncludes(check.message, "up to date");
+  });
+
+  it("migrate({check:true}) reports a mismatch with its status", () => {
+    const check = makeCommandsWithOnDiskSchema("9.9.0").migrate({ check: true });
+    assertEquals([check.exitCode, check.status], [2, "mismatch"]);
   });
 });
 

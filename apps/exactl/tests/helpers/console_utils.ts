@@ -33,7 +33,7 @@ export async function runWithTimeout<T>(
 }
 
 /**
- * Captures console.log output during the execution of a function.
+ * Captures console.log and console.error output during the execution of a function, because the display writes to stderr.
  */
 export async function captureConsoleOutput(
   fn: () => Promise<void> | void,
@@ -41,12 +41,16 @@ export async function captureConsoleOutput(
 ): Promise<string> {
   let out = "";
   const origLog = console.log;
+  const origErr = console.error;
+  // The display writes to stderr, so the text of a command is on both streams.
   console.log = (msg: string) => (out += msg + "\n");
+  console.error = (msg: string) => (out += msg + "\n");
 
   try {
     await runWithTimeout(fn, timeoutMs);
   } finally {
     console.log = origLog;
+    console.error = origErr;
   }
   return out;
 }

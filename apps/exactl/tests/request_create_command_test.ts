@@ -21,7 +21,7 @@ Deno.test("request create with a description creates a request file", async () =
     ["request", "list", "--json"],
   ]);
   assertEquals(created.code, 0, created.stderr);
-  assertEquals(REQUEST_FILE_PATTERN.test(created.stdout), true, created.stdout);
+  assertEquals(REQUEST_FILE_PATTERN.test(created.stdout + created.stderr), true, created.stderr);
   assertStringIncludes(listed.stdout, "Write the docs");
 });
 
@@ -40,7 +40,7 @@ Deno.test("request create --agent sets the agent role", async () => {
     ["request", "list", "--json"],
   ]);
   assertEquals(created.code, 0, created.stderr);
-  assertStringIncludes(created.stdout, "agent_role: code-reviewer");
+  assertStringIncludes(created.stdout + created.stderr, "agent_role: code-reviewer");
   assertStringIncludes(listed.stdout, "code-reviewer");
 });
 

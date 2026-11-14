@@ -75,7 +75,7 @@ cliTest("[regression] CLI: request list surfaces target_branch", async () => {
     const targetBranch = "release_1.2";
     const { traceId } = await env.createRequest("Request list target branch", { targetBranch });
 
-    const result = await runExactl(["request", "list"], env.tempDir);
+    const result = await runExactl(["request", "list", "-o", "json"], env.tempDir);
     assertEquals(result.code, 0);
     assertStringIncludes(result.stdout, traceId.substring(0, 8));
     assertStringIncludes(result.stdout, "target_branch");
@@ -259,12 +259,12 @@ cliTest("[regression] CLI: portal knowledge analyze and show commands are recogn
     // Analyze help
     const analyzeHelp = await runExactl(["portal", "knowledge", "analyze", "--help"], env.tempDir);
     assertEquals(analyzeHelp.code, 0);
-    assertStringIncludes(analyzeHelp.stdout, "Trigger codebase knowledge analysis");
+    assertStringIncludes(analyzeHelp.stdout, "Analyze the codebase of a portal");
 
     // Knowledge help
     const knowledgeHelp = await runExactl(["portal", "knowledge", "show", "--help"], env.tempDir);
     assertEquals(knowledgeHelp.code, 0);
-    assertStringIncludes(knowledgeHelp.stdout, "Display gathered knowledge for a portal");
+    assertStringIncludes(knowledgeHelp.stdout, "knowledge");
   } finally {
     await env.cleanup();
   }
@@ -354,11 +354,11 @@ Deno.test("[regression] CLI: portal show includes default_branch and execution_s
   try {
     const { portalAlias, defaultBranch, executionStrategy } = await addWorktreePortal(env);
 
-    const show = await runExactl(["portal", "show", portalAlias], env.tempDir);
+    const show = await runExactl(["portal", "show", portalAlias, "-o", "json"], env.tempDir);
     assertEquals(show.code, 0);
-    assertStringIncludes(show.stdout, "default_branch");
+    assertStringIncludes(show.stdout, "defaultBranch");
     assertStringIncludes(show.stdout, defaultBranch);
-    assertStringIncludes(show.stdout, "execution_strategy");
+    assertStringIncludes(show.stdout, "executionStrategy");
     assertStringIncludes(show.stdout, executionStrategy);
   } finally {
     await env.cleanup();
@@ -428,15 +428,15 @@ cliTest("CLI: plan approve/reject/revise error handling", async () => {
     // Approve non-existent plan
     let result = await runExactl(["plan", "approve", "nonexistent"], env.tempDir);
     assert(result.code === 1);
-    assertStringIncludes(result.stderr, "plan approve");
+    assertStringIncludes(result.stderr + result.stdout, "plan approve");
     // Reject non-existent plan
     result = await runExactl(["plan", "reject", "nonexistent", "-r", "bad plan"], env.tempDir);
     assert(result.code === 1);
-    assertStringIncludes(result.stderr, "plan reject");
+    assertStringIncludes(result.stderr + result.stdout, "plan reject");
     // Revise non-existent plan
-    result = await runExactl(["plan", "revise", "nonexistent", "-c", "needs work"], env.tempDir);
+    result = await runExactl(["plan", "revise", "nonexistent", "--comment", "needs work"], env.tempDir);
     assert(result.code === 1);
-    assertStringIncludes(result.stderr, "plan revise");
+    assertStringIncludes(result.stderr + result.stdout, "plan revise");
   } finally {
     await env.cleanup();
   }

@@ -19,6 +19,7 @@ import {
   EXACTL_RENAMES,
   findOptionRename,
   findRename,
+  leadingWords,
   optionRenameHint,
   renameHint,
   requestCreateHint,
@@ -368,4 +369,35 @@ Deno.test("the removed short flags of flow, blueprint, skill and portal have no 
   ) {
     assertEquals(findOptionRename(argv), null, argv.join(" "));
   }
+});
+
+Deno.test("the options removed from every command have an empty-path rename row", () => {
+  const cases: ReadonlyArray<readonly [readonly string[], string]> = [
+    [["skill", "list", "--format", "json"], "-o, --output"],
+    [["log", "list", "--tail", "5"], "-n, --limit"],
+    [["daemon", "logs", "--lines", "5"], "-n, --limit"],
+    [["eval", "history", "--last", "5"], "-n, --limit"],
+    [["log", "cost", "--trace-id", "t-1"], "--trace"],
+    [["eval", "run", "--history-format", "jsonl"], "--history-store"],
+  ];
+  for (const [argv, canonical] of cases) {
+    const row = findOptionRename(argv);
+    assert(row !== null, argv.join(" "));
+    assertEquals(row.canonicalOption, canonical, argv.join(" "));
+  }
+});
+
+Deno.test("an empty-path row matches a command that never had the option", () => {
+  assertEquals(findOptionRename(["plan", "list", "--format", "json"])?.canonicalOption, "-o, --output");
+  assertEquals(findOptionRename(["plan", "list"]), null);
+});
+
+Deno.test("the hint of an empty-path row names the typed command", () => {
+  const argv = ["skill", "list", "--format", "json"];
+  const row = findOptionRename(argv);
+  assert(row !== null);
+  assertEquals(
+    optionRenameHint(row, leadingWords(argv)),
+    "'exactl skill list --format' was renamed: use '-o, --output'",
+  );
 });

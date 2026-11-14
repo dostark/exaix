@@ -18,7 +18,7 @@ import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
 import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
-import { actionOutput, ColumnHeader, readGlobalOptions } from "../output/exactl_output.ts";
+import { actionOutput, ColumnHeader } from "../output/exactl_output.ts";
 
 const DAEMON_ID = "daemon";
 const NOT_AVAILABLE_LABEL = "(not available)";
@@ -225,9 +225,15 @@ function createMigrateCommand(runtime: IExaCtlRuntime) {
       "check",
       new Command()
         .description("Check binary vs workspace schema compatibility")
-        .action((options) => {
-          const exitCode = daemonCommands.migrate({ check: true, json: readGlobalOptions(options).json === true });
-          Deno.exit(exitCode);
+        .action(async (options) => {
+          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          const check = daemonCommands.migrate({ check: true });
+          if (renderer.machine) {
+            await renderer.item({ status: check.status, exit_code: check.exitCode, message: check.message }, []);
+          } else {
+            await renderer.text(check.message);
+          }
+          Deno.exit(check.exitCode);
         }),
     );
 }

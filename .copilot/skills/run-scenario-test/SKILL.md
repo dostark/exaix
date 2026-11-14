@@ -40,7 +40,7 @@ Run commands (quick reference)
   exactl eval run --pack agent_flows                               # sandbox + daemon scenarios
   exactl eval run --tag provider-live --max-cost-usd 0.5           # live tier, budget-capped
   exactl eval run --scenario <id> --trials 5                       # reliability metrics
-  exactl eval history --last 10                                    # run history
+  exactl eval history --limit 10                                   # run history
   exactl eval compare --run-a <id> --run-b <id>                    # per-step score deltas
   exactl eval report --view failures                               # why runs fail
 

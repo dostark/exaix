@@ -19,7 +19,7 @@ import {
   type ContextRecord,
   type ContextRecordSummary,
 } from "@exaix/schemas/dogfood_context.ts";
-import { captureConsoleOutput, expectExitWithLogs } from "./helpers/test_utils.ts";
+import { expectExitWithLogs } from "./helpers/test_utils.ts";
 
 const TRACE_ID = "11111111-1111-4111-8111-111111111111";
 const CHILD_TRACE_ID = "22222222-2222-4222-8222-222222222222";
@@ -98,8 +98,23 @@ class FakeReader implements IContextInspectionReader {
   }
 }
 
+let printed = "";
+
+/** The view that an inspect command printed to stdout. */
+async function captureConsoleOutput(fn: () => Promise<void>): Promise<string> {
+  printed = "";
+  await fn();
+  return printed;
+}
+
 function inspectCommand(store: IContextInspectionReader): InspectCommands {
-  return new InspectCommands(createStubContext(), { store });
+  return new InspectCommands(createStubContext(), {
+    store,
+    writeRaw: (text: string) => {
+      printed += text;
+      return Promise.resolve();
+    },
+  });
 }
 
 function exitCode(err: Error): number {

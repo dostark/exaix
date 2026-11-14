@@ -39,18 +39,6 @@ import { checkRunAdherence } from "../../runner/policy_adherence.ts";
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
 const PERSONA = "cooperative";
 const ACTOR = `user-simulator:${PERSONA}`;
 const TEST_TRACE = "trace-interactive-pipeline";
@@ -164,7 +152,8 @@ Deno.test("[InteractivePipeline] drives the real simulator/clarification/wait-st
 
   // 5. The interactive view renders the per-persona table computed from this real chain.
   const cmds = new EvalCommands(context);
-  const { output } = await withCapturedOutput(() => cmds.report({ view: "interactive", dbPath }));
+  cmds.report({ view: "interactive", dbPath });
+  const output = cmds.takeOutput();
   const text = output.join("\n");
   assert(text.length > 0 && !text.includes("Error"), "interactive view must render without error");
   assertStringIncludes(text, PERSONA);

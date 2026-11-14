@@ -86,30 +86,26 @@ export class InspectCommands extends BaseCommand {
       );
     }
 
-    // Both --raw and --json are machine-consumable stdout contracts — the audit banner
-    // must never be interleaved into either, only the human-readable default view.
-    const suppressBanner = options.raw || options.json;
-
     if (options.record) {
       // traceId may be a governing parent trace; resolve the record's real storage trace
       // via the same lineage-aware lookup the list path uses, rather than assuming it.
       const summaries = await this.resolveSummaries(traceId);
       const match = summaries.find((s) => s.recordId === options.record);
       const record = await this.readOrExit(match?.executionTraceId ?? traceId, options.record);
-      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, suppressBanner);
+      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
 
     const summaries = await this.resolveSummaries(traceId);
     if (summaries.length === 0) {
-      await this.emitInspected(traceId, undefined, ContextInspectionResult.NO_CAPTURE, 0, suppressBanner);
+      await this.emitInspected(traceId, undefined, ContextInspectionResult.NO_CAPTURE, 0);
       console.error(colors.yellow(`No captured context found for trace ${traceId}.`));
       Deno.exit(ContextInspectExitCode.NO_CAPTURE);
     }
     if (summaries.length === 1) {
       const only = summaries[0];
       const record = await this.readOrExit(only.executionTraceId, only.recordId);
-      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, suppressBanner);
+      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
     if (options.raw) {
@@ -118,8 +114,8 @@ export class InspectCommands extends BaseCommand {
         `${summaries.length} records found — pass --record <uuid> to select one for --raw export`,
       );
     }
-    await this.emitInspected(traceId, undefined, ContextInspectionResult.LIST, summaries.length, suppressBanner);
-    this.renderList(summaries, options.json);
+    await this.emitInspected(traceId, undefined, ContextInspectionResult.LIST, summaries.length);
+    await this.renderList(summaries, options.json);
   }
 
   /** Direct child-trace records first; falls back to the bounded parent-lineage lookup
@@ -163,7 +159,7 @@ export class InspectCommands extends BaseCommand {
     const launchStatusHint = await this.lookupLaunchStatusHint(record);
     const view: IDetailView = { ...record, launchStatusHint };
     if (json) {
-      console.log(JSON.stringify(view, null, 2));
+      await this.print(JSON.stringify(view, null, 2));
       return;
     }
     const preview = stripTerminalControlBytes(record.promptText).slice(0, DETAIL_PREVIEW_MAX_CHARS);
@@ -189,18 +185,26 @@ export class InspectCommands extends BaseCommand {
       `Prompt preview (post-redaction, first ${DETAIL_PREVIEW_MAX_CHARS} chars):`,
       preview,
     ];
-    console.log(lines.join("\n"));
+    await this.print(lines.join("\n"));
   }
 
-  private renderList(summaries: readonly ContextRecordSummary[], json?: Opt<boolean, Reason.OptionalInput>): void {
+  /** Writes one line of the view to stdout. */
+  private async print(text: string): Promise<void> {
+    await this.writeRaw(text + "\n");
+  }
+
+  private async renderList(
+    summaries: readonly ContextRecordSummary[],
+    json?: Opt<boolean, Reason.OptionalInput>,
+  ): Promise<void> {
     if (json) {
-      console.log(JSON.stringify(summaries, null, 2));
+      await this.print(JSON.stringify(summaries, null, 2));
       return;
     }
     const lines = summaries.map((s) =>
       `${s.recordId}  seq=${s.sequence} turn=${s.turn} attempt=${s.attempt}  ${s.surface}  ${s.model}  ${s.timestamp}`
     );
-    console.log(lines.join("\n"));
+    await this.print(lines.join("\n"));
   }
 
   /** Best-effort: the last journalled activity for this record's execution trace. Never
@@ -217,15 +221,11 @@ export class InspectCommands extends BaseCommand {
     }
   }
 
-  /** `suppressConsoleEcho` keeps the audit journal write but silences its console banner —
-   *  both `--raw` (byte-exact stdout) and `--json` (parseable stdout) would otherwise be
-   *  corrupted by an interleaved banner line. */
   private async emitInspected(
     traceId: string,
     recordId: Opt<string, Reason.OptionalInput>,
     result: ContextInspectionResult,
     recordCount: number,
-    suppressConsoleEcho: Opt<boolean, Reason.OptionalInput> = false,
   ): Promise<void> {
     const payload: IContextInspectedPayload = {
       trace_id: traceId,
@@ -233,21 +233,7 @@ export class InspectCommands extends BaseCommand {
       result,
       record_count: recordCount,
     };
-    await this.withConsoleLogSuppressed(
-      suppressConsoleEcho === true,
-      () => this.display.info(DomainEventType.ContextInspected, recordId ?? traceId, { ...payload }, traceId),
-    );
-  }
-
-  private async withConsoleLogSuppressed(suppress: boolean, fn: () => Promise<void>): Promise<void> {
-    if (!suppress) return await fn();
-    const originalLog = console.log;
-    console.log = () => {};
-    try {
-      await fn();
-    } finally {
-      console.log = originalLog;
-    }
+    await this.display.info(DomainEventType.ContextInspected, recordId ?? traceId, { ...payload }, traceId);
   }
 
   private async emitInspectionFailed(

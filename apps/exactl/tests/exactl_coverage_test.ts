@@ -368,7 +368,7 @@ Deno.test("portal verify logs warnings and summary", async () => {
       ]);
 
     let listing = "";
-    const { logs } = await captureAllOutputs(async () => {
+    const { errs } = await captureAllOutputs(async () => {
       listing = (await withCapturedSink(ctx.outputSink, async () => {
         await mod.__test_command.parse(["portal", "verify"]);
       })).out;
@@ -377,7 +377,7 @@ Deno.test("portal verify logs warnings and summary", async () => {
     assertStringIncludes(listing, "Broken");
     assertStringIncludes(listing, "FAILED");
     assertStringIncludes(listing, "missing");
-    assertStringIncludes(logs.join(" "), "portal.verify.summary");
+    assertStringIncludes(errs.join(" "), "portal.verify.summary");
   });
 });
 
@@ -423,11 +423,11 @@ Deno.test("review show renders approved decision", async () => {
         approved_by: "tester",
       });
 
-    const { logs } = await captureAllOutputs(async () => {
+    const { logs, errs } = await captureAllOutputs(async () => {
       await mod.__test_command.parse(["review", "show", "cs-1"]);
     });
 
-    assertStringIncludes(logs.join(" "), "approved");
+    assertStringIncludes([...logs, ...errs].join(" "), "approved");
   });
 });
 
@@ -449,11 +449,11 @@ Deno.test("review show renders rejected decision", async () => {
         rejection_reason: "bad",
       });
 
-    const { logs } = await captureAllOutputs(async () => {
+    const { logs, errs } = await captureAllOutputs(async () => {
       await mod.__test_command.parse(["review", "show", "cs-2"]);
     });
 
-    assertStringIncludes(logs.join(" "), "rejected");
+    assertStringIncludes([...logs, ...errs].join(" "), "rejected");
   });
 });
 

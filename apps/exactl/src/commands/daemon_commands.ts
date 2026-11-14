@@ -31,6 +31,13 @@ interface IDaemonStartOptions {
   readyTimeoutMs?: number;
 }
 
+/** The result of a migration check: the exit code, a status word and the message for a person. */
+export interface IMigrationCheck {
+  exitCode: number;
+  status: string;
+  message: string;
+}
+
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";
 
@@ -42,6 +49,9 @@ const DAEMON_EXITED_BEFORE_READY = "Daemon process exited before daemon.ready";
 
 /** Start failure reason when the daemon is alive but does not journal daemon.ready in time */
 const DAEMON_NOT_READY_IN_TIME = "Daemon started but never reached ready state (watchers not listening)";
+
+const MIGRATION_STATUS_OK = "ok";
+const MIGRATION_STATUS_MISMATCH = "mismatch";
 
 /**
  * Commands for daemon control
@@ -361,8 +371,8 @@ export class DaemonCommands extends BaseCommand {
   }
 
   /** Check migration compatibility; exit codes: 0 up to date, 1 migration required, 2 binary older. */
-  migrate(options: { check?: boolean; json?: boolean } = {}): number {
-    if (!options.check) return 0;
+  migrate(options: { check?: boolean } = {}): IMigrationCheck {
+    if (!options.check) return { exitCode: 0, status: MIGRATION_STATUS_OK, message: "" };
 
     const binaryWsv = WORKSPACE_SCHEMA_VERSION;
     const onDiskWsv = (() => {
@@ -394,13 +404,7 @@ export class DaemonCommands extends BaseCommand {
       message = `❌ Binary is older than workspace — update exactl (binary: ${binaryWsv}, workspace: ${onDiskWsv})`;
     }
 
-    if (options.json) {
-      console.log(JSON.stringify({ status: exitCode === 0 ? "ok" : "mismatch", exit_code: exitCode, message }));
-    } else {
-      console.log(message);
-    }
-
-    return exitCode;
+    return { exitCode, status: exitCode === 0 ? MIGRATION_STATUS_OK : MIGRATION_STATUS_MISMATCH, message };
   }
 
   /** Streams the daemon log to the terminal. It returns false when the daemon wrote no log yet. */

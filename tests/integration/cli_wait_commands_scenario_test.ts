@@ -53,7 +53,7 @@ async function withWaitState<TOverrides extends object>(
 
 async function assertWaitTransition(command: string, message: string, expectedStatus: string): Promise<void> {
   await withWaitState({}, async (tempDir, waitDir) => {
-    const messageOption = command === "reject" ? "--reason" : "-m";
+    const messageOption = command === "reject" ? "--reason" : "--message";
     const result = await runExactl(["approval", command, `wait:${TOKEN_UUID}`, messageOption, message], tempDir);
     assertEquals(result.code, 0, `expected exit 0, got ${result.code}: ${result.stderr}`);
 
@@ -97,7 +97,7 @@ cliTest("WaitScenario: exactl approval expire transitions wait state to expired"
 
 cliTest("WaitScenario: exactl approval approve on non-pending wait state errors gracefully", async () => {
   await withWaitState({ status: "fulfilled" }, async (tempDir) => {
-    const result = await runExactl(["approval", "approve", `wait:${TOKEN_UUID}`, "-m", "Should fail"], tempDir);
+    const result = await runExactl(["approval", "approve", `wait:${TOKEN_UUID}`, "--message", "Should fail"], tempDir);
     assertEquals(result.code, 1);
   });
 });

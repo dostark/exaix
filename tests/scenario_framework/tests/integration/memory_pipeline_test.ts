@@ -37,18 +37,6 @@ const DETERMINISTIC_MEMORY_SCENARIO_IDS = [
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
 /** The sandbox root the child runner mints under. The runner defaults to the repo's parent,
  *  which is not writable everywhere, so the test supplies its own writable base. */
 async function runScenario(scenarioId: string, dbPath: string, sandboxBase: string): Promise<void> {
@@ -101,7 +89,8 @@ Deno.test({
       const { context, cleanup } = await createCliTestContext();
       try {
         const cmds = new EvalCommands(context);
-        const { output } = await withCapturedOutput(() => cmds.report({ view: "memory", dbPath }));
+        cmds.report({ view: "memory", dbPath });
+        const output = cmds.takeOutput();
         const text = output.join("\n");
         assertStringIncludes(text, "information-extraction");
         assertStringIncludes(text, "temporal-reasoning");

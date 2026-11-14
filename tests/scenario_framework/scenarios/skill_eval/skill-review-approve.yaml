@@ -57,7 +57,7 @@ steps:
     output_criteria:
       - id: "derive-prints-path-and-revision"
         kind: "command-output-contains"
-        contains: ["Draft path: learned/derived-one", "Revision:"]
+        contains: ["draft_path: learned/derived-one", "revision:"]
 
   - id: "approve-with-a-stale-revision-is-refused"
     type: "exactl"
@@ -89,7 +89,7 @@ steps:
         equals: 0
       - id: "approval-names-the-reviewed-revision"
         kind: "command-output-contains"
-        contains: ["Approved skill: review-flow", "Reviewed revision: 2beced21-b31f-5fe8-b100-5dc8256b2fbe"]
+        contains: ["cli.skill.approved: review-flow", "reviewed_revision: 2beced21-b31f-5fe8-b100-5dc8256b2fbe"]
 
   - id: "start-daemon"
     type: "exactl"
@@ -157,11 +157,11 @@ steps:
   - id: "revisions-show-the-used-revision"
     type: "exactl"
     command: "skill"
-    args: ["revisions", "review-flow"]
+    args: ["revisions", "review-flow", "-o", "json"]
     output_criteria:
       - id: "one-use-recorded"
         kind: "command-output-contains"
-        contains: ["review-flow", "1 use(s)"]
+        contains: ["b8e0484e-a3bd-53db-9e8b-238fa85db4ec", '"useCount": 1']
 
   - id: "deprecate-the-skill"
     type: "exactl"

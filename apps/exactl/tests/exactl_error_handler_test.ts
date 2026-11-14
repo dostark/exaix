@@ -7,7 +7,7 @@
  * @related-files [apps/exactl/src/exactl_error_handler.ts, apps/exactl/src/exactl.ts]
  */
 
-import { assert, assertEquals, assertStrictEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertNotMatch, assertStrictEquals, assertStringIncludes } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { ValidationError } from "@cliffy/command";
 import { createExaCtlCommand } from "../src/exactl.ts";
@@ -137,4 +137,53 @@ Deno.test("the removed calibration score output option yields the report-file hi
   );
   assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
   assertStringIncludes(run.stderr, "use '--report-file'");
+});
+
+Deno.test("an unexpected Error with --json prints a JSON error and no stack trace and exits 1", () => {
+  const run = runHandler(new Error("boom"), ["plan", "list", "--json"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.FAILURE);
+  assertEquals(JSON.parse(run.stderr), { error: { code: "FAILURE", message: "boom" } });
+});
+
+Deno.test("an unexpected Error without a machine format is left to the caller", () => {
+  const run = runHandler(new Error("boom"), ["plan", "list"]);
+  assertEquals([run.exitCode, run.stderr], [null, ""]);
+});
+
+Deno.test("a ValidationError without a rename prints a USAGE JSON error and exits 2", () => {
+  const run = runHandler(new ValidationError('Unknown option "--bogus"'), ["plan", "list", "-o", "json", "--bogus"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  const { error } = JSON.parse(run.stderr);
+  assertEquals(error.code, "USAGE");
+  assertStringIncludes(error.message, "--bogus");
+});
+
+Deno.test("an ExaCtlError with --json prints its exit code name", () => {
+  const run = runHandler(new ExaCtlError(ExaCtlExitCode.NOT_FOUND, "plan p-1 not found"), [
+    "plan",
+    "show",
+    "p-1",
+    "--json",
+  ]);
+  assertEquals(run.exitCode, ExaCtlExitCode.NOT_FOUND);
+  assertEquals(JSON.parse(run.stderr), { error: { code: "NOT_FOUND", message: "plan p-1 not found" } });
+});
+
+Deno.test("an ExaCtlError that carries a child exit code with --json is named CHILD_EXIT", () => {
+  const childCode = 77;
+  const run = runHandler(new ExaCtlError(childCode, "child failed"), ["eval", "run", "-o", "jsonl"]);
+  assertEquals(run.exitCode, childCode);
+  assertEquals(JSON.parse(run.stderr).error.code, "CHILD_EXIT");
+});
+
+Deno.test("a rename hint stays plain text with --json", () => {
+  const run = runHandler(new ValidationError('Unknown option "--bogus"'), ["blueprint", "ls", "--json", "--bogus"]);
+  assertEquals(run.exitCode, ExaCtlExitCode.USAGE);
+  assertStringIncludes(run.stderr, "use 'exactl blueprint list'");
+  assertNotMatch(run.stderr, /^\{/);
+});
+
+Deno.test("an ExaCtlError message loses terminal control sequences", () => {
+  const run = runHandler(new ExaCtlError(ExaCtlExitCode.FAILURE, "bad\u001b[31m red\u0007"), ["plan", "show", "p-1"]);
+  assertEquals(run.stderr, "bad red");
 });

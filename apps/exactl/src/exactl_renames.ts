@@ -45,6 +45,7 @@ const OPTION_VALUE_SEPARATOR = "=";
 const AGENT_OPTION = "--agent";
 const REPORT_FILE_OPTION = "--report-file";
 const OUTPUT_OPTION = "--output";
+const LIMIT_OPTION = "-n, --limit";
 const SHORT_OUTPUT_OPTION = "-o";
 const VALUELESS_GLOBAL_OPTIONS: ReadonlySet<string> = new Set([
   "--json",
@@ -122,9 +123,15 @@ const EXACTL_OPTION_RENAMES: readonly IExaCtlOptionRename[] = [
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "--agent-role", canonicalOption: AGENT_OPTION },
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "-a", canonicalOption: AGENT_OPTION },
   { path: ["eval", "calibration", "score"], legacyOption: OUTPUT_OPTION, canonicalOption: REPORT_FILE_OPTION },
-  { path: ["log", "list"], legacyOption: "--tail", canonicalOption: "-n, --limit" },
+  { path: ["log", "list"], legacyOption: "--tail", canonicalOption: LIMIT_OPTION },
   { path: ["log", "cost"], legacyOption: "--trace-id", canonicalOption: "--trace" },
-  { path: ["daemon", "logs"], legacyOption: "--lines", canonicalOption: "-n, --limit" },
+  { path: ["daemon", "logs"], legacyOption: "--lines", canonicalOption: LIMIT_OPTION },
+  { path: [], legacyOption: "--format", canonicalOption: "-o, --output" },
+  { path: [], legacyOption: "--tail", canonicalOption: LIMIT_OPTION },
+  { path: [], legacyOption: "--lines", canonicalOption: LIMIT_OPTION },
+  { path: [], legacyOption: "--last", canonicalOption: LIMIT_OPTION },
+  { path: [], legacyOption: "--trace-id", canonicalOption: "--trace" },
+  { path: [], legacyOption: "--history-format", canonicalOption: "--history-store" },
 ];
 
 /** True for `-o`, `--output` or an attached `-ovalue` or `--output=value`. */
@@ -203,8 +210,9 @@ export function findOptionRename(
 }
 
 /** The one-line stderr hint for an option rename. */
-export function optionRenameHint(rename: IExaCtlOptionRename): string {
-  return `'exactl ${rename.path.join(" ")} ${rename.legacyOption}' was renamed: use '${rename.canonicalOption}'`;
+export function optionRenameHint(rename: IExaCtlOptionRename, typedWords: readonly string[] = []): string {
+  const command = rename.path.length > 0 ? rename.path : typedWords;
+  return `'exactl ${[...command, rename.legacyOption].join(" ")}' was renamed: use '${rename.canonicalOption}'`;
 }
 
 /** The one-line stderr hint for free text typed straight after `exactl request`. */

@@ -129,6 +129,14 @@ export interface IRequestClarifyOptions {
   resolvedBy?: string;
 }
 
+/** One field per key of a record, so a view prints the keys that it has. */
+function keyFields(data: JSONObject): readonly IExaCtlColumn<IJsonRow>[] {
+  return Object.keys(data).filter((key) => data[key] !== undefined).map((key) => ({
+    header: key,
+    value: (row: IJsonRow) => typeof row[key] === "string" ? cellText(row[key]) : cellText(JSON.stringify(row[key])),
+  }));
+}
+
 const REQUEST_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: ColumnHeader.TRACE, value: (request) => cellText(request.trace_id) },
   { header: ColumnHeader.STATUS, value: (request) => cellText(request.status) },
@@ -539,7 +547,7 @@ export async function handleRequestShow(
     if (metadata.characteristics) displayData.characteristics = metadata.characteristics;
     if (metadata.preferred_provider) displayData.preferred_provider = metadata.preferred_provider;
 
-    display.info("request.show", metadata.trace_id.slice(0, 8), toSafeJson(displayData) as Record<string, JSONValue>);
+    await renderer.item(toRow(toSafeJson(displayData) as JSONObject), keyFields(displayData));
 
     const { analysis } = await requestCommands.show(id);
     if (analysis) {
@@ -548,14 +556,10 @@ export async function handleRequestShow(
         actionability: `${analysis.actionabilityScore}%`,
         ambiguity: analysis.ambiguities.length > 0 ? `${analysis.ambiguities.length} items` : DEFAULT_NONE_LABEL,
       };
-      display.info(
-        "request.analysis",
-        metadata.trace_id.slice(0, 8),
-        toSafeJson(analysisData) as Record<string, JSONValue>,
-      );
+      await renderer.item(toRow(analysisData), keyFields(analysisData));
     }
 
-    display.info("request.content", id, { content });
+    await renderer.text(content);
   } catch (error) {
     display.error("cli.error", "request show", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

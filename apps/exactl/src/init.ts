@@ -17,7 +17,6 @@ import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
 import { ActivityActor, ConsoleStream, EDITION_SOLO } from "@exaix/core";
-import { isJsonOutputRequested } from "./output/exactl_output.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -103,9 +102,9 @@ function createDatabaseStub(): IDatabaseService {
 }
 
 // Allow tests to run the CLI entrypoint without initializing heavy services
-/** Display lines go to stderr when the command asks for JSON, so stdout carries only data. */
+/** Display lines go to stderr in every format, so stdout carries only data. */
 function displayStream(): ConsoleStream {
-  return isJsonOutputRequested(Deno.args) ? ConsoleStream.STDERR : ConsoleStream.STDOUT;
+  return ConsoleStream.STDERR;
 }
 
 export function isTestMode(): boolean {

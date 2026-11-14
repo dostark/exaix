@@ -34,18 +34,6 @@ import { checkCanaryLeak } from "../../runner/attack_predicates.ts";
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
 const CANARY_VALUE = "CANARY-a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6";
 const FAMILY_TAG = "task:bug-fix";
 const VECTOR_TAG = "vector:portal-readme";
@@ -154,7 +142,8 @@ Deno.test("[AdversarialPipeline] runs clean/attacked twins token-free and render
     // 4. The robustness view renders the AgentDojo triple computed from this real history:
     //    attack_success_rate must be 1.0 (the one gated attacked run's objective fired).
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "robustness", dbPath }));
+    cmds.report({ view: "robustness", dbPath });
+    const output = cmds.takeOutput();
     const text = output.join("\n");
     assert(text.length > 0 && !text.includes("Error"), "robustness view must render without error");
     assertStringIncludes(text, "portal-readme");

@@ -14,7 +14,7 @@
  */
 
 import { ExaPathDefaults } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join, toFileUrl } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { PathResolver } from "@exaix/portal";
@@ -22,7 +22,6 @@ import { ContextRecordStore } from "@exaix/session";
 import { CONTEXT_RECORD_SCHEMA_VERSION, type ContextRecord } from "@exaix/schemas/dogfood_context.ts";
 import { handleRequestInspect } from "../src/command_builders/request_actions.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { captureAllOutputs } from "./helpers/console_utils.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 import { withTempDir } from "@exaix/testing";
@@ -69,13 +68,19 @@ Deno.test("[dispatch] handleRequestInspect reads a real, isolated Step 1 capture
     const store = new ContextRecordStore(new PathResolver(context.config.getAll()));
     await store.save(makeProductionRecord());
 
-    const outs = await captureAllOutputs(async () => {
+    const written: string[] = [];
+    const origWrite = Deno.stdout.write.bind(Deno.stdout);
+    Deno.stdout.write = (chunk: Uint8Array) => {
+      written.push(new TextDecoder().decode(chunk));
+      return Promise.resolve(chunk.byteLength);
+    };
+    try {
       await handleRequestInspect(context, TRACE_ID, { json: true });
-    });
+    } finally {
+      Deno.stdout.write = origWrite;
+    }
 
-    const jsonLine = outs.logs.find((l) => l.trimStart().startsWith("{"));
-    assert(jsonLine, `expected a JSON log line, got: ${JSON.stringify(outs.logs)}`);
-    const parsed = JSON.parse(jsonLine);
+    const parsed = JSON.parse(written.join(""));
     assertEquals(parsed.recordId, RECORD_ID);
     assertEquals(parsed.promptText, PRODUCTION_PROMPT_BYTES);
   } finally {

@@ -19,6 +19,19 @@ import {
   requestCreateHint,
   stripGlobalOptions,
 } from "./exactl_renames.ts";
+import { isJsonOutputRequested, stripTerminalControls } from "./output/exactl_output.ts";
+
+const CHILD_EXIT_NAME = "CHILD_EXIT";
+
+/** The name of an exit code, or CHILD_EXIT for a code that a child process passed through. */
+function exitCodeName(code: number): string {
+  return ExaCtlExitCode[code] ?? CHILD_EXIT_NAME;
+}
+
+/** Prints a failure to stderr: the JSON error shape in a machine format, plain text otherwise. */
+function reportFailure(json: boolean, code: string, message: string): void {
+  console.error(json ? JSON.stringify({ error: { code, message } }) : message);
+}
 
 /** The part of the root command the handler reads to tell a subcommand from free text. */
 interface ICommandLookup {
@@ -38,8 +51,9 @@ export function handleExaCtlError(
   exit: (code: number) => never,
   root: ICommandLookup,
 ): void {
+  const json = isJsonOutputRequested(argv);
   if (error instanceof ExaCtlError) {
-    console.error(error.message);
+    reportFailure(json, exitCodeName(error.code), stripTerminalControls(error.message));
     exit(error.code);
   }
   if (error instanceof ValidationError) {
@@ -52,12 +66,21 @@ export function handleExaCtlError(
     }
     const optionRename = findOptionRename(argv);
     if (optionRename !== null) {
-      console.error(optionRenameHint(optionRename));
+      console.error(optionRenameHint(optionRename, typed));
       exit(ExaCtlExitCode.USAGE);
     }
     if (isRequestFreeText(typed, root)) {
       console.error(requestCreateHint(typed.slice(1)));
       exit(ExaCtlExitCode.USAGE);
     }
+    if (json) {
+      reportFailure(json, ExaCtlExitCode[ExaCtlExitCode.USAGE], stripTerminalControls(error.message));
+      exit(ExaCtlExitCode.USAGE);
+    }
+    return;
+  }
+  if (json) {
+    reportFailure(json, ExaCtlExitCode[ExaCtlExitCode.FAILURE], stripTerminalControls(error.message));
+    exit(ExaCtlExitCode.FAILURE);
   }
 }
