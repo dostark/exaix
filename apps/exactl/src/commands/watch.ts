@@ -10,6 +10,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import * as colors from "@std/fmt/colors";
 import { z } from "zod";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
@@ -21,7 +22,7 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
-import type { IJournalFilterOptions, Opt, Reason } from "@exaix/core/types";
+import type { IJournalFilterOptions } from "@exaix/core/types";
 import { type ExaCtlOutputRenderer, type IJsonRow, stripTerminalControls, toRow } from "../output/exactl_output.ts";
 import type { JSONValue } from "@exaix/core";
 
@@ -57,19 +58,14 @@ export class WatchCommand extends BaseCommand {
   async watch(
     traceId: string,
     renderer: ExaCtlOutputRenderer,
-    testMode?: Opt<boolean, Reason.TestOverride>,
   ): Promise<void> {
     // Validate traceId
     const parseResult = z.string().uuid().safeParse(traceId);
     if (!parseResult.success) {
-      const msg = `Invalid traceId: must be a valid UUID. Got: "${traceId}"`;
-      // An explicit argument, not the process env. Test files share one process env.
-      // Another file can clear a test-mode env var mid-run.
-      if (testMode === true || Deno.env.get("EXA_TEST_CLI_MODE") === "1") {
-        throw new Error(msg);
-      }
-      console.error(colors.red(msg));
-      Deno.exit(1);
+      throw new ExaCtlError(
+        ExaCtlExitCode.USAGE,
+        `Invalid traceId: must be a valid UUID. Got: "${traceId}"`,
+      );
     }
 
     // Try SSE stream first (with a short timeout to detect if server is running)

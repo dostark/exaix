@@ -14,6 +14,7 @@ import { RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequest } from "@exaix/core/request";
 import { RequestStatus } from "@exaix/core/status";
 import { join } from "@std/path";
+import { ExaCtlError } from "@exaix/cli/errors/exactl_errors.ts";
 import { ensureDir } from "@std/fs";
 import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
 import { captureConsoleOutput as captureConsoleOutputShared, runWithTimeout } from "./console_utils.ts";
@@ -152,6 +153,17 @@ export async function expectExitWithLogs(
   }
   // This should never be reached, but TypeScript requires it
   throw new Error("Unexpected code path in expectExitWithLogs");
+}
+
+/** Runs `fn` and returns the ExaCtlError it throws. The root error handler turns that error into an exit code. */
+export async function expectExaCtlError(fn: () => Promise<void> | void): Promise<ExaCtlError> {
+  try {
+    await fn();
+  } catch (error) {
+    if (error instanceof ExaCtlError) return error;
+    throw error;
+  }
+  throw new Error("Expected the function to throw an ExaCtlError");
 }
 
 /** The result of a stubbed `request create` for a request that names a flow. */

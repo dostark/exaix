@@ -19,7 +19,8 @@ import {
   type ContextRecord,
   type ContextRecordSummary,
 } from "@exaix/schemas/dogfood_context.ts";
-import { expectExitWithLogs } from "./helpers/test_utils.ts";
+import { expectExaCtlError } from "./helpers/test_utils.ts";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 const TRACE_ID = "11111111-1111-4111-8111-111111111111";
 const CHILD_TRACE_ID = "22222222-2222-4222-8222-222222222222";
@@ -117,12 +118,6 @@ function inspectCommand(store: IContextInspectionReader): InspectCommands {
   });
 }
 
-function exitCode(err: Error): number {
-  const match = err.message.match(/^DENO_EXIT:(\d+)$/);
-  assert(match, `expected a DENO_EXIT:<code> message, got: ${err.message}`);
-  return Number(match[1]);
-}
-
 Deno.test("[inspect] a single captured record auto-shows detail (no --record needed)", async () => {
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord()]]]));
   const out = await captureConsoleOutput(() => inspectCommand(store).inspect(TRACE_ID, {}));
@@ -201,54 +196,54 @@ Deno.test("[inspect] --raw exports the exact promptText bytes, nothing else, no 
 Deno.test("[inspect][security] --raw refuses to write to a TTY", async () => {
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord()]]]));
   const cmd = new InspectCommands(createStubContext(), { store, isStdoutTty: () => true });
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: RECORD_ID, raw: true }));
-  assertEquals(exitCode(result.err), 2);
-  assertStringIncludes(result.errors.join("\n"), "TTY");
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: RECORD_ID, raw: true }));
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
+  assertStringIncludes(failure.message, "TTY");
 });
 
 Deno.test("[inspect][security] --raw without --record is ambiguous when multiple records exist", async () => {
   const second = makeRecord({ recordId: "55555555-5555-4555-8555-555555555555", sequence: 2 });
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord(), second]]]));
   const cmd = new InspectCommands(createStubContext(), { store, isStdoutTty: () => false });
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { raw: true }));
-  assertEquals(exitCode(result.err), 2);
-  assertStringIncludes(result.errors.join("\n"), "--record");
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { raw: true }));
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
+  assertStringIncludes(failure.message, "--record");
 });
 
 Deno.test("[inspect][security] --json and --raw together are rejected", async () => {
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord()]]]));
   const cmd = new InspectCommands(createStubContext(), { store, isStdoutTty: () => false });
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: RECORD_ID, json: true, raw: true }));
-  assertEquals(exitCode(result.err), 2);
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: RECORD_ID, json: true, raw: true }));
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
 });
 
 Deno.test("[inspect][security] a malformed trace_id (not a UUID) is rejected before any store access", async () => {
   const store = new FakeReader();
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect("not-a-uuid", {}));
-  assertEquals(exitCode(result.err), 2);
+  const failure = await expectExaCtlError(() => cmd.inspect("not-a-uuid", {}));
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
 });
 
 Deno.test("[inspect][security] a malformed --record (not a UUID) is rejected", async () => {
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord()]]]));
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: "short-id" }));
-  assertEquals(exitCode(result.err), 2);
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: "short-id" }));
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
 });
 
 Deno.test("[inspect] no captured records for the trace (or its lineage) is a structured no_capture, exit 3", async () => {
   const store = new FakeReader();
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, {}));
-  assertEquals(exitCode(result.err), 3);
-  assertStringIncludes(result.errors.join("\n").toLowerCase(), "no captured context");
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, {}));
+  assertEquals(failure.code, ExaCtlExitCode.NOT_FOUND);
+  assertStringIncludes(failure.message.toLowerCase(), "no captured context");
 });
 
 Deno.test("[inspect] a deleted/expired record referenced by --record is no_capture, exit 3 — never reconstructed", async () => {
   const store = new FakeReader(new Map()); // record was pruned; nothing on disk
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
-  assertEquals(exitCode(result.err), 3);
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
+  assertEquals(failure.code, ExaCtlExitCode.NOT_FOUND);
 });
 
 Deno.test("[inspect] a corrupt/unparseable record read is a read failure, exit 1", async () => {
@@ -257,8 +252,8 @@ Deno.test("[inspect] a corrupt/unparseable record read is a read failure, exit 1
     () => new SyntaxError("Unexpected token in JSON"),
   );
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
-  assertEquals(exitCode(result.err), 1);
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
+  assertEquals(failure.code, ExaCtlExitCode.FAILURE);
 });
 
 Deno.test("[inspect] a permission-denied record read is a read failure, exit 1", async () => {
@@ -267,8 +262,8 @@ Deno.test("[inspect] a permission-denied record read is a read failure, exit 1",
     () => new Deno.errors.PermissionDenied("denied"),
   );
   const cmd = inspectCommand(store);
-  const result = await expectExitWithLogs(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
-  assertEquals(exitCode(result.err), 1);
+  const failure = await expectExaCtlError(() => cmd.inspect(TRACE_ID, { record: RECORD_ID }));
+  assertEquals(failure.code, ExaCtlExitCode.FAILURE);
 });
 
 Deno.test("[inspect] control bytes in promptText are escaped in the non-raw preview, never sent raw to the terminal", async () => {

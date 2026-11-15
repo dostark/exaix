@@ -6,6 +6,7 @@
  * @related-files ["apps/exactl/src/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { EFFORT_AUTO } from "@exaix/schemas";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -42,7 +43,7 @@ export class RequestShowHandler extends BaseCommand {
   async show(idOrFilename: string): Promise<IRequestShowResult> {
     // Check if directory exists
     if (!await exists(this.workspaceRequestsDir)) {
-      throw new Error(`Request not found: ${idOrFilename}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Request not found: ${idOrFilename}`);
     }
 
     const { matchingFile, matchingFrontmatter } = await this.findMatchingRequestFile(idOrFilename);
@@ -130,7 +131,7 @@ export class RequestShowHandler extends BaseCommand {
     }
 
     if (!matchingFile || !matchingFrontmatter) {
-      throw new Error(`Request not found: ${idOrFilename}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Request not found: ${idOrFilename}`);
     }
 
     return { matchingFile, matchingFrontmatter };

@@ -9,6 +9,8 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
+import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
 import { MemoryScope } from "@exaix/core";
 import type { MemoryBankSource } from "@exaix/core";
@@ -17,7 +19,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import { CLI_LAYOUT_SKILL_HASH_WIDTH, CLI_LAYOUT_SKILL_REVISION_WIDTH, ExaCtlOutputFormat } from "@exaix/cli";
 import type { IExaCtlColumn } from "@exaix/cli";
-import { type MemoryCommands, SkillCommandError } from "../commands/memory_commands.ts";
+import type { MemoryCommands } from "../commands/memory_commands.ts";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { COMMA_SEPARATOR, ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { actionOutput, cellText, ColumnHeader, EMPTY_CELL, type IJsonRow, toRow } from "../output/exactl_output.ts";
@@ -113,15 +115,12 @@ function splitList(value: Opt<string, Reason.OptionalInput>): string[] | undefin
 /** Fills one command group with the skill commands. */
 function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
   const memory: MemoryCommands = runtime.memoryCommands;
-  /** Runs one action. A failure prints its message and ends the process with its exit code. */
-  async function run(action: string, work: () => Promise<void>): Promise<void> {
+  /** Runs one action. A failure reaches the root error handler with the exit code of its class. */
+  async function run(work: () => Promise<void>): Promise<void> {
     try {
       await work();
     } catch (error) {
-      runtime.display.error("cli.error", action, {
-        message: error instanceof Error ? error.message : "Skill command failed",
-      });
-      Deno.exit(error instanceof SkillCommandError ? error.exitCode : 1);
+      throw toExaCtlError(error as Error);
     }
   }
   const out = <T extends object>(options: T) => actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
@@ -134,7 +133,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option("--all", "Include diagnostics for folders that did not load")
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options) =>
-          run("skill list", async () => {
+          run(async () => {
             const { renderer } = out(options);
             const result = await memory.skillList({
               category: options.category as MemoryBankSource | undefined,
@@ -161,7 +160,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option(REVISION_OPTION, "Show this stored revision instead of the current skill")
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill show", async () => {
+          run(async () => {
             const { renderer } = out(options);
             if (options.revision !== undefined) {
               const detail = await memory.skillShowRevision(args[0], options.revision, options.portal);
@@ -205,7 +204,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option(LIMIT_OPTION, "Maximum results", { default: LIMIT_DEFAULT })
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill match", async () => {
+          run(async () => {
             const { renderer } = out(options);
             const matches = await memory.skillMatch(args[0], {
               taskType: options.taskType,
@@ -230,7 +229,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option("-i, --instructions <instructions:string>", "Skill instructions")
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options) =>
-          run("skill derive", async () => {
+          run(async () => {
             const { renderer, display } = out(options);
             const skill = await memory.skillDerive({
               learningIds: splitList(options.learningIds),
@@ -268,7 +267,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option("--task-types <taskTypes:string>", "Comma-separated trigger task types")
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill create", async () => {
+          run(async () => {
             const { renderer, display } = out(options);
             const skill = await memory.skillCreate(args[0], {
               description: options.description,
@@ -303,7 +302,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option(REVISION_OPTION, "Revision UUID that was reviewed", { required: true })
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill approve", async () => {
+          run(async () => {
             const { renderer, display } = out(options);
             const approved = await memory.skillApprove(args[0], options.revision, { portal: options.portal });
             display.info("cli.skill.approved", approved.name, {
@@ -328,7 +327,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
       new Command()
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill deprecate", async () => {
+          run(async () => {
             const { renderer, display } = out(options);
             const deprecated = await memory.skillDeprecate(args[0], { portal: options.portal });
             display.info("cli.skill.deprecated", deprecated.name, {
@@ -352,7 +351,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
       new Command()
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill revisions", async () => {
+          run(async () => {
             const { renderer } = out(options);
             const rows = await memory.skillRevisions(args[0], { portal: options.portal });
             await renderer.list(rows.map(toRow), REVISION_COLUMNS, (row) => cellText(row.revisionId));
@@ -365,7 +364,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
         .option("--trace <trace:string>", "Trace id to read", { required: true })
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options) =>
-          run("skill usage", async () => {
+          run(async () => {
             const { renderer } = out(options);
             const rows = await memory.skillUsageByTrace(options.trace, { portal: options.portal });
             await renderer.list(rows.map(toRow), TRACE_COLUMNS, (row) => cellText(row.callId));
@@ -377,7 +376,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
       new Command()
         .option(PORTAL_OPTION, PORTAL_HELP)
         .action((options, ...args: string[]) =>
-          run("skill validate", async () => {
+          run(async () => {
             const { renderer, display } = out(options);
             const result = await memory.skillValidate(args[0], { portal: options.portal });
             if (renderer.machine) {
@@ -388,7 +387,7 @@ function registerSkillCommands(group: Command, runtime: IExaCtlRuntime): void {
             }
             if (!result.valid) {
               display.error("cli.skill.invalid", "skills", { errors: result.diagnostics.length });
-              Deno.exit(1);
+              throw new ExaCtlError(ExaCtlExitCode.INVALID, "Skill validation found errors.");
             }
           })
         ),

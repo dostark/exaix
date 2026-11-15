@@ -46,7 +46,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Prints the plan metadata, its token usage and its content.",
     examples: [{ title: "Show a plan", command: "exactl plan show plan-123" }],
     seeAlso: [exactlCommand(PLAN, ExaCtlVerb.LIST), exactlCommand(PLAN, ExaCtlVerb.APPROVE)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -58,7 +58,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Approve every plan in review", command: "exactl plan approve --all" },
     ],
     seeAlso: [exactlCommand(PLAN, ExaCtlVerb.SHOW), exactlCommand(PLAN, ExaCtlVerb.REJECT)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.STATE_CONFLICT],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -67,7 +67,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Rejects the plan and records why. The reason is required.",
     examples: [{ title: "Reject a plan", command: 'exactl plan reject plan-123 --reason "Scope is too wide"' }],
     seeAlso: [exactlCommand(PLAN, ExaCtlVerb.REVISE), exactlCommand(PLAN, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -76,7 +76,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Sends the plan back to the agent with your comments. Repeat `--comment` for several comments.",
     examples: [{ title: "Request a revision", command: 'exactl plan revise plan-123 --comment "Add a rollback step"' }],
     seeAlso: [exactlCommand(PLAN, ExaCtlVerb.REJECT), exactlCommand(PLAN, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -104,7 +104,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.LIST),
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.APPROVE),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -120,7 +120,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.SHOW),
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.REJECT),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -135,7 +135,7 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.SHOW),
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.APPROVE),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
 ];

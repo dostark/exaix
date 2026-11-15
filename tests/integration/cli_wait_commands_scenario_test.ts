@@ -8,6 +8,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { cliTest, runExactl } from "./helpers/cli_test_helpers.ts";
 
@@ -98,7 +99,7 @@ cliTest("WaitScenario: exactl approval expire transitions wait state to expired"
 cliTest("WaitScenario: exactl approval approve on non-pending wait state errors gracefully", async () => {
   await withWaitState({ status: "fulfilled" }, async (tempDir) => {
     const result = await runExactl(["approval", "approve", `wait:${TOKEN_UUID}`, "--message", "Should fail"], tempDir);
-    assertEquals(result.code, 1);
+    assertEquals(result.code, ExaCtlExitCode.STATE_CONFLICT);
   });
 });
 

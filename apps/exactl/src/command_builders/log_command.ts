@@ -162,7 +162,7 @@ function createVerifyCommand(runtime: IExaCtlRuntime) {
     const report = await new JournalCommands(context).verify();
     await renderer.item(toRow(report), VERIFY_FIELDS);
     if (!report.ok) {
-      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Journal integrity FAILED at row ${report.first_broken_id}`);
+      throw new ExaCtlError(ExaCtlExitCode.INVALID, `Journal integrity FAILED at row ${report.first_broken_id}`);
     }
   });
 }

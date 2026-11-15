@@ -23,7 +23,8 @@ import { ExaCtlVerb } from "../exactl_constants.ts";
 import { PlanStatus } from "@exaix/core/status";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import { ExaCtlError } from "@exaix/cli/errors/exactl_errors.ts";
+import { toExaCtlError } from "./command_failure.ts";
 import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -74,12 +75,15 @@ const PLAN_COLUMNS: readonly IExaCtlColumn<IPlanRow>[] = [
   },
 ];
 
-/** Prints the added, updated, and removed steps of an amendment patch. */
-/** The ids decided before a failure, for the error line. */
-function decidedField(decided: readonly string[]): Record<string, string> {
-  return decided.length === 0 ? {} : { decided: decided.join(", ") };
+/** The failure of a bulk run with the ids that were decided before it. */
+function withDecided(error: Error, decided: readonly string[]): ExaCtlError {
+  const failure = toExaCtlError(error as Error);
+  return decided.length === 0
+    ? failure
+    : new ExaCtlError(failure.code, `${failure.message} (decided before the failure: ${decided.join(", ")})`);
 }
 
+/** Prints the added, updated, and removed steps of an amendment patch. */
 function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendmentPatch): void {
   if (patch.adds.length > 0) {
     display.info("Adds", "", {});
@@ -98,17 +102,14 @@ function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendment
  * Handle plan list action
  */
 export async function handlePlanList(context: IPlanActionContext, options: IPlanListOptions): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     const plans = await planCommands.list(options.status);
     const rows = plans.map((plan) => toSafeJson({ ...plan }) as IPlanRow);
     await renderer.list(rows, PLAN_COLUMNS, (plan) => plan.id);
   } catch (error) {
-    display.error("cli.error", "plan list", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -157,10 +158,7 @@ export async function handlePlanShow(
     display.info("plan.show", metadata.id, toSafeJson(displayData) as Record<string, JSONValue>);
     display.info("plan.content", id, { content: content });
   } catch (error) {
-    display.error("cli.error", "plan show", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -180,11 +178,10 @@ function decision(id: string, action: ExaCtlVerb, status: string): IMutationResu
 }
 
 /**
- * Approves the ids in order with one decision call each. The first failure prints the ids already decided and exits 1.
+ * Approves the ids in order with one decision call each. The first failure reports the ids already decided and ends the command.
  */
 async function approveInOrder(
   context: IPlanActionContext,
-  label: string,
   ids: readonly string[],
   approveOne: (id: string) => Promise<void>,
 ): Promise<void> {
@@ -199,11 +196,7 @@ async function approveInOrder(
       ids.length !== 1,
     );
   } catch (error) {
-    context.display.error("cli.error", label, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      ...decidedField(decided),
-    });
-    Deno.exit(1);
+    throw withDecided(error as Error, decided);
   }
 }
 
@@ -211,24 +204,21 @@ async function approveInOrder(
  * Handle plan approve action. The ids are approved in order and the first failure stops the run.
  */
 export function handlePlanApprove(context: IPlanActionContext, ids: readonly string[]): Promise<void> {
-  return approveInOrder(context, "plan approve", ids, (id) => context.planCommands.approve(id));
+  return approveInOrder(context, ids, (id) => context.planCommands.approve(id));
 }
 
 /**
  * Handle plan approve all action
  */
 export async function handlePlanApproveAll(context: IPlanActionContext): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     const inReview = await planCommands.list(PlanStatus.REVIEW);
     await planCommands.approveAll();
     await renderer.mutation(inReview.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
-    display.error("cli.error", "plan approve --all", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -240,16 +230,13 @@ export async function handlePlanReject(
   id: string,
   reason: string,
 ): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     await planCommands.reject(id, reason);
     await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
-    display.error("cli.error", "plan reject", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -261,16 +248,13 @@ export async function handlePlanRevise(
   id: string,
   comments: string[],
 ): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     await planCommands.revise(id, comments);
     await renderer.mutation([decision(id, ExaCtlVerb.REVISE, PlanStatus.NEEDS_REVISION)], false);
   } catch (error) {
-    display.error("cli.error", "plan revise", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -280,16 +264,13 @@ export async function handlePlanRevise(
 export async function handlePlanAmendmentList(
   context: IPlanActionContext,
 ): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     const plans = await planCommands.listAmendments();
     await renderer.list(plans.map((plan) => toRow({ ...plan })), AMENDMENT_COLUMNS, (plan) => String(plan.id));
   } catch (error) {
-    display.error("cli.error", "plan amendment list", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -320,11 +301,7 @@ export async function handlePlanAmendmentShow(
     }
     if (renderer.machine) await emitAmendments(renderer, shown, ids.length !== 1);
   } catch (error) {
-    display.error("cli.error", "plan amendment show", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      ...decidedField(decided),
-    });
-    Deno.exit(1);
+    throw withDecided(error as Error, decided);
   }
 }
 
@@ -332,7 +309,7 @@ export async function handlePlanAmendmentShow(
  * Handle plan amendment approve action. The ids are approved in order and the first failure stops the run.
  */
 export function handlePlanAmendmentApprove(context: IPlanActionContext, ids: readonly string[]): Promise<void> {
-  return approveInOrder(context, "plan amendment approve", ids, async (id) => {
+  return approveInOrder(context, ids, async (id) => {
     await context.planCommands.approveAmendment(id);
     context.display.info("plan.amendment.approved", id, {
       message: "Amendment approved and applied. Plan status updated to 'approved'.",
@@ -355,10 +332,7 @@ export async function handlePlanAmendmentReject(
     display.info("plan.amendment.rejected", id, { message: "Amendment rejected and execution aborted." });
     await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
-    display.error("cli.error", "plan amendment reject", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -368,17 +342,14 @@ export async function handlePlanAmendmentReject(
 export async function handlePlanAmendmentApproveAll(
   context: IPlanActionContext,
 ): Promise<void> {
-  const { planCommands, display, renderer } = context;
+  const { planCommands, renderer } = context;
 
   try {
     const pending = await planCommands.listAmendments();
     await planCommands.approveAllAmendments();
     await renderer.mutation(pending.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
-    display.error("cli.error", "plan amendment approve --all", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -412,9 +383,6 @@ export async function handlePlanAmendmentShowAll(
       displayAmendmentChanges(display, patch);
     }
   } catch (error) {
-    display.error("cli.error", "plan amendment show --all", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }

@@ -11,11 +11,9 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { runExactlInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
-const FAILURE_EXIT_CODE = 1;
-
-Deno.test("log wait exits 1 with a timeout message when the event never appears", async () => {
+Deno.test("log wait exits 124 with a timeout message when the event never appears", async () => {
   const run = await runExactlInTempWorkspace(["log", "wait", "--event", "never.happens", "--timeout", "1"]);
-  assertEquals(run.code, FAILURE_EXIT_CODE, run.stderr);
+  assertEquals(run.code, ExaCtlExitCode.TIMEOUT, run.stderr);
   assertStringIncludes(run.stderr, "Timeout after 1s waiting for journal event: never.happens");
 });
 

@@ -15,6 +15,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { Database } from "@db/sqlite";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -46,6 +47,7 @@ const OUT_OF_BOUNDS_READY_MS = 1;
 class TestDaemonCommands extends DaemonCommands {
   public mockActionLogger?: IDisplayService;
   public skipDaemonReadyWait = true;
+  public readyOutcome: boolean | undefined;
   public readyTimeouts: number[] = [];
 
   public override getActionLogger(): IDisplayService {
@@ -63,6 +65,7 @@ class TestDaemonCommands extends DaemonCommands {
     timeoutMs: number,
   ): Promise<boolean> {
     this.readyTimeouts.push(timeoutMs);
+    if (this.readyOutcome !== undefined) return Promise.resolve(this.readyOutcome);
     if (this.skipDaemonReadyWait) return Promise.resolve(true);
     return super.waitForDaemonReady(workspaceRoot, pid, timeoutMs);
   }
@@ -259,6 +262,26 @@ describe("DaemonCommands", {
       const started = db.instance.prepare("SELECT COUNT(*) AS n FROM activity WHERE action_type = ?")
         .get(DomainEventType.DaemonStarted) as { n: number };
       assertEquals(started.n, 0);
+    });
+
+    it("fails with the TIMEOUT exit code when the daemon stays alive without daemon.ready", async () => {
+      await Deno.writeTextFile(mainScript, "setInterval(() => {}, 1000);\n");
+      daemonCommands.readyOutcome = false;
+
+      try {
+        const failure = await assertRejects(() => daemonCommands.start(), ExaCtlError);
+        assertEquals(failure.code, ExaCtlExitCode.TIMEOUT);
+      } finally {
+        Deno.kill(Number(await Deno.readTextFile(pidFile)), "SIGKILL");
+      }
+    });
+
+    it("fails with the FAILURE exit code when the daemon exits before daemon.ready", async () => {
+      await Deno.writeTextFile(mainScript, "Deno.exit(1);\n");
+      daemonCommands.skipDaemonReadyWait = false;
+
+      const failure = await assertRejects(() => daemonCommands.start(), ExaCtlError);
+      assertEquals(failure.code, ExaCtlExitCode.FAILURE);
     });
 
     it("registers the daemon ready timeout as a restart-swap configurable key", () => {

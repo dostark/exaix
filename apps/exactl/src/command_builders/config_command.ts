@@ -6,8 +6,9 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
+import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
@@ -69,9 +70,8 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
   const { display, configCommands } = runtime;
   const noun = nounDocFor(ExaCtlCommandName.CONFIG);
 
-  /** Runs one action. A failure prints its message and ends the process with exit code 1. */
+  /** Runs one action. A failure becomes the ExaCtlError that the root error handler turns into an exit code. */
   const guarded = <T extends object | void>(
-    action: string,
     textFormat: ExaCtlOutputFormat,
     work: (output: ReturnType<typeof actionOutput>, options: T, ...args: string[]) => Promise<void>,
   ) =>
@@ -79,17 +79,14 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     try {
       await work(actionOutput(runtime, options, textFormat), options, ...args);
     } catch (error) {
-      display.error("cli.error", action, {
-        message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      });
-      Deno.exit(1);
+      throw toExaCtlError(error as Error);
     }
   };
 
   const get = new Command()
     .option(PROFILE_OPTION, "Target a named profile (reads profile.<name>.<path>)")
     .action(
-      guarded("config get", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
+      guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
         const value = await configCommands.get(args[0], options.profile);
         if (renderer.machine) {
           await renderer.item(toRow({ path: args[0], value, profile: options.profile ?? null }), []);
@@ -99,7 +96,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
   const set = new Command()
     .option(PROFILE_OPTION, "Target a named profile (writes profile.<name>.<path>)")
     .action(
-      guarded("config set", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
+      guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { profile?: string }, ...args) => {
         await configCommands.set(args[0], args[1], options.profile);
         display.info("cli.config.set", args[0], { value: args[1], profile: options.profile });
         await renderer.mutation(
@@ -109,20 +106,20 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       }),
     );
   const unset = new Command().action(
-    guarded("config unset", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+    guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
       await configCommands.unset(args[0]);
       display.info("cli.config.unset", args[0], {});
       await renderer.mutation([{ id: args[0], action: ExaCtlVerb.UNSET, status: MutationStatus.UNSET }], false);
     }),
   );
   const history = new Command().action(
-    guarded("config history", ExaCtlOutputFormat.TABLE, async ({ renderer }, _options: void, ...args) => {
+    guarded(ExaCtlOutputFormat.TABLE, async ({ renderer }, _options: void, ...args) => {
       const rows = await configCommands.history(args[0]);
       await renderer.list(rows.map(toRow), HISTORY_COLUMNS, (row) => String(row.id));
     }),
   );
   const rollback = new Command().action(
-    guarded("config rollback", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+    guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
       const id = Number(args[1]);
       const restored = await configCommands.rollback(args[0], id);
       display.info("cli.config.rollback", args[0], { to_id: id, restored_value: restored });
@@ -138,12 +135,12 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       );
     }),
   );
-  const edit = new Command().action(guarded("config edit", ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+  const edit = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
     await configCommands.edit();
     display.info("cli.config.edit", CONFIG_ID, { applied: true });
     await renderer.mutation([{ id: CONFIG_ID, action: ExaCtlVerb.EDIT, status: MutationStatus.APPLIED }], false);
   }));
-  const compact = new Command().action(guarded("config compact", ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+  const compact = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
     const removed = await configCommands.compact();
     display.info("cli.config.compact", CONFIG_ID, { removed });
     await renderer.mutation(
@@ -151,21 +148,20 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       false,
     );
   }));
-  const validateAction = guarded(
-    "config validate",
-    ExaCtlOutputFormat.TEXT,
-    async ({ renderer }, _options: void, ...args) => {
-      const path: Opt<string, Reason.OptionalInput> = args[0];
-      const report = await configCommands.validate(path);
-      if (renderer.machine) {
-        await renderer.item(toRow({ valid: report.valid, issues: report.issues.map(toRow) }), []);
-      } else if (report.valid) {
-        display.info("cli.config.validate", CONFIG_ID, { valid: true });
-      } else {
-        await renderer.list(report.issues.map(toRow), ISSUE_COLUMNS, (row) => cellText(row.path));
-      }
-    },
-  );
+  const validateAction = guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+    const path: Opt<string, Reason.OptionalInput> = args[0];
+    const report = await configCommands.validate(path);
+    if (renderer.machine) {
+      await renderer.item(toRow({ valid: report.valid, issues: report.issues.map(toRow) }), []);
+    } else if (report.valid) {
+      display.info("cli.config.validate", CONFIG_ID, { valid: true });
+    } else {
+      await renderer.list(report.issues.map(toRow), ISSUE_COLUMNS, (row) => cellText(row.path));
+    }
+    if (!report.valid) {
+      throw new ExaCtlError(ExaCtlExitCode.INVALID, `The configuration has ${report.issues.length} issue(s).`);
+    }
+  });
   const validate = new Command()
     .arguments("[path:string]")
     .action((options, path?: Opt<string, Reason.OptionalInput>) =>
@@ -173,7 +169,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     );
   const show = new Command()
     .option("--sources", "Include provenance source for each key")
-    .action(guarded("config show", ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { sources?: boolean }) => {
+    .action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { sources?: boolean }) => {
       if (options.sources) {
         const rows = await configCommands.showSources();
         await renderer.list(rows.map(toRow), SOURCE_COLUMNS, (row) => cellText(row.key));
@@ -183,7 +179,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       if (renderer.machine) await renderer.item(toRow(effective), []);
       else await renderer.text(formatTree(effective, 0).trimEnd());
     }));
-  const diff = new Command().action(guarded("config diff", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+  const diff = new Command().action(guarded(ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
     const rows = await configCommands.diff();
     await renderer.list(rows.map(toRow), DIFF_COLUMNS, (row) => cellText(row.path));
   }));
@@ -195,21 +191,17 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       new Command()
         .option(REASON_OPTION, "Optional admin note for the block")
         .action(
-          guarded(
-            "config block add",
-            ExaCtlOutputFormat.TEXT,
-            async ({ renderer }, options: { reason?: string }, ...args) => {
-              await configCommands.blockAdd(args[0], options.reason);
-              display.info("cli.config.block.add", args[0], { reason: options.reason });
-              await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.BLOCKED }], false);
-            },
-          ),
+          guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { reason?: string }, ...args) => {
+            await configCommands.blockAdd(args[0], options.reason);
+            display.info("cli.config.block.add", args[0], { reason: options.reason });
+            await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.BLOCKED }], false);
+          }),
         ),
     )
     .command(
       `${ExaCtlVerb.REMOVE} ${PATTERN_ARGUMENT}`,
       new Command().action(
-        guarded("config block remove", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+        guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
           await configCommands.blockRemove(args[0]);
           display.info("cli.config.block.remove", args[0], {});
           await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
@@ -218,7 +210,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     )
     .command(
       ExaCtlVerb.LIST,
-      new Command().action(guarded("config block list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+      new Command().action(guarded(ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
         const blocks = await configCommands.blockList();
         await renderer.list(blocks.map(toRow), BLOCK_COLUMNS, (row) => cellText(row.pattern));
       })),
@@ -231,21 +223,17 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       new Command()
         .option(REASON_OPTION, "Optional note for the lock")
         .action(
-          guarded(
-            "config lock add",
-            ExaCtlOutputFormat.TEXT,
-            async ({ renderer }, options: { reason?: string }, ...args) => {
-              await configCommands.lock(args[0], options.reason);
-              display.info("cli.config.lock", args[0], { reason: options.reason });
-              await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.LOCKED }], false);
-            },
-          ),
+          guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: { reason?: string }, ...args) => {
+            await configCommands.lock(args[0], options.reason);
+            display.info("cli.config.lock", args[0], { reason: options.reason });
+            await renderer.mutation([{ id: args[0], action: ExaCtlVerb.ADD, status: MutationStatus.LOCKED }], false);
+          }),
         ),
     )
     .command(
       `${ExaCtlVerb.REMOVE} ${PATH_ARGUMENT}`,
       new Command().action(
-        guarded("config lock remove", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+        guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
           await configCommands.unlock(args[0]);
           display.info("cli.config.unlock", args[0], {});
           await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.UNLOCKED }], false);
@@ -254,7 +242,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     )
     .command(
       ExaCtlVerb.LIST,
-      new Command().action(guarded("config lock list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+      new Command().action(guarded(ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
         const locks = await configCommands.listLocks();
         await renderer.list(locks.map(toRow), LOCK_COLUMNS, (row) => cellText(row.key));
       })),
@@ -265,7 +253,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     .command(
       `${ExaCtlVerb.USE} <name:string>`,
       new Command().action(
-        guarded("config profile use", ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+        guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
           await configCommands.useProfile(args[0]);
           display.info("cli.config.use-profile", args[0], {});
           await renderer.mutation([{ id: args[0], action: ExaCtlVerb.USE, status: MutationStatus.ACTIVE }], false);
@@ -274,7 +262,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     )
     .command(
       ExaCtlVerb.LIST,
-      new Command().action(guarded("config profile list", ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
+      new Command().action(guarded(ExaCtlOutputFormat.TABLE, async ({ renderer }) => {
         const profiles = await configCommands.listProfiles();
         await renderer.list(profiles.map((name) => toRow({ name })), PROFILE_COLUMNS, (row) => cellText(row.name));
       })),

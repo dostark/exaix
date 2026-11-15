@@ -8,6 +8,7 @@
 
 import { Command } from "@cliffy/command";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
@@ -56,14 +57,13 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
   const { display, daemonCommands } = runtime;
   const noun = nounDocFor(ExaCtlCommandName.DAEMON);
   const mutate = async <T extends object | void>(
-    action: string,
     options: T,
     work: (renderer: ReturnType<typeof actionOutput>["renderer"]) => Promise<void>,
   ): Promise<void> => {
     try {
       await work(actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer);
     } catch (error) {
-      failCommand(display, action, error as Error);
+      failCommand(error as Error);
     }
   };
   const command = documentedNoun(new Command(), noun)
@@ -75,7 +75,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
           "Milliseconds to wait for daemon.ready (default: daemon.ready_timeout_ms)",
         )
         .action((options) =>
-          mutate("daemon start", options, async (renderer) => {
+          mutate(options, async (renderer) => {
             const wasRunning = (await daemonCommands.status()).running;
             await daemonCommands.start({ readyTimeoutMs: options.readyTimeout });
             const status = wasRunning ? MutationStatus.ALREADY_RUNNING : MutationStatus.STARTED;
@@ -87,7 +87,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       ExaCtlVerb.STOP,
       new Command().action((options) =>
-        mutate("daemon stop", options, async (renderer) => {
+        mutate(options, async (renderer) => {
           const wasRunning = (await daemonCommands.status()).running;
           await daemonCommands.stop();
           const status = wasRunning ? MutationStatus.STOPPED : MutationStatus.NOT_RUNNING;
@@ -99,7 +99,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     .command(
       ExaCtlVerb.RESTART,
       new Command().action((options) =>
-        mutate("daemon restart", options, async (renderer) => {
+        mutate(options, async (renderer) => {
           await daemonCommands.restart();
           display.info("cli.daemon.restart", DAEMON_ID, { status: MutationStatus.RESTARTED });
           await renderer.mutation(
@@ -124,7 +124,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
             };
             await actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer.item(row, DAEMON_STATUS_FIELDS);
           } catch (error) {
-            failCommand(display, "daemon status", error as Error);
+            failCommand(error as Error);
           }
         }),
     )
@@ -140,7 +140,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
               display.warn("cli.daemon.logs", DAEMON_ID, { message: "The daemon has not written a log yet." });
             }
           } catch (error) {
-            failCommand(display, "daemon logs", error as Error);
+            failCommand(error as Error);
           }
         }),
     );
@@ -228,12 +228,13 @@ function createMigrateCommand(runtime: IExaCtlRuntime) {
         .action(async (options) => {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
           const check = daemonCommands.migrate({ check: true });
+          const failed = check.exitCode !== ExaCtlExitCode.OK;
           if (renderer.machine) {
             await renderer.item({ status: check.status, exit_code: check.exitCode, message: check.message }, []);
-          } else {
+          } else if (!failed) {
             await renderer.text(check.message);
           }
-          Deno.exit(check.exitCode);
+          if (failed) throw new ExaCtlError(check.exitCode, check.message);
         }),
     );
 }

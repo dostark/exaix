@@ -7,6 +7,7 @@
  * @related-files [apps/exactl/src/exactl.ts, "apps/exactl/src/commands/request_commands.ts"]
  */
 
+import { toExaCtlError } from "./command_failure.ts";
 import * as pathBuilders from "@exaix/shared";
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { type IInspectCommandOptions, InspectCommands } from "../commands/inspect_commands.ts";
@@ -18,7 +19,6 @@ import {
   DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND,
   DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS,
   DEFAULT_PLANNING_MAX_TOOL_ROUNDS,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
   FlowInputSource,
   type JSONValue,
   PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
@@ -161,7 +161,7 @@ export async function handleRequestAnalyze(
   id: string,
   options: IRequestAnalyzeOptions,
 ): Promise<void> {
-  const { requestCommands, display, renderer } = context;
+  const { display, requestCommands, renderer } = context;
 
   try {
     const mode = (options.engine as AnalysisMode) ?? AnalysisMode.HYBRID;
@@ -189,10 +189,7 @@ export async function handleRequestAnalyze(
       }
     }
   } catch (error) {
-    display.error("cli.error", "request analyze", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -302,7 +299,7 @@ async function handleRequestCreateDryRunContext(
   options: IRequestCreateOptions,
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
-  const { display, appContext, renderer } = context;
+  const { appContext, renderer } = context;
 
   try {
     if (!appContext) {
@@ -396,10 +393,7 @@ async function handleRequestCreateDryRunContext(
       );
     }
   } catch (error) {
-    display.error("cli.error", FlowInputSource.REQUEST, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -411,7 +405,7 @@ export async function handleRequestCreate(
   options: IRequestCreateOptions,
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
-  const { requestCommands, display, renderer } = context;
+  const { display, requestCommands, renderer } = context;
 
   if (options.dryRunContext) {
     await handleRequestCreateDryRunContext(context, options, description);
@@ -459,10 +453,10 @@ export async function handleRequestCreate(
 
     // Require description for inline mode
     if (!description) {
-      display.error("cli.error", FlowInputSource.REQUEST, {
-        message: 'Description required. Usage: exactl request create "<description>" or use --file',
-      });
-      Deno.exit(1);
+      throw new ExaCtlError(
+        ExaCtlExitCode.USAGE,
+        'Description required. Usage: exactl request create "<description>" or use --file',
+      );
     }
 
     // Create request
@@ -476,10 +470,7 @@ export async function handleRequestCreate(
 
     await printRequestResult(context, result);
   } catch (error) {
-    display.error("cli.error", FlowInputSource.REQUEST, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -490,23 +481,20 @@ export async function handleRequestList(
   context: IRequestActionContext,
   options: IRequestListOptions,
 ): Promise<void> {
-  const { requestCommands, display, renderer } = context;
+  const { requestCommands, renderer } = context;
 
   if (options.status !== undefined && !isRequestStatus(options.status)) {
-    display.error("cli.error", "request list", {
-      message: `Invalid status "${options.status}". Valid values: ${REQUEST_STATUS_VALUES.join(", ")}`,
-    });
-    Deno.exit(1);
+    throw new ExaCtlError(
+      ExaCtlExitCode.USAGE,
+      `Invalid status "${options.status}". Valid values: ${REQUEST_STATUS_VALUES.join(", ")}`,
+    );
   }
 
   try {
     const requests = await requestCommands.list(options.status, options.all);
     await renderer.list(requests.map(toRow), REQUEST_COLUMNS, (request) => String(request.trace_id));
   } catch (error) {
-    display.error("cli.error", "request list", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -517,7 +505,7 @@ export async function handleRequestShow(
   context: IRequestActionContext,
   id: string,
 ): Promise<void> {
-  const { requestCommands, display, renderer } = context;
+  const { requestCommands, renderer } = context;
 
   try {
     const { metadata, content, analysis: shownAnalysis } = await requestCommands.show(id);
@@ -561,10 +549,7 @@ export async function handleRequestShow(
 
     await renderer.text(content);
   } catch (error) {
-    display.error("cli.error", "request show", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -685,10 +670,7 @@ export async function handleRequestClarify(
       }
     }
   } catch (error) {
-    display.error("cli.error", "request clarify", {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 

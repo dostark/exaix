@@ -7,6 +7,7 @@
  * @visible
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -170,7 +171,7 @@ export class WaitStateCommands extends BaseCommand {
 
         const validation = policy.validate({ current: parsed, action });
         if (!validation.allowed) {
-          throw new Error(validation.reason!);
+          throw new ExaCtlError(ExaCtlExitCode.STATE_CONFLICT, validation.reason!);
         }
 
         const updated: IWaitState = {
@@ -189,7 +190,7 @@ export class WaitStateCommands extends BaseCommand {
       }
     }
 
-    throw new Error(`wait state not found for resume token: ${resumeToken}`);
+    throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `wait state not found for resume token: ${resumeToken}`);
   }
 
   /** Journal-visible counterpart to the `metadata.resolvedBy` written above — otherwise the

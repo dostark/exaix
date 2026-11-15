@@ -97,7 +97,7 @@ export const MODEL_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[MODEL, ExaCtlSubNoun.ROUTE, ExaCtlVerb.VALIDATE]),
       exactlCommand(...[MODEL, ExaCtlVerb.LIST]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -111,7 +111,7 @@ export const MODEL_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[MODEL, ExaCtlSubNoun.ROUTE, ExaCtlVerb.EXPLAIN]),
       exactlCommand(...[MODEL, ExaCtlVerb.LIST]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
 ];

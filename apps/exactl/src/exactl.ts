@@ -38,7 +38,7 @@ import { EvalCommands } from "./commands/eval_commands.ts";
 import { buildRequestCommand } from "./command_builders/request_command.ts";
 import { buildPlanCommand } from "./command_builders/plan_command.ts";
 import { buildReviewCommand } from "./command_builders/review_command.ts";
-import { buildApprovalCommand } from "./command_builders/approval_command.ts";
+import { buildApprovalCommand, exitWhenSourceTimedOut } from "./command_builders/approval_command.ts";
 import { buildGitCommand } from "./command_builders/git_command.ts";
 import { buildDaemonCommand, buildMigrateCommand, buildVersionCommand } from "./command_builders/daemon_command.ts";
 import { buildPortalCommand } from "./command_builders/portal_command.ts";
@@ -345,6 +345,7 @@ export async function run(command: typeof baseCommand = createExaCtlCommand()): 
   if (services.db && services.db.close) {
     await services.db.close();
   }
+  exitWhenSourceTimedOut(approvalCommands, Deno.exit);
 }
 
 if (import.meta.main && !isTestMode()) {

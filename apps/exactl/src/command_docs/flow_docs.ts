@@ -53,7 +53,7 @@ export const FLOW_DOCS: readonly IExaCtlCommandDoc[] = [
       "Writes a request file for the flow and its task text. It takes the same options as `exactl request create`, except `--agent`.",
     examples: [{ title: "Run a flow", command: 'exactl flow run code-review "Review the auth module"' }],
     seeAlso: [exactlCommand(FLOW, ExaCtlVerb.SHOW), exactlCommand(ExaCtlCommandName.REQUEST, ExaCtlVerb.WATCH)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -62,7 +62,7 @@ export const FLOW_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Checks the flow file against the flow schema. It exits with a failure when the flow is invalid.",
     examples: [{ title: "Validate a flow", command: "exactl flow validate code-review" }],
     seeAlso: [exactlCommand(FLOW, ExaCtlVerb.SHOW), exactlCommand(FLOW, ExaCtlVerb.BINDINGS)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -75,7 +75,7 @@ export const FLOW_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Resolve with a per-run overlay", command: "exactl flow bindings code-review --overlay overlay.toml" },
     ],
     seeAlso: [exactlCommand(FLOW, ExaCtlVerb.VALIDATE), exactlCommand(FLOW, ExaCtlVerb.RUN)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
 ];

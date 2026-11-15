@@ -35,7 +35,9 @@ async function previewErrors(overlayPath: (dir: string) => Promise<string>): Pro
       "research",
       { overlay: [path] },
       createConsoleRenderer(ExaCtlOutputFormat.JSON),
-    ).catch(() => {});
+    ).catch((error: Error) => {
+      errors += `${error.message}\n`;
+    });
     return errors;
   } finally {
     console.error = original;

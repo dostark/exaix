@@ -13,7 +13,8 @@ import type { IJournalFilterOptions } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import { captureAllOutputs } from "./helpers/console_utils.ts";
-import { expectExitWithLogs } from "./helpers/test_utils.ts";
+import { expectExaCtlError } from "./helpers/test_utils.ts";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import {
   JOURNAL_ACTOR_USER,
   JOURNAL_AGENT_ROLE_ID,
@@ -94,17 +95,17 @@ Deno.test("JournalCommands warns on unknown filter keys", async () => {
   }
 });
 
-Deno.test("JournalCommands exits on invalid filter format", async () => {
+Deno.test("JournalCommands rejects an invalid filter format with a usage error", async () => {
   const { db, config, cleanup } = await initTestDbService();
   const cmd = new JournalCommands(createStubContext({ config: createStubConfig(config), db }));
 
   try {
-    const result = await expectExitWithLogs(async () => {
+    const failure = await expectExaCtlError(async () => {
       await cmd.query({ filter: [JOURNAL_FILTER_INVALID] });
     });
 
-    assertEquals(result.exitCalled, true);
-    assertStringIncludes(result.errors.join(" "), JOURNAL_INVALID_FILTER_PREFIX);
+    assertEquals(failure.code, ExaCtlExitCode.USAGE);
+    assertStringIncludes(failure.message, JOURNAL_INVALID_FILTER_PREFIX);
   } finally {
     await cleanup();
   }

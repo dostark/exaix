@@ -12,10 +12,10 @@
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import * as colors from "@std/fmt/colors";
 import { ContextRecordStore, isValidUuid } from "@exaix/session";
 import { PathResolver } from "@exaix/portal";
-import { ContextInspectExitCode, ContextInspectionResult } from "@exaix/core";
+import { ContextInspectionResult } from "@exaix/core";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { IContextInspectedPayload, IContextInspectionFailedPayload } from "@exaix/core/events";
 import type { IContextInspectionReader } from "@exaix/core/types";
@@ -91,7 +91,7 @@ export class InspectCommands extends BaseCommand {
       // via the same lineage-aware lookup the list path uses, rather than assuming it.
       const summaries = await this.resolveSummaries(traceId);
       const match = summaries.find((s) => s.recordId === options.record);
-      const record = await this.readOrExit(match?.executionTraceId ?? traceId, options.record);
+      const record = await this.readOrFail(match?.executionTraceId ?? traceId, options.record);
       await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
@@ -99,12 +99,11 @@ export class InspectCommands extends BaseCommand {
     const summaries = await this.resolveSummaries(traceId);
     if (summaries.length === 0) {
       await this.emitInspected(traceId, undefined, ContextInspectionResult.NO_CAPTURE, 0);
-      console.error(colors.yellow(`No captured context found for trace ${traceId}.`));
-      Deno.exit(ContextInspectExitCode.NO_CAPTURE);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `No captured context found for trace ${traceId}.`);
     }
     if (summaries.length === 1) {
       const only = summaries[0];
-      const record = await this.readOrExit(only.executionTraceId, only.recordId);
+      const record = await this.readOrFail(only.executionTraceId, only.recordId);
       await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
@@ -129,19 +128,20 @@ export class InspectCommands extends BaseCommand {
   /** Classifies a store read failure: a genuinely missing record is `no_capture` (exit 3,
    *  never reconstructed); anything else (corrupt JSON, permission denied, a refused
    *  symlink) is a read failure (exit 1). */
-  private async readOrExit(traceId: string, recordId: string): Promise<ContextRecord> {
+  private async readOrFail(traceId: string, recordId: string): Promise<ContextRecord> {
     try {
       return await this.store.read(traceId, recordId);
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
         await this.emitInspected(traceId, recordId, ContextInspectionResult.NO_CAPTURE, 0);
-        console.error(colors.yellow(`No captured context found for trace ${traceId}, record ${recordId}.`));
-        Deno.exit(ContextInspectExitCode.NO_CAPTURE);
+        throw new ExaCtlError(
+          ExaCtlExitCode.NOT_FOUND,
+          `No captured context found for trace ${traceId}, record ${recordId}.`,
+        );
       }
       const reason = error instanceof Error ? error.message : String(error);
       await this.emitInspectionFailed(traceId, recordId, reason);
-      console.error(colors.red(`Failed to read captured context: ${reason}`));
-      Deno.exit(ContextInspectExitCode.READ_FAILURE);
+      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Failed to read captured context: ${reason}`);
     }
   }
 
@@ -151,8 +151,7 @@ export class InspectCommands extends BaseCommand {
     recordId?: Opt<string, Reason.OptionalInput>,
   ): Promise<void> {
     await this.emitInspectionFailed(traceId, recordId, message);
-    console.error(colors.red(message));
-    Deno.exit(ContextInspectExitCode.INVALID_INPUT);
+    throw new ExaCtlError(ExaCtlExitCode.USAGE, message);
   }
 
   private async renderDetail(record: ContextRecord, json?: Opt<boolean, Reason.OptionalInput>): Promise<void> {

@@ -8,6 +8,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { runExactlSeededWorkspace, runExactlSequenceInTempWorkspace } from "./helpers/exactl_cli_process.ts";
 
@@ -44,8 +45,8 @@ Deno.test("request create --agent sets the agent role", async () => {
   assertStringIncludes(listed.stdout, "code-reviewer");
 });
 
-Deno.test("request create without a description or file exits 1", async () => {
+Deno.test("request create without a description or file exits 2", async () => {
   const [run] = await runExactlSequenceInTempWorkspace([["request", "create"]]);
-  assertEquals(run.code, 1);
+  assertEquals(run.code, ExaCtlExitCode.USAGE);
   assertStringIncludes(run.stderr, "exactl request create");
 });

@@ -18,6 +18,7 @@ import {
 import {
   EXACTL_RENAMES,
   findOptionRename,
+  findOptionRenameIn,
   findRename,
   leadingWords,
   optionRenameHint,
@@ -344,10 +345,10 @@ Deno.test("stripGlobalOptions leaves everything after the terminator alone", () 
 
 Deno.test("an empty-path option row matches any command and the typed option", () => {
   const rows = [{ path: [], legacyOption: "--format", canonicalOption: "-o, --output" }] as const;
-  const row = findOptionRename(["skill", "list", "--format", "json"], rows);
+  const row = findOptionRenameIn(["skill", "list", "--format", "json"], rows);
   assert(row !== null);
   assertEquals(row.canonicalOption, "-o, --output");
-  assertEquals(findOptionRename(["skill", "list"], rows), null);
+  assertEquals(findOptionRenameIn(["skill", "list"], rows), null);
 });
 
 Deno.test("the calibration score output option points to --report-file", () => {

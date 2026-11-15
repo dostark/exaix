@@ -6,6 +6,7 @@
  * @related-files ["packages/core/src/status/review_status.ts", "apps/daemon/main.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -348,7 +349,7 @@ export class ReviewCommands extends BaseCommand {
       }
     }
 
-    throw new Error(`Branch not found in any repository: ${branchName}`);
+    throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Branch not found in any repository: ${branchName}`);
   }
 
   private async createPortalGitService(
@@ -370,7 +371,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async getArtifactRecord(artifactId: string): Promise<IArtifact> {
     const row = await new DatabaseArtifactRepository(this.db).getArtifactRecord(artifactId);
-    if (row === undefined) throw new Error(`Artifact not found: ${artifactId}`);
+    if (row === undefined) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Artifact not found: ${artifactId}`);
     return artifactFromRow(row);
   }
 
@@ -552,7 +553,10 @@ export class ReviewCommands extends BaseCommand {
         details: this.artifactDetailsOf(await this.getArtifact(byRequest.id), true),
       };
     }
-    throw new Error(`Review not found: ${branchName}\nRun 'exactl review list' to see available reviews`);
+    throw new ExaCtlError(
+      ExaCtlExitCode.NOT_FOUND,
+      `Review not found: ${branchName}\nRun 'exactl review list' to see available reviews`,
+    );
   }
 
   /** Rejects a branch that does not exist in the repository. */
@@ -563,7 +567,7 @@ export class ReviewCommands extends BaseCommand {
       stdout: "piped",
       stderr: "piped",
     }).output();
-    if (!output.success) throw new Error(`Branch not found: ${branch}`);
+    if (!output.success) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Branch not found: ${branch}`);
   }
 
   /** Runs one Git command in the repository and returns its stdout. */

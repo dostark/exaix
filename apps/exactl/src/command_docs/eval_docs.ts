@@ -29,7 +29,7 @@ export const EVAL_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [EVAL, ExaCtlVerb.RUN],
     summary: "Run evaluation scenarios",
     description:
-      "Runs the selected scenarios in the scenario framework and records each run in the history. With `-o jsonl` it prints one event when the run starts and one when it ends, and the scenario output goes to stderr.",
+      "Runs the selected scenarios in the scenario framework and records each run in the history. With `-o jsonl` it prints one event when the run starts and one when it ends, and the scenario output goes to stderr.\n\nThe command ends with the exit code of the scenario runner: 0 when every scenario passes, 1 when a scenario fails and 2 on an infrastructure error.",
     examples: [
       { title: "Run one pack", command: "exactl eval run --pack eval-smoke" },
       { title: "Run one scenario", command: "exactl eval run --scenario read-file-roundtrip --trials 3" },
@@ -38,7 +38,7 @@ export const EVAL_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[EVAL, ExaCtlVerb.HISTORY]),
       exactlCommand(...[EVAL, ExaCtlVerb.REPORT]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.STREAM,
   },
   {
@@ -99,7 +99,7 @@ export const EVAL_DOCS: readonly IExaCtlCommandDoc[] = [
     seeAlso: [
       exactlCommand(...[EVAL, CALIBRATION, ExaCtlVerb.SCORE]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.STREAM,
   },
   {
@@ -116,7 +116,7 @@ export const EVAL_DOCS: readonly IExaCtlCommandDoc[] = [
     seeAlso: [
       exactlCommand(...[EVAL, CALIBRATION, ExaCtlVerb.GENERATE]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.PROTOCOL,
   },
 ];

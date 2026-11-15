@@ -8,6 +8,7 @@
  */
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
@@ -150,10 +151,7 @@ Deno.test("FlowBindings: a per-run --bind override wins over the flow binding", 
 
 Deno.test("FlowBindings: exits non-zero on an issue and never prints a key value", async () => {
   let code: number | undefined;
-  const ctx = await createMockContext((exitCode?: number) => {
-    code = exitCode;
-    throw new Error(`exit:${exitCode}`);
-  });
+  const ctx = await createMockContext();
   const flowDir = getFlowDir(ctx);
   await Deno.mkdir(flowDir, { recursive: true });
   await Deno.writeTextFile(join(flowDir, "bound-flow.flow.yaml"), BOUND_FLOW);
@@ -182,10 +180,11 @@ Deno.test("FlowBindings: exits non-zero on an issue and never prints a key value
           bind: ["flow:bound-flow/step:s1=service=does-not-exist"],
         }, createConsoleRenderer());
       } catch (error) {
-        if (error instanceof Error && !error.message.startsWith("exit:")) throw error;
+        if (!(error instanceof ExaCtlError)) throw error;
+        code = error.code;
       }
     });
-    assertEquals(code, 1);
+    assertEquals(code, ExaCtlExitCode.INVALID);
     assertStringIncludes(output, "Issues");
     assertStringIncludes(output, "does-not-exist");
     // The never-print-a-key guarantee: the credential variable must not appear.

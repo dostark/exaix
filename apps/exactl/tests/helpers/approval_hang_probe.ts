@@ -13,7 +13,7 @@ import { ApprovalKind } from "../../src/commands/approval_id.ts";
 import type { IApprovalListEntry, IApprovalSource } from "../../src/commands/approval_sources.ts";
 import { ToolCommands } from "../../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../../src/commands/wait_state_commands.ts";
-import { buildApprovalCommand } from "../../src/command_builders/approval_command.ts";
+import { buildApprovalCommand, exitWhenSourceTimedOut } from "../../src/command_builders/approval_command.ts";
 import { createCliTestContext } from "./test_setup.ts";
 
 const SOURCE_TIMEOUT_MS = 50;
@@ -52,4 +52,5 @@ const approvalCommands = new ApprovalCommands(
 await buildApprovalCommand({ approvalCommands, display: env.context.display, outputSink: defaultOutputSink }).parse([
   "list",
 ]);
+exitWhenSourceTimedOut(approvalCommands, Deno.exit);
 console.log(PROBE_DONE_MARKER);

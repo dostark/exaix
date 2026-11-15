@@ -11,6 +11,8 @@ import { fromFileUrl, join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { withEvalOutput } from "./helpers/captured_output.ts";
+import { withStubbedChildExit } from "./helpers/stub_child_process.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 // history({}) resolves paths relative to Deno.cwd(), not tempDir, so tests chdir into
 // tempDir for the duration of each history test. ORIGINAL_CWD is anchored to the repo root
@@ -221,6 +223,25 @@ Deno.test("[EvalCommands] history with no history file shows empty message", asy
     assertStringIncludes(output.join(" "), "No evaluation history found");
   } finally {
     Deno.chdir(ORIGINAL_CWD);
+    await cleanup();
+  }
+});
+
+Deno.test("[EvalCommands] eval run exits with its child's code", async () => {
+  const { context, cleanup } = await createCliTestContext();
+  try {
+    const commands = new EvalCommands(context);
+    await withStubbedChildExit(ExaCtlExitCode.OK, () => commands.run({}));
+    for (const childCode of [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE]) {
+      const failure = await withStubbedChildExit(
+        childCode,
+        () => commands.run({}).then(() => null, (error: Error) => error),
+      );
+      assertEquals(failure instanceof ExaCtlError, true);
+      assertEquals((failure as ExaCtlError).code, childCode);
+      assertEquals((failure as ExaCtlError).childExit, true);
+    }
+  } finally {
     await cleanup();
   }
 });

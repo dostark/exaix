@@ -1440,15 +1440,6 @@ export enum ContextInspectionResult {
   NO_CAPTURE = "no_capture",
 }
 
-/** `exactl request inspect` process exit codes. */
-// unslop-ignore-next-line unused-enum-member
-export enum ContextInspectExitCode {
-  SUCCESS = 0,
-  READ_FAILURE = 1,
-  INVALID_INPUT = 2,
-  NO_CAPTURE = 3,
-}
-
 /** URL schemes permitted in privacy-safe OTel export lifecycle metadata. */
 // unslop-ignore-next-line unused-enum-member
 export enum OtelDestinationScheme {

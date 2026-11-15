@@ -30,7 +30,7 @@ export const DAEMON_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Starts the daemon and waits until it reports ready. Set the wait with `--ready-timeout`.",
     examples: [{ title: "Start the daemon", command: "exactl daemon start" }],
     seeAlso: [exactlCommand(DAEMON, ExaCtlVerb.STATUS), exactlCommand(DAEMON, ExaCtlVerb.STOP)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.TIMEOUT],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

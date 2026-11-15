@@ -76,7 +76,6 @@ function parseExecutionStrategy(strategy: Opt<string, Reason.OptionalInput>): Po
 
 function createPortalCommand(runtime: IExaCtlRuntime) {
   const { display, portalCommands } = runtime;
-  const failed = (action: string, error: Error): never => failCommand(display, action, error);
   const listCommand = new Command().action(async (options) => {
     const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
     try {
@@ -90,7 +89,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       }
       await renderer.list(portals.map(toRow), PORTAL_COLUMNS, (portal) => cellText(portal.alias));
     } catch (error) {
-      failed("portal list", error as Error);
+      failCommand(error as Error);
     }
   });
   const addCommand = new Command()
@@ -111,7 +110,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failed("portal add", error as Error);
+        failCommand(error as Error);
       }
     });
   const showCommand = new Command().action(async (options, ...args: string[]) => {
@@ -120,7 +119,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       const portal = await portalCommands.show(args[0]);
       await renderer.item(toRow(portal), portalFields(portal));
     } catch (error) {
-      failed("portal show", error as Error);
+      failCommand(error as Error);
     }
   });
   const removeCommand = new Command()
@@ -131,7 +130,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
         await portalCommands.remove(args[0], { keepCard: options.keepCard });
         await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
       } catch (error) {
-        failed("portal remove", error as Error);
+        failCommand(error as Error);
       }
     });
   const verifyCommand = new Command()
@@ -146,7 +145,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           display.info("portal.verify.summary", "portals", { healthy: results.length - broken, broken });
         }
       } catch (error) {
-        failed("portal verify", error as Error);
+        failCommand(error as Error);
       }
     });
   const refreshCommand = new Command().action(async (options, ...args: string[]) => {
@@ -155,7 +154,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       await portalCommands.refresh(args[0]);
       await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REFRESH, status: MutationStatus.REFRESHED }], false);
     } catch (error) {
-      failed("portal refresh", error as Error);
+      failCommand(error as Error);
     }
   });
   const analyzeCommand = new Command()
@@ -177,7 +176,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           await renderer.text(summary);
         }
       } catch (error) {
-        failed("portal knowledge analyze", error as Error);
+        failCommand(error as Error);
       }
     });
   const knowledgeShowCommand = new Command().action(async (options, ...args: string[]) => {
@@ -194,7 +193,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       if (renderer.machine) await renderer.item(toRow(knowledge), []);
       else await renderer.text(formatKnowledge(knowledge).join("\n"));
     } catch (error) {
-      failed("portal knowledge show", error as Error);
+      failCommand(error as Error);
     }
   });
 

@@ -178,7 +178,7 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[CONFIG, ExaCtlVerb.SHOW]),
       exactlCommand(...[CONFIG, ExaCtlVerb.DIFF]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
   {

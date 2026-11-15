@@ -16,6 +16,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL, MODEL_COLUMN_LABEL } from "@exaix/core";
 import { isCapabilityEligible } from "@exaix/core/composer";
 import { BaseCommand } from "@exaix/cli/base.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IFlowValidationResult, Opt, Reason } from "@exaix/core/types";
 import { BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
@@ -49,6 +50,11 @@ function capabilityLabel(row: IJsonRow): string {
   return row.tierEligible === true ? "eligible (runtime unverified)" : `unavailable (needs ${required.join(", ")})`;
 }
 
+/** The message of an error, or its string form. */
+function errorMessage(error: Error | string): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export class FlowCommands extends BaseCommand {
   private flowLoader: FlowLoader;
 
@@ -56,14 +62,6 @@ export class FlowCommands extends BaseCommand {
     super(context);
     const flowsDir = join(this.config.system.root, this.config.paths.flows);
     this.flowLoader = new FlowLoader(flowsDir);
-  }
-
-  private exit(code?: Opt<number, Reason.OptionalInput>): never {
-    const testExit = (this.context as ICliApplicationContext & { exit?: (code?: number) => never }).exit;
-    if (typeof testExit === "function") {
-      return testExit(code);
-    }
-    return Deno.exit(code);
   }
 
   async listFlows(renderer: ExaCtlOutputRenderer): Promise<void> {
@@ -85,8 +83,7 @@ export class FlowCommands extends BaseCommand {
       );
       await renderer.list(rows, FLOW_COLUMNS, (row) => cellText(row.id));
     } catch (error) {
-      console.error("Error listing flows:", error instanceof Error ? error.message : String(error));
-      this.exit(1);
+      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error listing flows: ${errorMessage(error as Error)}`);
     }
   }
 
@@ -134,11 +131,9 @@ export class FlowCommands extends BaseCommand {
       await renderer.text(`  Output Format: ${flow.output?.format || "markdown"}`);
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
-        console.error(`Flow '${flowId}' not found`);
-      } else {
-        console.error("Error showing flow:", error instanceof Error ? error.message : String(error));
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Flow '${flowId}' not found`);
       }
-      this.exit(1);
+      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error showing flow: ${errorMessage(error as Error)}`);
     }
   }
 
@@ -158,7 +153,7 @@ export class FlowCommands extends BaseCommand {
           toRow({ valid: validation.isValid, errors: validation.errors, warnings: validation.warnings }),
           [],
         );
-        if (!validation.isValid) this.exit(1);
+        if (!validation.isValid) throw new ExaCtlError(ExaCtlExitCode.INVALID, `Flow '${flowId}' is invalid`);
         return;
       }
 
@@ -167,14 +162,11 @@ export class FlowCommands extends BaseCommand {
       } else {
         await renderer.text(`❌ Flow '${flowId}' validation failed:`);
         await renderer.text(validation.errors.join("\n"));
-        this.exit(1);
+        throw new ExaCtlError(ExaCtlExitCode.INVALID, `Flow '${flowId}' is invalid`);
       }
     } catch (error) {
-      if (error instanceof Error && (error.message === "EXIT" || error.message === "DENO_EXIT")) {
-        throw error;
-      }
-      console.error("Error validating flow:", error instanceof Error ? error.message : String(error));
-      this.exit(1);
+      if (error instanceof ExaCtlError) throw error;
+      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error validating flow: ${errorMessage(error as Error)}`);
     }
   }
 
@@ -313,14 +305,13 @@ export class FlowCommands extends BaseCommand {
           }
         }
       }
-      if (hasIssues) this.exit(1);
+      if (hasIssues) throw new ExaCtlError(ExaCtlExitCode.INVALID, `Flow '${flowId}' has binding issues`);
     } catch (error) {
+      if (error instanceof ExaCtlError) throw error;
       if (error instanceof Deno.errors.NotFound) {
-        console.error(`Flow '${flowId}' not found`);
-      } else {
-        console.error("Error resolving bindings:", error instanceof Error ? error.message : String(error));
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Flow '${flowId}' not found`);
       }
-      this.exit(1);
+      throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error resolving bindings: ${errorMessage(error as Error)}`);
     }
   }
 

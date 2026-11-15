@@ -9,6 +9,7 @@
  * @related-files [apps/exactl/src/commands/memory_commands.ts, packages/cli/src/formatters/memory_formatter.ts]
  */
 
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
@@ -69,7 +70,7 @@ Deno.test("[skills --portal] project skills show only for their portal and are g
     assertEquals(await skillIds(commands.skillList()), []);
     assertEquals((await commands.skillShow("alpha-guide", "Alpha")).skill.skill_id, "alpha-guide");
     const hidden = await assertRejects(() => commands.skillShow("alpha-guide"), SkillCommandError);
-    assertEquals(hidden.exitCode, 1);
+    assertEquals(hidden.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(hidden.message, "Skill not found");
 
     const created = await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
@@ -124,7 +125,7 @@ Deno.test("[skills approve] approval is bound to the reviewed revision and activ
       () => commands.skillApprove("review-me", crypto.randomUUID()),
       SkillCommandError,
     );
-    assertEquals(stale.exitCode, 1);
+    assertEquals(stale.code, ExaCtlExitCode.FAILURE);
     assertStringIncludes(stale.message, "skill_revision_mismatch");
 
     const approved = await commands.skillApprove("review-me", reviewed.id);
@@ -134,9 +135,9 @@ Deno.test("[skills approve] approval is bound to the reviewed revision and activ
     assertEquals((await service.getSkill("review-me"))?.status, SkillStatus.ACTIVE);
 
     const again = await assertRejects(() => commands.skillApprove("review-me", reviewed.id), SkillCommandError);
-    assertEquals(again.exitCode, 1);
+    assertEquals(again.code, ExaCtlExitCode.FAILURE);
     const unknown = await assertRejects(() => commands.skillApprove("no-such", reviewed.id), SkillCommandError);
-    assertEquals(unknown.exitCode, 1);
+    assertEquals(unknown.code, ExaCtlExitCode.FAILURE);
   } finally {
     await cleanup();
   }
@@ -152,7 +153,7 @@ Deno.test("[skills deprecate] a deprecated skill leaves matching and needs a fre
     assertEquals((await commands.skillDeprecate("retire-me")).status, SkillStatus.DEPRECATED);
     assertEquals(await service.getSkill("retire-me"), null);
     const error = await assertRejects(() => commands.skillDeprecate("never-was"), SkillCommandError);
-    assertEquals(error.exitCode, 1);
+    assertEquals(error.code, ExaCtlExitCode.FAILURE);
   } finally {
     await cleanup();
   }
@@ -196,12 +197,12 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
       () => commands.skillShowRevision("other-name", active.id, undefined),
       SkillCommandError,
     );
-    assertEquals(wrongName.exitCode, 1);
+    assertEquals(wrongName.code, ExaCtlExitCode.NOT_FOUND);
     const unknownRevision = await assertRejects(
       () => commands.skillShowRevision("historic", crypto.randomUUID(), undefined),
       SkillCommandError,
     );
-    assertEquals(unknownRevision.exitCode, 1);
+    assertEquals(unknownRevision.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
     await cleanup();
   }
@@ -243,17 +244,17 @@ Deno.test("[skills] older commands fail with exit codes instead of returning err
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const missingIds = await assertRejects(() => commands.skillDerive({ name: "x" }), SkillCommandError);
-    assertEquals(missingIds.exitCode, 2);
+    assertEquals(missingIds.code, ExaCtlExitCode.USAGE);
     assertStringIncludes(missingIds.message, "learning IDs are required");
     const missingName = await assertRejects(
       () => commands.skillDerive({ learningIds: ["a"] }),
       SkillCommandError,
     );
-    assertEquals(missingName.exitCode, 2);
+    assertEquals(missingName.code, ExaCtlExitCode.USAGE);
     const invalidName = await assertRejects(() => commands.skillCreate("!!!"), SkillCommandError);
-    assertEquals(invalidName.exitCode, 1);
+    assertEquals(invalidName.code, ExaCtlExitCode.FAILURE);
     const unknownShow = await assertRejects(() => commands.skillShow("no-such-skill"), SkillCommandError);
-    assertEquals(unknownShow.exitCode, 1);
+    assertEquals(unknownShow.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
     await cleanup();
   }
@@ -297,7 +298,7 @@ Deno.test("[security] a project skill's stored revision is refused to another po
         () => commands.skillShowRevision("alpha-guide", skill.id, portal),
         SkillCommandError,
       );
-      assertEquals(refused.exitCode, 1);
+      assertEquals(refused.code, ExaCtlExitCode.NOT_FOUND);
       assertFalse(refused.message.includes("Alpha only guidance."));
       assertEquals(await commands.skillRevisions("alpha-guide", { portal }), []);
     }

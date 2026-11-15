@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
@@ -75,7 +76,7 @@ function resolveWorktreeTarget(
   let repoPath = config.system.root as string;
   if (portalName) {
     const portal = fullContext.config?.getPortal(portalName);
-    if (!portal) throw new Error(`Portal not found in config: ${portalName}`);
+    if (!portal) throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Portal not found in config: ${portalName}`);
     repoPath = portal.target_path;
   } else if (repo) {
     repoPath = repo;
@@ -84,8 +85,7 @@ function resolveWorktreeTarget(
 }
 
 function createGitCommand(runtime: IExaCtlRuntime) {
-  const { display, gitCommands } = runtime;
-  const failed = (action: string, error: Error): never => failCommand(display, action, error);
+  const { gitCommands } = runtime;
   const worktreeList = new Command()
     .option(CLI_PORTAL_LONG_OPTION, PORTAL_HELP)
     .option(REPO_OPTION, REPO_HELP)
@@ -109,7 +109,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         );
         await renderer.list(rows, WORKTREE_COLUMNS, (row) => cellText(row.path));
       } catch (error) {
-        failed("git worktree list", error as Error);
+        failCommand(error as Error);
       }
     });
   const worktreePrune = new Command()
@@ -142,7 +142,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failed("git worktree prune", error as Error);
+        failCommand(error as Error);
       }
     });
   const branchList = new Command()
@@ -153,7 +153,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         const branches = await gitCommands.listBranches(options.pattern);
         await renderer.list(branches.map(toRow), BRANCH_COLUMNS, (row) => cellText(row.name));
       } catch (error) {
-        failed("git branch list", error as Error);
+        failCommand(error as Error);
       }
     });
   const statusCommand = new Command().action(async (options) => {
@@ -174,7 +174,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
       ];
       await renderer.item(toRow({ ...status, clean }), fields);
     } catch (error) {
-      failed("git status", error as Error);
+      failCommand(error as Error);
     }
   });
   const logCommand = new Command()
@@ -185,7 +185,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         const commits = await gitCommands.logByTraceId(options.trace);
         await renderer.list(commits.map(toRow), COMMIT_COLUMNS, (row) => cellText(row.sha));
       } catch (error) {
-        failed("git log", error as Error);
+        failCommand(error as Error);
       }
     });
 

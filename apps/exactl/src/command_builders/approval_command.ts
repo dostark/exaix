@@ -6,11 +6,11 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/approval_commands.ts]
  */
 
+import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IDisplayService } from "@exaix/core/types";
 import { ExaCtlOutputFormat, type IExaCtlColumn, type IExaCtlOutputSink } from "@exaix/cli";
 import {
@@ -83,10 +83,7 @@ async function report(
     await renderer.mutation([{ id: ref, action: verb, status: decision.status }], false);
   } catch (error) {
     if (error instanceof ExaCtlError) throw error;
-    display.error("cli.error", `approval ${verb}`, {
-      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-    });
-    Deno.exit(1);
+    throw toExaCtlError(error as Error);
   }
 }
 
@@ -122,8 +119,6 @@ function createApprovalCommand(runtime: IApprovalCommandRuntime) {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
           const entries = await approvalCommands.list({ status: options.status, kinds: options.kind });
           await renderer.list(entries.map(toRow), APPROVAL_COLUMNS, (entry) => cellText(entry.ref));
-          // A source that timed out may still run, and its work would keep the process alive.
-          if (approvalCommands.sourceTimedOut) Deno.exit(ExaCtlExitCode.OK);
         }),
     )
     .command(
@@ -175,4 +170,12 @@ function createApprovalCommand(runtime: IApprovalCommandRuntime) {
 
 export function buildApprovalCommand(runtime: IApprovalCommandRuntime): ReturnType<typeof createApprovalCommand> {
   return createApprovalCommand(runtime);
+}
+
+/** Ends the process when a source of `approval list` timed out. That source may still run and keep the process alive. */
+export function exitWhenSourceTimedOut(
+  approvalCommands: { readonly sourceTimedOut: boolean },
+  exit: (code: number) => never,
+): void {
+  if (approvalCommands.sourceTimedOut) exit(ExaCtlExitCode.OK);
 }

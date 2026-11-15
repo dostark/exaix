@@ -45,7 +45,7 @@ export const REQUEST_DOCS: readonly IExaCtlCommandDoc[] = [
       },
     ],
     seeAlso: [exactlCommand(REQUEST, ExaCtlVerb.WATCH), exactlCommand(REQUEST, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -58,7 +58,7 @@ export const REQUEST_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "List failed requests as JSON", command: "exactl request list --status failed -o json" },
     ],
     seeAlso: [exactlCommand(REQUEST, ExaCtlVerb.SHOW), exactlCommand(REQUEST, ExaCtlVerb.CREATE)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.COLLECTION,
   },
   {
@@ -67,7 +67,7 @@ export const REQUEST_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Prints the request metadata, its analysis when there is one, and its content.",
     examples: [{ title: "Show a request", command: "exactl request show 3f2a9c1e" }],
     seeAlso: [exactlCommand(REQUEST, ExaCtlVerb.LIST), exactlCommand(REQUEST, ExaCtlVerb.WATCH)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {

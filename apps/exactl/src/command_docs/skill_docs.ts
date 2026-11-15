@@ -13,7 +13,7 @@ import { ExaCtlCommandGroup, type IExaCtlNounDoc } from "../docs/exactl_noun_doc
 import { exactlCommand } from "./doc_helpers.ts";
 
 const SKILL = ExaCtlCommandName.SKILL;
-const USAGE_FAILURES = [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE];
+const USAGE_FAILURES = [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND];
 
 export const SKILL_NOUN_DOC: IExaCtlNounDoc = {
   noun: SKILL,
@@ -131,7 +131,7 @@ export const SKILL_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Validate one skill", command: "exactl skill validate retry-handling" },
     ],
     seeAlso: [exactlCommand(SKILL, ExaCtlVerb.LIST), exactlCommand(SKILL, ExaCtlVerb.SHOW)],
-    exitCodes: USAGE_FAILURES,
+    exitCodes: [...USAGE_FAILURES, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
 ];

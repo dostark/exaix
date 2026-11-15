@@ -110,7 +110,7 @@ export class JournalCommands extends BaseCommand {
     }
 
     throw new ExaCtlError(
-      ExaCtlExitCode.FAILURE,
+      ExaCtlExitCode.TIMEOUT,
       `Timeout after ${timeoutSec}s waiting for journal event: ${events.join(", ")}`,
     );
   }
@@ -218,8 +218,7 @@ export class JournalCommands extends BaseCommand {
         const filterStr = typeof filter === "string" ? filter : String(filter);
         const [key, value] = filterStr.split("=");
         if (!key || !value) {
-          console.error(colors.red(`Invalid filter format: ${filterStr}. Use key=value.`));
-          Deno.exit(1);
+          throw new ExaCtlError(ExaCtlExitCode.USAGE, `Invalid filter format: ${filterStr}. Use key=value.`);
         }
 
         const apply = applyFilterValue[key];

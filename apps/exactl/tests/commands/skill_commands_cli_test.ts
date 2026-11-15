@@ -4,12 +4,13 @@
  * @description Real `exactl` subprocesses under EXA_CONFIG_PATH drive every skill command through
  *   `exactl skill`. A draft is created, approved only
  *   with the reviewed revision, deprecated, its history is read after the folder is deleted, and the
- *   process exit codes are 0 on success, 1 on a refused or failed operation and 2 on a malformed argument.
+ *   process exit codes are 0 on success, 1 on a failed operation, 2 on a malformed argument, 3 on an unknown skill and 6 on an invalid skill.
  * @architectural-layer CLI
  * @dependencies [@std/assert, @exaix/core/skills, ../../../../tests/integration/helpers/daemon_config.ts]
  * @related-files [apps/exactl/src/command_builders/skill_commands.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
@@ -113,7 +114,7 @@ Deno.test("[cli skill] create, review-bound approve, deprecate and history throu
       recursive: true,
     });
     const missing = await ws.run(["validate", slug]);
-    assertEquals(missing.code, 1, "a deleted skill is unknown to validate");
+    assertEquals(missing.code, ExaCtlExitCode.NOT_FOUND, "a deleted skill is unknown to validate");
     const revisions = await ws.run(["revisions", slug, "--json"]);
     assertEquals(revisions.code, 0, revisions.err);
     assertEquals(jsonOf(revisions.out), [], "revisions are stored on first use, and this skill was never used");
@@ -127,14 +128,14 @@ Deno.test("[cli skill] create, review-bound approve, deprecate and history throu
   }
 });
 
-Deno.test("[cli] validate reports a broken folder with typed reasons and exits 1 without writing", async () => {
+Deno.test("[cli] validate reports a broken folder with typed reasons and exits 6 without writing", async () => {
   const ws = await workspace();
   try {
     const broken = pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "broken-skill");
     await Deno.mkdir(broken, { recursive: true });
     await Deno.writeTextFile(join(broken, "SKILL.md"), "no frontmatter SECRET_CONTENT");
     const result = await ws.run(["validate", "--json"]);
-    assertEquals(result.code, 1);
+    assertEquals(result.code, ExaCtlExitCode.INVALID);
     const report = jsonOf(result.out);
     assertEquals(report.valid, false);
     assertEquals(report.diagnostics.some((d: { name: string }) => d.name === "broken-skill"), true);

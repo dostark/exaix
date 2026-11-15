@@ -6,6 +6,7 @@
  * @related-files ["packages/schemas/src/plan_schema.ts", "apps/daemon/main.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import { ensureDir, exists } from "@std/fs";
@@ -125,7 +126,8 @@ export class PlanCommands extends BaseCommand {
 
       // Validate status
       if (frontmatter.status !== PlanStatus.REVIEW) {
-        throw new Error(
+        throw new ExaCtlError(
+          ExaCtlExitCode.STATE_CONFLICT,
           `Only plans with status='review' can be approved. Current status: ${frontmatter.status}`,
         );
       }
@@ -235,7 +237,7 @@ export class PlanCommands extends BaseCommand {
       }
 
       if (!sourcePath || !frontmatter || !body) {
-        throw new Error(`Plan not found: ${planId}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Plan not found: ${planId}`);
       }
 
       const targetPath = join(this.workspaceRejectedDir, `${planId}_rejected.md`);
@@ -405,7 +407,7 @@ export class PlanCommands extends BaseCommand {
     try {
       const requestPath = join(this.workspaceRequestsDir, `${requestId}.md`);
       if (!await exists(requestPath)) {
-        throw new Error(`Request not found: ${requestId}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Request not found: ${requestId}`);
       }
       const requestContent = await Deno.readTextFile(requestPath);
       const { frontmatter, body } = this.extractFrontmatterWithBody(requestContent);
@@ -536,7 +538,7 @@ export class PlanCommands extends BaseCommand {
     }
 
     // Plan not found in any directory
-    throw new Error(`Plan not found: ${planId}`);
+    throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Plan not found: ${planId}`);
   }
 
   /**
@@ -576,7 +578,7 @@ export class PlanCommands extends BaseCommand {
   }> {
     if (!await exists(planPath)) {
       const planId = planPath.split("/").pop()?.replace(".md", "") || "unknown";
-      throw new Error(`Plan not found: ${planId}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Plan not found: ${planId}`);
     }
 
     const content = await Deno.readTextFile(planPath);
@@ -626,7 +628,10 @@ export class PlanCommands extends BaseCommand {
     }
 
     if (!planFile) {
-      throw new Error(`Plan ${planId} not found in Workspace/Active or Workspace/Plans`);
+      throw new ExaCtlError(
+        ExaCtlExitCode.NOT_FOUND,
+        `Plan ${planId} not found in Workspace/Active or Workspace/Plans`,
+      );
     }
 
     const amendmentId = planFile.frontmatter.amendment_id;
@@ -646,7 +651,7 @@ export class PlanCommands extends BaseCommand {
     );
 
     if (!(await exists(artifactPath))) {
-      throw new Error(`Amendment artifact not found: ${artifactPath}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Amendment artifact not found: ${artifactPath}`);
     }
 
     const content = await Deno.readTextFile(artifactPath);

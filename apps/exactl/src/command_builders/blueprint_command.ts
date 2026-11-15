@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
 import type { BlueprintStatus } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -52,7 +53,6 @@ const BLUEPRINT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
 
 function createBlueprintCommand(runtime: IExaCtlRuntime) {
   const { blueprintCommands } = runtime;
-  const failed = (action: string, error: Error): never => failCommand(runtime.display, action, error);
   async function reportValidation(
     label: string,
     result: IBlueprintValidationResult,
@@ -69,7 +69,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
     } else {
       display.error("blueprint.invalid", label, { status: "Invalid ✗", errors: result.errors });
     }
-    if (!result.valid) Deno.exit(1);
+    if (!result.valid) throw new ExaCtlError(ExaCtlExitCode.INVALID, `Blueprint is invalid: ${label}`);
   }
   function blueprintCreateCommand() {
     return new Command()
@@ -105,7 +105,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
             false,
           );
         } catch (error) {
-          failed("blueprint create", error as Error);
+          failCommand(error as Error);
         }
       });
   }
@@ -134,7 +134,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
               (blueprint) => cellText(blueprint.agent_role),
             );
           } catch (error) {
-            failed("blueprint list", error as Error);
+            failCommand(error as Error);
           }
         },
       );
@@ -159,7 +159,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           content_preview: blueprint.content.substring(0, 200) + "...",
         });
       } catch (error) {
-        failed("blueprint show", error as Error);
+        failCommand(error as Error);
       }
     });
   }
@@ -171,7 +171,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
         await blueprintCommands.edit(args[0]);
         await renderer.mutation([{ id: args[0], action: ExaCtlVerb.EDIT, status: MutationStatus.EDITED }], false);
       } catch (error) {
-        failed("blueprint edit", error as Error);
+        failCommand(error as Error);
       }
     });
   }
@@ -186,7 +186,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           display.info("blueprint.removed", args[0], { status: "Removed ✓" });
           await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
         } catch (error) {
-          failed("blueprint remove", error as Error);
+          failCommand(error as Error);
         }
       });
   }
@@ -202,7 +202,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failed("blueprint deprecate", error as Error);
+        failCommand(error as Error);
       }
     });
   }
@@ -220,7 +220,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           if (!args[0]) throw new Error("Either <agent-id> or --file <path> is required");
           await reportValidation(args[0], await blueprintCommands.validate(args[0]), renderer, display);
         } catch (error) {
-          failed("blueprint validate", error as Error);
+          failCommand(error as Error);
         }
       });
   }

@@ -37,7 +37,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Clone a blueprint", command: "exactl blueprint create reviewer-2 --from code-reviewer" },
     ],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.VALIDATE), exactlCommand(BLUEPRINT, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -59,7 +59,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Prints the name, the model, the capabilities, the version and a preview of the blueprint body.",
     examples: [{ title: "Show a blueprint", command: "exactl blueprint show code-reviewer" }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.EDIT), exactlCommand(BLUEPRINT, ExaCtlVerb.VALIDATE)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -72,7 +72,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Validate a file", command: "exactl blueprint validate --file agents/code-reviewer.md" },
     ],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.SHOW), exactlCommand(BLUEPRINT, ExaCtlVerb.EDIT)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -81,7 +81,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Opens the blueprint file in `$EDITOR` and validates it when you close the editor.",
     examples: [{ title: "Edit a blueprint", command: "exactl blueprint edit code-reviewer" }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.VALIDATE), exactlCommand(BLUEPRINT, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -90,7 +90,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Deletes the blueprint file. `--force` removes a blueprint that other files still reference.",
     examples: [{ title: "Remove a blueprint", command: "exactl blueprint remove old-reviewer" }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.DEPRECATE), exactlCommand(BLUEPRINT, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -99,7 +99,7 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Marks the blueprint as deprecated. The file stays on disk, and no new request uses the role.",
     examples: [{ title: "Deprecate a blueprint", command: "exactl blueprint deprecate old-reviewer" }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.REMOVE), exactlCommand(BLUEPRINT, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
 ];

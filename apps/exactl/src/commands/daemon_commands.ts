@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
@@ -153,7 +154,10 @@ export class DaemonCommands extends BaseCommand {
           error: reason,
           pid: pid,
         });
-        throw new Error(`${reason}. Check logs for details.`);
+        throw new ExaCtlError(
+          exited ? ExaCtlExitCode.FAILURE : ExaCtlExitCode.TIMEOUT,
+          `${reason}. Check logs for details.`,
+        );
       }
 
       // Log successful start once the daemon is ready (writes to both console and IActivity Journal)

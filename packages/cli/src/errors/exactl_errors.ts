@@ -23,7 +23,8 @@ export enum ExaCtlExitCode {
 
 /** A failure that carries its exit code to the root error handler. A child process exit code passes through as a plain number. */
 export class ExaCtlError extends Error {
-  constructor(readonly code: ExaCtlExitCode | number, message: string) {
+  /** `childExit` marks a child process code. The JSON error then names it CHILD_EXIT, even when the number has a name. */
+  constructor(readonly code: ExaCtlExitCode | number, message: string, readonly childExit: boolean = false) {
     super(message);
     this.name = "ExaCtlError";
   }

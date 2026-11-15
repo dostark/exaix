@@ -50,7 +50,7 @@ export const REVIEW_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Show only the diff", command: "exactl review show request-123 --diff" },
     ],
     seeAlso: [exactlCommand(REVIEW, ExaCtlVerb.APPROVE), exactlCommand(REVIEW, ExaCtlVerb.REJECT)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -59,7 +59,7 @@ export const REVIEW_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Merges the branch of a code review into main, or marks an artifact review as approved.",
     examples: [{ title: "Approve a review", command: "exactl review approve request-123" }],
     seeAlso: [exactlCommand(REVIEW, ExaCtlVerb.SHOW), exactlCommand(REVIEW, ExaCtlVerb.REJECT)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -69,7 +69,7 @@ export const REVIEW_DOCS: readonly IExaCtlCommandDoc[] = [
       "Deletes the branch of a code review, or marks an artifact review as rejected. The reason is required.",
     examples: [{ title: "Reject a review", command: 'exactl review reject request-123 --reason "Breaks the build"' }],
     seeAlso: [exactlCommand(REVIEW, ExaCtlVerb.SHOW), exactlCommand(REVIEW, ExaCtlVerb.APPROVE)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
 ];

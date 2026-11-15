@@ -6,6 +6,7 @@
  * @related-files ["packages/git/src/git_service.ts", "apps/daemon/main.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { GIT_CMD_BRANCH } from "@exaix/git/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -87,7 +88,7 @@ export class GitCommands extends BaseCommand {
     const branch = branches.find((b) => b.name === branchName);
 
     if (!branch) {
-      throw new Error(`Branch not found: ${branchName}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Branch not found: ${branchName}`);
     }
 
     // Get commit history (last 10 commits)

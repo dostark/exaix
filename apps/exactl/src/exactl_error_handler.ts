@@ -23,9 +23,9 @@ import { isJsonOutputRequested, stripTerminalControls } from "./output/exactl_ou
 
 const CHILD_EXIT_NAME = "CHILD_EXIT";
 
-/** The name of an exit code, or CHILD_EXIT for a code that a child process passed through. */
-function exitCodeName(code: number): string {
-  return ExaCtlExitCode[code] ?? CHILD_EXIT_NAME;
+/** The name of the exit code of an error. CHILD_EXIT is the name of a code that a child process passed through. */
+function exitCodeName(error: ExaCtlError): string {
+  return error.childExit ? CHILD_EXIT_NAME : ExaCtlExitCode[error.code] ?? CHILD_EXIT_NAME;
 }
 
 /** Prints a failure to stderr: the JSON error shape in a machine format, plain text otherwise. */
@@ -53,7 +53,7 @@ export function handleExaCtlError(
 ): void {
   const json = isJsonOutputRequested(argv);
   if (error instanceof ExaCtlError) {
-    reportFailure(json, exitCodeName(error.code), stripTerminalControls(error.message));
+    reportFailure(json, exitCodeName(error), stripTerminalControls(error.message));
     exit(error.code);
   }
   if (error instanceof ValidationError) {

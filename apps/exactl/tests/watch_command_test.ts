@@ -7,7 +7,8 @@
  * live execution SSE streams and falls back to historical DB queries.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { WatchCommand } from "../src/commands/watch.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { ActivityActor } from "@exaix/core";
@@ -93,14 +94,8 @@ Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
   try {
     const cmd = new WatchCommand(context);
 
-    let threw = false;
-    try {
-      await cmd.watch("not-a-uuid", createConsoleRenderer(), true);
-    } catch {
-      threw = true;
-    }
-
-    assertEquals(threw, true);
+    const error = await assertRejects(() => cmd.watch("not-a-uuid", createConsoleRenderer()), ExaCtlError);
+    assertEquals(error.code, ExaCtlExitCode.USAGE);
   } finally {
     await cleanup();
   }

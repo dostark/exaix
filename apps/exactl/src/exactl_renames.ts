@@ -193,10 +193,15 @@ export function renameHint(rename: IExaCtlRename, typed: readonly string[]): str
   return `'exactl ${rename.legacy.join(" ")}' was renamed: use '${replacement}'`;
 }
 
-/** The option rename whose command path leads `argv` (global options skipped) and whose legacy option appears before any `--`. */
-export function findOptionRename(
+/** The option rename of the rename table whose command path leads `argv` and whose legacy option appears before any `--`. */
+export function findOptionRename(argv: readonly string[]): IExaCtlOptionRename | null {
+  return findOptionRenameIn(argv, EXACTL_OPTION_RENAMES);
+}
+
+/** The option rename among `rows` whose command path leads `argv` and whose legacy option appears before any `--`. */
+export function findOptionRenameIn(
   argv: readonly string[],
-  rows: readonly IExaCtlOptionRename[] = EXACTL_OPTION_RENAMES,
+  rows: readonly IExaCtlOptionRename[],
 ): IExaCtlOptionRename | null {
   const words = leadingWords(stripGlobalOptions(argv));
   const terminator = argv.indexOf(OPTION_TERMINATOR);

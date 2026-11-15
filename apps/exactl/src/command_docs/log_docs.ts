@@ -38,7 +38,7 @@ export const LOG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[LOG, ExaCtlVerb.WAIT]),
       exactlCommand(...[LOG, ExaCtlVerb.COST]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.COLLECTION,
   },
   {
@@ -53,7 +53,7 @@ export const LOG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[LOG, ExaCtlVerb.LIST]),
       exactlCommand(...[LOG, ExaCtlVerb.VERIFY]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.TIMEOUT],
     output: ExaCtlOutputKind.STREAM,
   },
   {
@@ -67,7 +67,7 @@ export const LOG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[LOG, ExaCtlVerb.LIST]),
       exactlCommand(...[LOG, ExaCtlVerb.COST]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
   {

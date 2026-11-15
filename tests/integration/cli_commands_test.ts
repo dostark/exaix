@@ -16,6 +16,7 @@ import {
   DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { FlowInputSource, MemoryOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -163,7 +164,8 @@ cliTest("CLI: review show displays review details", async () => {
   try {
     // Just check command runs with dummy id
     const result = await runExactl(["review", "show", "dummy-id"], env.tempDir);
-    assert(result.code === 0 || result.code === 1);
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Review not found: dummy-id");
   } finally {
     await env.cleanup();
   }
@@ -414,8 +416,8 @@ cliTest("CLI: request create with missing description fails", async () => {
   const env = await TestEnvironment.create();
   try {
     const result = await runExactl([FlowInputSource.REQUEST, "create"], env.tempDir);
-    // Should fail with exit code 1 and error message
-    assert(result.code === 1);
+    // Should fail with exit code 2 and error message
+    assertEquals(result.code, 2);
     assertStringIncludes(result.stderr, "Description required");
   } finally {
     await env.cleanup();
@@ -427,16 +429,16 @@ cliTest("CLI: plan approve/reject/revise error handling", async () => {
   try {
     // Approve non-existent plan
     let result = await runExactl(["plan", "approve", "nonexistent"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr + result.stdout, "plan approve");
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Plan not found: nonexistent");
     // Reject non-existent plan
     result = await runExactl(["plan", "reject", "nonexistent", "-r", "bad plan"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr + result.stdout, "plan reject");
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Plan not found: nonexistent");
     // Revise non-existent plan
     result = await runExactl(["plan", "revise", "nonexistent", "--comment", "needs work"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr + result.stdout, "plan revise");
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Plan not found: nonexistent");
   } finally {
     await env.cleanup();
   }
@@ -447,23 +449,23 @@ cliTest("CLI: blueprint create/list/show/remove/validate edge cases", async () =
   try {
     // Create blueprint with missing required options
     let result = await runExactl(["blueprint", "create", "test-agent"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr, "blueprint create");
+    assertEquals(result.code, ExaCtlExitCode.FAILURE);
+    assertStringIncludes(result.stderr, "--name is required");
     // List blueprints (should be empty)
     result = await runExactl(["blueprint", "list"], env.tempDir);
     assert(result.code === 0);
     assertStringIncludes(result.stdout, "count: 0");
     // Show non-existent blueprint
     result = await runExactl(["blueprint", "show", "notfound"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr, "blueprint show");
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Blueprint 'notfound' not found");
     // Remove non-existent blueprint
     result = await runExactl(["blueprint", "remove", "notfound"], env.tempDir);
-    assert(result.code === 1);
-    assertStringIncludes(result.stderr, "blueprint remove");
+    assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
+    assertStringIncludes(result.stderr, "Blueprint 'notfound' not found");
     // Validate non-existent blueprint
     result = await runExactl(["blueprint", "validate", "notfound"], env.tempDir);
-    assert(result.code === 1);
+    assertEquals(result.code, ExaCtlExitCode.INVALID);
     assertStringIncludes(result.stderr, "blueprint.invalid");
   } finally {
     await env.cleanup();

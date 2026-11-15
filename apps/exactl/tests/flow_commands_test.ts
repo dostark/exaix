@@ -7,16 +7,11 @@
  * stable listing and introspection of complex flow definitions.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import { join } from "@std/path";
-import {
-  captureConsole,
-  captureErrorsAndExit,
-  createMockContext,
-  type FlowTestContext,
-  getFlowDir,
-} from "./helpers/flow_test_context.ts";
+import { captureConsole, createMockContext, type FlowTestContext, getFlowDir } from "./helpers/flow_test_context.ts";
 import { ExaCtlOutputFormat } from "@exaix/cli";
 import { createConsoleRenderer } from "./helpers/captured_output.ts";
 
@@ -213,21 +208,15 @@ Deno.test({ name: "FlowCommands: listFlows handles loader errors and exits", san
       };
     };
 
-    const errors = captureErrorsAndExit(ctx);
     try {
-      let threw = false;
-      try {
-        await commands.listFlows(createConsoleRenderer());
-      } catch (_e) {
-        threw = true;
-        if (!errors.text().includes("Error listing flows: boom")) {
-          throw new Error(`Expected error log not found. got: ${errors.text()}`);
-        }
-      }
-      if (!threw) throw new Error("Expected Deno.exit to be called");
-      Deno.readDir = originalReadDir;
+      const failure = await assertRejects(
+        () => commands.listFlows(createConsoleRenderer()),
+        ExaCtlError,
+        "Error listing flows: boom",
+      );
+      assertEquals(failure.code, ExaCtlExitCode.FAILURE);
     } finally {
-      errors.restore();
+      Deno.readDir = originalReadDir;
     }
   });
 });
@@ -276,19 +265,12 @@ Deno.test("FlowCommands: validateFlow throws on validator error", async () => {
       out += msg + "\n";
     };
 
-    const errors = captureErrorsAndExit(ctx);
     try {
-      let threw = false;
-      try {
-        await commands.validateFlow("bad", createConsoleRenderer());
-      } catch (_e) {
-        threw = true;
-      }
-      assertEquals(threw, true);
+      const failure = await assertRejects(() => commands.validateFlow("bad", createConsoleRenderer()), ExaCtlError);
+      assertEquals(failure.code, ExaCtlExitCode.INVALID);
       assertStringIncludes(out, "uh-oh");
     } finally {
       console.log = origLog;
-      errors.restore();
       Deno.readTextFile = origReadText;
     }
   });
@@ -307,20 +289,7 @@ output: { from: "s1", format: "markdown" }
     await Deno.writeTextFile(join(flowDir, "bad.flow.yaml"), invalidFlow);
 
     const commands = new FlowCommands(ctx);
-    ctx.exit = (_c?: number) => {
-      throw new Error("EXIT");
-    };
-    try {
-      let caught = false;
-      try {
-        await commands.validateFlow("bad", createConsoleRenderer());
-      } catch (e) {
-        caught = true;
-        assertStringIncludes((e as Error).message, "EXIT");
-      }
-      assertEquals(caught, true);
-    } finally {
-      //
-    }
+    const failure = await assertRejects(() => commands.validateFlow("bad", createConsoleRenderer()), ExaCtlError);
+    assertEquals(failure.code, ExaCtlExitCode.INVALID);
   });
 });

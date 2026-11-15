@@ -14,6 +14,7 @@ import { ROUTING_REQUEST_FILE, seedRoutingWorkspace } from "./helpers/operations
 
 const FAILURE_EXIT_CODE = 1;
 const USAGE_EXIT_CODE = 2;
+const NOT_FOUND_EXIT_CODE = 3;
 const CANDIDATE_ENTRY = "anthropic";
 
 Deno.test("model use sets the provider the way config set-provider did", async () => {
@@ -67,15 +68,15 @@ Deno.test("model route explain prints the ranking that routing explain printed",
   assertStringIncludes(run.stdout, "senior-coder\t1.0.0");
 });
 
-Deno.test("model route explain without --request exits 1 and names the option", async () => {
+Deno.test("model route explain without --request exits 2 and names the option", async () => {
   const [run] = await runExactlSequenceInTempWorkspace([["model", "route", "explain"]]);
-  assertEquals(run.code, FAILURE_EXIT_CODE);
+  assertEquals(run.code, USAGE_EXIT_CODE);
   assertStringIncludes(run.stderr + run.stdout, "The --request option is required.");
 });
 
-Deno.test("model route validate exits 1 for a policy file that does not exist", async () => {
+Deno.test("model route validate exits 3 for a policy file that does not exist", async () => {
   const [run] = await runExactlSequenceInTempWorkspace([["model", "route", "validate", "missing-policy.yaml"]]);
-  assertEquals(run.code, FAILURE_EXIT_CODE);
+  assertEquals(run.code, NOT_FOUND_EXIT_CODE);
 });
 
 Deno.test("model refresh outside the Team live registry exits 1 with the guidance", async () => {

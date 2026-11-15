@@ -6,6 +6,7 @@
  * @related-files ["packages/schemas/src/blueprint.ts", "apps/daemon/main.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -99,8 +100,9 @@ export class BlueprintCommands extends BaseCommand {
     return join(this.config.system.root, this.config.paths.blueprints, this.config.paths.agents);
   }
 
-  private blueprintNotFoundError(agentRole: string): Error {
-    return new Error(
+  private blueprintNotFoundError(agentRole: string): ExaCtlError {
+    return new ExaCtlError(
+      ExaCtlExitCode.NOT_FOUND,
       `Blueprint '${agentRole}' not found\nUse 'exactl blueprint list' to see available blueprints`,
     );
   }
@@ -363,7 +365,7 @@ export class BlueprintCommands extends BaseCommand {
     if (options.from) {
       const proto = this.loadPrototype(options.from);
       if (!proto) {
-        throw new Error(`--from agent role not found: ${options.from}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `--from agent role not found: ${options.from}`);
       }
       model = model || proto.model;
       capabilities = capabilities.length > 0 ? capabilities : proto.capabilities;
@@ -405,7 +407,7 @@ export class BlueprintCommands extends BaseCommand {
     // Load from file if specified
     if (options.systemPromptFile) {
       if (!await exists(options.systemPromptFile)) {
-        throw new Error(`System prompt file not found: ${options.systemPromptFile}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `System prompt file not found: ${options.systemPromptFile}`);
       }
       finalPrompt = await Deno.readTextFile(options.systemPromptFile);
     }
@@ -671,7 +673,7 @@ ${systemPrompt}
 
     try {
       if (!await exists(filePath)) {
-        throw new Error(`Blueprint file not found: ${displayName}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Blueprint file not found: ${displayName}`);
       }
 
       const content = await Deno.readTextFile(filePath);

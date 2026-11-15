@@ -6,6 +6,7 @@
  * @related-files ["packages/routing/src/routing_policy_service.ts", "packages/routing/src/routing_policy_loader.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { BaseCommand } from "@exaix/cli/base.ts";
@@ -23,7 +24,7 @@ export class RoutingCommands extends BaseCommand {
   }> {
     if (policyPath) {
       if (!await exists(policyPath)) {
-        throw new Error(`Routing policy file not found: ${policyPath}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Routing policy file not found: ${policyPath}`);
       }
 
       const raw = await Deno.readTextFile(policyPath);
@@ -53,7 +54,7 @@ export class RoutingCommands extends BaseCommand {
 
   async explainRequest(requestPath: string): Promise<IRoutingPolicyDecision> {
     if (!await exists(requestPath)) {
-      throw new Error(`Request file not found: ${requestPath}`);
+      throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Request file not found: ${requestPath}`);
     }
 
     const content = await Deno.readTextFile(requestPath);

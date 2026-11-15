@@ -53,16 +53,10 @@ import type { IIndexRebuildResult, IProjectListRow, IProposalApproval } from "./
 
 const CLI_AGENT_ROLE = "cli";
 
-/** Exit code 1 reports a failed read or mutation, 2 reports a malformed argument. */
-type SkillExitCode = 1 | 2;
-
-/** A skill command failure the registered command turns into its process exit code. */
-export class SkillCommandError extends Error {
-  constructor(
-    message: string,
-    readonly exitCode: SkillExitCode = 1,
-  ) {
-    super(message);
+/** A skill command failure. It carries the exit code of its failure class to the root error handler. */
+export class SkillCommandError extends ExaCtlError {
+  constructor(message: string, code: ExaCtlExitCode = ExaCtlExitCode.FAILURE) {
+    super(code, message);
     this.name = "SkillCommandError";
   }
 }
@@ -429,7 +423,7 @@ export class MemoryCommands extends BaseCommand {
         null;
 
       if (!skill) {
-        throw new SkillCommandError(`Skill not found: ${skillId}`, 1);
+        throw new SkillCommandError(`Skill not found: ${skillId}`, ExaCtlExitCode.NOT_FOUND);
       }
 
       return { skill, usage: await this.skills.getUsageSummary(skill.skill_id, operation) };
@@ -443,13 +437,19 @@ export class MemoryCommands extends BaseCommand {
     portal: Opt<string, Reason.OptionalInput>,
   ): Promise<ISkillRevisionDetail> {
     if (!SKILL_REVISION_ID_PATTERN.test(revisionId)) {
-      throw new SkillCommandError(`Argument error: --revision must be a revision UUID, got "${revisionId}"`, 2);
+      throw new SkillCommandError(
+        `Argument error: --revision must be a revision UUID, got "${revisionId}"`,
+        ExaCtlExitCode.USAGE,
+      );
     }
     return await this.skillOperation(async () => {
       const operation = cliSkillContext(this.skills, portal);
       const record = await this.skills.getRevision(revisionId, operation);
       if (!record || record.skillName !== skillId) {
-        throw new SkillCommandError(`Revision ${revisionId} of skill ${skillId} was not found`, 1);
+        throw new SkillCommandError(
+          `Revision ${revisionId} of skill ${skillId} was not found`,
+          ExaCtlExitCode.NOT_FOUND,
+        );
       }
       const usage = (await this.skills.getUsageSummary(skillId, operation)).revisions.find((entry) =>
         entry.revisionId === revisionId
@@ -476,7 +476,10 @@ export class MemoryCommands extends BaseCommand {
   ): Promise<ISkillApproveResult> {
     this.requireSkillName(name);
     if (!SKILL_REVISION_ID_PATTERN.test(revisionId)) {
-      throw new SkillCommandError(`Argument error: --revision must be a revision UUID, got "${revisionId}"`, 2);
+      throw new SkillCommandError(
+        `Argument error: --revision must be a revision UUID, got "${revisionId}"`,
+        ExaCtlExitCode.USAGE,
+      );
     }
     return await this.skillOperation(async () => {
       await this.skills.initialize();
@@ -527,7 +530,9 @@ export class MemoryCommands extends BaseCommand {
     traceId: string,
     options: { portal?: Opt<string, Reason.OptionalInput> } = {},
   ): Promise<ISkillTraceRow[]> {
-    if (traceId.trim().length === 0) throw new SkillCommandError("Argument error: --trace needs a trace id", 2);
+    if (traceId.trim().length === 0) {
+      throw new SkillCommandError("Argument error: --trace needs a trace id", ExaCtlExitCode.USAGE);
+    }
     return await this.skillOperation(async () => {
       const records = await this.skills.usageByTrace(traceId, cliSkillContext(this.skills, options.portal));
       return await Promise.all(records.map(async (record) => ({
@@ -564,7 +569,7 @@ export class MemoryCommands extends BaseCommand {
       if (name !== undefined) {
         const known = all.some((diagnostic) => diagnostic.name === name) ||
           (await this.skills.listSkills(undefined, operation)).some((skill) => skill.name === name);
-        if (!known) throw new SkillCommandError(`Skill not found: ${name}`, 1);
+        if (!known) throw new SkillCommandError(`Skill not found: ${name}`, ExaCtlExitCode.NOT_FOUND);
       }
       const diagnostics = name === undefined ? all : all.filter((diagnostic) => diagnostic.name === name);
       const valid = !diagnostics.some((diagnostic) => diagnostic.severity === SkillDiagnosticSeverity.ERROR);
@@ -576,7 +581,7 @@ export class MemoryCommands extends BaseCommand {
     if (!SKILL_NAME_PATTERN.test(name)) {
       throw new SkillCommandError(
         `Argument error: "${name}" is not a skill name (lowercase letters, digits, hyphens)`,
-        2,
+        ExaCtlExitCode.USAGE,
       );
     }
   }
@@ -587,12 +592,12 @@ export class MemoryCommands extends BaseCommand {
       return await run();
     } catch (error) {
       if (error instanceof SkillCommandError) throw error;
-      if (error instanceof SkillMutationError) throw new SkillCommandError(`${error.code}: ${error.message}`, 1);
-      if (error instanceof SkillUnavailableError) throw new SkillCommandError(`skill_unavailable: ${error.message}`, 1);
+      if (error instanceof SkillMutationError) throw new SkillCommandError(`${error.code}: ${error.message}`);
+      if (error instanceof SkillUnavailableError) throw new SkillCommandError(`skill_unavailable: ${error.message}`);
       if (error instanceof SkillAuditUnavailableError) {
-        throw new SkillCommandError(`skill_audit_unavailable: ${error.message}`, 1);
+        throw new SkillCommandError(`skill_audit_unavailable: ${error.message}`);
       }
-      throw new SkillCommandError(error instanceof Error ? error.message : "Skill command failed", 1);
+      throw new SkillCommandError(error instanceof Error ? error.message : "Skill command failed");
     }
   }
 
@@ -633,12 +638,12 @@ export class MemoryCommands extends BaseCommand {
       if (!options.learningIds || options.learningIds.length === 0) {
         throw new SkillCommandError(
           "Argument error: learning IDs are required for skill derivation. Use --learning-ids <id1,id2,...>",
-          2,
+          ExaCtlExitCode.USAGE,
         );
       }
 
       if (!options.name) {
-        throw new SkillCommandError("Argument error: skill name is required. Use --name <name>", 2);
+        throw new SkillCommandError("Argument error: skill name is required. Use --name <name>", ExaCtlExitCode.USAGE);
       }
 
       const skillId = toSkillSlug(options.name);

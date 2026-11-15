@@ -111,7 +111,7 @@ function createListCommand(runtime: IExaCtlRuntime) {
         await renderModelList(renderer, rows, options.benchmark);
       } catch (error) {
         if (error instanceof ExaCtlError) throw error;
-        failCommand(display, "model list", error as Error);
+        failCommand(error as Error);
       }
     });
 }
@@ -128,7 +128,7 @@ function createRefreshCommand(runtime: IExaCtlRuntime) {
         false,
       );
     } catch (error) {
-      failCommand(display, "model refresh", error as Error);
+      failCommand(error as Error);
     }
   });
 }
@@ -152,7 +152,7 @@ function createUseCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(display, "model use", error as Error);
+        failCommand(error as Error);
       }
     });
 }
@@ -215,21 +215,20 @@ function createCandidatesCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(display, "model candidates", error as Error);
+        failCommand(error as Error);
       }
     });
 }
 
 function createExplainCommand(runtime: IExaCtlRuntime) {
-  const { display, routingCommands } = runtime;
+  const { routingCommands } = runtime;
   return new Command()
     .option("--request <request:string>", "Path to a request file")
     .action(async (options) => {
       const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       const requestFile = options.request;
       if (!requestFile) {
-        display.error("cli.error", "model route explain", { message: "The --request option is required." });
-        Deno.exit(1);
+        throw new ExaCtlError(ExaCtlExitCode.USAGE, "The --request option is required.");
       }
       try {
         const result = await routingCommands.explainRequest(requestFile);
@@ -247,7 +246,7 @@ function createExplainCommand(runtime: IExaCtlRuntime) {
         await renderer.item(summary, EXPLAIN_FIELDS);
         if (!renderer.machine) await renderer.list(candidates, CANDIDATE_COLUMNS, (row) => cellText(row.agent_role));
       } catch (error) {
-        failCommand(display, "model route explain", error as Error);
+        failCommand(error as Error);
       }
     });
 }
@@ -264,10 +263,10 @@ function createValidateCommand(runtime: IExaCtlRuntime) {
       );
       if (!result.success) {
         display.error("routing.policy.invalid", result.path, { errors: result.errors });
-        Deno.exit(1);
+        throw new ExaCtlError(ExaCtlExitCode.INVALID, `Routing policy is invalid: ${result.path}`);
       }
     } catch (error) {
-      failCommand(display, "model route validate", error as Error);
+      failCommand(error as Error);
     }
   });
 }

@@ -6,9 +6,10 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
 import { formatLintSummary, type IReviewDetails, verificationWarning } from "../commands/review_commands.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation, RequestPriority } from "@exaix/core";
+import { RequestOperation, RequestPriority } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IReviewStatus } from "@exaix/core/status";
@@ -52,10 +53,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
         (review) => cellText(review.request_id),
       );
     } catch (error) {
-      display.error("cli.error", "review list", {
-        message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      });
-      Deno.exit(1);
+      throw toExaCtlError(error as Error);
     }
   }
 
@@ -73,10 +71,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
       }
       renderReviewShow(cs, id);
     } catch (error) {
-      display.error("cli.error", "review show", {
-        message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-      });
-      Deno.exit(1);
+      throw toExaCtlError(error as Error);
     }
   }
 
@@ -200,10 +195,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
             await reviewCommands.approve(id);
             await renderer.mutation([{ id, action: ExaCtlVerb.APPROVE, status: ReviewStatus.APPROVED }], false);
           } catch (error) {
-            display.error("cli.error", "review approve", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            throw toExaCtlError(error as Error);
           }
         }),
     )
@@ -220,10 +212,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
               false,
             );
           } catch (error) {
-            display.error("cli.error", "review reject", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            throw toExaCtlError(error as Error);
           }
         }),
     );

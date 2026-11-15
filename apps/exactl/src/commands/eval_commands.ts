@@ -8,6 +8,7 @@
 
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { EvalSqliteStore, EXTERNAL_BENCHMARK_CAVEAT, resolveEvalDbPath } from "@exaix/eval-history";
 import { EVAL_MEMORY_PACK } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -279,7 +280,8 @@ export class EvalCommands extends BaseCommand {
     const status = await proc.status;
 
     if (!status.success) {
-      Deno.exit(status.code ?? 1);
+      const code = status.code ?? ExaCtlExitCode.FAILURE;
+      throw new ExaCtlError(code, `The eval child process exited with code ${code}.`, true);
     }
   }
 

@@ -13,7 +13,12 @@ import { ExaCtlCommandGroup, type IExaCtlNounDoc } from "../docs/exactl_noun_doc
 import { exactlCommand } from "./doc_helpers.ts";
 
 const APPROVAL = ExaCtlCommandName.APPROVAL;
-const DECISION_EXIT_CODES = [ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.FAILURE];
+const DECISION_EXIT_CODES = [
+  ExaCtlExitCode.USAGE,
+  ExaCtlExitCode.NOT_FOUND,
+  ExaCtlExitCode.STATE_CONFLICT,
+  ExaCtlExitCode.FAILURE,
+];
 
 export const APPROVAL_NOUN_DOC: IExaCtlNounDoc = {
   noun: APPROVAL,

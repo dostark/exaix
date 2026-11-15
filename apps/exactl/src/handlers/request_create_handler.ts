@@ -6,6 +6,7 @@
  * @related-files ["apps/exactl/src/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
@@ -279,7 +280,10 @@ export class RequestCreateHandler extends BaseCommand {
     try {
       await Deno.stat(flowPath);
     } catch {
-      throw new Error(`Flow '${flowId}' not found. Check that the flow file exists in Blueprints/Flows/`);
+      throw new ExaCtlError(
+        ExaCtlExitCode.NOT_FOUND,
+        `Flow '${flowId}' not found. Check that the flow file exists in Blueprints/Flows/`,
+      );
     }
   }
 
@@ -341,7 +345,7 @@ export class RequestCreateHandler extends BaseCommand {
     try {
       // Check file exists
       if (!await exists(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
+        throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `File not found: ${filePath}`);
       }
 
       // Read file content

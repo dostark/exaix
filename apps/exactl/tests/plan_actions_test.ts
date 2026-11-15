@@ -27,7 +27,7 @@ import {
   type IPlanActionContext,
 } from "../src/command_builders/plan_actions.ts";
 import { PlanCommands } from "../src/commands/plan_commands.ts";
-import { stub } from "@std/testing/mock";
+import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import type { IPlanDetails } from "@exaix/core/types";
@@ -166,7 +166,7 @@ Deno.test("handlePlanApprove: approves several ids in order", async () => {
 });
 
 Deno.test("handlePlanApprove: stops at the first failure and reports the decided ids", async () => {
-  const { display, calls } = createDisplay();
+  const { display } = createDisplay();
   const approved: string[] = [];
   const planCommands = {
     approve: (id: string) => {
@@ -176,18 +176,14 @@ Deno.test("handlePlanApprove: stops at the first failure and reports the decided
     },
   };
   const context = planActionContext(planCommands, display);
-  const exit = stub(Deno, "exit", (code?: number) => {
-    throw new Error(`exit ${code}`);
-  });
-  try {
-    await assertRejects(() => handlePlanApprove(context, ["p1", "p2", "p3"]), Error, "exit 1");
-  } finally {
-    exit.restore();
-  }
+  const failure = await assertRejects(
+    () => handlePlanApprove(context, ["p1", "p2", "p3"]),
+    ExaCtlError,
+    "plan p2 is not in review",
+  );
+  assertEquals(failure.code, ExaCtlExitCode.FAILURE);
+  assertStringIncludes(failure.message, "decided before the failure: p1");
   assertEquals(approved, ["p1"]);
-  const failure = calls.find((call) => call.level === LogLevel.ERROR);
-  assertStringIncludes(String(failure?.c.message), "plan p2 is not in review");
-  assertEquals(failure?.c.decided, "p1");
 });
 
 Deno.test("handlePlanAmendmentApprove: approves several ids in order", async () => {
@@ -381,27 +377,14 @@ Deno.test("handlePlanAmendmentShowAll: displays all amendments", async () => {
   assertEquals(calls[0].a, "plan.amendment.show_all");
 });
 
-Deno.test("Error Handling: handlePlanList calls Deno.exit(1) on failure", async () => {
-  const { display, calls } = createDisplay();
+Deno.test("Error Handling: handlePlanList throws an ExaCtlError with the failure exit code", async () => {
+  const { display } = createDisplay();
   const planCommands = {
     list: () => Promise.reject(new Error("Failure")),
   };
 
   const context = planActionContext(planCommands, display);
 
-  const exitStub = stub(Deno, "exit", () => {
-    throw new Error("Deno.exit called");
-  });
-
-  try {
-    try {
-      await handlePlanList(context, {});
-    } catch (e) {
-      assertEquals((e as Error).message, "Deno.exit called");
-    }
-    assertEquals(calls.length, 1);
-    assertEquals(calls[0].level, LogLevel.ERROR);
-  } finally {
-    exitStub.restore();
-  }
+  const failure = await assertRejects(() => handlePlanList(context, {}), ExaCtlError, "Failure");
+  assertEquals(failure.code, ExaCtlExitCode.FAILURE);
 });

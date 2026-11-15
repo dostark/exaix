@@ -6,8 +6,9 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE, RequestOperation } from "@exaix/core";
+import { RequestOperation } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -62,7 +63,7 @@ function createRequestCommand(runtime: IExaCtlRuntime) {
 }
 
 function addRequestCommands1(runtime: IExaCtlRuntime) {
-  const { fullContext, display, requestCommands, watchCommandInstance } = runtime;
+  const { fullContext, requestCommands, watchCommandInstance } = runtime;
   return [
     [
       RequestOperation.LIST,
@@ -98,10 +99,7 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
             const traceId = options.trace ?? (await requestCommands.show(requestId as string)).metadata.trace_id;
             await watchCommandInstance.watch(traceId, renderer);
           } catch (error) {
-            display.error("cli.error", "watch", {
-              message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-            });
-            Deno.exit(1);
+            throw toExaCtlError(error as Error);
           }
         }),
     ],
