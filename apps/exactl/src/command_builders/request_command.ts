@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
 import { RequestOperation } from "@exaix/core";
@@ -121,6 +122,7 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
         .option(CLI_OPTION_REASON, "Why the request is cancelled")
         .action(async (options: { reason?: string }, ...id: string[]) => {
           const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          await confirmAction(runtime, "request cancel", `Cancel request ${id[0]}?`, options, id[0]);
           await handleRequestCancel({ requestCommands, display, renderer }, id[0], options.reason);
         }),
     ],

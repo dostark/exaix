@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -121,6 +122,9 @@ function createGitCommand(runtime: IExaCtlRuntime) {
     .action(async (options) => {
       const { renderer, display: actionDisplay } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       try {
+        if (!options.dryRun) {
+          await confirmAction(runtime, "git worktree prune", "Prune stale git worktree entries?", options);
+        }
         const { repoPath, effectiveGit } = resolveWorktreeTarget(runtime, options.portal, options.repo);
         const output = (await effectiveGit.pruneWorktrees({
           dryRun: Boolean(options.dryRun),

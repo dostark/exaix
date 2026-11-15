@@ -65,10 +65,14 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [PORTAL, ExaCtlVerb.REMOVE],
     summary: "Remove a portal",
-    description: "Removes the link and archives the context card. `--keep-card` keeps the card in place.",
-    examples: [{ title: "Remove a portal", command: "exactl portal remove api" }],
+    description:
+      "Removes the link and archives the context card. `--keep-card` keeps the card in place. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+    examples: [{ title: "Remove a portal", command: "exactl portal remove api" }, {
+      title: "Remove without a prompt",
+      command: "exactl portal remove api --yes",
+    }],
     seeAlso: [exactlCommand(PORTAL, ExaCtlVerb.LIST), exactlCommand(PORTAL, ExaCtlVerb.ADD)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

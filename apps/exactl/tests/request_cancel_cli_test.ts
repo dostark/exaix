@@ -52,7 +52,7 @@ async function seed(root: string): Promise<void> {
 
 Deno.test("request cancel on a pending request sets cancelled and journals one request.cancelled", async () => {
   const [cancel, show, journal] = await runExactlSeededWorkspace(seed, [
-    ["request", "cancel", PENDING_TRACE, "--reason", "no longer needed"],
+    ["request", "cancel", PENDING_TRACE, "--reason", "no longer needed", "--yes"],
     ["request", "show", PENDING_TRACE],
     ["log", "list", "--filter", "request.cancelled", "-o", "json"],
   ]);
@@ -65,7 +65,7 @@ Deno.test("request cancel on a pending request sets cancelled and journals one r
 
 Deno.test("request cancel on a running request exits 4", async () => {
   const [cancel, show] = await runExactlSeededWorkspace(seed, [
-    ["request", "cancel", RUNNING_TRACE],
+    ["request", "cancel", RUNNING_TRACE, "--yes"],
     ["request", "show", RUNNING_TRACE],
   ]);
   assertEquals(cancel.code, EXIT_STATE_CONFLICT, cancel.stderr);
@@ -75,9 +75,9 @@ Deno.test("request cancel on a running request exits 4", async () => {
 
 Deno.test("request cancel with a short or empty id exits 2 and an unknown id exits 3", async () => {
   const [short, empty, unknown] = await runExactlSeededWorkspace(seed, [
-    ["request", "cancel", PENDING_TRACE.slice(0, 7)],
-    ["request", "cancel", ""],
-    ["request", "cancel", "dddd4444-0000-4000-8000-000000000004"],
+    ["request", "cancel", PENDING_TRACE.slice(0, 7), "--yes"],
+    ["request", "cancel", "", "--yes"],
+    ["request", "cancel", "dddd4444-0000-4000-8000-000000000004", "--yes"],
   ]);
   assertEquals(short.code, EXIT_USAGE, short.stderr);
   assertEquals(empty.code, EXIT_USAGE, empty.stderr);
@@ -87,7 +87,7 @@ Deno.test("request cancel with a short or empty id exits 2 and an unknown id exi
 Deno.test("request cancel on a needs_clarification request also cancels its pending clarification wait state", async () => {
   const [before, cancel, after] = await runExactlSeededWorkspace(seed, [
     ["approval", "list", "--kind", "wait"],
-    ["request", "cancel", CLARIFY_TRACE],
+    ["request", "cancel", CLARIFY_TRACE, "--yes"],
     ["approval", "list", "--kind", "wait"],
   ]);
   assertEquals(before.code, 0, before.stderr);
@@ -105,7 +105,7 @@ Deno.test("request cancel on a request file with a path in its trace id exits 2 
       await Deno.mkdir(join(root, REQUESTS_DIR), { recursive: true });
       await Deno.writeTextFile(join(root, REQUESTS_DIR, hostile), original);
     },
-    [["request", "cancel", hostile], ["request", "list", "--status", "pending"]],
+    [["request", "cancel", hostile, "--yes"], ["request", "list", "--status", "pending"]],
   );
   assertEquals(cancel.code, EXIT_USAGE, cancel.stderr);
   assertStringIncludes(cancel.stderr, "no valid trace id");
@@ -119,7 +119,7 @@ Deno.test("request cancel on a request file with an invalid status exits 6 and l
       await Deno.mkdir(join(root, REQUESTS_DIR), { recursive: true });
       await Deno.writeTextFile(join(root, REQUESTS_DIR, "request-bogus.md"), requestFile(PENDING_TRACE, "bogus"));
     },
-    [["request", "cancel", "request-bogus.md"]],
+    [["request", "cancel", "request-bogus.md", "--yes"]],
   );
   assertEquals(cancel.code, EXIT_INVALID, cancel.stderr);
   assertStringIncludes(cancel.stderr, "no valid status");

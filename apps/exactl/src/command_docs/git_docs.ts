@@ -44,13 +44,14 @@ export const GIT_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [GIT, WORKTREE, ExaCtlVerb.PRUNE],
     summary: "Prune stale git worktree metadata",
     description:
-      "Removes the metadata of worktrees whose directories are gone. `--dry-run` shows what it would remove.",
+      "Removes the metadata of worktrees whose directories are gone. `--dry-run` shows what it would remove. Asks for confirmation unless `--dry-run` is set. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Preview the prune", command: "exactl git worktree prune --dry-run" },
       { title: "Prune old entries", command: "exactl git worktree prune --expire 3.days.ago" },
+      { title: "Prune without a prompt", command: "exactl git worktree prune --yes" },
     ],
     seeAlso: [exactlCommand(GIT, WORKTREE, ExaCtlVerb.LIST), exactlCommand(GIT, GIT_CMD_STATUS)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

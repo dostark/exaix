@@ -226,9 +226,9 @@ Invalid blueprint without.agent_role field
     // Test 11: Remove Blueprints
     await t.step("Test 11: Remove deletes blueprint file", async () => {
       // Remove test blueprints
-      await blueprintCommands.remove(customAgentId, { force: true });
-      await blueprintCommands.remove(coderAgentId, { force: true });
-      await blueprintCommands.remove(testAgentId, { force: true });
+      await blueprintCommands.remove(customAgentId);
+      await blueprintCommands.remove(coderAgentId);
+      await blueprintCommands.remove(testAgentId);
 
       // Verify files deleted
       const testPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${testAgentId}.md`);

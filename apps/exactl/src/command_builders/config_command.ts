@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
@@ -119,7 +120,8 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     }),
   );
   const rollback = new Command().action(
-    guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, _options: void, ...args) => {
+    guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: void, ...args) => {
+      await confirmAction(runtime, "config rollback", `Roll back ${args[0]} to history entry ${args[1]}?`, options);
       const id = Number(args[1]);
       const restored = await configCommands.rollback(args[0], id);
       display.info("cli.config.rollback", args[0], { to_id: id, restored_value: restored });
@@ -140,7 +142,8 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     display.info("cli.config.edit", CONFIG_ID, { applied: true });
     await renderer.mutation([{ id: CONFIG_ID, action: ExaCtlVerb.EDIT, status: MutationStatus.APPLIED }], false);
   }));
-  const compact = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+  const compact = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: void) => {
+    await confirmAction(runtime, "config compact", "Compact the configuration history?", options);
     const removed = await configCommands.compact();
     display.info("cli.config.compact", CONFIG_ID, { removed });
     await renderer.mutation(

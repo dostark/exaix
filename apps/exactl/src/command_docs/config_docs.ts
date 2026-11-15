@@ -84,15 +84,17 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [CONFIG, ExaCtlVerb.ROLLBACK],
     summary: "Revert a key to an earlier value",
-    description: "Sets the key back to the value of a history id and appends a rollback row.",
+    description:
+      "Sets the key back to the value of a history id and appends a rollback row. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Roll a key back", command: "exactl config rollback ai.timeout_ms 3" },
+      { title: "Roll back without a prompt", command: "exactl config rollback ai.timeout_ms 3 --yes" },
     ],
     seeAlso: [
       exactlCommand(...[CONFIG, ExaCtlVerb.HISTORY]),
       exactlCommand(...[CONFIG, ExaCtlVerb.SET]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -155,15 +157,17 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [CONFIG, ExaCtlVerb.COMPACT],
     summary: "Compact the override history",
-    description: "Keeps one row per key in the override history. It recovers database space and loses the older rows.",
+    description:
+      "Keeps one row per key in the override history. It recovers database space and loses the older rows. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Compact the history", command: "exactl config compact" },
+      { title: "Compact without a prompt", command: "exactl config compact --yes" },
     ],
     seeAlso: [
       exactlCommand(...[CONFIG, ExaCtlVerb.HISTORY]),
       exactlCommand(...[CONFIG, ExaCtlVerb.DIFF]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

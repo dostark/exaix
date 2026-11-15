@@ -8,7 +8,7 @@
  */
 
 import type { Opt, Reason } from "@exaix/core/types";
-import { ExaCtlVerb } from "./exactl_constants.ts";
+import { ExaCtlCommandName, ExaCtlVerb } from "./exactl_constants.ts";
 import { MAX_HINT_ECHO_CHARS, quoteArgument, quoteForShell } from "./exactl_shell.ts";
 
 /** One removed command path and the path that replaces it. */
@@ -122,6 +122,7 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
 const EXACTL_OPTION_RENAMES: readonly IExaCtlOptionRename[] = [
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "--agent-role", canonicalOption: AGENT_OPTION },
   { path: [REQUEST_NOUN, CREATE_VERB], legacyOption: "-a", canonicalOption: AGENT_OPTION },
+  { path: [ExaCtlCommandName.BLUEPRINT, ExaCtlVerb.REMOVE], legacyOption: "--force", canonicalOption: "--yes" },
   { path: ["eval", "calibration", "score"], legacyOption: OUTPUT_OPTION, canonicalOption: REPORT_FILE_OPTION },
   { path: ["log", "list"], legacyOption: "--tail", canonicalOption: LIMIT_OPTION },
   { path: ["log", "cost"], legacyOption: "--trace-id", canonicalOption: "--trace" },

@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
 import type { BlueprintStatus } from "@exaix/core";
@@ -178,11 +179,11 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
 
   function blueprintRemoveCommand() {
     return new Command()
-      .option("--force", "Skip confirmation")
       .action(async (options, ...args: string[]) => {
         const { renderer, display } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
         try {
-          await blueprintCommands.remove(args[0], { force: options.force });
+          await confirmAction(runtime, "blueprint remove", `Remove blueprint ${args[0]}?`, options);
+          await blueprintCommands.remove(args[0]);
           display.info("blueprint.removed", args[0], { status: "Removed ✓" });
           await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
         } catch (error) {

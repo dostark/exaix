@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { Command } from "@cliffy/command";
 import { MemoryScope } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -162,6 +163,7 @@ function createMemoryCommand(runtime: IExaCtlRuntime) {
         .option(CLI_OPTION_REASON, "Deletion reason")
         .action(async (options, ...args: string[]) => {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
+          await confirmAction(runtime, "memory learning remove", `Remove learning ${args[0]}?`, options);
           await memoryCommands.deleteLearning(args[0], options.reason);
           display.info("cli.memory.learning.removed", args[0], { status: MutationStatus.DELETED });
           await renderer.mutation(
@@ -268,6 +270,9 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
             return;
           }
           const targets = selectBulkTargets(ids, options.all === true, PROPOSAL_NOUN);
+          if (targets.all) {
+            await confirmAction(runtime, "memory proposal approve --all", "Approve every pending proposal?", options);
+          }
           const approvals = targets.all ? await memoryCommands.pendingApproveAll() : [];
           let failure: Error | undefined;
           if (!targets.all) {

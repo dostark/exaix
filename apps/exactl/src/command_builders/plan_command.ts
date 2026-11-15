@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { Command } from "@cliffy/command";
 import { RequestOperation } from "@exaix/core";
 import {
@@ -79,6 +80,7 @@ function addPlanCommands1(runtime: IExaCtlRuntime) {
         .action(async (options, ...ids: string[]) => {
           const targets = selectBulkTargets(ids, options.all === true, "plan");
           if (targets.all) {
+            await confirmAction(runtime, "plan approve --all", "Approve every plan in review?", options);
             await handlePlanApproveAll(planContext(runtime, options, ExaCtlOutputFormat.TEXT));
           } else {
             await handlePlanApprove(planContext(runtime, options, ExaCtlOutputFormat.TEXT), targets.ids);
@@ -148,6 +150,12 @@ function addPlanCommands2(runtime: IExaCtlRuntime) {
             .action(async (options, ...ids: string[]) => {
               const targets = selectBulkTargets(ids, options.all === true, "amendment");
               if (targets.all) {
+                await confirmAction(
+                  runtime,
+                  "plan amendment approve --all",
+                  "Approve every pending amendment?",
+                  options,
+                );
                 await handlePlanAmendmentApproveAll(planContext(runtime, options, ExaCtlOutputFormat.TEXT));
               } else {
                 await handlePlanAmendmentApprove(planContext(runtime, options, ExaCtlOutputFormat.TEXT), targets.ids);

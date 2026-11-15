@@ -52,13 +52,21 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [PLAN, ExaCtlVerb.APPROVE],
     summary: "Approve plans and move them to the active workspace",
-    description: "Approves each plan you name. With `--all` it approves every plan in review.",
+    description:
+      "Approves each plan you name. With `--all` it approves every plan in review. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Approve one plan", command: "exactl plan approve plan-123" },
       { title: "Approve every plan in review", command: "exactl plan approve --all" },
+      { title: "Approve every plan without a prompt", command: "exactl plan approve --all --yes" },
     ],
     seeAlso: [exactlCommand(PLAN, ExaCtlVerb.SHOW), exactlCommand(PLAN, ExaCtlVerb.REJECT)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.STATE_CONFLICT],
+    exitCodes: [
+      ExaCtlExitCode.FAILURE,
+      ExaCtlExitCode.USAGE,
+      ExaCtlExitCode.NOT_FOUND,
+      ExaCtlExitCode.STATE_CONFLICT,
+      ExaCtlExitCode.CANCELLED,
+    ],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -111,16 +119,17 @@ export const PLAN_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.APPROVE],
     summary: "Approve plan amendments",
     description:
-      "Approves each amendment you name and lets the paused execution continue. With `--all` it approves every proposed amendment.",
+      "Approves each amendment you name and lets the paused execution continue. With `--all` it approves every proposed amendment. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Approve one amendment", command: "exactl plan amendment approve plan-123" },
       { title: "Approve every amendment", command: "exactl plan amendment approve --all" },
+      { title: "Approve every amendment without a prompt", command: "exactl plan amendment approve --all --yes" },
     ],
     seeAlso: [
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.SHOW),
       exactlCommand(PLAN, ExaCtlSubNoun.AMENDMENT, ExaCtlVerb.REJECT),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

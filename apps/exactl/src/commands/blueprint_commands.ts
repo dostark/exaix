@@ -64,10 +64,6 @@ export interface IBlueprintCreateOptions {
   from?: string;
 }
 
-export interface IBlueprintRemoveOptions {
-  force?: boolean;
-}
-
 // Default system prompt used when `create` gets neither an explicit prompt nor a
 // `--from` prototype; includes the mandatory contract tags so the blueprint validates.
 const DEFAULT_SYSTEM_PROMPT = `# Agent
@@ -526,7 +522,7 @@ ${systemPrompt}
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.create",
-        args: { agentRole, options },
+        args: { agentRole },
         error: error as Error | string | object | null | undefined,
       });
       throw error;
@@ -774,7 +770,7 @@ ${systemPrompt}
   /**
    * Remove a blueprint
    */
-  async remove(agentRole: string, options: IBlueprintRemoveOptions = {}): Promise<void> {
+  async remove(agentRole: string): Promise<void> {
     try {
       const blueprintPath = await this.getExistingBlueprintPath(agentRole);
 
@@ -784,12 +780,11 @@ ${systemPrompt}
       // Log activity
       await this.display.info("blueprint.removed", agentRole, {
         via: "cli",
-        forced: options.force || false,
       });
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.remove",
-        args: { agentRole, options },
+        args: { agentRole },
         error: error as Error | string | object | null | undefined,
       });
     }

@@ -260,6 +260,11 @@ Deno.test("the request create option renames map --agent-role and -a to --agent"
   assertEquals(findOptionRename(["request", "create", "Fix bug", "--agent-role=qa"])?.canonicalOption, "--agent");
 });
 
+Deno.test("blueprint remove --force maps to --yes and no other blueprint command does", () => {
+  assertEquals(findOptionRename(["blueprint", "remove", "old-reviewer", "--force"])?.canonicalOption, "--yes");
+  assertEquals(findOptionRename(["blueprint", "show", "old-reviewer", "--force"]), null);
+});
+
 Deno.test("an option rename needs its command path and stops at the option terminator", () => {
   assertEquals(findOptionRename(["request", "list", "-a"]), null);
   assertEquals(findOptionRename(["request", "create", "--agent", "qa"]), null);

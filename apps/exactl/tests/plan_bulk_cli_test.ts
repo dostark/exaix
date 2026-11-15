@@ -39,6 +39,6 @@ Deno.test("plan amendment approve and show follow the same id-or-all rule", asyn
 });
 
 Deno.test("plan approve --all on a workspace without plans exits 0", async () => {
-  const [run] = await runExactlSequenceInTempWorkspace([["plan", "approve", "--all"]]);
+  const [run] = await runExactlSequenceInTempWorkspace([["plan", "approve", "--all", "--yes"]]);
   assertEquals(run.code, 0, run.stderr);
 });

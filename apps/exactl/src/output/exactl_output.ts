@@ -153,7 +153,7 @@ export function isColorDisabled(argv: readonly string[], env: IEnvironmentReader
 }
 
 /** The global options of a command action. Cliffy merges them into every action's options object. */
-function readGlobalOptions<T extends object | void>(options: T): IExaCtlGlobalOptions {
+export function readGlobalOptions<T extends object | void>(options: T): IExaCtlGlobalOptions {
   return (typeof options === "object" ? options : {}) as IExaCtlGlobalOptions;
 }
 

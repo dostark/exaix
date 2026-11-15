@@ -96,10 +96,14 @@ export const MEMORY_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [MEMORY, ExaCtlSubNoun.LEARNING, ExaCtlVerb.REMOVE],
     summary: "Remove a global learning",
-    description: "Marks the learning as deleted. The record stays for the audit trail.",
-    examples: [{ title: "Remove a learning", command: 'exactl memory learning remove l-1 --reason "Out of date"' }],
+    description:
+      "Marks the learning as deleted. The record stays for the audit trail. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+    examples: [{ title: "Remove a learning", command: 'exactl memory learning remove l-1 --reason "Out of date"' }, {
+      title: "Remove without a prompt",
+      command: 'exactl memory learning remove l-1 --reason "Out of date" --yes',
+    }],
     seeAlso: [exactlCommand(MEMORY, ExaCtlVerb.SEARCH), exactlCommand(MEMORY, PROPOSAL, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -135,14 +139,15 @@ export const MEMORY_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [MEMORY, PROPOSAL, ExaCtlVerb.APPROVE],
     summary: "Approve pending proposals",
     description:
-      "Approves the listed proposals, or every pending proposal with `--all`. `--dry-run` lists what auto-approval would take and changes nothing.",
+      "Approves the listed proposals, or every pending proposal with `--all`. `--dry-run` lists what auto-approval would take and changes nothing. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [
       { title: "Approve one proposal", command: "exactl memory proposal approve prop-1" },
       { title: "Approve every proposal", command: "exactl memory proposal approve --all" },
       { title: "Preview auto-approval", command: "exactl memory proposal approve --dry-run" },
+      { title: "Approve every proposal without a prompt", command: "exactl memory proposal approve --all --yes" },
     ],
     seeAlso: [exactlCommand(MEMORY, PROPOSAL, ExaCtlVerb.SHOW), exactlCommand(MEMORY, PROPOSAL, ExaCtlVerb.REJECT)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

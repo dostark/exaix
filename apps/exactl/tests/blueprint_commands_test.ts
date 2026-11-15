@@ -509,7 +509,7 @@ Deno.test("[blueprint] remove - deletes blueprint file", async () => {
     );
     assertEquals(await exists(blueprintPath), true);
 
-    await commands.remove("remove-test", { force: true });
+    await commands.remove("remove-test");
 
     assertEquals(await exists(blueprintPath), false);
   } finally {
@@ -525,7 +525,7 @@ Deno.test("[blueprint] remove - logs to IActivity Journal", async () => {
       model: "ollama:llama3.2",
     });
 
-    await commands.remove("remove-journal", { force: true });
+    await commands.remove("remove-journal");
 
     // Flush pending database writes
     await testEnv.db.waitForFlush();
@@ -545,7 +545,7 @@ Deno.test("[blueprint] remove - rejects non-existent blueprint", async () => {
   try {
     await assertRejects(
       async () => {
-        await commands.remove("non-existent", { force: true });
+        await commands.remove("non-existent");
       },
       Error,
       "not found",
@@ -967,7 +967,7 @@ Deno.test("blueprint list/show/create cover the former agent-role cases", async 
     const validation = await commands.validate(agentRole);
     assertEquals(validation.valid, true);
 
-    await commands.remove(agentRole, { force: true });
+    await commands.remove(agentRole);
     const afterRemove = await commands.list();
     assertEquals(afterRemove.some((blueprint) => blueprint.agent_role === agentRole), false);
   } finally {

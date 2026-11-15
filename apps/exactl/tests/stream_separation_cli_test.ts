@@ -29,10 +29,10 @@ Deno.test("model list in a human format keeps the display line off stdout", asyn
 });
 
 Deno.test("a not-found cancel with --json prints the JSON error on stderr and nothing on stdout", async () => {
-  const [run] = await runExactlSequenceInTempWorkspace([["request", "cancel", "missing-trace", "--json"]]);
+  const [run] = await runExactlSequenceInTempWorkspace([["request", "cancel", "missing-trace", "--json", "--yes"]]);
   assertEquals(run.code, ExaCtlExitCode.NOT_FOUND);
   assertEquals(run.stdout, "");
-  assertEquals(JSON.parse(run.stderr.trim()).error.code, "NOT_FOUND");
+  assertEquals(JSON.parse(run.stderr.trim().split("\n").pop() ?? "{}").error.code, "NOT_FOUND");
 });
 
 Deno.test("an unknown option with -o json prints a USAGE JSON error and exits 2", async () => {

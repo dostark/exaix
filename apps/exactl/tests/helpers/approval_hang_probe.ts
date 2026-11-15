@@ -49,7 +49,12 @@ const approvalCommands = new ApprovalCommands(
   [hanging, quick],
   SOURCE_TIMEOUT_MS,
 );
-await buildApprovalCommand({ approvalCommands, display: env.context.display, outputSink: defaultOutputSink }).parse([
+await buildApprovalCommand({
+  approvalCommands,
+  display: env.context.display,
+  outputSink: defaultOutputSink,
+  services: { db: env.db },
+}).parse([
   "list",
 ]);
 exitWhenSourceTimedOut(approvalCommands, Deno.exit);

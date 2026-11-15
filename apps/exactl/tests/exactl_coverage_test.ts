@@ -487,7 +487,7 @@ Deno.test("portal remove error exits with message", async () => {
       throw new Error("remove failed");
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse(["portal", "remove", "alias"]);
+      await mod.__test_command.parse(["portal", "remove", "alias", "--yes"]);
     });
     assert(errors.some((e: string) => e.includes("remove failed")));
   });
@@ -573,7 +573,7 @@ Deno.test("blueprint remove error exits with message", async () => {
       throw new Error("remove failed");
     };
     const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse(["blueprint", "remove", "agent-1"]);
+      await mod.__test_command.parse(["blueprint", "remove", "agent-1", "--yes"]);
     });
     assert(errors.some((e: string) => e.includes("remove failed")));
   });

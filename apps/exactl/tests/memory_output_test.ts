@@ -118,7 +118,7 @@ Deno.test("memory proposal approve --all prints one result per approved proposal
   await withTestMod(async (mod, ctx) => {
     ctx.memoryCommands.pendingApproveAll = () => Promise.resolve([approval("p-1"), approval("p-2")]);
     const { out } = await withCapturedSink(ctx.outputSink, async () => {
-      await mod.__test_command.parse(["memory", PROPOSAL, "approve", "--all", ...JSON_FLAGS]);
+      await mod.__test_command.parse(["memory", PROPOSAL, "approve", "--all", "--yes", ...JSON_FLAGS]);
     });
     assertEquals(JSON.parse(out).map((result: { id: string }) => result.id), ["p-1", "p-2"]);
   });
@@ -221,6 +221,7 @@ Deno.test("memory learning remove calls deleteLearning with the id and reason", 
         "l-1",
         "--reason",
         "duplicate",
+        "--yes",
         ...JSON_FLAGS,
       ]);
     });

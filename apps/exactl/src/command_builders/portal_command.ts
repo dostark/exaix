@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { confirmAction } from "../output/exactl_confirm.ts";
 import { Command } from "@cliffy/command";
 import { type PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, Opt, Reason } from "@exaix/core/types";
@@ -127,6 +128,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
     .action(async (options, ...args: string[]) => {
       const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       try {
+        await confirmAction(runtime, "portal remove", `Remove portal ${args[0]}?`, options);
         await portalCommands.remove(args[0], { keepCard: options.keepCard });
         await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
       } catch (error) {

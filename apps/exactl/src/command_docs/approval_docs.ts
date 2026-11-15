@@ -107,13 +107,17 @@ export const APPROVAL_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [APPROVAL, ExaCtlVerb.CANCEL],
     summary: "Cancel a pending wait state",
-    description: "Withdraws a wait state without a decision.",
+    description:
+      "Withdraws a wait state without a decision. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
     examples: [{
       title: "Cancel a wait state",
       command: "exactl approval cancel wait:550e8400-e29b-41d4-a716-446655440001",
+    }, {
+      title: "Cancel without a prompt",
+      command: "exactl approval cancel wait:550e8400-e29b-41d4-a716-446655440001 --yes",
     }],
     seeAlso: [exactlCommand(APPROVAL, ExaCtlVerb.EXPIRE), exactlCommand(APPROVAL, ExaCtlVerb.SHOW)],
-    exitCodes: DECISION_EXIT_CODES,
+    exitCodes: [...DECISION_EXIT_CODES, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
 ];

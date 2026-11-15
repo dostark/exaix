@@ -1440,6 +1440,21 @@ export enum ContextInspectionResult {
   NO_CAPTURE = "no_capture",
 }
 
+/** How exactl obtained consent for a confirming verb. */
+export enum CliConfirmationMode {
+  YES = "yes",
+  PROMPT = "prompt",
+  NO_TTY = "no_tty",
+  NO_INPUT = "no_input",
+}
+
+/** The result of a confirmation of a confirming verb. */
+export enum CliConfirmationOutcome {
+  CONFIRMED = "confirmed",
+  DECLINED = "declined",
+  REFUSED = "refused",
+}
+
 /** URL schemes permitted in privacy-safe OTel export lifecycle metadata. */
 // unslop-ignore-next-line unused-enum-member
 export enum OtelDestinationScheme {

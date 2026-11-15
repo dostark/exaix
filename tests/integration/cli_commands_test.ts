@@ -245,7 +245,7 @@ cliTest("CLI: portal add/remove/refresh works", async () => {
     const refresh = await runExactl(["portal", "refresh", "TestPortal"], env.tempDir);
     assert(refresh.code === 0 || refresh.code === 1);
     // Remove portal
-    const remove = await runExactl(["portal", "remove", "TestPortal"], env.tempDir);
+    const remove = await runExactl(["portal", "remove", "TestPortal", "--yes"], env.tempDir);
     assert(remove.code === 0 || remove.code === 1);
   } finally {
     await env.cleanup();
@@ -460,7 +460,7 @@ cliTest("CLI: blueprint create/list/show/remove/validate edge cases", async () =
     assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(result.stderr, "Blueprint 'notfound' not found");
     // Remove non-existent blueprint
-    result = await runExactl(["blueprint", "remove", "notfound"], env.tempDir);
+    result = await runExactl(["blueprint", "remove", "notfound", "--yes"], env.tempDir);
     assertEquals(result.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(result.stderr, "Blueprint 'notfound' not found");
     // Validate non-existent blueprint

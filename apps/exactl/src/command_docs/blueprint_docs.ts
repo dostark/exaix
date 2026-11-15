@@ -87,10 +87,14 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [BLUEPRINT, ExaCtlVerb.REMOVE],
     summary: "Remove a blueprint",
-    description: "Deletes the blueprint file. `--force` removes a blueprint that other files still reference.",
-    examples: [{ title: "Remove a blueprint", command: "exactl blueprint remove old-reviewer" }],
+    description:
+      "Deletes the blueprint file. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+    examples: [{ title: "Remove a blueprint", command: "exactl blueprint remove old-reviewer" }, {
+      title: "Remove without a prompt",
+      command: "exactl blueprint remove old-reviewer --yes",
+    }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.DEPRECATE), exactlCommand(BLUEPRINT, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

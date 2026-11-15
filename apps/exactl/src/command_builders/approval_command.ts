@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/commands/approval_commands.ts]
  */
 
+import { confirmAction, type IConfirmRuntime } from "../output/exactl_confirm.ts";
 import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
 import { documentLeaves } from "./documented_children.ts";
@@ -42,6 +43,7 @@ export interface IApprovalCommandRuntime {
   readonly approvalCommands: ApprovalCommands;
   readonly display: IDisplayService;
   readonly outputSink: IExaCtlOutputSink;
+  readonly services: IConfirmRuntime["services"];
 }
 
 const ID_ARGUMENT = "<approval-id:string>";
@@ -97,6 +99,9 @@ function decisionCommand(
     .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
     .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
     .action(async (options: IDecisionOptions, ...args: string[]) => {
+      if (verb === ExaCtlVerb.CANCEL) {
+        await confirmAction(runtime, "approval cancel", `Cancel approval ${args[0]}?`, options);
+      }
       await report(
         actionOutput(runtime, options, ExaCtlOutputFormat.TEXT),
         verb,

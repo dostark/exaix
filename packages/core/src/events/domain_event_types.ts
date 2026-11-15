@@ -13,6 +13,8 @@ import type { EffortResolutionBasis, EffortTier, IExecutionCompletedVerification
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types";
 import type {
+  CliConfirmationMode,
+  CliConfirmationOutcome,
   ContextInspectionResult,
   FlowGateAction,
   OtelDestinationScheme,
@@ -243,6 +245,13 @@ export interface IModelCostDivergencePayload {
 
 /** Reason a model cleared the admission bar. */
 type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
+
+/** Typed payload for cli.confirmation_resolved events. */
+export interface ICliConfirmationPayload {
+  verb: string;
+  mode: CliConfirmationMode;
+  outcome: CliConfirmationOutcome;
+}
 
 /** Typed payload for model.admitted events (F12). */
 export interface IModelAdmittedPayload {
@@ -972,6 +981,9 @@ export const DomainEventType = {
   ContextRecordsPruned: "dogfood.context.records_pruned",
   ContextInspected: "dogfood.context.inspected",
   ContextInspectionFailed: "dogfood.context.inspection_failed",
+
+  // exactl consent for a confirming verb
+  CliConfirmationResolved: "cli.confirmation_resolved",
 
   // Skill folder payloads never carry skill bodies, raw YAML or host paths.
   SkillsRevisionRecorded: "skills.revision_recorded",

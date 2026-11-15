@@ -90,7 +90,7 @@ const CONFIG_KEY = "ai.timeout_ms";
 
 const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>([
   ["memory learning remove", {
-    args: ["memory", "learning", "remove", "l-1", "--reason", "duplicate"],
+    args: ["memory", "learning", "remove", "l-1", "--reason", "duplicate", "--yes"],
     stub: (ctx) => void (ctx.memoryCommands.deleteLearning = resolved),
     expected: { id: "l-1", action: "remove", status: "deleted" },
   }],
@@ -160,7 +160,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: CONFIG_KEY, action: "unset", status: "unset" },
   }],
   ["config rollback", {
-    args: ["config", "rollback", CONFIG_KEY, "3"],
+    args: ["config", "rollback", CONFIG_KEY, "3", "--yes"],
     stub: (ctx) => void (ctx.configCommands.rollback = () => Promise.resolve(7)),
     expected: { id: CONFIG_KEY, action: "rollback", status: "rolled_back", toId: 3, restoredValue: 7 },
   }],
@@ -170,7 +170,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: "config", action: "edit", status: "applied" },
   }],
   ["config compact", {
-    args: ["config", "compact"],
+    args: ["config", "compact", "--yes"],
     stub: (ctx) => void (ctx.configCommands.compact = () => Promise.resolve(2)),
     expected: { id: "config", action: "compact", status: "compacted", removed: 2 },
   }],
@@ -210,7 +210,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: "a-1", action: "edit", status: "edited" },
   }],
   ["blueprint remove", {
-    args: ["blueprint", "remove", "a-1", "--force"],
+    args: ["blueprint", "remove", "a-1", "--yes"],
     stub: (ctx) => void (ctx.blueprintCommands.remove = resolved),
     expected: { id: "a-1", action: "remove", status: "removed" },
   }],
@@ -225,7 +225,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: "p-1", action: "add", status: "added", target: "/tmp/target" },
   }],
   ["portal remove", {
-    args: ["portal", "remove", "p-1"],
+    args: ["portal", "remove", "p-1", "--yes"],
     stub: (ctx) => void (ctx.portalCommands.remove = resolved),
     expected: { id: "p-1", action: "remove", status: "removed" },
   }],
@@ -270,7 +270,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: "s-1", action: "deprecate", status: "deprecated", revisionId: "rev-2" },
   }],
   ["request cancel", {
-    args: ["request", "cancel", "req-1"],
+    args: ["request", "cancel", "req-1", "--yes"],
     stub: (ctx) => void (ctx.requestCommands.cancel = cancelled),
     expected: { id: "req-1", action: "cancel", status: "cancelled", previous_status: RequestStatus.PENDING },
   }],
@@ -330,7 +330,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
     expected: { id: WAIT_REF, action: "expire", status: WAIT_STATUS },
   }],
   ["approval cancel", {
-    args: ["approval", "cancel", WAIT_REF],
+    args: ["approval", "cancel", WAIT_REF, "--yes"],
     stub: (ctx) => void (ctx.waitStateCommands.cancel = waitDecision),
     expected: { id: WAIT_REF, action: "cancel", status: WAIT_STATUS },
   }],

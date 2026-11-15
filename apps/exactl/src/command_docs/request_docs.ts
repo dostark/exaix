@@ -100,10 +100,19 @@ export const REQUEST_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [REQUEST, ExaCtlVerb.CANCEL],
     summary: "Cancel a pending request",
     description:
-      "Cancels a request that is pending or waits for clarification. A request that already runs cannot be cancelled.",
-    examples: [{ title: "Cancel a request", command: 'exactl request cancel 3f2a9c1e --reason "Duplicate"' }],
+      "Cancels a request that is pending or waits for clarification. A request that already runs cannot be cancelled. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+    examples: [{ title: "Cancel a request", command: 'exactl request cancel 3f2a9c1e --reason "Duplicate"' }, {
+      title: "Cancel without a prompt",
+      command: 'exactl request cancel 3f2a9c1e --reason "Duplicate" --yes',
+    }],
     seeAlso: [exactlCommand(REQUEST, ExaCtlVerb.SHOW), exactlCommand(REQUEST, ExaCtlVerb.LIST)],
-    exitCodes: [ExaCtlExitCode.USAGE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.STATE_CONFLICT, ExaCtlExitCode.INVALID],
+    exitCodes: [
+      ExaCtlExitCode.USAGE,
+      ExaCtlExitCode.NOT_FOUND,
+      ExaCtlExitCode.STATE_CONFLICT,
+      ExaCtlExitCode.INVALID,
+      ExaCtlExitCode.CANCELLED,
+    ],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

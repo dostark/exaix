@@ -35,7 +35,7 @@ import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
-import type { IBlueprintCreateOptions, IBlueprintRemoveOptions } from "../src/commands/blueprint_commands.ts";
+import type { IBlueprintCreateOptions } from "../src/commands/blueprint_commands.ts";
 
 // Exercises top-level CLI parsing/dispatch via the internal test-mode context
 // (`__test_getContext()` / `__test_command`) with in-process stubs — no tempdir or
@@ -133,13 +133,12 @@ Deno.test("daemon status prints info (calls daemonCommands.status)", async () =>
 Deno.test("blueprint remove calls blueprintCommands.remove", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.blueprintCommands.remove = (id: string, opts?: IBlueprintRemoveOptions) => {
+    ctx.blueprintCommands.remove = (id: string) => {
       called = true;
       assertEquals(id, "agent-x");
-      assertEquals(opts?.force, true);
       return Promise.resolve();
     };
-    await mod.__test_command.parse(["blueprint", "remove", "agent-x", "--force"]);
+    await mod.__test_command.parse(["blueprint", "remove", "agent-x", "--yes"]);
     assert(called);
   });
 });
@@ -524,7 +523,7 @@ Deno.test("plan approve --all approves every plan in review", async () => {
       return Promise.resolve();
     };
     ctx.planCommands.approve = () => Promise.reject(new Error("approve must not run for --all"));
-    await mod.__test_command.parse(["plan", "approve", "--all"]);
+    await mod.__test_command.parse(["plan", "approve", "--all", "--yes"]);
     assert(approvedAll);
   });
 });
@@ -540,7 +539,7 @@ Deno.test("plan amendment approve --all and show --all use the all-amendments ha
       calls.push("show-all");
       return Promise.resolve([]);
     };
-    await mod.__test_command.parse(["plan", "amendment", "approve", "--all"]);
+    await mod.__test_command.parse(["plan", "amendment", "approve", "--all", "--yes"]);
     await mod.__test_command.parse(["plan", "amendment", "show", "--all"]);
     assertEquals(calls, ["approve-all", "show-all"]);
   });
@@ -652,7 +651,7 @@ Deno.test("portal remove --keep-card preserves context card", async () => {
       assertEquals(opts?.keepCard, true);
       return Promise.resolve();
     };
-    await mod.__test_command.parse(["portal", "remove", "KeepMe", "--keep-card"]);
+    await mod.__test_command.parse(["portal", "remove", "KeepMe", "--keep-card", "--yes"]);
     assert(called);
   });
 });
@@ -999,7 +998,7 @@ Deno.test("approval cancel calls waitStateCommands.cancel with token and message
       assertEquals(message, "Cancel it");
       return Promise.resolve({ waitStateId: "ws-5", status: "cancelled" } as any);
     };
-    await mod.__test_command.parse(["approval", "cancel", "wait:tok-cancel", "--message", "Cancel it"]);
+    await mod.__test_command.parse(["approval", "cancel", "wait:tok-cancel", "--message", "Cancel it", "--yes"]);
     assert(called);
   });
 });
@@ -1080,7 +1079,14 @@ Deno.test("approval cancel --resolved-by passes the actor through to waitStateCo
       assertEquals(resolvedBy, "operator:jane");
       return Promise.resolve({ waitStateId: "ws-5", status: "cancelled" } as any);
     };
-    await mod.__test_command.parse(["approval", "cancel", "wait:tok-cancel", "--resolved-by", "operator:jane"]);
+    await mod.__test_command.parse([
+      "approval",
+      "cancel",
+      "wait:tok-cancel",
+      "--resolved-by",
+      "operator:jane",
+      "--yes",
+    ]);
     assert(called);
   });
 });
