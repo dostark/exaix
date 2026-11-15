@@ -1236,24 +1236,28 @@ Six options work on every `exactl` command, before or after the command. `exactl
 | Stream     | Events over time as JSON lines, for example `exactl request watch`.                                             |
 | Protocol   | Owns stdout or the terminal: `dashboard`, `mcp serve`, `daemon logs`, `eval report` and the completion scripts. |
 
+**Editors need a terminal.** `exactl config edit` and `exactl blueprint edit` open `$EDITOR` and wait for it. Without a terminal on standard input and standard error, or with `--no-input`, they fail with exit code 2 before the editor starts, so a script never waits for an editor that nobody can use. Edit the file directly in a script.
+
+**A failure is not a journal event.** A failure prints its message on stderr (in a machine format, the JSON error above) and ends with its exit code, and the root error handler writes no row for it. A script reads the exit code to learn that a command failed. The journal still holds the events that a command wrote before it failed, and the consent of a confirming command (see [Confirmation](#41f-confirmation)).
+
 The [CLI reference](cli/index.md) states the kind, the options, the examples and the exit codes of every command. It is generated from the same records as `exactl <command> --help`.
 
 ### 4.1e Exit Codes
 
 Every `exactl` command ends with one of these codes, so a script can tell a missing item from a conflict or a timeout.
 
-| Code | Name                 | Meaning                                                                                                                                                                |
-| ---- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | `OK`                 | The command succeeded. A warning of `exactl doctor` is still 0.                                                                                                        |
-| 1    | `FAILURE`            | Any failure that has no more specific code.                                                                                                                            |
-| 2    | `USAGE`              | A wrong or missing argument or option, or a confirmation that cannot be asked.                                                                                         |
-| 3    | `NOT_FOUND`          | The plan, request, review, blueprint, skill or other item does not exist.                                                                                              |
-| 4    | `STATE_CONFLICT`     | The item is in the wrong state, for example a plan that was approved already.                                                                                          |
-| 5    | `DAEMON_UNAVAILABLE` | `exactl doctor` found a PID file whose process is dead.                                                                                                                |
-| 6    | `INVALID`            | A validation failed: `skill validate`, `flow validate`, `blueprint validate`, `log verify`, `config validate`, or `exactl doctor` for the schema or the configuration. |
-| 7    | `CREDENTIALS`        | `exactl doctor` found that the default provider has no credential.                                                                                                     |
-| 124  | `TIMEOUT`            | `exactl log wait` or `exactl daemon start` ran out of time.                                                                                                            |
-| 130  | `CANCELLED`          | You declined a confirmation prompt.                                                                                                                                    |
+| Code | Name                 | Meaning                                                                                                                                                                                                                  |
+| ---- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0    | `OK`                 | The command succeeded. A warning of `exactl doctor` is still 0.                                                                                                                                                          |
+| 1    | `FAILURE`            | Any failure that has no more specific code.                                                                                                                                                                              |
+| 2    | `USAGE`              | A wrong or missing argument or option, or a confirmation that cannot be asked.                                                                                                                                           |
+| 3    | `NOT_FOUND`          | The plan, request, review, blueprint, skill, portal, flow, configuration key or other item does not exist, for example `portal show`, `portal verify`, `flow show`, `flow bindings`, `request analyze` and `config get`. |
+| 4    | `STATE_CONFLICT`     | The item is in the wrong state, for example a plan that was approved already.                                                                                                                                            |
+| 5    | `DAEMON_UNAVAILABLE` | `exactl doctor` found a PID file whose process is dead.                                                                                                                                                                  |
+| 6    | `INVALID`            | A validation failed: `skill validate`, `flow validate`, `blueprint validate`, `log verify`, `config validate`, or `exactl doctor` for the schema or the configuration.                                                   |
+| 7    | `CREDENTIALS`        | `exactl doctor` found that the default provider has no credential.                                                                                                                                                       |
+| 124  | `TIMEOUT`            | `exactl log wait` or `exactl daemon start` ran out of time.                                                                                                                                                              |
+| 130  | `CANCELLED`          | You declined a confirmation prompt.                                                                                                                                                                                      |
 
 `exactl eval run` and the other eval commands that start the scenario runner end with the code of that runner: 0 when every scenario passes, 1 when a scenario fails and 2 on an infrastructure error. In a machine format its JSON error names such a code `CHILD_EXIT`.
 
@@ -1266,7 +1270,7 @@ These commands change or remove something that is hard to get back, so they ask 
 - `exactl memory learning remove`, `exactl request cancel` and `exactl approval cancel`,
 - the bulk forms `exactl plan approve --all`, `exactl plan amendment approve --all` and `exactl memory proposal approve --all`.
 
-On a terminal the command asks `[y/N]` on stderr. Pass `--yes` to confirm without the prompt. Without a terminal, or with `--no-input`, a confirming command fails with exit code 2 and the text `pass --yes to confirm` before it changes anything, so it never waits for a prompt that nobody sees. A declined prompt ends with exit code 130. A dry run (`exactl git worktree prune --dry-run`) never asks.
+On a terminal the command asks `[y/N]` on stderr. Pass `--yes` to confirm without the prompt. Without a terminal, or with `--no-input`, a confirming command fails with exit code 2 and the text `pass --yes to confirm` before it changes anything, so it never waits for a prompt that nobody sees. The prompt shows the text of the command without its control characters, and it needs a terminal on both standard input and standard error, so a redirected stderr counts as no terminal. A declined prompt ends with exit code 130. A dry run (`exactl git worktree prune --dry-run`) never asks.
 
 Each consent, refusal and declined prompt is one `cli.confirmation_resolved` row in the journal, with the command, the way consent was given (`yes`, `prompt`, `no_tty` or `no_input`) and the result (`confirmed`, `declined` or `refused`). `--force` keeps one meaning: `exactl portal knowledge analyze --force` analyzes again although the knowledge is fresh.
 

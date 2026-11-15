@@ -37,6 +37,9 @@
 - `exactl blueprint remove`, `exactl portal remove`, `exactl git worktree prune`, `exactl config rollback`, `exactl config compact`, `exactl memory learning remove`, `exactl request cancel`, `exactl approval cancel` and the `--all` forms of the approve commands ask for confirmation, and without a terminal or with `--no-input` they exit with code 2 until you pass `--yes` (see [Confirmation](Exaix_User_Guide.md#41f-confirmation)).
 - `-q` prints only ids in a human format, and each short flag has one meaning on every command, so the other short flags are removed (the one-letter flags that stay are `-o`, `-q`, `-y`, `-n`, `-s`, `-r`, `-m`, `-f`, `-P`, `-i`, `-k` and `-v`).
 - `exactl eval run` and the other eval commands that start the scenario runner end with the exit code of the runner, and a JSON error names such a code `CHILD_EXIT`.
+- `exactl config edit` and `exactl blueprint edit` need a terminal: without one, or with `--no-input`, they exit with code 2 before the editor starts (see [Global Options and the Output Contract](Exaix_User_Guide.md#41d-global-options-and-the-output-contract)).
+- A missing portal, flow, request or configuration key exits with code 3 for `exactl portal show`, `portal verify`, `flow show`, `flow bindings`, `request analyze` and `config get`, where these commands ended with code 1 or 0.
+- The consent row of `exactl approval cancel` carries the trace id of the wait state, and a confirmation prompt shows no control characters of its argument.
 - `exactl config validate` exits with code 6 when the report holds issues, `exactl log verify` exits with code 6 for a broken journal chain, and an unknown skill exits with code 3.
 - `exactl request create` without a description exits with code 2.
 

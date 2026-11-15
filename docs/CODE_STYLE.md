@@ -380,6 +380,20 @@ hold them, and `apps/exactl/tests/exactl_contracts_cutover_test.ts` proves them 
   `DAEMON_UNAVAILABLE` and `CREDENTIALS` belong to `exactl doctor` alone. The root error handler prints the message once.
 - **Confirm a destructive verb.** A verb that removes or cancels something calls `confirmAction` from
   `apps/exactl/src/output/exactl_confirm.ts` before it changes anything. It never reads standard input on its own.
+- **Ask for input through the helper.** A command that opens an editor or asks a question calls `requireInput` from
+  the same module before it starts. It fails with `USAGE` under `--no-input` or without a terminal on standard input
+  and standard error, and it journals the refusal.
+- **Pass the caught value as it is.** `failCommand` and `toExaCtlError` take the value of a `catch` as a generic
+  parameter, so a builder writes `failCommand(error)` and never `error as Error`. A missing item has a typed error
+  (`PortalNotFoundError`, `FlowNotFoundError`, `RequestNotFoundError`, `ConfigKeyNotFoundError`) that `toExaCtlError`
+  maps to `NOT_FOUND`, so a package never imports an exactl type.
+- **A failure is not a journal event.** The root error handler prints the failure and ends with the exit code, and it
+  writes no row. A command journals its own events and a confirming verb journals its consent
+  (`cli.confirmation_resolved`).
+- **Hold the whole-tree gates.** `scripts/ci.ts check` does not run `packages/lint-policy/tests/rule_ceilings_test.ts`
+  or `deno task check:god-objects`, and a change of `apps/exactl` can break both. Run them before a commit, and lower a
+  ceiling in the change that lowers its count. Parse a value of unknown shape with a schema (`apps/exactl/src/output/json_narrow.ts`)
+  and not with `typeof`.
 - **One meaning per short flag.** A short flag is allowed only when the policy of
   `apps/exactl/tests/helpers/command_tree_lint_rules.ts` assigns its letter to that long option: `-o --output`,
   `-q --quiet`, `-y --yes`, `-n --limit`, `-s --status`, `-r --reason`, `-m --model`, `-f --follow`, `-P --pack`,
@@ -393,11 +407,13 @@ hold them, and `apps/exactl/tests/exactl_contracts_cutover_test.ts` proves them 
   - `seeAlso`: commands that exist in the tree.
   - `exitCodes` and `output`: the codes the command can end with, and its output kind. Only the leaves that own the
     terminal or stdout have the kind `PROTOCOL`.
-    A root noun also needs a noun record. A Team command keeps its record in its own package and the Team tests read it.
+    A root noun also needs a noun record. A sub-noun (a group such as `git worktree`) keeps its one-line description in
+    its builder and has no record. A Team command keeps its record in its own package and the Team tests read it.
 - **Regenerate the reference.** After a change to an option or a record, run `deno task docs:cli`, and in a Team checkout
   `deno task docs:cli:team`. They write `docs/cli/`, the command table of the User Guide and the Team pages. Never edit
   those files by hand: `cli_reference_drift_test.ts` fails when they differ from the tree. Every `exactl …` line in a
-  fenced block of `docs/*.md` and the skill files must parse too (`docs_exactl_examples_test.ts`).
+  fenced block of `docs/*.md` and the skill files must parse too (`docs_exactl_examples_test.ts`). The option names in
+  the prose of a guide are outside the drift checks.
 
 ## Edition Tier Import Boundary {#edition-tier-boundary}
 
