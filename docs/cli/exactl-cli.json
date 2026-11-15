@@ -5135,6 +5135,197 @@
     },
     {
       "path": [
+        "version"
+      ],
+      "summary": "Show the binary and workspace schema versions",
+      "description": "Prints the version of the exactl binary, the schema version of the workspace and whether the two are compatible.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the versions",
+          "command": "exactl version"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl doctor",
+        "exactl daemon status"
+      ]
+    },
+    {
+      "path": [
+        "doctor"
+      ],
+      "summary": "Check the health of the installation",
+      "description": "Runs five read-only checks and prints one row for each: `schema` (binary against workspace), `config` (the configuration file), `daemon` (the PID file), `provider` (the default provider starts) and `pricing` (the models that have no price or an old one).\n\nA check is `PASS`, `WARN` or `FAIL`. A warning never fails the command: a stopped daemon or an old price only tells you where numbers rest on weak data. The exit code is the class of the first failing check: 6 for the schema or the configuration, 5 for a dead daemon process and 7 for a missing credential. `--schema` runs only the schema check.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--schema"
+          ],
+          "required": false,
+          "description": "Run only the schema check"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Check everything",
+          "command": "exactl doctor"
+        },
+        {
+          "title": "Check only the schema",
+          "command": "exactl doctor --schema"
+        },
+        {
+          "title": "Print the checks as JSON",
+          "command": "exactl doctor -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 6,
+          "name": "INVALID"
+        },
+        {
+          "code": 5,
+          "name": "DAEMON_UNAVAILABLE"
+        },
+        {
+          "code": 7,
+          "name": "CREDENTIALS"
+        }
+      ],
+      "see_also": [
+        "exactl config validate",
+        "exactl daemon status",
+        "exactl model list"
+      ]
+    },
+    {
+      "path": [
+        "completion",
+        "bash"
+      ],
+      "summary": "Print the bash completion script",
+      "description": "Prints the bash completion script to stdout. It changes nothing on its own: source it from your shell profile.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-n",
+            "--name"
+          ],
+          "type": "string",
+          "value": "command-name",
+          "required": false,
+          "description": "The name of the main command."
+        }
+      ],
+      "examples": [
+        {
+          "title": "Print the bash script",
+          "command": "exactl completion bash"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl completion fish",
+        "exactl completion zsh"
+      ]
+    },
+    {
+      "path": [
+        "completion",
+        "fish"
+      ],
+      "summary": "Print the fish completion script",
+      "description": "Prints the fish completion script to stdout. It changes nothing on its own: source it from your shell profile.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-n",
+            "--name"
+          ],
+          "type": "string",
+          "value": "command-name",
+          "required": false,
+          "description": "The name of the main command."
+        }
+      ],
+      "examples": [
+        {
+          "title": "Print the fish script",
+          "command": "exactl completion fish"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl completion bash",
+        "exactl completion zsh"
+      ]
+    },
+    {
+      "path": [
+        "completion",
+        "zsh"
+      ],
+      "summary": "Print the zsh completion script",
+      "description": "Prints the zsh completion script to stdout. It changes nothing on its own: source it from your shell profile.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-n",
+            "--name"
+          ],
+          "type": "string",
+          "value": "command-name",
+          "required": false,
+          "description": "The name of the main command."
+        }
+      ],
+      "examples": [
+        {
+          "title": "Print the zsh script",
+          "command": "exactl completion zsh"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl completion bash",
+        "exactl completion fish"
+      ]
+    },
+    {
+      "path": [
         "skill",
         "list"
       ],

@@ -60,6 +60,14 @@ Deno.test("renameHint names the legacy command and the replacement", () => {
   assertStringIncludes(hint, "use 'exactl blueprint list'");
 });
 
+Deno.test("migrate and migrate check print the doctor --schema hint", () => {
+  for (const typed of [["migrate"], ["migrate", "check"]]) {
+    const hint = renameHint(rowFor(typed), typed);
+    assertStringIncludes(hint, `'exactl ${typed.join(" ")}' was renamed`);
+    assertStringIncludes(hint, "use 'exactl doctor --schema'");
+  }
+});
+
 Deno.test("renameHint appends the typed words that follow the legacy prefix", () => {
   const typed = ["blueprint", "rm", "my-agent"];
   assertStringIncludes(renameHint(rowFor(typed), typed), "use 'exactl blueprint remove my-agent'");

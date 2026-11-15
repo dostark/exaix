@@ -8,15 +8,14 @@
 
 import { Command } from "@cliffy/command";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
-import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
-import { ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
+import { documented, ExaCtlOutputFormat, type IExaCtlColumn } from "@exaix/cli";
 import type { JSONValue } from "@exaix/core";
 import type { IExaCtlRuntime } from "../exactl_runtime.ts";
 import { ExaCtlCommandName, ExaCtlVerb, MutationStatus } from "../exactl_constants.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
-import { nounDocFor } from "../command_docs/mod.ts";
+import { commandDocFor, nounDocFor } from "../command_docs/mod.ts";
 import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { actionOutput, ColumnHeader } from "../output/exactl_output.ts";
@@ -154,8 +153,7 @@ export function buildDaemonCommand(runtime: IExaCtlRuntime): ReturnType<typeof c
 
 function createVersionCommand(runtime: IExaCtlRuntime) {
   const { services } = runtime;
-  return new Command()
-    .description("Show Exaix binary and workspace schema version information")
+  const command = new Command()
     .action(async (options) => {
       const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       const onDiskSchemaVersion = (() => {
@@ -205,6 +203,7 @@ function createVersionCommand(runtime: IExaCtlRuntime) {
       ];
       await renderer.item(info, fields);
     });
+  return documented(command, commandDocFor([ExaCtlCommandName.VERSION]), []);
 }
 
 export function buildVersionCommand(runtime: IExaCtlRuntime): ReturnType<typeof createVersionCommand> {
@@ -215,30 +214,4 @@ export function buildVersionCommand(runtime: IExaCtlRuntime): ReturnType<typeof 
 function parseSemVerSegments(v: string): { major: number; minor: number; patch: number } {
   const [major, minor, patch] = v.split(".").map(Number);
   return { major: major ?? 0, minor: minor ?? 0, patch: patch ?? 0 };
-}
-
-function createMigrateCommand(runtime: IExaCtlRuntime) {
-  const { daemonCommands } = runtime;
-  return new Command()
-    .description("Workspace migration utilities")
-    .command(
-      "check",
-      new Command()
-        .description("Check binary vs workspace schema compatibility")
-        .action(async (options) => {
-          const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
-          const check = daemonCommands.migrate({ check: true });
-          const failed = check.exitCode !== ExaCtlExitCode.OK;
-          if (renderer.machine) {
-            await renderer.item({ status: check.status, exit_code: check.exitCode, message: check.message }, []);
-          } else if (!failed) {
-            await renderer.text(check.message);
-          }
-          if (failed) throw new ExaCtlError(check.exitCode, check.message);
-        }),
-    );
-}
-
-export function buildMigrateCommand(runtime: IExaCtlRuntime): ReturnType<typeof createMigrateCommand> {
-  return createMigrateCommand(runtime);
 }

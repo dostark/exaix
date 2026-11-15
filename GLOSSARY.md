@@ -124,7 +124,7 @@ An isolated Git checkout, kept under `.exa/worktrees/<portal>/<trace-id>/`, in w
 
 ### Workspace Schema Version
 
-The version of the on-disk layout and databases of a Workspace, which must be compatible with the version of the `exactl` binary that opens it. `exactl version` shows both, and `exactl migrate check` reports whether they match.
+The version of the on-disk layout and databases of a Workspace, which must be compatible with the version of the `exactl` binary that opens it. `exactl version` shows both, and `exactl doctor --schema` reports whether they match.
 
 ---
 

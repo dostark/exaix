@@ -57,11 +57,20 @@ const GRAMMAR_RULES: readonly GrammarRule[] = [
 ];
 
 /** A root that is itself the action takes no verb. */
-const ROOT_ACTION_COMMANDS: ReadonlySet<string> = new Set([ExaCtlCommandName.DASHBOARD, ExaCtlCommandName.VERSION]);
+const ROOT_ACTION_COMMANDS: ReadonlySet<string> = new Set([
+  ExaCtlCommandName.DASHBOARD,
+  ExaCtlCommandName.DOCTOR,
+  ExaCtlCommandName.VERSION,
+]);
 
 const ROOT_NAMES: ReadonlySet<string> = new Set(Object.values(ExaCtlCommandName));
 const SUB_NOUN_NAMES: ReadonlySet<string> = new Set(Object.values(ExaCtlSubNoun));
 const VERB_NAMES: ReadonlySet<string> = new Set(Object.values(ExaCtlVerb));
+
+/** The nodes that the help lists. A hidden node, such as the completion helper, is outside the rules. */
+function visibleNodes(nodes: readonly ICommandTreeNode[]): ICommandTreeNode[] {
+  return nodes.filter((node) => !node.hidden);
+}
 
 function pathKey(node: ICommandTreeNode): string {
   return node.path.join(" ");
@@ -95,7 +104,8 @@ function findDuplicateHandlers(leaves: readonly ICommandTreeNode[]): IGrammarVio
 }
 
 /** Every grammar violation of the tree, sorted by rule and path. */
-export function findGrammarViolations(nodes: readonly ICommandTreeNode[]): IGrammarViolation[] {
+export function findGrammarViolations(allNodes: readonly ICommandTreeNode[]): IGrammarViolation[] {
+  const nodes = visibleNodes(allNodes);
   const violations: IGrammarViolation[] = [];
   const leaves: ICommandTreeNode[] = [];
   for (const node of nodes) {
@@ -150,6 +160,9 @@ const PROTOCOL_LEAVES: ReadonlySet<string> = new Set([
   "daemon logs",
   "eval report",
   "eval calibration score",
+  "completion bash",
+  "completion fish",
+  "completion zsh",
 ]);
 const SUMMARY_MAX_CHARS = 72;
 const EXACTL_PREFIX = "exactl ";
@@ -172,7 +185,8 @@ function docKey(doc: IExaCtlCommandDoc): string {
 
 /** Every doc-rule violation of the tree and the records, sorted by rule and path. */
 export function findDocViolations(input: IDocLintInput): IGrammarViolation[] {
-  const { nodes, docs, nounDocs, globalFlags } = input;
+  const { docs, nounDocs, globalFlags } = input;
+  const nodes = visibleNodes(input.nodes);
   const violations: IGrammarViolation[] = [];
   const leaves = nodes.filter((node) => isLeaf(node, nodes));
   const leafKeys = new Set(leaves.map(pathKey));
@@ -221,9 +235,9 @@ const LONG_FLAG_PREFIX = "--";
 const SHORT_FLAG_LENGTH = 2;
 
 /** Every short flag whose letter is not assigned to that long option by the short-flag policy. */
-export function findShortFlagViolations(nodes: readonly ICommandTreeNode[]): IGrammarViolation[] {
+export function findShortFlagViolations(allNodes: readonly ICommandTreeNode[]): IGrammarViolation[] {
   const violations: IGrammarViolation[] = [];
-  for (const node of nodes) {
+  for (const node of visibleNodes(allNodes)) {
     for (const option of node.options) {
       const long = option.flags.find((flag) => flag.startsWith(LONG_FLAG_PREFIX));
       for (

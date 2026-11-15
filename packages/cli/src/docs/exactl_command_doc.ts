@@ -7,7 +7,6 @@
  * @related-files [packages/cli/src/errors/exactl_errors.ts, packages/cli/src/types/exactl_output_types.ts, apps/exactl/src/command_docs/mod.ts]
  */
 
-import type { Command } from "@cliffy/command";
 import { ExaCtlExitCode } from "../errors/exactl_errors.ts";
 import type { ExaCtlOutputKind } from "../types/exactl_output_types.ts";
 
@@ -78,8 +77,14 @@ export function renderDocForTerminal(doc: IExaCtlCommandDoc, lifecycle: readonly
   return sections.join(DOC_LINE_END + DOC_LINE_END);
 }
 
+/** The two cliffy methods that a doc record fills. A command with any option set satisfies it. */
+interface IDocumentable {
+  description(text: string): void;
+  example(name: string, description: string): void;
+}
+
 /** Applies a doc record to a command: the summary is the first description line and every example is added. */
-export function documented<T extends Command>(
+export function documented<T extends IDocumentable>(
   command: T,
   doc: IExaCtlCommandDoc,
   lifecycle: readonly string[] = [],

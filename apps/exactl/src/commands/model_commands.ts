@@ -108,9 +108,15 @@ const AGGREGATOR_SERVICES: ReadonlySet<string> = new Set(["openrouter"]);
 /** How a service reaches the model. Until prices belong to an access route, the adapter name decides. */
 type AccessRoute = "native" | "subscription" | "local" | "aggregator";
 
+const ROUTE_SUBSCRIPTION: AccessRoute = "subscription";
+const ROUTE_LOCAL: AccessRoute = "local";
+
+/** The routes whose models need no price in the registry: a subscription is flat, a local model is free. */
+export const ROUTES_WITHOUT_PRICE: ReadonlySet<string> = new Set<AccessRoute>([ROUTE_SUBSCRIPTION, ROUTE_LOCAL]);
+
 function deriveRoute(service: string): AccessRoute {
-  if (service.endsWith(SUBSCRIPTION_SUFFIX)) return "subscription";
-  if (LOCAL_SERVICES.has(service)) return "local";
+  if (service.endsWith(SUBSCRIPTION_SUFFIX)) return ROUTE_SUBSCRIPTION;
+  if (LOCAL_SERVICES.has(service)) return ROUTE_LOCAL;
   if (AGGREGATOR_SERVICES.has(service)) return "aggregator";
   return "native";
 }

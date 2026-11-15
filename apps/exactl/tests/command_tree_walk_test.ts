@@ -56,3 +56,18 @@ Deno.test("walkCommandTree reports aliases, arguments, options and examples of a
   assertEquals(node?.examples, [{ name: "List everything", description: "exactl thing list all" }]);
   assertStrictEquals(node?.command, leaf);
 });
+
+Deno.test("the hidden completion helper and the children of a hidden command are marked hidden", () => {
+  const tree = new Command().name("exactl").command(
+    "completion",
+    new Command().command("bash", new Command()).command("complete", new Command().hidden()),
+  ).command("completions", new Command().hidden().command("bash", new Command()));
+  const nodes = walkCommandTree(tree);
+  assertEquals(nodes.map((node) => [node.path.join(" "), node.hidden]), [
+    ["completion", false],
+    ["completion bash", false],
+    ["completion complete", true],
+    ["completions", true],
+    ["completions bash", true],
+  ]);
+});

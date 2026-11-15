@@ -11,10 +11,11 @@ import * as pathBuilders from "@exaix/shared";
 import { RequestSource } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
+import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { Database } from "@db/sqlite";
-import { DaemonCommands } from "../src/commands/daemon_commands.ts";
+import { DaemonCommands, DaemonPidState } from "../src/commands/daemon_commands.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
@@ -520,6 +521,33 @@ describe("DaemonCommands", {
       assertEquals(await exists(pidFile), false);
     });
 
+    it("inspectPid reports stale for a dead PID and leaves the file", async () => {
+      await Deno.writeTextFile(pidFile, "99999");
+
+      assertEquals(await daemonCommands.inspectPid(), { state: DaemonPidState.STALE, pid: 99999 });
+      assertEquals(await exists(pidFile), true);
+    });
+
+    it("inspectPid reports absent without a PID file and alive for a live process", async () => {
+      assertEquals(await daemonCommands.inspectPid(), { state: DaemonPidState.ABSENT });
+
+      const child = new Deno.Command("sleep", { args: ["60"], stdout: "null", stderr: "null" }).spawn();
+      try {
+        await Deno.writeTextFile(pidFile, String(child.pid));
+        assertEquals(await daemonCommands.inspectPid(), { state: DaemonPidState.ALIVE, pid: child.pid });
+      } finally {
+        child.kill("SIGKILL");
+        await child.status;
+      }
+    });
+
+    it("status still removes a stale PID file", async () => {
+      await Deno.writeTextFile(pidFile, "99999");
+
+      assertEquals((await daemonCommands.status()).running, false);
+      assertEquals(await exists(pidFile), false);
+    });
+
     it("should handle invalid PID file content", async () => {
       // Write invalid PID
       await Deno.writeTextFile(pidFile, "not-a-number");
@@ -916,11 +944,10 @@ describe("DaemonCommands - version fields in status() (Step 5)", {
   });
 });
 
-describe("DaemonCommands - migrate() compatibility check (Step 6)", {
+describe("DaemonCommands - checkMigration() compatibility check", {
   sanitizeResources: false,
   sanitizeOps: false,
 }, () => {
-  let daemonCommands: DaemonCommands;
   let _tempDir: string;
   let cleanup: () => Promise<void>;
 
@@ -936,48 +963,56 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
     const result = await createCliTestContext();
     _tempDir = result.tempDir;
     cleanup = result.cleanup;
-    daemonCommands = new DaemonCommands(createStubContext({ config: result.configService }));
   });
 
   afterEach(async () => {
     await cleanup();
   });
 
-  it("migrate({check:true}) returns 0 when versions match", () => {
+  it("checkMigration() returns 0 when versions match", () => {
     // Both binary and on-disk are WORKSPACE_SCHEMA_VERSION == "1.0.0"
     const cmd = makeCommandsWithOnDiskSchema(WORKSPACE_SCHEMA_VERSION);
-    const exitCode = cmd.migrate({ check: true }).exitCode;
+    const exitCode = cmd.checkMigration().exitCode;
     assertEquals(exitCode, 0);
   });
 
-  it("migrate({check:true}) returns 1 when binary minor > on-disk minor", () => {
+  it("checkMigration() returns 1 when binary minor > on-disk minor", () => {
     // Binary declares higher version, on-disk is lower
     const cmd = makeCommandsWithOnDiskSchema("1.0.0");
     // When on-disk is lower than binary, it returns 1 (migration required)
-    const exitCode = cmd.migrate({ check: true }).exitCode;
+    const exitCode = cmd.checkMigration().exitCode;
     assertEquals(exitCode, 1);
   });
 
-  it("migrate({check:true}) returns 2 when on-disk minor > binary minor", () => {
+  it("checkMigration() returns 2 when on-disk minor > binary minor", () => {
     // Simulate workspace is ahead: on-disk = 9.9.0 > binary = 1.0.0
     const cmd = makeCommandsWithOnDiskSchema("9.9.0");
-    const exitCode = cmd.migrate({ check: true }).exitCode;
+    const exitCode = cmd.checkMigration().exitCode;
     assertEquals(exitCode, 2);
   });
 
-  it("migrate({check:false}) returns 0 immediately", () => {
-    const exitCode = daemonCommands.migrate({ check: false }).exitCode;
-    assertEquals(exitCode, 0);
+  it("checkMigration returns the compatibility result without printing", () => {
+    const lines: string[] = [];
+    const log = stub(console, "log", (...parts: string[]) => {
+      lines.push(parts.join(" "));
+    });
+    try {
+      const check = makeCommandsWithOnDiskSchema("9.9.0").checkMigration();
+      assertEquals([check.exitCode, check.status], [2, "mismatch"]);
+    } finally {
+      log.restore();
+    }
+    assertEquals(lines, []);
   });
 
-  it("migrate({check:true}) returns a status and a message with the exit code", () => {
-    const check = makeCommandsWithOnDiskSchema(WORKSPACE_SCHEMA_VERSION).migrate({ check: true });
+  it("checkMigration() returns a status and a message with the exit code", () => {
+    const check = makeCommandsWithOnDiskSchema(WORKSPACE_SCHEMA_VERSION).checkMigration();
     assertEquals([check.exitCode, check.status], [0, "ok"]);
     assertStringIncludes(check.message, "up to date");
   });
 
-  it("migrate({check:true}) reports a mismatch with its status", () => {
-    const check = makeCommandsWithOnDiskSchema("9.9.0").migrate({ check: true });
+  it("checkMigration() reports a mismatch with its status", () => {
+    const check = makeCommandsWithOnDiskSchema("9.9.0").checkMigration();
     assertEquals([check.exitCode, check.status], [2, "mismatch"]);
   });
 });

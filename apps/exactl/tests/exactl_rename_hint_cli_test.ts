@@ -42,6 +42,11 @@ Deno.test("each removed journal path names its log replacement", async () => {
   await assertHint(["cost", "--group-by", "model"], "exactl log cost");
 });
 
+Deno.test("exactl migrate check exits 2 with the doctor --schema hint", async () => {
+  await assertHint(["migrate", "check"], "exactl doctor --schema");
+  await assertHint(["migrate"], "exactl doctor --schema");
+});
+
 Deno.test("the removed skills paths name the skill noun", async () => {
   await assertHint(["skills", "list"], "exactl skill list");
   await assertHint(["memory", "skill", "list"], "exactl skill list");

@@ -101,6 +101,18 @@ Deno.test("the JSON manifest lists every leaf exactly once", () => {
   assertEquals([...listed].sort(), EXACTL_COMMAND_DOCS.map((doc) => doc.path.join(" ")).sort());
 });
 
+Deno.test("a hidden command has no page and no manifest entry", () => {
+  const { reference } = soloReference();
+  assert(!reference.files.has("completions.md"));
+  const listed = manifestOf(reference.files).commands.map((command) => command.path.join(" "));
+  assert(!listed.some((path) => path.includes("complete")));
+  assertEquals(listed.filter((path) => path.startsWith("completion ")), [
+    "completion bash",
+    "completion fish",
+    "completion zsh",
+  ]);
+});
+
 Deno.test("the Solo output contains no Team-only leaf", () => {
   const { reference } = soloReference();
   for (const [name, content] of reference.files) assert(!content.includes("export-otel"), name);

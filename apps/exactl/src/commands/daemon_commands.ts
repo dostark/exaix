@@ -32,6 +32,18 @@ interface IDaemonStartOptions {
   readyTimeoutMs?: number;
 }
 
+export enum DaemonPidState {
+  ABSENT = "absent",
+  ALIVE = "alive",
+  STALE = "stale",
+}
+
+/** What the PID file says. The pid is absent when there is no usable file. */
+export interface IDaemonPidInspection {
+  state: DaemonPidState;
+  pid?: Opt<number, Reason.OptionalInput>;
+}
+
 /** The result of a migration check: the exit code, a status word and the message for a person. */
 export interface IMigrationCheck {
   exitCode: number;
@@ -326,27 +338,24 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
+  /** Reads the PID file and probes the process. It never removes the file. */
+  async inspectPid(): Promise<IDaemonPidInspection> {
+    if (!await exists(this.pidFile)) return { state: DaemonPidState.ABSENT };
+    const pid = parseInt((await Deno.readTextFile(this.pidFile)).trim(), 10);
+    if (isNaN(pid)) return { state: DaemonPidState.ABSENT };
+    return { state: await isProcessAlive(pid) ? DaemonPidState.ALIVE : DaemonPidState.STALE, pid };
+  }
+
   async status(): Promise<IDaemonStatus> {
     const version = BINARY_VERSION;
     const workspace_schema_version = WORKSPACE_SCHEMA_VERSION;
 
-    // Check if PID file exists
-    if (!await exists(this.pidFile)) {
-      return { running: false, version, workspace_schema_version };
-    }
+    const inspection = await this.inspectPid();
+    if (inspection.state === DaemonPidState.ABSENT) return { running: false, version, workspace_schema_version };
+    const pid = inspection.pid as number;
 
-    // Read PID
-    const pidStr = await Deno.readTextFile(this.pidFile);
-    const pid = parseInt(pidStr.trim(), 10);
-
-    if (isNaN(pid)) {
-      return { running: false, version, workspace_schema_version };
-    }
-
-    // Check if process is running
     try {
-      const alive = await isProcessAlive(pid);
-      if (!alive) {
+      if (inspection.state === DaemonPidState.STALE) {
         // Process not running, clean up PID file
         await Deno.remove(this.pidFile).catch(() => {});
         return { running: false, version, workspace_schema_version };
@@ -375,9 +384,7 @@ export class DaemonCommands extends BaseCommand {
   }
 
   /** Check migration compatibility; exit codes: 0 up to date, 1 migration required, 2 binary older. */
-  migrate(options: { check?: boolean } = {}): IMigrationCheck {
-    if (!options.check) return { exitCode: 0, status: MIGRATION_STATUS_OK, message: "" };
-
+  checkMigration(): IMigrationCheck {
     const binaryWsv = WORKSPACE_SCHEMA_VERSION;
     const onDiskWsv = (() => {
       try {

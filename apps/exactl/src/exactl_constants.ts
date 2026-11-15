@@ -24,7 +24,8 @@ export enum ExaCtlCommandName {
   LOG = "log",
   MODEL = "model",
   VERSION = "version",
-  MIGRATE = "migrate",
+  DOCTOR = "doctor",
+  COMPLETION = "completion",
   SKILL = "skill",
   EVAL = "eval",
 }

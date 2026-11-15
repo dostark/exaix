@@ -40,7 +40,13 @@ import { buildPlanCommand } from "./command_builders/plan_command.ts";
 import { buildReviewCommand } from "./command_builders/review_command.ts";
 import { buildApprovalCommand, exitWhenSourceTimedOut } from "./command_builders/approval_command.ts";
 import { buildGitCommand } from "./command_builders/git_command.ts";
-import { buildDaemonCommand, buildMigrateCommand, buildVersionCommand } from "./command_builders/daemon_command.ts";
+import { buildDaemonCommand, buildVersionCommand } from "./command_builders/daemon_command.ts";
+import { buildDoctorCommand } from "./command_builders/doctor_command.ts";
+import {
+  buildCompletionCommand,
+  buildScriptCallbackCommand,
+  SCRIPT_CALLBACK_COMMAND,
+} from "./command_builders/completion_command.ts";
 import { buildPortalCommand } from "./command_builders/portal_command.ts";
 import { buildConfigCommand } from "./command_builders/config_command.ts";
 import { buildBlueprintCommand } from "./command_builders/blueprint_command.ts";
@@ -304,7 +310,9 @@ baseCommand
   .command(ExaCtlCommandName.LOG, buildLogCommand(runtime))
   .command(ExaCtlCommandName.MODEL, buildModelCommand(runtime))
   .command(ExaCtlCommandName.VERSION, buildVersionCommand(runtime))
-  .command(ExaCtlCommandName.MIGRATE, buildMigrateCommand(runtime))
+  .command(ExaCtlCommandName.DOCTOR, buildDoctorCommand(runtime))
+  .command(ExaCtlCommandName.COMPLETION, buildCompletionCommand())
+  .command(SCRIPT_CALLBACK_COMMAND, buildScriptCallbackCommand())
   .command(ExaCtlCommandName.SKILL, buildSkillCommand(runtime))
   .command(ExaCtlCommandName.EVAL, buildEvalCommand(runtime));
 

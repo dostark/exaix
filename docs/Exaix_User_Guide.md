@@ -1051,14 +1051,14 @@ exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]
 
 A noun is an Exaix entity, such as `request`, `plan` or `skill`. A verb comes from one closed set, such as
 `list`, `show`, `create`, `approve`, `reject`, `cancel` and `run`. A command never glues a verb to a noun, so a
-bulk decision is `exactl plan approve --all` and not a separate leaf. The 19 root commands form four groups:
+bulk decision is `exactl plan approve --all` and not a separate leaf. The 20 root commands form four groups:
 
 | Group       | Roots                                                        |
 | ----------- | ------------------------------------------------------------ |
 | Work        | `request`, `plan`, `review`, `flow`, `approval`              |
 | Definitions | `blueprint`, `skill`, `portal`, `memory`, `model`            |
 | Operations  | `daemon`, `log`, `git`, `mcp`, `config`, `eval`, `dashboard` |
-| System      | `version`, `migrate`                                         |
+| System      | `version`, `doctor`, `completion`                            |
 
 Run `exactl <noun> --help` to list the verbs of a noun. A request starts with
 `exactl request create "<description>"`, and `exactl flow run <flow-id> "<description>"` starts one through a
@@ -1183,6 +1183,11 @@ The table lists every `exactl` command with its summary. It is generated from th
 | `exactl model candidates`          | Curate the model candidate lists                    | [model](cli/model.md#exactl-model-candidates)            |
 | `exactl model route explain`       | Explain the routing of a request                    | [model](cli/model.md#exactl-model-route-explain)         |
 | `exactl model route validate`      | Validate a routing policy file                      | [model](cli/model.md#exactl-model-route-validate)        |
+| `exactl version`                   | Show the binary and workspace schema versions       | [version](cli/version.md)                                |
+| `exactl doctor`                    | Check the health of the installation                | [doctor](cli/doctor.md)                                  |
+| `exactl completion bash`           | Print the bash completion script                    | [completion](cli/completion.md#exactl-completion-bash)   |
+| `exactl completion fish`           | Print the fish completion script                    | [completion](cli/completion.md#exactl-completion-fish)   |
+| `exactl completion zsh`            | Print the zsh completion script                     | [completion](cli/completion.md#exactl-completion-zsh)    |
 | `exactl skill list`                | List skills                                         | [skill](cli/skill.md#exactl-skill-list)                  |
 | `exactl skill show`                | Show a skill                                        | [skill](cli/skill.md#exactl-skill-show)                  |
 | `exactl skill match`               | Match skills for a request                          | [skill](cli/skill.md#exactl-skill-match)                 |
@@ -3669,12 +3674,12 @@ The journal is the primary audit surface — every `config.set`, `plan.approved`
 
 #### **Migrate Command** - Check workspace schema compatibility
 
-When upgrading Exaix, the workspace schema version may change. `exactl migrate check`
+When upgrading Exaix, the workspace schema version may change. `exactl doctor --schema`
 compares the binary's expected schema version against the workspace's stored version.
 
 ```bash
 # Check schema compatibility
-exactl migrate check
+exactl doctor --schema
 ```
 
 If versions mismatch, the command reports the expected and actual versions and
@@ -3732,7 +3737,7 @@ exactl version
 
 The output includes `binary_version` (the daemon/CLI release) and
 `workspace_schema_version` (the data schema expected by the current workspace).
-If these mismatch, run `exactl migrate check` for details.
+If these mismatch, run `exactl doctor --schema` for details.
 
 ---
 
@@ -3802,7 +3807,7 @@ exactl log list --count                    # Count activities by type
 
 # System info and evaluation
 exactl version                            # Show binary and schema version
-exactl migrate check                      # Check schema compatibility
+exactl doctor --schema                      # Check schema compatibility
 exactl approval list                      # List every pending human decision
 exactl eval run --pack smoke              # Run an evaluation scenario
 ```

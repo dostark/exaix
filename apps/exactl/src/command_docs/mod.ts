@@ -27,6 +27,7 @@ import { PORTAL_DOCS, PORTAL_NOUN_DOC } from "./portal_docs.ts";
 import { REQUEST_DOCS, REQUEST_NOUN_DOC } from "./request_docs.ts";
 import { REVIEW_DOCS, REVIEW_NOUN_DOC } from "./review_docs.ts";
 import { SKILL_DOCS, SKILL_NOUN_DOC } from "./skill_docs.ts";
+import { COMPLETION_NOUN_DOC, SYSTEM_DOCS } from "./system_docs.ts";
 
 export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   REQUEST_NOUN_DOC,
@@ -45,6 +46,7 @@ export const EXACTL_NOUN_DOCS: readonly IExaCtlNounDoc[] = [
   LOG_NOUN_DOC,
   MODEL_NOUN_DOC,
   EVAL_NOUN_DOC,
+  COMPLETION_NOUN_DOC,
 ];
 
 export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
@@ -65,6 +67,7 @@ export const EXACTL_COMMAND_DOCS: readonly IExaCtlCommandDoc[] = [
   ...LOG_DOCS,
   ...MODEL_DOCS,
   ...EVAL_DOCS,
+  ...SYSTEM_DOCS,
 ];
 
 const PATH_SEPARATOR = " ";

@@ -85,6 +85,8 @@ export interface ICommandTreeNode {
   options: ICommandTreeOption[];
   description: string;
   examples: ICommandTreeExample[];
+  /** True for a command that the help does not list, such as the completion helper. */
+  hidden: boolean;
   /** The cliffy command object, for identity checks. */
   command: IWalkableCommand;
 }
@@ -117,7 +119,7 @@ export function globalOptionsOf(root: IWalkableRoot): ICommandTreeOption[] {
   return root.getOptions(true).filter((option) => option.global === true).map(toOption);
 }
 
-function toNode(command: IWalkableCommand, path: string[]): ICommandTreeNode {
+function toNode(command: IWalkableCommand, path: string[], hidden: boolean): ICommandTreeNode {
   return {
     path,
     aliases: command.getAliases(),
@@ -128,18 +130,25 @@ function toNode(command: IWalkableCommand, path: string[]): ICommandTreeNode {
     })),
     options: command.getBaseOptions(true).map(toOption),
     description: command.getDescription(),
+    hidden,
     examples: command.getExamples().map(({ name, description }) => ({ name, description })),
     command,
   };
 }
 
 /** Every descendant of `root` in registration order. The root itself and `help` are left out. */
-export function walkCommandTree(root: IWalkableCommand, parentPath: string[] = []): ICommandTreeNode[] {
+export function walkCommandTree(
+  root: IWalkableCommand,
+  parentPath: string[] = [],
+  parentHidden = false,
+): ICommandTreeNode[] {
   const nodes: ICommandTreeNode[] = [];
+  const listed = new Set(root.getBaseCommands(false));
   for (const child of root.getBaseCommands(true)) {
     if (child.getName() === HELP_COMMAND_NAME) continue;
     const path = [...parentPath, child.getName()];
-    nodes.push(toNode(child, path), ...walkCommandTree(child, path));
+    const hidden = parentHidden || !listed.has(child);
+    nodes.push(toNode(child, path, hidden), ...walkCommandTree(child, path, hidden));
   }
   return nodes;
 }

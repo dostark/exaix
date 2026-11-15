@@ -370,6 +370,11 @@ async function createDatabase(
   return createDatabaseStub();
 }
 
+/** The provider for `model`. It throws when the provider cannot start, for example without its credential. */
+export async function createProvider(cfg: ReturnType<ConfigService["get"]>, model: string): Promise<IModelProvider> {
+  return await ProviderFactory.createByName(cfg, model);
+}
+
 /** The provider of one initialization, or a stub when its credentials fail. */
 async function createProviderOrStub(
   cfg: ReturnType<ConfigService["get"]>,
@@ -377,7 +382,7 @@ async function createProviderOrStub(
   displayLogger: EventLogger,
 ): Promise<IModelProvider> {
   try {
-    return await ProviderFactory.createByName(cfg, model);
+    return await createProvider(cfg, model);
   } catch (error) {
     displayLogger.warn(DomainEventType.RequestProviderSelectionFailed, ActivityActor.SYSTEM, {
       message: `AI provider unavailable (${error}). Commands that need a model will fail.`,

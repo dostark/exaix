@@ -1,18 +1,21 @@
 {
   "root-name": [],
   "sub-noun": [],
-  "leaf-verb": [],
+  "leaf-verb": [
+    "completion bash",
+    "completion fish",
+    "completion zsh"
+  ],
   "compound-leaf": [],
   "duplicate-handler": [],
-  "doc-record": [
-    "migrate check",
-    "version"
-  ],
+  "doc-record": [],
   "doc-example": [],
   "doc-see-also": [],
-  "doc-noun": [
-    "migrate"
-  ],
+  "doc-noun": [],
   "doc-output-kind": [],
-  "short-flag": []
+  "short-flag": [
+    "completion bash -n",
+    "completion fish -n",
+    "completion zsh -n"
+  ]
 }

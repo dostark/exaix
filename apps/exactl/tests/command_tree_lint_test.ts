@@ -97,15 +97,18 @@ Deno.test("the compound-leaf allow-list is empty", () => {
   assertEquals(allowlist["compound-leaf"], []);
 });
 
-Deno.test("the grammar allow-list is empty", () => {
+Deno.test("doctor is a root action and the completion children are the only allow-listed leaf verbs", () => {
+  assertEquals(allowlist["leaf-verb"], ["completion bash", "completion fish", "completion zsh"]);
   const grammar = [
     allowlist["root-name"],
     allowlist["sub-noun"],
-    allowlist["leaf-verb"],
     allowlist["compound-leaf"],
     allowlist["duplicate-handler"],
   ];
   assertEquals(grammar.flat(), []);
+  const violations = findGrammarViolations(liveNodes);
+  assertEquals(violations.filter((violation) => violation.path === "doctor"), []);
+  assertEquals(violations.filter((violation) => violation.path.startsWith("completion complete")), []);
 });
 
 const GLOBAL_OPTION_FLAGS = ["--json", "--output", "-o", "--quiet", "-q", "--yes", "-y", "--no-color", "--no-input"];
@@ -165,7 +168,16 @@ Deno.test("every record declares an output kind and only the named leaves are PR
   const protocol = EXACTL_COMMAND_DOCS.filter((doc) => doc.output === ExaCtlOutputKind.PROTOCOL).map((doc) =>
     doc.path.join(" ")
   );
-  assertEquals(protocol, ["daemon logs", "mcp serve", "dashboard", "eval report", "eval calibration score"]);
+  assertEquals(protocol, [
+    "daemon logs",
+    "mcp serve",
+    "dashboard",
+    "eval report",
+    "eval calibration score",
+    "completion bash",
+    "completion fish",
+    "completion zsh",
+  ]);
 });
 
 Deno.test("the doc rules have no allow-list entries for the documented nouns", () => {

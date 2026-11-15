@@ -213,6 +213,7 @@
     "@std/testing": "jsr:@std/testing@^1.0.20",
     "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
     "@cliffy/command": "jsr:@cliffy/command@^1.2.1",
+    "@cliffy/command/completions": "jsr:@cliffy/command@^1.2.1/completions",
     "zod": "npm:zod@^4.4.3",
     "typescript": "npm:typescript@6.0.3",
     "@babel/parser": "npm:@babel/parser@7.29.8",

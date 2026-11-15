@@ -70,6 +70,8 @@ export const EXACTL_RENAMES: readonly IExaCtlRename[] = [
   { legacy: ["log", LEGACY_JOURNAL, "verify"], canonical: "exactl log verify" },
   { legacy: ["cost"], canonical: "exactl log cost" },
   { legacy: [LEGACY_JOURNAL, "export-otel"], canonical: "exactl log export-otel" },
+  { legacy: ["migrate"], canonical: "exactl doctor --schema" },
+  { legacy: ["migrate", "check"], canonical: "exactl doctor --schema" },
   { legacy: ["skills"], canonical: "exactl skill" },
   { legacy: [LEGACY_MEMORY, "skill"], canonical: "exactl skill" },
   { legacy: ["models"], canonical: "exactl model" },

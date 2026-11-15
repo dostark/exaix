@@ -32,9 +32,15 @@ description: "Every exactl command with its options, examples and exit codes"
 - [model](model.md): Inspect the model registry and choose the models
 - [eval](eval.md): Run evaluation scenarios and read their history
 
+## System
+
+- [completion](completion.md): Print shell completion scripts
+
 ## Other
 
 - [dashboard](dashboard.md): Open the interactive dashboard
+- [version](version.md): Show the binary and workspace schema versions
+- [doctor](doctor.md): Check the health of the installation
 
 ## Global options
 

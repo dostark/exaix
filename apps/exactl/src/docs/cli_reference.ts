@@ -293,7 +293,7 @@ export function renderCliReference(input: ICliReferenceInput): ICliReference {
   const docs = new Map(input.commandDocs.map((doc) => [pathKey(doc.path), doc]));
   const leaves: ILeaf[] = walkCommandTree(input.root).flatMap((node) => {
     const doc = docs.get(pathKey(node.path));
-    if (doc === undefined) return [];
+    if (doc === undefined || node.hidden) return [];
     if (!solo && input.soloPaths?.has(pathKey(node.path))) return [];
     return [{ node, doc }];
   });
