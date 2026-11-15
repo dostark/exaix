@@ -8,20 +8,15 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { walk } from "@std/fs";
-import { fromFileUrl } from "@std/path";
-import { parse } from "@std/yaml";
 import { createExaCtlCommand } from "@exaix/app-exactl/exactl";
-import type { JSONValue } from "@exaix/core/types";
 import { readFixtureTextSync } from "@exaix/testing";
+import { FRAMEWORK_HOME, loadExaCtlSteps } from "./helpers/exactl_scenario_steps.ts";
 import {
   globalOptionsOf,
   type ICommandTreeNode,
   walkCommandTree,
 } from "../../../../apps/exactl/src/docs/command_tree_walk.ts";
 
-const FRAMEWORK_HOME = fromFileUrl(new URL("../../", import.meta.url));
-const EXACTL_STEP_TYPE = "exactl";
 const OPTION_PREFIX = "-";
 const LONG_OPTION_PREFIX = "--";
 const OPTION_TERMINATOR = "--";
@@ -34,37 +29,9 @@ const rootCommand = createExaCtlCommand();
 /** The global options every exactl command accepts, such as --json and --output. */
 const GLOBAL_OPTIONS: ReadonlySet<string> = new Set(globalOptionsOf(rootCommand).flatMap((option) => option.flags));
 
-interface IExaCtlStep {
-  file: string;
-  id: string;
-  command: string;
-  args: string[];
-}
-
 interface IStepResolution {
   node: ICommandTreeNode | undefined;
   unknownOptions: string[];
-}
-
-function collectSteps(file: string, value: JSONValue, steps: IExaCtlStep[]): void {
-  if (Array.isArray(value)) {
-    for (const item of value) collectSteps(file, item, steps);
-    return;
-  }
-  if (value === null || typeof value !== "object") return;
-  if (value.type === EXACTL_STEP_TYPE && typeof value.command === "string") {
-    const args = Array.isArray(value.args) ? value.args.map(String) : [];
-    steps.push({ file, id: String(value.id ?? ""), command: value.command, args });
-  }
-  for (const child of Object.values(value)) collectSteps(file, child, steps);
-}
-
-async function loadExaCtlSteps(): Promise<IExaCtlStep[]> {
-  const steps: IExaCtlStep[] = [];
-  for await (const entry of walk(FRAMEWORK_HOME, { exts: [".yaml", ".yml"], includeDirs: false })) {
-    collectSteps(entry.path, parse(await Deno.readTextFile(entry.path)) as JSONValue, steps);
-  }
-  return steps;
 }
 
 function hasPath(nodes: readonly ICommandTreeNode[], path: readonly string[]): ICommandTreeNode | undefined {

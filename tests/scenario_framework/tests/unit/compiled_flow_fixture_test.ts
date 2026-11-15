@@ -8,6 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
+import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { startCompiledFlowDaemon } from "../helpers/compiled_flow_fixture.ts";
 
@@ -72,7 +73,7 @@ for (const emitsReady of [true, false]) {
         enumerable: commandDescriptor.enumerable,
       });
       const code = await startCompiledFlowDaemon(tempDir, { cli: "fixture-cli", daemon: "fixture-daemon" });
-      assertEquals(code, emitsReady ? 0 : 1);
+      assertEquals(code, emitsReady ? ExaCtlExitCode.OK : ExaCtlExitCode.TIMEOUT);
     } finally {
       if (commandDescriptor) Object.defineProperty(Deno, "Command", commandDescriptor);
       await cleanup();

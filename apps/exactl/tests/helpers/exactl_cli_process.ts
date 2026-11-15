@@ -28,7 +28,7 @@ const TEST_ENV_PREFIX = "EXA_TEST";
 const SOLO_EDITION = "solo";
 const TEAM_EDITION = "team";
 
-const SOLO_ENTRY: IExaCtlEntry = { path: join(REPO_ROOT, "apps/exactl/main.ts"), edition: SOLO_EDITION };
+export const SOLO_ENTRY: IExaCtlEntry = { path: join(REPO_ROOT, "apps/exactl/main.ts"), edition: SOLO_EDITION };
 export const TEAM_ENTRY: IExaCtlEntry = {
   path: join(REPO_ROOT, "exaix-team/apps/exactl/main.ts"),
   edition: TEAM_EDITION,

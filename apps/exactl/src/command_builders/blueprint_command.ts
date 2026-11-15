@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
+import { reportRemoval } from "./removal_report.ts";
 import { confirmAction } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
@@ -185,7 +186,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           await confirmAction(runtime, "blueprint remove", `Remove blueprint ${args[0]}?`, options);
           await blueprintCommands.remove(args[0]);
           display.info("blueprint.removed", args[0], { status: "Removed ✓" });
-          await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.REMOVED }], false);
+          await reportRemoval(renderer, args[0]);
         } catch (error) {
           failCommand(error as Error);
         }
