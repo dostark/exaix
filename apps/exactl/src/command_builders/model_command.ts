@@ -27,6 +27,7 @@ import { failCommand } from "./command_failure.ts";
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
+import { numberOf } from "../output/json_narrow.ts";
 
 const DEFAULT_MODEL_NAME = "default";
 const PROVIDER_MODEL_SEPARATOR = ":";
@@ -46,7 +47,8 @@ function parseProviderTarget(target: string): { provider: string; model: Opt<str
 const MODEL_REGISTRY_ID = "model-registry";
 
 function priceText(price: JSONValue): string {
-  return typeof price === "number" ? `$${price}` : EMPTY_CELL;
+  const amount = numberOf(price);
+  return amount !== undefined ? `$${amount}` : EMPTY_CELL;
 }
 
 const MODEL_BASE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
@@ -73,7 +75,7 @@ const EXPLAIN_FIELDS: readonly IExaCtlColumn<IJsonRow>[] = [
 const CANDIDATE_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: ColumnHeader.AGENT, value: (row) => cellText(row.agent_role) },
   { header: "Version", value: (row) => cellText(row.version) },
-  { header: "Score", value: (row) => typeof row.score === "number" ? row.score.toFixed(2) : EMPTY_CELL },
+  { header: "Score", value: (row) => numberOf(row.score)?.toFixed(2) ?? EMPTY_CELL },
 ];
 
 const VALIDATE_FIELDS: readonly IExaCtlColumn<IJsonRow>[] = [
@@ -111,7 +113,7 @@ function createListCommand(runtime: IExaCtlRuntime) {
         await renderModelList(renderer, rows, options.benchmark);
       } catch (error) {
         if (error instanceof ExaCtlError) throw error;
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
 }
@@ -128,7 +130,7 @@ function createRefreshCommand(runtime: IExaCtlRuntime) {
         false,
       );
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
 }
@@ -152,7 +154,7 @@ function createUseCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
 }
@@ -215,7 +217,7 @@ function createCandidatesCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
 }
@@ -246,7 +248,7 @@ function createExplainCommand(runtime: IExaCtlRuntime) {
         await renderer.item(summary, EXPLAIN_FIELDS);
         if (!renderer.machine) await renderer.list(candidates, CANDIDATE_COLUMNS, (row) => cellText(row.agent_role));
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
 }
@@ -266,7 +268,7 @@ function createValidateCommand(runtime: IExaCtlRuntime) {
         throw new ExaCtlError(ExaCtlExitCode.INVALID, `Routing policy is invalid: ${result.path}`);
       }
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
 }

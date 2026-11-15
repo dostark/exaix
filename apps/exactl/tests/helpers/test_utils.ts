@@ -14,6 +14,7 @@ import { RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequest } from "@exaix/core/request";
 import { RequestStatus } from "@exaix/core/status";
 import { join } from "@std/path";
+import { stub } from "@std/testing/mock";
 import { ExaCtlError } from "@exaix/cli/errors/exactl_errors.ts";
 import { ensureDir } from "@std/fs";
 import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
@@ -110,6 +111,32 @@ export async function withTestMod<T>(
       }
     }
   }
+}
+
+/** Runs `fn` as if standard input and standard error were a terminal, so an editor verb does not refuse. */
+export async function withTerminal<T>(fn: () => Promise<T>): Promise<T> {
+  const stdin = stub(Deno.stdin, "isTerminal", () => true);
+  const stderr = stub(Deno.stderr, "isTerminal", () => true);
+  try {
+    return await fn();
+  } finally {
+    stdin.restore();
+    stderr.restore();
+  }
+}
+
+/** The pending wait state that `approval cancel` looks up to find the trace of its consent row. */
+export function stubWaitState(ctx: ExaCtlTestContext, resumeToken: string): void {
+  ctx.waitStateCommands.list = () =>
+    Promise.resolve([{
+      waitStateId: "ws-stub",
+      traceId: "trace-stub",
+      kind: "approval",
+      status: "pending",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+      resumeToken,
+    }]);
 }
 
 export async function captureConsoleOutput(

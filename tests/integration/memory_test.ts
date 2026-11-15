@@ -22,6 +22,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";
 import { MemoryCommands } from "../../apps/exactl/src/commands/memory_commands.ts";
+import { MemoryCurationCommands } from "../../apps/exactl/src/commands/memory_curation_commands.ts";
 import { MemoryBankAdapter, MemoryEmbeddingAdapter, MemoryExtractorAdapter } from "../../apps/common/adapters/mod.ts";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -364,7 +365,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     const extractor = new MemoryExtractorService(config, db, memoryBank);
     context.memoryBank = new MemoryBankAdapter(memoryBank);
     context.extractor = new MemoryExtractorAdapter(extractor);
-    const commands = new MemoryCommands(context);
+    const curationCommands = new MemoryCurationCommands(context);
 
     // Create test data
     await memoryBank.createProjectMemory({
@@ -401,7 +402,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     await extractor.createProposal(learnings[0], execution, execution.agent_role);
 
     // List pending via CLI
-    const pendingList = await commands.pendingList(false);
+    const pendingList = await curationCommands.pendingList(false);
     assertEquals(pendingList.length > 0, true);
 
     // Get the proposal ID
@@ -410,7 +411,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     const proposalId = pending[0].id;
 
     // Approve via CLI
-    const approveResult = await commands.pendingApprove(proposalId);
+    const approveResult = await curationCommands.pendingApprove(proposalId);
     assertEquals(approveResult.id, proposalId);
 
     // Verify no more pending

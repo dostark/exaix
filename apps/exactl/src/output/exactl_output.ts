@@ -19,6 +19,7 @@ import type { JSONValue } from "@exaix/core";
 import { type IDisplayService, type Opt, type Reason, toSafeJson } from "@exaix/core/types";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { OPTION_TERMINATOR } from "../exactl_renames.ts";
+import { stringOf } from "./json_narrow.ts";
 
 /** A JSON object whose values the renderer can print. */
 export interface IJsonRow {
@@ -74,7 +75,8 @@ export const EMPTY_CELL = "-";
 
 /** The text of a string cell value, or the empty-cell mark for anything else. */
 export function cellText(value: Opt<JSONValue, Reason.OptionalInput>): string {
-  return typeof value === "string" && value !== "" ? value : EMPTY_CELL;
+  const text = stringOf(value);
+  return text !== undefined && text !== "" ? text : EMPTY_CELL;
 }
 
 const NO_COLOR_FLAG = "--no-color";
@@ -154,7 +156,7 @@ export function isColorDisabled(argv: readonly string[], env: IEnvironmentReader
 
 /** The global options of a command action. Cliffy merges them into every action's options object. */
 export function readGlobalOptions<T extends object | void>(options: T): IExaCtlGlobalOptions {
-  return (typeof options === "object" ? options : {}) as IExaCtlGlobalOptions;
+  return (options instanceof Object ? options : {}) as IExaCtlGlobalOptions;
 }
 
 /** `--json` means `-o json`. It cannot be combined with another `-o` format. Without either, the verb default applies. */

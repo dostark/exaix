@@ -14,7 +14,7 @@ import { withTestMod } from "./helpers/test_utils.ts";
 Deno.test("memory proposal list --eligible routes to pendingList with eligible flag", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.memoryCommands.pendingList = (eligible?: boolean) => {
+    ctx.memoryCurationCommands.pendingList = (eligible?: boolean) => {
       called = eligible === true;
       return Promise.resolve([]);
     };
@@ -32,11 +32,11 @@ Deno.test("memory proposal approve --dry-run lists the eligible proposals and ap
   await withTestMod(async (mod, ctx) => {
     let dryRun = false;
     let approved = false;
-    ctx.memoryCommands.pendingApproveDryRun = () => {
+    ctx.memoryCurationCommands.pendingApproveDryRun = () => {
       dryRun = true;
       return Promise.resolve([]);
     };
-    ctx.memoryCommands.pendingApprove = () => {
+    ctx.memoryCurationCommands.pendingApprove = () => {
       approved = true;
       return Promise.reject(new Error("must not approve"));
     };

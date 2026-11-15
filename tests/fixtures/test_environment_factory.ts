@@ -7,6 +7,8 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import { MemoryCommands } from "../../apps/exactl/src/commands/memory_commands.ts";
+import { MemoryCurationCommands } from "../../apps/exactl/src/commands/memory_curation_commands.ts";
+import { SkillCommands } from "../../apps/exactl/src/commands/skill_commands.ts";
 import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";
@@ -38,6 +40,8 @@ export interface IMemoryTestEnvironment {
   db: DatabaseService;
   context: ICliApplicationContext;
   commands: MemoryCommands;
+  curationCommands: MemoryCurationCommands;
+  skillCommands: SkillCommands;
   memoryBank: MemoryBankService;
   extractor: MemoryExtractorService;
   cleanup: () => Promise<void>;
@@ -93,6 +97,8 @@ export class TestEnvironmentFactory {
     context.skills = new SkillsAdapter(skills);
 
     const commands = new MemoryCommands(context);
+    const curationCommands = new MemoryCurationCommands(context);
+    const skillCommands = new SkillCommands(context);
 
     const cleanup = async () => {
       await dbCleanup();
@@ -105,6 +111,8 @@ export class TestEnvironmentFactory {
       db,
       context,
       commands,
+      curationCommands,
+      skillCommands,
       memoryBank,
       extractor,
       cleanup,

@@ -8,6 +8,7 @@
  */
 
 import type { Opt, Reason } from "@exaix/core/types";
+import { stringOf } from "../output/json_narrow.ts";
 
 /** The part of a cliffy command that the walker reads. */
 export interface IWalkableCommand {
@@ -95,8 +96,8 @@ export const HELP_COMMAND_NAME = "help";
 
 /** The default of an option as text. A default that cliffy computes at parse time has none. */
 function defaultText(value: Opt<OptionDefault, Reason.OptionalInput>): Opt<string, Reason.OptionalInput> {
-  if (value === undefined || value === null || typeof value === "function") return undefined;
-  return typeof value === "string" ? value : JSON.stringify(value);
+  if (value === undefined || value === null || value instanceof Function) return undefined;
+  return stringOf(value) ?? JSON.stringify(value);
 }
 
 function toOption(option: IWalkableOption): ICommandTreeOption {

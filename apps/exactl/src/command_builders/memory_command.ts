@@ -37,6 +37,7 @@ import {
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
+import { numberOf } from "../output/json_narrow.ts";
 
 const DEFAULT_LIST_LIMIT = 20;
 const INDEX_ID = "memory-index";
@@ -48,7 +49,7 @@ const SEARCH_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: ColumnHeader.TYPE, value: (row) => cellText(row.type) },
   { header: ColumnHeader.PORTAL, value: (row) => cellText(row.portal) },
   { header: ColumnHeader.TITLE, value: (row) => cellText(row.title) },
-  { header: "Score", value: (row) => typeof row.relevance_score === "number" ? row.relevance_score.toFixed(2) : "-" },
+  { header: "Score", value: (row) => numberOf(row.relevance_score)?.toFixed(2) ?? "-" },
 ];
 
 const PROJECT_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
@@ -77,7 +78,7 @@ function splitTags(tags: Opt<string, Reason.OptionalInput>): string[] | undefine
 }
 
 function createMemoryCommand(runtime: IExaCtlRuntime) {
-  const { memoryCommands, display } = runtime;
+  const { memoryCommands, memoryCurationCommands, display } = runtime;
   const formatter = new MemoryFormatter();
   const noun = nounDocFor(ExaCtlCommandName.MEMORY);
 
@@ -164,7 +165,7 @@ function createMemoryCommand(runtime: IExaCtlRuntime) {
         .action(async (options, ...args: string[]) => {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
           await confirmAction(runtime, "memory learning remove", `Remove learning ${args[0]}?`, options);
-          await memoryCommands.deleteLearning(args[0], options.reason);
+          await memoryCurationCommands.deleteLearning(args[0], options.reason);
           display.info("cli.memory.learning.removed", args[0], { status: MutationStatus.DELETED });
           await renderer.mutation(
             [{ id: args[0], action: ExaCtlVerb.REMOVE, status: MutationStatus.DELETED }],
@@ -220,8 +221,8 @@ function createMemoryCommand(runtime: IExaCtlRuntime) {
 }
 
 function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatter) {
-  const { memoryCommands, display } = runtime;
-  const proposalRows = (proposals: Awaited<ReturnType<typeof memoryCommands.pendingList>>): IJsonRow[] =>
+  const { memoryCurationCommands, display } = runtime;
+  const proposalRows = (proposals: Awaited<ReturnType<typeof memoryCurationCommands.pendingList>>): IJsonRow[] =>
     proposals.map((proposal) =>
       toRow({
         ...proposal,
@@ -238,7 +239,7 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
         .option("--eligible", "Show only auto-approval eligible pending proposals")
         .action(async (options) => {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
-          const proposals = await memoryCommands.pendingList(options.eligible === true);
+          const proposals = await memoryCurationCommands.pendingList(options.eligible === true);
           await renderer.list(proposalRows(proposals), PROPOSAL_COLUMNS, (row) => cellText(row.id));
         }),
     )
@@ -246,7 +247,7 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
       `${ExaCtlVerb.SHOW} <proposal-id:string>`,
       new Command().action(async (options, ...args: string[]) => {
         const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
-        const proposal = await memoryCommands.pendingShow(args[0]);
+        const proposal = await memoryCurationCommands.pendingShow(args[0]);
         if (renderer.machine) await renderer.item(toRow(proposal), []);
         else {
           await renderer.block(
@@ -265,7 +266,7 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TABLE);
           if (options.dryRun) {
             if (ids.length > 0 || options.all) throw new ExaCtlError(ExaCtlExitCode.USAGE, DRY_RUN_USAGE);
-            const eligible = await memoryCommands.pendingApproveDryRun();
+            const eligible = await memoryCurationCommands.pendingApproveDryRun();
             await renderer.list(proposalRows(eligible), PROPOSAL_COLUMNS, (row) => cellText(row.id));
             return;
           }
@@ -273,12 +274,12 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
           if (targets.all) {
             await confirmAction(runtime, "memory proposal approve --all", "Approve every pending proposal?", options);
           }
-          const approvals = targets.all ? await memoryCommands.pendingApproveAll() : [];
+          const approvals = targets.all ? await memoryCurationCommands.pendingApproveAll() : [];
           let failure: Error | undefined;
           if (!targets.all) {
             for (const proposalId of targets.ids) {
               try {
-                approvals.push(await memoryCommands.pendingApprove(proposalId));
+                approvals.push(await memoryCurationCommands.pendingApprove(proposalId));
               } catch (error) {
                 failure = error as Error;
                 break;
@@ -312,7 +313,7 @@ function createProposalCommand(runtime: IExaCtlRuntime, formatter: MemoryFormatt
         .option(CLI_OPTION_REASON, "Rejection reason", { required: true })
         .action(async (options, ...args: string[]) => {
           const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
-          await memoryCommands.pendingReject(args[0], options.reason);
+          await memoryCurationCommands.pendingReject(args[0], options.reason);
           display.info("cli.memory.proposal.rejected", args[0], { reason: options.reason });
           await renderer.mutation(
             [{ id: args[0], action: ExaCtlVerb.REJECT, status: MutationStatus.REJECTED, reason: options.reason }],

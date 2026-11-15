@@ -91,7 +91,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       }
       await renderer.list(portals.map(toRow), PORTAL_COLUMNS, (portal) => cellText(portal.alias));
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
   const addCommand = new Command()
@@ -112,7 +112,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const showCommand = new Command().action(async (options, ...args: string[]) => {
@@ -121,7 +121,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       const portal = await portalCommands.show(args[0]);
       await renderer.item(toRow(portal), portalFields(portal));
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
   const removeCommand = new Command()
@@ -133,7 +133,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
         await portalCommands.remove(args[0], { keepCard: options.keepCard });
         await reportRemoval(renderer, args[0]);
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const verifyCommand = new Command()
@@ -148,7 +148,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           display.info("portal.verify.summary", "portals", { healthy: results.length - broken, broken });
         }
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const refreshCommand = new Command().action(async (options, ...args: string[]) => {
@@ -157,7 +157,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       await portalCommands.refresh(args[0]);
       await renderer.mutation([{ id: args[0], action: ExaCtlVerb.REFRESH, status: MutationStatus.REFRESHED }], false);
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
   const analyzeCommand = new Command()
@@ -179,7 +179,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
           await renderer.text(summary);
         }
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const knowledgeShowCommand = new Command().action(async (options, ...args: string[]) => {
@@ -196,7 +196,7 @@ function createPortalCommand(runtime: IExaCtlRuntime) {
       if (renderer.machine) await renderer.item(toRow(knowledge), []);
       else await renderer.text(formatKnowledge(knowledge).join("\n"));
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
 

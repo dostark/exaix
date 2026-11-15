@@ -100,7 +100,7 @@ function addRequestCommands1(runtime: IExaCtlRuntime) {
             const traceId = options.trace ?? (await requestCommands.show(requestId as string)).metadata.trace_id;
             await watchCommandInstance.watch(traceId, renderer);
           } catch (error) {
-            throw toExaCtlError(error as Error);
+            throw toExaCtlError(error);
           }
         }),
     ],

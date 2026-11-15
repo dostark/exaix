@@ -101,8 +101,8 @@ function quoted(value: string): string {
   return JSON.stringify(value);
 }
 
-function frontMatter(fields: ReadonlyArray<readonly [string, string | number]>): string {
-  const lines = fields.map(([key, value]) => `${key}: ${typeof value === "number" ? value : quoted(value)}`);
+function frontMatter(fields: ReadonlyArray<readonly [string, string]>): string {
+  const lines = fields.map(([key, value]) => `${key}: ${value}`);
   return ["---", ...lines, "---"].join(NEWLINE);
 }
 
@@ -232,13 +232,13 @@ function nounPage(
   soloPaths: Opt<ReadonlySet<string>, Reason.OptionalInput>,
 ): string {
   const summary = nounDoc?.summary ?? leaves[0].doc.summary;
-  const fields: Array<readonly [string, string | number]> = [
-    [TITLE_KEY, `${COMMAND_PROGRAM} ${noun}`],
-    [DESCRIPTION_KEY, summary],
-    ["group", groupOf(nounDoc)],
-    ["order", order],
+  const fields: Array<readonly [string, string]> = [
+    [TITLE_KEY, quoted(`${COMMAND_PROGRAM} ${noun}`)],
+    [DESCRIPTION_KEY, quoted(summary)],
+    ["group", quoted(groupOf(nounDoc))],
+    ["order", String(order)],
   ];
-  if (edition === CliEdition.TEAM) fields.push(["edition", edition]);
+  if (edition === CliEdition.TEAM) fields.push(["edition", quoted(edition)]);
   const intro = nounDoc === undefined ? [] : [nounDoc.description];
   const lifecycle = nounDoc !== undefined && nounDoc.lifecycle.length > 0
     ? [`Lifecycle: ${nounDoc.lifecycle.join(" → ")}`]
@@ -276,8 +276,8 @@ function indexPage(
   ];
   return [
     frontMatter([
-      [TITLE_KEY, solo ? "exactl command reference" : "exactl Team command reference"],
-      [DESCRIPTION_KEY, "Every exactl command with its options, examples and exit codes"],
+      [TITLE_KEY, quoted(solo ? "exactl command reference" : "exactl Team command reference")],
+      [DESCRIPTION_KEY, quoted("Every exactl command with its options, examples and exit codes")],
     ]),
     GENERATED_NOTE,
     `# ${solo ? "exactl command reference" : "exactl Team command reference"}`,

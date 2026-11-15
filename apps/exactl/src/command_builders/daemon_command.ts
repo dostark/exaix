@@ -62,7 +62,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
     try {
       await work(actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer);
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   };
   const command = documentedNoun(new Command(), noun)
@@ -123,7 +123,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
             };
             await actionOutput(runtime, options, ExaCtlOutputFormat.TEXT).renderer.item(row, DAEMON_STATUS_FIELDS);
           } catch (error) {
-            failCommand(error as Error);
+            failCommand(error);
           }
         }),
     )
@@ -139,7 +139,7 @@ function createDaemonCommand(runtime: IExaCtlRuntime) {
               display.warn("cli.daemon.logs", DAEMON_ID, { message: "The daemon has not written a log yet." });
             }
           } catch (error) {
-            failCommand(error as Error);
+            failCommand(error);
           }
         }),
     );

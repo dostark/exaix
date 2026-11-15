@@ -17,6 +17,8 @@ import type { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import type { FlowCommands } from "./commands/flow_commands.ts";
 import type { DashboardCommands } from "./commands/dashboard_commands.ts";
 import type { MemoryCommands } from "./commands/memory_commands.ts";
+import type { MemoryCurationCommands } from "./commands/memory_curation_commands.ts";
+import type { SkillCommands } from "./commands/skill_commands.ts";
 import type { ModelCommands } from "./commands/model_commands.ts";
 import type { RoutingCommands } from "./commands/routing_commands.ts";
 import type { ApprovalCommands } from "./commands/approval_commands.ts";
@@ -44,6 +46,8 @@ export interface IExaCtlRuntime {
   readonly flowCommands: FlowCommands;
   readonly dashboardCommands: DashboardCommands;
   readonly memoryCommands: MemoryCommands;
+  readonly memoryCurationCommands: MemoryCurationCommands;
+  readonly skillCommands: SkillCommands;
   readonly approvalCommands: ApprovalCommands;
   readonly evalCommands: EvalCommands;
   readonly modelCommands: ModelCommands;

@@ -29,7 +29,7 @@ import {
 import { MemoryStatus } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
-import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { expectExitWithLogs, stubWaitState, withTestMod } from "./helpers/test_utils.ts";
 import type { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
@@ -992,6 +992,7 @@ Deno.test("approval expire calls waitStateCommands.expire with token and message
 Deno.test("approval cancel calls waitStateCommands.cancel with token and message", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
+    stubWaitState(ctx, "tok-cancel");
     ctx.waitStateCommands.cancel = (token: string, message?: string) => {
       called = true;
       assertEquals(token, "tok-cancel");
@@ -1074,6 +1075,7 @@ Deno.test("approval expire --resolved-by passes the actor through to waitStateCo
 Deno.test("approval cancel --resolved-by passes the actor through to waitStateCommands.cancel", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
+    stubWaitState(ctx, "tok-cancel");
     ctx.waitStateCommands.cancel = (_token: string, _message?: string, resolvedBy?: string) => {
       called = true;
       assertEquals(resolvedBy, "operator:jane");

@@ -15,13 +15,14 @@ import { withCapturedSink } from "./helpers/captured_output.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 
 type MemoryCommands = ExaCtlTestContext["memoryCommands"];
-type Proposal = Awaited<ReturnType<MemoryCommands["pendingList"]>>[number];
+type CurationCommands = ExaCtlTestContext["memoryCurationCommands"];
+type Proposal = Awaited<ReturnType<CurationCommands["pendingList"]>>[number];
 type SearchResults = Awaited<ReturnType<MemoryCommands["search"]>>;
 
 const PROPOSAL = ExaCtlSubNoun.PROPOSAL;
 const JSON_FLAGS = ["-o", "json"];
 
-function approval(id: string): Awaited<ReturnType<MemoryCommands["pendingApprove"]>> {
+function approval(id: string): Awaited<ReturnType<CurationCommands["pendingApprove"]>> {
   return { id, title: `Title ${id}`, mergedTo: "global" };
 }
 
@@ -101,7 +102,7 @@ Deno.test("memory execution list passes the portal and the limit", async () => {
 Deno.test("memory proposal list --eligible lists the eligible proposals", async () => {
   await withTestMod(async (mod, ctx) => {
     let eligible: boolean | undefined;
-    ctx.memoryCommands.pendingList = (flag) => {
+    ctx.memoryCurationCommands.pendingList = (flag) => {
       eligible = flag;
       return Promise.resolve([proposal("p-1")]);
     };
@@ -116,7 +117,7 @@ Deno.test("memory proposal list --eligible lists the eligible proposals", async 
 
 Deno.test("memory proposal approve --all prints one result per approved proposal", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.memoryCommands.pendingApproveAll = () => Promise.resolve([approval("p-1"), approval("p-2")]);
+    ctx.memoryCurationCommands.pendingApproveAll = () => Promise.resolve([approval("p-1"), approval("p-2")]);
     const { out } = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["memory", PROPOSAL, "approve", "--all", "--yes", ...JSON_FLAGS]);
     });
@@ -127,8 +128,8 @@ Deno.test("memory proposal approve --all prints one result per approved proposal
 Deno.test("memory proposal approve --dry-run lists the eligible proposals and approves nothing", async () => {
   await withTestMod(async (mod, ctx) => {
     let approved = false;
-    ctx.memoryCommands.pendingApproveDryRun = () => Promise.resolve([proposal("p-1")]);
-    ctx.memoryCommands.pendingApprove = () => {
+    ctx.memoryCurationCommands.pendingApproveDryRun = () => Promise.resolve([proposal("p-1")]);
+    ctx.memoryCurationCommands.pendingApprove = () => {
       approved = true;
       return Promise.reject(new Error("must not approve"));
     };
@@ -143,7 +144,7 @@ Deno.test("memory proposal approve --dry-run lists the eligible proposals and ap
 Deno.test("memory proposal approve with ids approves each id in order", async () => {
   await withTestMod(async (mod, ctx) => {
     const seen: string[] = [];
-    ctx.memoryCommands.pendingApprove = (id) => {
+    ctx.memoryCurationCommands.pendingApprove = (id) => {
       seen.push(id);
       return Promise.resolve(approval(id));
     };
@@ -158,7 +159,7 @@ Deno.test("memory proposal approve with ids approves each id in order", async ()
 Deno.test("memory proposal approve stops at the first failed id and reports the approved ones", async () => {
   await withTestMod(async (mod, ctx) => {
     const seen: string[] = [];
-    ctx.memoryCommands.pendingApprove = (id) => {
+    ctx.memoryCurationCommands.pendingApprove = (id) => {
       seen.push(id);
       return id === "p-2" ? Promise.reject(new Error(`Proposal not found: ${id}`)) : Promise.resolve(approval(id));
     };
@@ -194,7 +195,7 @@ Deno.test("memory proposal approve --dry-run with an id is a usage error", async
 Deno.test("memory proposal reject prints the id, the action and the status it set", async () => {
   await withTestMod(async (mod, ctx) => {
     let received: [string, string] | undefined;
-    ctx.memoryCommands.pendingReject = (id, reason) => {
+    ctx.memoryCurationCommands.pendingReject = (id, reason) => {
       received = [id, reason];
       return Promise.resolve();
     };
@@ -209,7 +210,7 @@ Deno.test("memory proposal reject prints the id, the action and the status it se
 Deno.test("memory learning remove calls deleteLearning with the id and reason", async () => {
   await withTestMod(async (mod, ctx) => {
     let received: [string, string | undefined] | undefined;
-    ctx.memoryCommands.deleteLearning = (learningId, reason) => {
+    ctx.memoryCurationCommands.deleteLearning = (learningId, reason) => {
       received = [learningId, reason ?? undefined];
       return Promise.resolve();
     };
@@ -255,7 +256,7 @@ Deno.test("memory project show, execution show and proposal show print one JSON 
       Promise.resolve({ trace_id: "t-1", status: "completed", portal: "api" } as Awaited<
         ReturnType<MemoryCommands["executionShow"]>
       >);
-    ctx.memoryCommands.pendingShow = () => Promise.resolve(proposal("p-1"));
+    ctx.memoryCurationCommands.pendingShow = () => Promise.resolve(proposal("p-1"));
     const project = await withCapturedSink(ctx.outputSink, async () => {
       await mod.__test_command.parse(["memory", "project", "show", "api", ...JSON_FLAGS]);
     });

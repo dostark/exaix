@@ -66,7 +66,7 @@ function createPerform(runtime: IExaCtlRuntime): TPerform {
       await flushLines(renderer, action);
     } catch (error) {
       if (error instanceof ExaCtlError) throw error;
-      failCommand(error as Error);
+      failCommand(error);
     }
   };
 }

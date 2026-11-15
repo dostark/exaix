@@ -80,7 +80,7 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
     try {
       await work(actionOutput(runtime, options, textFormat), options, ...args);
     } catch (error) {
-      throw toExaCtlError(error as Error);
+      throw toExaCtlError(error);
     }
   };
 

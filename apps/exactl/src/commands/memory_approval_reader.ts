@@ -3,7 +3,7 @@
  * @path apps/exactl/src/commands/memory_approval_reader.ts
  * @description Reads the memory items that wait for a human decision: proposals of the memory extractor and draft skills.
  * @architectural-layer CLI
- * @dependencies ["apps/exactl/src/commands/memory_commands.ts", "@exaix/cli/base.ts"]
+ * @dependencies ["apps/exactl/src/commands/skill_commands.ts", "@exaix/cli/base.ts"]
  * @related-files ["apps/exactl/src/commands/approval_sources.ts", "apps/exactl/src/exactl.ts"]
  */
 
@@ -11,7 +11,7 @@ import { SkillStatus } from "@exaix/core";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IMemoryUpdateProposal, ISkill } from "@exaix/schemas/memory_bank.ts";
-import { cliSkillContext } from "./memory_commands.ts";
+import { cliSkillContext } from "./skill_commands.ts";
 
 export class MemoryApprovalReader extends BaseCommand {
   /** Proposals that wait for a human decision. */

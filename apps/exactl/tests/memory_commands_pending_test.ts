@@ -21,9 +21,10 @@ import { createTestProject } from "@exaix/testing";
  * Helper to create a test environment with a pending proposal
  */
 async function createTestEnvironmentWithProposal(traceId?: string) {
-  const { commands, context, memoryBank, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment({
-    withExtractor: true,
-  });
+  const { curationCommands, context, memoryBank, extractor, cleanup } = await TestEnvironmentFactory
+    .createMemoryEnvironment({
+      withExtractor: true,
+    });
 
   // Create a project first
   await createTestProject(memoryBank, "test-app", { overview: "Test project" });
@@ -47,37 +48,37 @@ async function createTestEnvironmentWithProposal(traceId?: string) {
     proposalId = await extractor.createProposal(learnings[0], execution, "senior-coder");
   }
 
-  return { commands, context, memoryBank, extractor, cleanup, proposalId, learnings };
+  return { curationCommands, context, memoryBank, extractor, cleanup, proposalId, learnings };
 }
 
 // Pending List Tests
 
 Deno.test("MemoryApprovalReader: listPendingProposals returns the proposals that pendingList prints", async () => {
-  const { commands, context, extractor, cleanup, proposalId } = await createTestEnvironmentWithProposal();
+  const { context, extractor, cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal();
   try {
     assert(proposalId !== null, "the seeded environment must hold one proposal");
     const proposals = await new MemoryApprovalReader(context).listPendingProposals();
     assertEquals(proposals.map((proposal) => proposal.id), [proposalId]);
     assertEquals(proposals, await extractor.listPending());
-    assertEquals((await commands.pendingList(false)).map((proposal) => proposal.id), [proposalId]);
+    assertEquals((await curationCommands.pendingList(false)).map((proposal) => proposal.id), [proposalId]);
   } finally {
     await cleanup();
   }
 });
 
 Deno.test("MemoryCommands: pendingList returns no proposals when none are pending", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    assertEquals(await commands.pendingList(false), []);
+    assertEquals(await curationCommands.pendingList(false), []);
   } finally {
     await cleanup();
   }
 });
 
 Deno.test("MemoryCommands: pendingList shows proposals", async () => {
-  const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal();
+  const { cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal();
   try {
-    const result = await commands.pendingList(false);
+    const result = await curationCommands.pendingList(false);
 
     // Should list the pending proposal
     if (proposalId) {
@@ -89,9 +90,9 @@ Deno.test("MemoryCommands: pendingList shows proposals", async () => {
 });
 
 Deno.test("MemoryCommands: pendingList returns an array", async () => {
-  const { commands, cleanup } = await createTestEnvironmentWithProposal();
+  const { cleanup, curationCommands } = await createTestEnvironmentWithProposal();
   try {
-    assertEquals(Array.isArray(await commands.pendingList(false)), true);
+    assertEquals(Array.isArray(await curationCommands.pendingList(false)), true);
   } finally {
     await cleanup();
   }
@@ -100,13 +101,13 @@ Deno.test("MemoryCommands: pendingList returns an array", async () => {
 // Pending Show Tests
 
 Deno.test("MemoryCommands: pendingShow displays proposal details", async () => {
-  const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
+  const { cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal(
     "550e8400-e29b-41d4-a716-446655440031",
   );
   try {
     if (!proposalId) return;
 
-    const result = new MemoryFormatter().formatPendingShowTable(await commands.pendingShow(proposalId));
+    const result = new MemoryFormatter().formatPendingShowTable(await curationCommands.pendingShow(proposalId));
 
     assertStringIncludes(result, proposalId.substring(0, 8));
     assertStringIncludes(result, MemoryStatus.PENDING);
@@ -116,9 +117,9 @@ Deno.test("MemoryCommands: pendingShow displays proposal details", async () => {
 });
 
 Deno.test("MemoryCommands: pendingShow of an unknown id fails with the not-found code", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const error = await assertRejects(() => commands.pendingShow("non-existent-id"), ExaCtlError);
+    const error = await assertRejects(() => curationCommands.pendingShow("non-existent-id"), ExaCtlError);
 
     assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(error.message, "not found");
@@ -128,13 +129,13 @@ Deno.test("MemoryCommands: pendingShow of an unknown id fails with the not-found
 });
 
 Deno.test("MemoryCommands: pendingShow returns the stored proposal", async () => {
-  const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
+  const { cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal(
     "550e8400-e29b-41d4-a716-446655440032",
   );
   try {
     if (!proposalId) return;
 
-    const parsed = await commands.pendingShow(proposalId);
+    const parsed = await curationCommands.pendingShow(proposalId);
 
     assertEquals(parsed.id, proposalId);
     assertEquals(parsed.status, MemoryStatus.PENDING);
@@ -146,13 +147,13 @@ Deno.test("MemoryCommands: pendingShow returns the stored proposal", async () =>
 // Pending Approve Tests
 
 Deno.test("MemoryCommands: pendingApprove merges learning", async () => {
-  const { commands, memoryBank, cleanup, proposalId } = await createTestEnvironmentWithProposal(
+  const { memoryBank, cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal(
     "550e8400-e29b-41d4-a716-446655440033",
   );
   try {
     if (!proposalId) return;
 
-    const result = await commands.pendingApprove(proposalId);
+    const result = await curationCommands.pendingApprove(proposalId);
 
     assertEquals(result.id, proposalId);
 
@@ -166,9 +167,9 @@ Deno.test("MemoryCommands: pendingApprove merges learning", async () => {
 });
 
 Deno.test("MemoryCommands: pendingApprove of an unknown id fails with the not-found code", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const error = await assertRejects(() => commands.pendingApprove("non-existent-id"), ExaCtlError);
+    const error = await assertRejects(() => curationCommands.pendingApprove("non-existent-id"), ExaCtlError);
 
     assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
@@ -179,24 +180,24 @@ Deno.test("MemoryCommands: pendingApprove of an unknown id fails with the not-fo
 // Pending Reject Tests
 
 Deno.test("MemoryCommands: pendingReject archives proposal", async () => {
-  const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
+  const { cleanup, proposalId, curationCommands } = await createTestEnvironmentWithProposal(
     "550e8400-e29b-41d4-a716-446655440034",
   );
   try {
     if (!proposalId) return;
 
-    await commands.pendingReject(proposalId, "Not relevant");
+    await curationCommands.pendingReject(proposalId, "Not relevant");
 
-    assertEquals(await commands.pendingList(false), []);
+    assertEquals(await curationCommands.pendingList(false), []);
   } finally {
     await cleanup();
   }
 });
 
 Deno.test("MemoryCommands: pendingReject of an unknown id fails with the not-found code", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const error = await assertRejects(() => commands.pendingReject("non-existent-id", "test"), ExaCtlError);
+    const error = await assertRejects(() => curationCommands.pendingReject("non-existent-id", "test"), ExaCtlError);
 
     assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
   } finally {
@@ -207,9 +208,10 @@ Deno.test("MemoryCommands: pendingReject of an unknown id fails with the not-fou
 // Pending Approve All Tests
 
 Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
-  const { commands, memoryBank, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment({
-    withExtractor: true,
-  });
+  const { memoryBank, extractor, cleanup, curationCommands } = await TestEnvironmentFactory
+    .createMemoryEnvironment({
+      withExtractor: true,
+    });
   try {
     await createTestProject(memoryBank, "test-app", { overview: "Test project" });
 
@@ -225,7 +227,7 @@ Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
       await extractor.createProposal(learning, execution, "senior-coder");
     }
 
-    const result = await commands.pendingApproveAll();
+    const result = await curationCommands.pendingApproveAll();
 
     assertEquals(result.length > 0, true);
 
@@ -238,9 +240,9 @@ Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
 });
 
 Deno.test("MemoryCommands: pendingApproveAll with none approves nothing", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    assertEquals(await commands.pendingApproveAll(), []);
+    assertEquals(await curationCommands.pendingApproveAll(), []);
   } finally {
     await cleanup();
   }

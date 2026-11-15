@@ -276,11 +276,11 @@ Deno.test("MemoryCommands: globalStats --format md outputs markdown", async () =
 // Promote/Demote Error Handling Tests
 
 Deno.test("MemoryCommands: promote returns error for non-existent project", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
-    const result = await commands.promote("NonExistentPortal", {
+    const result = await curationCommands.promote("NonExistentPortal", {
       type: MemoryType.PATTERN,
       name: "test",
       title: "Test IPattern",
@@ -297,14 +297,14 @@ Deno.test("MemoryCommands: promote returns error for non-existent project", asyn
 });
 
 Deno.test("MemoryCommands: demote returns error for non-existent learning", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
     await memoryBank.createProjectMemory(
       new ProjectMemoryBuilder("DemoteTarget").build(),
     );
 
-    const result = await commands.demote("non-existent-id", "DemoteTarget");
+    const result = await curationCommands.demote("non-existent-id", "DemoteTarget");
 
     assertStringIncludes(result, "Error");
   } finally {
@@ -315,9 +315,9 @@ Deno.test("MemoryCommands: demote returns error for non-existent learning", asyn
 // Pending Commands Error Handling
 
 Deno.test("MemoryCommands: pendingApprove returns error for non-existent proposal", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const error = await assertRejects(() => commands.pendingApprove("non-existent-proposal-id"), ExaCtlError);
+    const error = await assertRejects(() => curationCommands.pendingApprove("non-existent-proposal-id"), ExaCtlError);
 
     assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(error.message, "not found");
@@ -327,9 +327,12 @@ Deno.test("MemoryCommands: pendingApprove returns error for non-existent proposa
 });
 
 Deno.test("MemoryCommands: pendingReject returns error for non-existent proposal", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const error = await assertRejects(() => commands.pendingReject("non-existent-proposal-id", "Reason"), ExaCtlError);
+    const error = await assertRejects(
+      () => curationCommands.pendingReject("non-existent-proposal-id", "Reason"),
+      ExaCtlError,
+    );
 
     assertEquals(error.code, ExaCtlExitCode.NOT_FOUND);
     assertStringIncludes(error.message, "not found");
@@ -548,15 +551,15 @@ Deno.test("MemoryCommands: globalStats with learnings by category and project", 
 // Pending Commands Success Paths
 
 Deno.test("MemoryCommands: pendingList and pendingShow return proposal details", async () => {
-  const { commands, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { extractor, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const execution = new ExecutionMemoryBuilder("PendingProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
-    const listResult = await commands.pendingList(false);
+    const listResult = await curationCommands.pendingList(false);
     assertEquals(listResult.map((proposal) => proposal.learning.title), [TEST_PENDING_LEARNING_TITLE]);
 
-    const showResult = await commands.pendingShow(proposalId);
+    const showResult = await curationCommands.pendingShow(proposalId);
     assertEquals(showResult.learning.description, TEST_PENDING_LEARNING_DESCRIPTION);
     assertStringIncludes(new MemoryFormatter().formatPendingShowMarkdown(showResult), "# Pending Proposal");
   } finally {
@@ -565,14 +568,15 @@ Deno.test("MemoryCommands: pendingList and pendingShow return proposal details",
 });
 
 Deno.test("MemoryCommands: pendingApprove approves global proposal", async () => {
-  const { commands, extractor, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { extractor, memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory
+    .createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
     const execution = new ExecutionMemoryBuilder("GlobalProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
-    const result = await commands.pendingApprove(proposalId);
+    const result = await curationCommands.pendingApprove(proposalId);
     assertEquals(result.id, proposalId);
     assertEquals(result.title, TEST_PENDING_LEARNING_TITLE);
     assertEquals(result.mergedTo, MemoryScope.GLOBAL);
@@ -585,20 +589,21 @@ Deno.test("MemoryCommands: pendingApprove approves global proposal", async () =>
 });
 
 Deno.test("MemoryCommands: pendingReject rejects proposal with reason", async () => {
-  const { commands, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { extractor, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const execution = new ExecutionMemoryBuilder("RejectProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-role");
 
-    await commands.pendingReject(proposalId, TEST_PENDING_REASON);
-    assertEquals(await commands.pendingList(false), []);
+    await curationCommands.pendingReject(proposalId, TEST_PENDING_REASON);
+    assertEquals(await curationCommands.pendingList(false), []);
   } finally {
     await cleanup();
   }
 });
 
 Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async () => {
-  const { commands, extractor, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { extractor, memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory
+    .createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
     await memoryBank.createProjectMemory(new ProjectMemoryBuilder("PendingProject").build());
@@ -613,7 +618,7 @@ Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async
       "test-role",
     );
 
-    const result = await commands.pendingApproveAll();
+    const result = await curationCommands.pendingApproveAll();
     assertEquals(result.length, 2);
   } finally {
     await cleanup();
@@ -623,9 +628,9 @@ Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async
 // Skills Commands Coverage
 
 Deno.test("MemoryCommands: skillList returns no skills when none exist", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, skillCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.skillList();
+    const result = await skillCommands.skillList();
 
     assertEquals(result.skills, []);
   } finally {
@@ -634,9 +639,9 @@ Deno.test("MemoryCommands: skillList returns no skills when none exist", async (
 });
 
 Deno.test("MemoryCommands: skillCreate, skillShow, and skillList (json) work", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, skillCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const createResult = await commands.skillCreate(TEST_SKILL_NAME, {
+    const createResult = await skillCommands.skillCreate(TEST_SKILL_NAME, {
       category: MemoryBankSource.LEARNED,
       description: TEST_SKILL_DESCRIPTION,
       instructions: TEST_SKILL_INSTRUCTIONS,
@@ -646,10 +651,10 @@ Deno.test("MemoryCommands: skillCreate, skillShow, and skillList (json) work", a
 
     assertEquals(createResult.skill_id, TEST_SKILL_ID);
 
-    const listed = await commands.skillList({ category: MemoryBankSource.LEARNED });
+    const listed = await skillCommands.skillList({ category: MemoryBankSource.LEARNED });
     assertEquals(listed.skills[0].skill_id, TEST_SKILL_ID);
 
-    const showResult = await commands.skillShow(TEST_SKILL_ID);
+    const showResult = await skillCommands.skillShow(TEST_SKILL_ID);
     assertEquals(showResult.skill.title, TEST_SKILL_NAME);
   } finally {
     await cleanup();
@@ -657,9 +662,9 @@ Deno.test("MemoryCommands: skillCreate, skillShow, and skillList (json) work", a
 });
 
 Deno.test("MemoryCommands: skillMatch returns matches for active skill", async () => {
-  const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { config, db, cleanup, skillCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    await commands.skillCreate(TEST_SKILL_NAME, {
+    await skillCommands.skillCreate(TEST_SKILL_NAME, {
       category: MemoryBankSource.LEARNED,
       description: TEST_SKILL_DESCRIPTION,
       instructions: TEST_SKILL_INSTRUCTIONS,
@@ -672,7 +677,7 @@ Deno.test("MemoryCommands: skillMatch returns matches for active skill", async (
     const [draft] = await skills.listSkills({ status: SkillStatus.DRAFT });
     await skills.activateSkill(TEST_SKILL_ID, draft.id, testSkillContext());
 
-    const result = await commands.skillMatch(TEST_SKILL_REQUEST_TEXT, {
+    const result = await skillCommands.skillMatch(TEST_SKILL_REQUEST_TEXT, {
       taskType: TEST_SKILL_TASK_TYPE,
     });
 
@@ -683,9 +688,9 @@ Deno.test("MemoryCommands: skillMatch returns matches for active skill", async (
 });
 
 Deno.test("MemoryCommands: skillDerive returns the derived skill", async () => {
-  const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { cleanup, skillCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.skillDerive({
+    const result = await skillCommands.skillDerive({
       learningIds: [crypto.randomUUID()],
       name: TEST_DERIVED_SKILL_NAME,
       description: TEST_DERIVED_SKILL_DESCRIPTION,

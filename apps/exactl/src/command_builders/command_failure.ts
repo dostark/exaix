@@ -22,7 +22,7 @@ const NOT_FOUND_ERRORS: ReadonlyArray<abstract new (...args: never[]) => Error> 
 ];
 
 /** The error a failed command throws. An ExaCtlError keeps its code, a missing entity becomes NOT_FOUND and any other error becomes a FAILURE. */
-export function toExaCtlError(error: Error): ExaCtlError {
+export function toExaCtlError<TError>(error: TError): ExaCtlError {
   if (error instanceof ExaCtlError) return error;
   const missing = NOT_FOUND_ERRORS.some((type) => error instanceof type);
   return new ExaCtlError(
@@ -32,6 +32,6 @@ export function toExaCtlError(error: Error): ExaCtlError {
 }
 
 /** Ends the failed command by throwing its error to the root error handler. */
-export function failCommand(error: Error): never {
+export function failCommand<TError>(error: TError): never {
   throw toExaCtlError(error);
 }

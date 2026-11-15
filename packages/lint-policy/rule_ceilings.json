@@ -74,7 +74,7 @@
   },
   "exaix/require-safety-comment": {
     "apps/daemon": 28,
-    "apps/exactl": 187,
+    "apps/exactl": 139,
     "apps/tui": 71,
     "exaix-team": 71,
     "packages/ai": 50,
@@ -109,7 +109,7 @@
   },
   "exaix/no-runtime-typeof": {
     "apps/daemon": 1,
-    "apps/exactl": 24,
+    "apps/exactl": 23,
     "apps/tui": 22,
     "exaix-team": 19,
     "packages/ai": 52,
@@ -155,7 +155,7 @@
     "packages/tui": 2
   },
   "exaix/max-file-lines": {
-    "apps/exactl": 2,
+    "apps/exactl": 1,
     "apps/tui": 3,
     "packages/ai": 1,
     "packages/cli": 1,

@@ -190,7 +190,7 @@ Deno.test("MemoryCommands: globalStats --format json outputs valid JSON", async 
 // Promote Command Tests
 
 Deno.test("MemoryCommands: promote moves learning to global", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     // Create project with pattern using helper
     await createTestProject(memoryBank, "source-app", {
@@ -204,7 +204,7 @@ Deno.test("MemoryCommands: promote moves learning to global", async () => {
     await memoryBank.initGlobalMemory();
 
     // Promote the pattern
-    const result = await commands.promote("source-app", {
+    const result = await curationCommands.promote("source-app", {
       type: MemoryType.PATTERN,
       name: "Repository IPattern",
       title: "Repository IPattern (Global)",
@@ -226,11 +226,11 @@ Deno.test("MemoryCommands: promote moves learning to global", async () => {
 });
 
 Deno.test("MemoryCommands: promote non-existent project returns error", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
-    const result = await commands.promote("non-existent", {
+    const result = await curationCommands.promote("non-existent", {
       type: MemoryType.PATTERN,
       name: "Test",
       title: "Test",
@@ -250,7 +250,7 @@ Deno.test("MemoryCommands: promote non-existent project returns error", async ()
 // Demote Command Tests
 
 Deno.test("MemoryCommands: demote moves learning to project", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     // Create target project
     await createTestProject(memoryBank, "target-app", { overview: "Target project" });
@@ -266,7 +266,7 @@ Deno.test("MemoryCommands: demote moves learning to project", async () => {
     await memoryBank.addGlobalLearning(learning);
 
     // Demote the learning
-    const result = await commands.demote(learning.id, "target-app");
+    const result = await curationCommands.demote(learning.id, "target-app");
 
     assertStringIncludes(result, "demoted");
 
@@ -283,12 +283,12 @@ Deno.test("MemoryCommands: demote moves learning to project", async () => {
 });
 
 Deno.test("MemoryCommands: demote non-existent learning returns error", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "target-app", { overview: "Target" });
     await memoryBank.initGlobalMemory();
 
-    const result = await commands.demote("non-existent-id", "target-app");
+    const result = await curationCommands.demote("non-existent-id", "target-app");
 
     assertStringIncludes(result, "Error:");
   } finally {
@@ -297,14 +297,14 @@ Deno.test("MemoryCommands: demote non-existent learning returns error", async ()
 });
 
 Deno.test("MemoryCommands: demote to non-existent project returns error", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
     const learning = new LearningBuilder().build();
     await memoryBank.addGlobalLearning(learning);
 
-    const result = await commands.demote(learning.id, "non-existent-project");
+    const result = await curationCommands.demote(learning.id, "non-existent-project");
 
     assertStringIncludes(result, "Error:");
   } finally {
@@ -315,14 +315,14 @@ Deno.test("MemoryCommands: demote to non-existent project returns error", async 
 // Delete Command Tests
 
 Deno.test("MemoryCommands: deleteLearning soft-deletes a global learning", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
     const learning = new LearningBuilder().withTitle("ILearning to Delete").build();
     await memoryBank.addGlobalLearning(learning);
 
-    await commands.deleteLearning(learning.id);
+    await curationCommands.deleteLearning(learning.id);
 
     const globalMem = await memoryBank.getGlobalMemory();
     const stored = globalMem?.learnings.find((item) => item.id === learning.id);
@@ -333,11 +333,11 @@ Deno.test("MemoryCommands: deleteLearning soft-deletes a global learning", async
 });
 
 Deno.test("MemoryCommands: deleteLearning of an unknown learning rejects", async () => {
-  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const { memoryBank, cleanup, curationCommands } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await memoryBank.initGlobalMemory();
 
-    await assertRejects(() => commands.deleteLearning("non-existent-id"));
+    await assertRejects(() => curationCommands.deleteLearning("non-existent-id"));
   } finally {
     await cleanup();
   }

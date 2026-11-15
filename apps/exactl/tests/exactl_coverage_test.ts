@@ -32,7 +32,7 @@ import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
-import { createdFlowRequest, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { createdFlowRequest, expectExitWithLogs, withTerminal, withTestMod } from "./helpers/test_utils.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
@@ -560,9 +560,11 @@ Deno.test("blueprint edit error exits with message", async () => {
     ctx.blueprintCommands.edit = () => {
       throw new Error("edit failed");
     };
-    const { errors } = await expectExitWithLogs(async () => {
-      await mod.__test_command.parse(["blueprint", "edit", "agent-1"]);
-    });
+    const { errors } = await expectExitWithLogs(() =>
+      withTerminal(async () => {
+        await mod.__test_command.parse(["blueprint", "edit", "agent-1"]);
+      })
+    );
     assert(errors.some((e: string) => e.includes("edit failed")));
   });
 });

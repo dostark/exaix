@@ -28,6 +28,7 @@ import { toExaCtlError } from "./command_failure.ts";
 import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
+import { stringOf } from "../output/json_narrow.ts";
 
 export interface IPlanActionContext {
   planCommands: PlanCommands;
@@ -71,13 +72,13 @@ const PLAN_COLUMNS: readonly IExaCtlColumn<IPlanRow>[] = [
   { header: ColumnHeader.PRIORITY, value: (plan) => cellText(plan.request_priority) },
   {
     header: ColumnHeader.TRACE,
-    value: (plan) => typeof plan.trace_id === "string" ? plan.trace_id.substring(0, TRACE_PREFIX_CHARS) : EMPTY_CELL,
+    value: (plan) => stringOf(plan.trace_id)?.substring(0, TRACE_PREFIX_CHARS) ?? EMPTY_CELL,
   },
 ];
 
 /** The failure of a bulk run with the ids that were decided before it. */
 function withDecided(error: Error, decided: readonly string[]): ExaCtlError {
-  const failure = toExaCtlError(error as Error);
+  const failure = toExaCtlError(error);
   return decided.length === 0
     ? failure
     : new ExaCtlError(failure.code, `${failure.message} (decided before the failure: ${decided.join(", ")})`);
@@ -109,7 +110,7 @@ export async function handlePlanList(context: IPlanActionContext, options: IPlan
     const rows = plans.map((plan) => toSafeJson({ ...plan }) as IPlanRow);
     await renderer.list(rows, PLAN_COLUMNS, (plan) => plan.id);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -158,7 +159,7 @@ export async function handlePlanShow(
     display.info("plan.show", metadata.id, toSafeJson(displayData) as Record<string, JSONValue>);
     display.info("plan.content", id, { content: content });
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -218,7 +219,7 @@ export async function handlePlanApproveAll(context: IPlanActionContext): Promise
     await planCommands.approveAll();
     await renderer.mutation(inReview.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -236,7 +237,7 @@ export async function handlePlanReject(
     await planCommands.reject(id, reason);
     await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -254,7 +255,7 @@ export async function handlePlanRevise(
     await planCommands.revise(id, comments);
     await renderer.mutation([decision(id, ExaCtlVerb.REVISE, PlanStatus.NEEDS_REVISION)], false);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -270,7 +271,7 @@ export async function handlePlanAmendmentList(
     const plans = await planCommands.listAmendments();
     await renderer.list(plans.map((plan) => toRow({ ...plan })), AMENDMENT_COLUMNS, (plan) => String(plan.id));
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -332,7 +333,7 @@ export async function handlePlanAmendmentReject(
     display.info("plan.amendment.rejected", id, { message: "Amendment rejected and execution aborted." });
     await renderer.mutation([decision(id, ExaCtlVerb.REJECT, PlanStatus.REJECTED)], false);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -349,7 +350,7 @@ export async function handlePlanAmendmentApproveAll(
     await planCommands.approveAllAmendments();
     await renderer.mutation(pending.map((plan) => decision(plan.id, ExaCtlVerb.APPROVE, PlanStatus.APPROVED)), true);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -383,6 +384,6 @@ export async function handlePlanAmendmentShowAll(
       displayAmendmentChanges(display, patch);
     }
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }

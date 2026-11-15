@@ -21,6 +21,8 @@ import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
+import { MemoryCurationCommands } from "./commands/memory_curation_commands.ts";
+import { SkillCommands } from "./commands/skill_commands.ts";
 import { ModelCommands } from "./commands/model_commands.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
@@ -107,6 +109,8 @@ const toolCommands: ToolCommands = new ToolCommands(fullContext);
 const flowCommands: FlowCommands = new FlowCommands(fullContext);
 const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
+const memoryCurationCommands: MemoryCurationCommands = new MemoryCurationCommands(fullContext);
+const skillCommands: SkillCommands = new SkillCommands(fullContext);
 const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
 const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
 const approvalCommands: ApprovalCommands = new ApprovalCommands(
@@ -154,6 +158,8 @@ const runtime: IExaCtlRuntime = {
   flowCommands,
   dashboardCommands,
   memoryCommands,
+  memoryCurationCommands,
+  skillCommands,
   approvalCommands,
   evalCommands,
   modelCommands,
@@ -182,6 +188,8 @@ export function __test_getContext(): {
   toolCommands: typeof toolCommands;
   dashboardCommands: typeof dashboardCommands;
   memoryCommands: typeof memoryCommands;
+  memoryCurationCommands: typeof memoryCurationCommands;
+  skillCommands: typeof skillCommands;
   configCommands: typeof configCommands;
   modelCommands: typeof modelCommands;
   watchCommand: typeof watchCommandInstance;
@@ -208,6 +216,8 @@ export function __test_getContext(): {
     toolCommands,
     dashboardCommands,
     memoryCommands,
+    memoryCurationCommands,
+    skillCommands,
     configCommands,
     modelCommands,
     watchCommand: watchCommandInstance,

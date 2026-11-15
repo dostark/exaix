@@ -31,6 +31,7 @@ import {
 import { documentLeaves } from "./documented_children.ts";
 import { documentedNoun } from "../docs/exactl_noun_doc.ts";
 import { nounDocFor } from "../command_docs/mod.ts";
+import { numberOf, objectOf } from "../output/json_narrow.ts";
 
 const TARGET_MAX_CHARS = 30;
 const SOURCE_SEPARATOR = ", ";
@@ -44,7 +45,10 @@ const ACTIVITY_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   { header: "Target", value: (row) => cellText(row.target).slice(0, TARGET_MAX_CHARS) },
   {
     header: "Cost",
-    value: (row) => typeof row.cost_usd === "number" && row.cost_usd > 0 ? formatCost(row.cost_usd) : EMPTY_CELL,
+    value: (row) => {
+      const cost = numberOf(row.cost_usd);
+      return cost !== undefined && cost > 0 ? formatCost(cost) : EMPTY_CELL;
+    },
   },
 ];
 
@@ -80,8 +84,8 @@ const GROUP_COLUMNS: readonly IExaCtlColumn<IJsonRow>[] = [
   {
     header: "Share by source",
     value: (row) => {
-      const shares = row.share_by_source;
-      if (shares === null || typeof shares !== "object" || Array.isArray(shares)) return EMPTY_CELL;
+      const shares = objectOf(row.share_by_source);
+      if (shares === undefined) return EMPTY_CELL;
       return Object.entries(shares).map(([source, share]) => `${source} ${share}%`).join(SOURCE_SEPARATOR);
     },
   },

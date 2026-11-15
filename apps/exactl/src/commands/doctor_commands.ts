@@ -9,6 +9,7 @@
 
 import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import type { IConfigValidationReport } from "@exaix/core/config";
+import { ProviderType } from "@exaix/core/types";
 import { DaemonPidState, type IDaemonPidInspection, type IMigrationCheck } from "./daemon_commands.ts";
 import { type IModelListRow, ROUTES_WITHOUT_PRICE } from "./model_commands.ts";
 
@@ -50,7 +51,7 @@ export interface IDoctorOptions {
 }
 
 const CREDENTIAL_MARKERS: readonly string[] = ["not found in environment or credential store", "Missing credential"];
-const PRICE_EXEMPT_SERVICE = "mock";
+const PRICE_EXEMPT_SERVICE: string = ProviderType.MOCK;
 const NO_PRICE = "no price";
 const STALE_PRICE = "price older than the staleness limit";
 

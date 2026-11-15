@@ -36,7 +36,7 @@ function targetOf(args: readonly string[]): CliEdition {
 
 /** The leaves of the committed Solo manifest as `plan show` strings. */
 async function soloPaths(): Promise<Set<string>> {
-  const manifest = JSON.parse(await Deno.readTextFile(SOLO_MANIFEST)) as { commands: Array<{ path: string[] }> };
+  const manifest: { commands: Array<{ path: string[] }> } = JSON.parse(await Deno.readTextFile(SOLO_MANIFEST));
   return new Set(manifest.commands.map((command) => command.path.join(" ")));
 }
 

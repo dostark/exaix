@@ -62,6 +62,7 @@ import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 import { resolveEffectiveBudgetPolicy } from "@exaix/core/config";
 import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
 import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+import { stringOf } from "../output/json_narrow.ts";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -133,7 +134,7 @@ export interface IRequestClarifyOptions {
 function keyFields(data: JSONObject): readonly IExaCtlColumn<IJsonRow>[] {
   return Object.keys(data).filter((key) => data[key] !== undefined).map((key) => ({
     header: key,
-    value: (row: IJsonRow) => typeof row[key] === "string" ? cellText(row[key]) : cellText(JSON.stringify(row[key])),
+    value: (row: IJsonRow) => cellText(stringOf(row[key]) ?? JSON.stringify(row[key])),
   }));
 }
 
@@ -189,7 +190,7 @@ export async function handleRequestAnalyze(
       }
     }
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -393,7 +394,7 @@ async function handleRequestCreateDryRunContext(
       );
     }
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -470,7 +471,7 @@ export async function handleRequestCreate(
 
     await printRequestResult(context, result);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -494,7 +495,7 @@ export async function handleRequestList(
     const requests = await requestCommands.list(options.status, options.all);
     await renderer.list(requests.map(toRow), REQUEST_COLUMNS, (request) => String(request.trace_id));
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -549,7 +550,7 @@ export async function handleRequestShow(
 
     await renderer.text(content);
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
@@ -670,7 +671,7 @@ export async function handleRequestClarify(
       }
     }
   } catch (error) {
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 

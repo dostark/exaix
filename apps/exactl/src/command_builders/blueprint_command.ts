@@ -107,7 +107,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
             false,
           );
         } catch (error) {
-          failCommand(error as Error);
+          failCommand(error);
         }
       });
   }
@@ -136,7 +136,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
               (blueprint) => cellText(blueprint.agent_role),
             );
           } catch (error) {
-            failCommand(error as Error);
+            failCommand(error);
           }
         },
       );
@@ -161,7 +161,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           content_preview: blueprint.content.substring(0, 200) + "...",
         });
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   }
@@ -174,7 +174,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
         await blueprintCommands.edit(args[0]);
         await renderer.mutation([{ id: args[0], action: ExaCtlVerb.EDIT, status: MutationStatus.EDITED }], false);
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   }
@@ -189,7 +189,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           display.info("blueprint.removed", args[0], { status: "Removed ✓" });
           await reportRemoval(renderer, args[0]);
         } catch (error) {
-          failCommand(error as Error);
+          failCommand(error);
         }
       });
   }
@@ -205,7 +205,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   }
@@ -223,7 +223,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
           if (!args[0]) throw new Error("Either <agent-id> or --file <path> is required");
           await reportValidation(args[0], await blueprintCommands.validate(args[0]), renderer, display);
         } catch (error) {
-          failCommand(error as Error);
+          failCommand(error);
         }
       });
   }

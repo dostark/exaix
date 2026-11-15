@@ -53,7 +53,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
         (review) => cellText(review.request_id),
       );
     } catch (error) {
-      throw toExaCtlError(error as Error);
+      throw toExaCtlError(error);
     }
   }
 
@@ -71,7 +71,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
       }
       renderReviewShow(cs, id);
     } catch (error) {
-      throw toExaCtlError(error as Error);
+      throw toExaCtlError(error);
     }
   }
 
@@ -195,7 +195,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
             await reviewCommands.approve(id);
             await renderer.mutation([{ id, action: ExaCtlVerb.APPROVE, status: ReviewStatus.APPROVED }], false);
           } catch (error) {
-            throw toExaCtlError(error as Error);
+            throw toExaCtlError(error);
           }
         }),
     )
@@ -212,7 +212,7 @@ function createReviewCommand(runtime: IExaCtlRuntime) {
               false,
             );
           } catch (error) {
-            throw toExaCtlError(error as Error);
+            throw toExaCtlError(error);
           }
         }),
     );

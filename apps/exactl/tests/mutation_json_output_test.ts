@@ -15,7 +15,7 @@ import { RequestPriority, RequestSource } from "@exaix/core";
 import type { ExaCtlTestContext } from "../src/exactl.ts";
 import { EXACTL_COMMAND_DOCS } from "../src/command_docs/mod.ts";
 import { withCapturedSink } from "./helpers/captured_output.ts";
-import { withTestMod } from "./helpers/test_utils.ts";
+import { stubWaitState, withTerminal, withTestMod } from "./helpers/test_utils.ts";
 
 const MUTATION_NOUNS = [
   "request",
@@ -32,7 +32,8 @@ const MUTATION_NOUNS = [
   "model",
   "daemon",
 ];
-const WAIT_REF = "wait:tok-1";
+const WAIT_TOKEN = "tok-1";
+const WAIT_REF = `wait:${WAIT_TOKEN}`;
 const WAIT_STATUS = "fulfilled";
 const REFRESH_GUIDANCE = "Refresh is available with the live model registry.";
 
@@ -65,9 +66,9 @@ function resolved(): Promise<void> {
   return Promise.resolve();
 }
 
-type SkillResult = Awaited<ReturnType<ExaCtlTestContext["memoryCommands"]["skillCreate"]>>;
+type SkillResult = Awaited<ReturnType<ExaCtlTestContext["skillCommands"]["skillCreate"]>>;
 
-function createdSkill(): ReturnType<ExaCtlTestContext["memoryCommands"]["skillCreate"]> {
+function createdSkill(): ReturnType<ExaCtlTestContext["skillCommands"]["skillCreate"]> {
   return Promise.resolve(
     { skill_id: "s-1", root_kind: "learned", path: "s-1", id: "rev-1", title: "S" } as SkillResult,
   );
@@ -91,7 +92,7 @@ const CONFIG_KEY = "ai.timeout_ms";
 const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>([
   ["memory learning remove", {
     args: ["memory", "learning", "remove", "l-1", "--reason", "duplicate", "--yes"],
-    stub: (ctx) => void (ctx.memoryCommands.deleteLearning = resolved),
+    stub: (ctx) => void (ctx.memoryCurationCommands.deleteLearning = resolved),
     expected: { id: "l-1", action: "remove", status: "deleted" },
   }],
   ["memory index rebuild", {
@@ -102,12 +103,13 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
   ["memory proposal approve", {
     args: ["memory", "proposal", "approve", "p-1"],
     stub: (ctx) =>
-      void (ctx.memoryCommands.pendingApprove = (id) => Promise.resolve({ id, title: "T", mergedTo: "global" })),
+      void (ctx.memoryCurationCommands.pendingApprove = (id) =>
+        Promise.resolve({ id, title: "T", mergedTo: "global" })),
     expected: { id: "p-1", action: "approve", status: "approved", title: "T", mergedTo: "global" },
   }],
   ["memory proposal reject", {
     args: ["memory", "proposal", "reject", "p-1", "--reason", "No"],
-    stub: (ctx) => void (ctx.memoryCommands.pendingReject = resolved),
+    stub: (ctx) => void (ctx.memoryCurationCommands.pendingReject = resolved),
     expected: { id: "p-1", action: "reject", status: "rejected", reason: "No" },
   }],
   ["model refresh", {
@@ -241,18 +243,18 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
   }],
   ["skill create", {
     args: ["skill", "create", "S"],
-    stub: (ctx) => void (ctx.memoryCommands.skillCreate = createdSkill),
+    stub: (ctx) => void (ctx.skillCommands.skillCreate = createdSkill),
     expected: { id: "s-1", action: "create", status: "created", revision: "rev-1", path: "learned/s-1" },
   }],
   ["skill derive", {
     args: ["skill", "derive", "--learning-ids", "l-1", "--name", "S"],
-    stub: (ctx) => void (ctx.memoryCommands.skillDerive = createdSkill),
+    stub: (ctx) => void (ctx.skillCommands.skillDerive = createdSkill),
     expected: { id: "s-1", action: "derive", status: "derived", revision: "rev-1", path: "learned/s-1" },
   }],
   ["skill approve", {
     args: ["skill", "approve", "s-1", "--revision", "rev-1"],
     stub: (ctx) =>
-      void (ctx.memoryCommands.skillApprove = () =>
+      void (ctx.skillCommands.skillApprove = () =>
         Promise.resolve({ name: "s-1", reviewedRevisionId: "rev-1", activeRevisionId: "rev-2", status: "active" })),
     expected: {
       id: "s-1",
@@ -265,7 +267,7 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
   ["skill deprecate", {
     args: ["skill", "deprecate", "s-1"],
     stub: (ctx) =>
-      void (ctx.memoryCommands.skillDeprecate = () =>
+      void (ctx.skillCommands.skillDeprecate = () =>
         Promise.resolve({ name: "s-1", revisionId: "rev-2", status: "deprecated" })),
     expected: { id: "s-1", action: "deprecate", status: "deprecated", revisionId: "rev-2" },
   }],
@@ -331,7 +333,10 @@ const CASES: ReadonlyMap<string, IMutationCase> = new Map<string, IMutationCase>
   }],
   ["approval cancel", {
     args: ["approval", "cancel", WAIT_REF, "--yes"],
-    stub: (ctx) => void (ctx.waitStateCommands.cancel = waitDecision),
+    stub: (ctx) => {
+      stubWaitState(ctx, WAIT_TOKEN);
+      ctx.waitStateCommands.cancel = waitDecision;
+    },
     expected: { id: WAIT_REF, action: "cancel", status: WAIT_STATUS },
   }],
 ]);
@@ -361,9 +366,10 @@ for (const [leaf, mutation] of CASES) {
   Deno.test(`${leaf} prints the id, the action and the status it set with --json`, async () => {
     await withTestMod(async (mod, ctx) => {
       mutation.stub(ctx);
-      const { out } = await withCapturedSink(ctx.outputSink, async () => {
-        await mod.__test_command.parse([...mutation.args, "--json"]);
-      });
+      const { out } = await withCapturedSink(ctx.outputSink, () =>
+        withTerminal(async () => {
+          await mod.__test_command.parse([...mutation.args, "--json"]);
+        }));
       assertEquals(JSON.parse(out), mutation.expected);
     });
   });

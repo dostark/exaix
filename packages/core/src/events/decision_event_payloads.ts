@@ -4,9 +4,11 @@
  * @architectural-layer Core
  * @dependencies []
  * @related-files ["packages/core/src/events/domain_event_types.ts"]
- * @description Typed payloads of the events that record a human decision on a request or a tool confirmation:
- * request.cancelled and tool_confirmation.decided.
+ * @description Typed payloads of the events that record a human decision: request.cancelled,
+ * tool_confirmation.decided and cli.confirmation_resolved.
  */
+
+import type { CliConfirmationMode, CliConfirmationOutcome } from "../types/enums.ts";
 
 /** Typed payload for tool_confirmation.decided. `reason` is set on a denial only. */
 export interface IToolConfirmationDecidedPayload {
@@ -24,4 +26,11 @@ export interface IRequestCancelledPayload {
   previous_status: string;
   reason: string | null;
   cancelled_by: string;
+}
+
+/** Typed payload for cli.confirmation_resolved. It records how an exactl verb got consent. */
+export interface ICliConfirmationPayload {
+  verb: string;
+  mode: CliConfirmationMode;
+  outcome: CliConfirmationOutcome;
 }

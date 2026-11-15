@@ -110,7 +110,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         );
         await renderer.list(rows, WORKTREE_COLUMNS, (row) => cellText(row.path));
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const worktreePrune = new Command()
@@ -146,7 +146,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
           false,
         );
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const branchList = new Command()
@@ -157,7 +157,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         const branches = await gitCommands.listBranches(options.pattern);
         await renderer.list(branches.map(toRow), BRANCH_COLUMNS, (row) => cellText(row.name));
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
   const statusCommand = new Command().action(async (options) => {
@@ -178,7 +178,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
       ];
       await renderer.item(toRow({ ...status, clean }), fields);
     } catch (error) {
-      failCommand(error as Error);
+      failCommand(error);
     }
   });
   const logCommand = new Command()
@@ -189,7 +189,7 @@ function createGitCommand(runtime: IExaCtlRuntime) {
         const commits = await gitCommands.logByTraceId(options.trace);
         await renderer.list(commits.map(toRow), COMMIT_COLUMNS, (row) => cellText(row.sha));
       } catch (error) {
-        failCommand(error as Error);
+        failCommand(error);
       }
     });
 

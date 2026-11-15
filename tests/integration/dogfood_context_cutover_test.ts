@@ -63,7 +63,6 @@ import { ConfigService } from "@exaix/core/config";
 import type { PathResolver as PathResolverType } from "@exaix/portal";
 import { InspectCommands } from "../../apps/exactl/src/commands/inspect_commands.ts";
 import { createStubContext } from "@exaix/testing";
-import { captureAllOutputs } from "../../apps/exactl/tests/helpers/console_utils.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const CHILD_SCRIPT = fromFileUrl(new URL("../../apps/daemon/tests/fixtures/dogfood_mcp_child.ts", import.meta.url));
@@ -510,9 +509,16 @@ Deno.test("[dogfood_context_cutover] the captured record and `exactl request ins
     const handle = await service.prepare(input);
     await service.close(handle.recordId, "completed" as never);
 
-    const inspect = new InspectCommands(createStubContext(), { store });
-    const out = await captureAllOutputs(() => inspect.inspect(traceId, { record: handle.recordId, json: true }));
-    const parsed = JSON.parse(out.logs.at(-1)!);
+    const written: string[] = [];
+    const inspect = new InspectCommands(createStubContext(), {
+      store,
+      writeRaw: (text) => {
+        written.push(text);
+        return Promise.resolve();
+      },
+    });
+    await inspect.inspect(traceId, { record: handle.recordId, json: true });
+    const parsed = JSON.parse(written.join(""));
 
     assertEquals(parsed.recordId, handle.recordId);
     assertEquals(parsed.promptText, handle.prompt);

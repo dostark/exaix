@@ -25,14 +25,17 @@ import {
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { type ExaCtlOutputRenderer, type IJsonRow, stripTerminalControls, toRow } from "../output/exactl_output.ts";
 import type { JSONValue } from "@exaix/core";
+import { objectOf, stringOf } from "../output/json_narrow.ts";
 
 const HISTORICAL_RULE_WIDTH = 60;
 
 function cleanJson(value: JSONValue): JSONValue {
-  if (typeof value === "string") return stripTerminalControls(value);
+  const text = stringOf(value);
+  if (text !== undefined) return stripTerminalControls(text);
   if (Array.isArray(value)) return value.map(cleanJson);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cleanJson(entry)]));
+  const record = objectOf(value);
+  if (record !== undefined) {
+    return Object.fromEntries(Object.entries(record).map(([key, entry]) => [key, cleanJson(entry)]));
   }
   return value;
 }

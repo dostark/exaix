@@ -85,7 +85,7 @@ async function report(
     await renderer.mutation([{ id: ref, action: verb, status: decision.status }], false);
   } catch (error) {
     if (error instanceof ExaCtlError) throw error;
-    throw toExaCtlError(error as Error);
+    throw toExaCtlError(error);
   }
 }
 
