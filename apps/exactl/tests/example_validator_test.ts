@@ -40,6 +40,14 @@ Deno.test("a valid example passes", () => {
   assertEquals(issues("exactl plan approve a b c"), []);
 });
 
+Deno.test("an option value never starts with a dash, so an option after a value option stays an option", () => {
+  assertEquals(issues("exactl plan list --status --all"), []);
+  assertEquals(issues("exactl plan list --status --bogus"), [{
+    kind: ExampleIssueKind.UNKNOWN_OPTION,
+    token: "--bogus",
+  }]);
+});
+
 Deno.test("an unknown option is reported", () => {
   assertEquals(issues("exactl plan list --bogus"), [{ kind: ExampleIssueKind.UNKNOWN_OPTION, token: "--bogus" }]);
 });

@@ -16,6 +16,7 @@ const leaf = new Command()
   .description("List the things")
   .arguments("<kind:string> [more...:string]")
   .option("-s, --status <status:string>", "Filter by status", { required: true })
+  .option("-n, --limit <count:number>", "Show last N entries", { default: 20 })
   .option("--hidden-flag", "Not listed in help", { hidden: true })
   .example("List everything", "exactl thing list all")
   .action(() => {});
@@ -44,7 +45,13 @@ Deno.test("walkCommandTree reports aliases, arguments, options and examples of a
     takesValue: true,
     required: true,
     hidden: false,
+    description: "Filter by status",
+    valueName: "status",
+    valueType: "string",
+    defaultValue: undefined,
   });
+  const limit = node?.options.find((option) => option.name === "limit");
+  assertEquals([limit?.valueType, limit?.defaultValue], ["number", "20"]);
   assertEquals(node?.options.find((option) => option.name === "hidden-flag")?.hidden, true);
   assertEquals(node?.examples, [{ name: "List everything", description: "exactl thing list all" }]);
   assertStrictEquals(node?.command, leaf);

@@ -38,6 +38,7 @@ export interface IExaCtlCommandDoc {
 const DOCS_ROOT = "docs/cli";
 const DOCS_LABEL = "In the Exaix repository:";
 const ANCHOR_SEPARATOR = "-";
+const ANCHOR_PREFIX = `exactl${ANCHOR_SEPARATOR}`;
 const FENCE = "```";
 const HEADING_LINE = /^#{1,6}\s/;
 const TABLE_LINE = /^\s*\|.*\|\s*$/;
@@ -48,7 +49,9 @@ const LIST_INDENT = "  ";
 /** The repository path of the page and anchor that document `path`. */
 export function exactlDocsLink(path: readonly string[]): string {
   const [noun, ...verbs] = path;
-  return verbs.length === 0 ? `${DOCS_ROOT}/${noun}.md` : `${DOCS_ROOT}/${noun}.md#${verbs.join(ANCHOR_SEPARATOR)}`;
+  return verbs.length === 0
+    ? `${DOCS_ROOT}/${noun}.md`
+    : `${DOCS_ROOT}/${noun}.md#${ANCHOR_PREFIX}${path.join(ANCHOR_SEPARATOR)}`;
 }
 
 function assertSupportedMarkdown(description: string): void {

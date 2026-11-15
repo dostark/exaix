@@ -43,7 +43,7 @@ Quickstart
   exactl plan list                           # list generated plans
   exactl plan show <plan-id>                 # review a plan
   exactl plan approve <plan-id>              # approve execution
-  exactl plan review step-3                  # review result
+  exactl plan show step-3                    # review result
   deno task dogfood:stop                     # stop daemon
 
 The dogfood loop (human + daemon)

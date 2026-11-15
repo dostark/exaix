@@ -34,11 +34,11 @@ Deno.test("exactl plan approve --help shows the plan lifecycle, examples, exit c
   assertStringIncludes(help, `Lifecycle: ${PlanStatus.REVIEW} → ${PlanStatus.APPROVED}`);
   assertStringIncludes(help, "exactl plan approve --all");
   assertStringIncludes(help, "Exit codes");
-  assertStringIncludes(help, "In the Exaix repository: docs/cli/plan.md#approve");
+  assertStringIncludes(help, "In the Exaix repository: docs/cli/plan.md#exactl-plan-approve");
 });
 
 Deno.test("exactl daemon status --help shows an example and its docs link", () => {
   const help = helpOf("daemon", "status");
   assertStringIncludes(help, "exactl daemon status -o json");
-  assertStringIncludes(help, "docs/cli/daemon.md#status");
+  assertStringIncludes(help, "docs/cli/daemon.md#exactl-daemon-status");
 });

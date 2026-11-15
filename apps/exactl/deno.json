@@ -5,6 +5,7 @@
     ".": "./main.ts",
     "./exactl": "./src/exactl.ts",
     "./command-docs": "./src/command_docs/mod.ts",
-    "./command-tree": "./src/docs/command_tree_walk.ts"
+    "./command-tree": "./src/docs/command_tree_walk.ts",
+    "./cli-reference": "./src/docs/cli_reference.ts"
   }
 }

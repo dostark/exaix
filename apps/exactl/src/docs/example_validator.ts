@@ -100,14 +100,24 @@ interface IWalkState {
   readonly issues: IExampleIssue[];
 }
 
+/** True for a word that looks like an option. A value never does, so an optional value cannot swallow the next option. */
+function isOptionWord(word: string): boolean {
+  return word.startsWith(OPTION_PREFIX) && word.length > 1;
+}
+
 /** Handles one option word and returns how many following words it consumed. */
-function consumeOption(state: IWalkState, word: string, globalFlags: readonly IExampleFlag[]): number {
+function consumeOption(
+  state: IWalkState,
+  word: string,
+  next: Opt<string, Reason.OptionalInput>,
+  globalFlags: readonly IExampleFlag[],
+): number {
   const flag = findFlag([...(state.node?.options ?? []), ...globalFlags], word);
   if (flag === undefined) {
     state.issues.push({ kind: ExampleIssueKind.UNKNOWN_OPTION, token: word.split(VALUE_SEPARATOR)[0] });
     return 0;
   }
-  return flag.takesValue && flag.flags.includes(word) ? 1 : 0;
+  return flag.takesValue && flag.flags.includes(word) && next !== undefined && !isOptionWord(next) ? 1 : 0;
 }
 
 /** Handles one plain word: a command word while no argument was seen and the node has children, otherwise an argument. */
@@ -141,7 +151,7 @@ export function validateExample(
     const word = words[index];
     if (!state.terminated && word === OPTION_TERMINATOR) state.terminated = true;
     else if (!state.terminated && word.startsWith(OPTION_PREFIX) && word.length > 1) {
-      index += consumeOption(state, word, globalFlags);
+      index += consumeOption(state, word, words[index + 1], globalFlags);
     } else if (!consumeWord(state, nodes, word)) return state.issues;
   }
   const { node } = state;

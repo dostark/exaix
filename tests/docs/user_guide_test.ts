@@ -53,8 +53,8 @@ Deno.test("User Guide documents Memory Banks CLI commands", async () => {
   const guide = await readUserGuide();
 
   assertStringIncludes(guide, "exactl memory");
-  assertStringIncludes(guide, "memory projects");
-  assertStringIncludes(guide, "memory execution");
+  assertStringIncludes(guide, "memory project list");
+  assertStringIncludes(guide, "memory execution list");
 });
 
 Deno.test("User Guide documents Memory Banks directory structure", async () => {

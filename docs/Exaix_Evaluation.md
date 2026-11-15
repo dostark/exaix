@@ -43,7 +43,7 @@ exactl eval run --pack blueprint-eval --score-threshold 0.7
 exactl eval run --pack smoke --trials 5
 
 # View run history
-exactl eval history --last 10
+exactl eval history --limit 10
 
 # Compare two runs
 exactl eval compare --run-a <run-id> --run-b <run-id>
@@ -131,10 +131,10 @@ exactl eval history [options]
 
 ```bash
 # Show last 5 runs
-exactl eval history --last 5
+exactl eval history --limit 5
 
 # Show history for a specific scenario as JSON
-exactl eval history --scenario workspace-health-smoke --format json
+exactl eval history --scenario workspace-health-smoke -o json
 
 # Show runs since a date for a pack
 exactl eval history --pack smoke --since 2026-06-01
@@ -238,7 +238,7 @@ rendered with `—` for cost, never a made-up `0`.
 exactl eval report --view frontier
 
 # Machine-readable rows for a CI trend job
-exactl eval report --view frontier --format json
+exactl eval report --view frontier -o json
 ```
 
 #### `--view failures` — why runs fail
@@ -250,7 +250,7 @@ you can see at a glance whether a cell keeps dying on one specific failure mode.
 
 ```bash
 exactl eval report --view failures
-exactl eval report --view failures --format json
+exactl eval report --view failures -o json
 ```
 
 #### `--view external` — comparability against a public benchmark
@@ -262,7 +262,7 @@ the supported-subset ladder, and known limitations are in §17.
 
 ```bash
 exactl eval report --view external
-exactl eval report --view external --format json
+exactl eval report --view external -o json
 ```
 
 ---
@@ -656,21 +656,21 @@ both the runner and `exactl eval history` now use the same resolution rule.
 Opt out of SQLite with:
 
 ```bash
-exactl eval run --pack smoke --history-format jsonl
+exactl eval run --pack smoke --history-store jsonl
 ```
 
 View history from SQLite (default) or fall back to JSONL:
 
 ```bash
-exactl eval history --last 10
-exactl eval history --source jsonl --last 10
+exactl eval history --limit 10
+exactl eval history --limit 10
 ```
 
 ### 9.3 Querying with `exactl eval history`
 
 ```bash
 # Latest 5 runs
-exactl eval history --last 5
+exactl eval history --limit 5
 
 # Filter by scenario
 exactl eval history --scenario workspace-health-smoke
@@ -679,7 +679,7 @@ exactl eval history --scenario workspace-health-smoke
 exactl eval history --since 2026-06-01
 
 # Machine-readable output
-exactl eval history --last 10 --format json | jq '[.[] | {id: .run_id, score: .suite_score}]'
+exactl eval history --limit 10 -o json | jq '[.[] | {id: .run_id, score: .suite_score}]'
 ```
 
 ### 9.4 Tracked vs. Predicted Cost
@@ -745,7 +745,7 @@ Compare two evaluation runs to see per-step score deltas:
 
 ```bash
 # Get run IDs from history
-exactl eval history --last 5 --format json
+exactl eval history --limit 5 -o json
 
 # Compare two runs
 exactl eval compare --run-a aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa \
@@ -836,7 +836,7 @@ For the full sandbox setup reference, see
 ```bash
 #!/bin/bash
 # Run full core suite with history
-exactl eval run --profile ci-core --score-threshold 0.6 --trials 3
+exactl eval run --pack smoke --score-threshold 0.6 --trials 3
 
 # Archive history
 cp -r tests/scenario_framework/output/history/ archive/$(date +%Y-%m-%d)/
@@ -1033,16 +1033,16 @@ per-cell `--view frontier` turns the corpus's tracked cost into the accuracy-vs-
 ```bash
 # CLI-delegate on opencode Go tier (no API key required)
 exactl eval run --scenario scenarios/swe_tasks/fix-bug-null-guard.yaml \
-  --cell opencode --eval-mode --score-threshold 0.3
+  --cell opencode --score-threshold 0.3
 
 # All swe_tasks scenarios via catalog
-exactl eval run --pack swe-tasks --cell opencode --eval-mode
+exactl eval run --pack swe-tasks --cell opencode
 
 # View family-level report
-exactl eval report --pack swe-tasks --format table
+exactl eval report --pack swe-tasks -o table
 
 # Compare providers
-exactl eval report --pack swe-tasks --cell opencode --cell claude-code
+exactl eval report --pack swe-tasks
 ```
 
 ### Configuration
@@ -1350,7 +1350,7 @@ budget-capped, with gating on:
 
 ```bash
 # The five cell kinds, one provider, within a spend bound
-exactl eval run --pack swe_tasks --cell <tool> --max-cost-usd 2.0 --eval-mode \
+exactl eval run --pack swe_tasks --cell <tool> --max-cost-usd 2.0 \
   --score-threshold 0.5          # Exaix cell
 # ... plus the bare cell and the three ablation cells (bare/ablate variants), then:
 exactl eval report --view lift --pack swe_tasks

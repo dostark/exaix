@@ -24,14 +24,25 @@ export interface IWalkableCommand {
   getBaseCommands(hidden: boolean): IWalkableCommand[];
 }
 
+/** The default value of an option. Cliffy types it loosely, so the alias borrows the loose parameter of `String`. */
+type OptionDefault = Parameters<typeof String>[0];
+
 /** The part of a cliffy option that the walker reads. */
 interface IWalkableOption {
   name: string;
   flags: string[];
-  args?: Opt<ReadonlyArray<object>, Reason.OptionalInput>;
+  description?: Opt<string, Reason.OptionalInput>;
+  default?: Opt<OptionDefault, Reason.OptionalInput>;
+  args?: Opt<ReadonlyArray<IWalkableOptionArgument>, Reason.OptionalInput>;
   global?: Opt<boolean, Reason.OptionalInput>;
   required?: Opt<boolean, Reason.OptionalInput>;
   hidden?: Opt<boolean, Reason.OptionalInput>;
+}
+
+/** The value argument of an option, such as `<status:string>`. */
+interface IWalkableOptionArgument {
+  name?: Opt<string, Reason.OptionalInput>;
+  type?: Opt<string, Reason.OptionalInput>;
 }
 
 /** The root command also exposes its own options, some of which every subcommand inherits. */
@@ -52,6 +63,13 @@ export interface ICommandTreeOption {
   takesValue: boolean;
   required: boolean;
   hidden: boolean;
+  description: string;
+  /** The name of the value in the usage line, such as `status`. Absent for a flag. */
+  valueName: Opt<string, Reason.OptionalInput>;
+  /** The value type, such as `string` or `number`. Absent for a flag. */
+  valueType: Opt<string, Reason.OptionalInput>;
+  /** The default value as text. Absent when the option has none. */
+  defaultValue: Opt<string, Reason.OptionalInput>;
 }
 
 interface ICommandTreeExample {
@@ -73,13 +91,24 @@ export interface ICommandTreeNode {
 
 export const HELP_COMMAND_NAME = "help";
 
+/** The default of an option as text. A default that cliffy computes at parse time has none. */
+function defaultText(value: Opt<OptionDefault, Reason.OptionalInput>): Opt<string, Reason.OptionalInput> {
+  if (value === undefined || value === null || typeof value === "function") return undefined;
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
 function toOption(option: IWalkableOption): ICommandTreeOption {
+  const value = (option.args ?? [])[0];
   return {
     name: option.name,
     flags: option.flags,
-    takesValue: (option.args ?? []).length > 0,
+    takesValue: value !== undefined,
     required: option.required ?? false,
     hidden: option.hidden ?? false,
+    description: option.description ?? "",
+    valueName: value?.name,
+    valueType: value?.type,
+    defaultValue: defaultText(option.default),
   };
 }
 

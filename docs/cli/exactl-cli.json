@@ -1,0 +1,6304 @@
+{
+  "version": 1,
+  "edition": "solo",
+  "commands": [
+    {
+      "path": [
+        "request",
+        "create"
+      ],
+      "summary": "Create a request for an agent or a flow",
+      "description": "Writes a request file that the daemon processes. Give the task as text or with `--file`. Choose the agent role with `--agent` or a flow with `--flow`.\n\n- `--dry-run` shows what would be created\n- `--dry-run-context` prints the projected prompt size without writing a file",
+      "arguments": [
+        {
+          "name": "description",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--priority"
+          ],
+          "type": "string",
+          "value": "priority",
+          "default": "normal",
+          "required": false,
+          "description": "Priority: low, normal, high, critical"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal alias for context"
+        },
+        {
+          "flags": [
+            "--target-branch"
+          ],
+          "type": "string",
+          "value": "branch",
+          "required": false,
+          "description": "Target branch for this request (portal-aware)"
+        },
+        {
+          "flags": [
+            "-m",
+            "--model"
+          ],
+          "type": "string",
+          "value": "model",
+          "required": false,
+          "description": "Named model configuration"
+        },
+        {
+          "flags": [
+            "--model-size"
+          ],
+          "type": "string",
+          "value": "size",
+          "required": false,
+          "description": "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)"
+        },
+        {
+          "flags": [
+            "--characteristic"
+          ],
+          "type": "string",
+          "value": "value",
+          "required": false,
+          "description": "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)"
+        },
+        {
+          "flags": [
+            "--thinking"
+          ],
+          "type": "string",
+          "value": "mode",
+          "required": false,
+          "description": "Extended thinking: bare --thinking means true; accepts true|false|auto"
+        },
+        {
+          "flags": [
+            "--effort"
+          ],
+          "type": "string",
+          "value": "tier",
+          "required": false,
+          "description": "Reasoning token budget: low|medium|high|auto (auto asks the system to decide)"
+        },
+        {
+          "flags": [
+            "--preferred-provider"
+          ],
+          "type": "string",
+          "value": "provider",
+          "required": false,
+          "description": "Narrow candidates to specific provider (skips cross-provider scoring)"
+        },
+        {
+          "flags": [
+            "--skills"
+          ],
+          "type": "string",
+          "value": "skills",
+          "required": false,
+          "description": "Comma-separated list of skills to inject"
+        },
+        {
+          "flags": [
+            "--subject"
+          ],
+          "type": "string",
+          "value": "subject",
+          "required": false,
+          "description": "Human-readable subject for the request"
+        },
+        {
+          "flags": [
+            "--acceptance-criteria"
+          ],
+          "type": "string",
+          "value": "criteria",
+          "required": false,
+          "description": "Acceptance criterion (repeatable: --acceptance-criteria 'A' --acceptance-criteria 'B')"
+        },
+        {
+          "flags": [
+            "--expected-outcome"
+          ],
+          "type": "string",
+          "value": "outcome",
+          "required": false,
+          "description": "Expected outcome (repeatable: --expected-outcome 'A' --expected-outcome 'B')"
+        },
+        {
+          "flags": [
+            "--overlay"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Per-run binding overlay file (repeatable: --overlay a.json --overlay b.toml)"
+        },
+        {
+          "flags": [
+            "--bind"
+          ],
+          "type": "string",
+          "value": "spec",
+          "required": false,
+          "description": "Per-run binding (repeatable), e.g. flow:research/step:compose=service=openai"
+        },
+        {
+          "flags": [
+            "--locked"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Replay a prior run's binding lock file"
+        },
+        {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "description": "Show what would be created without writing"
+        },
+        {
+          "flags": [
+            "--dry-run-context"
+          ],
+          "required": false,
+          "description": "Print a projected input-token breakdown without writing a request file or calling a real LLM"
+        },
+        {
+          "flags": [
+            "--analyze"
+          ],
+          "required": false,
+          "description": "Trigger immediate intent analysis for the request"
+        },
+        {
+          "flags": [
+            "--engine"
+          ],
+          "type": "string",
+          "value": "engine",
+          "default": "heuristic",
+          "required": false,
+          "description": "Analysis engine: heuristic, llm, hybrid"
+        },
+        {
+          "flags": [
+            "--agent"
+          ],
+          "type": "string",
+          "value": "agent",
+          "default": "default",
+          "required": false,
+          "description": "Target agent role blueprint"
+        },
+        {
+          "flags": [
+            "--flow"
+          ],
+          "type": "string",
+          "value": "flow",
+          "required": false,
+          "description": "Target multi-agent flow (mutually exclusive with --agent)"
+        },
+        {
+          "flags": [
+            "--file"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Read description from file"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Create a request for an agent role",
+          "command": "exactl request create \"Analyze this code\" --agent code-reviewer"
+        },
+        {
+          "title": "Create a request for a flow",
+          "command": "exactl request create \"Build a web app\" --flow web-development"
+        },
+        {
+          "title": "Create a high-priority request",
+          "command": "exactl request create \"Fix critical bug\" --priority critical --agent debugger"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl request watch",
+        "exactl request list"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "list"
+      ],
+      "summary": "List pending requests",
+      "description": "Lists requests that are not archived. Filter with `--status`, or add archived and rejected requests with `--all`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-s",
+            "--status"
+          ],
+          "type": "string",
+          "value": "status",
+          "required": false,
+          "description": "Filter by status (pending, planned, in_progress, completed, failed, cancelled, needs_clarification, refining, enriching)"
+        },
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Include archived and rejected requests"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List requests",
+          "command": "exactl request list"
+        },
+        {
+          "title": "List failed requests as JSON",
+          "command": "exactl request list --status failed -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl request show",
+        "exactl request create"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "show"
+      ],
+      "summary": "Show the details of one request",
+      "description": "Prints the request metadata, its analysis when there is one, and its content.",
+      "arguments": [
+        {
+          "name": "request-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a request",
+          "command": "exactl request show 3f2a9c1e"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl request list",
+        "exactl request watch"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "watch"
+      ],
+      "summary": "Follow the live events of a request",
+      "description": "Streams the execution events of a request or a trace. It falls back to the stored events when the trace has finished. With `-o jsonl` it prints one event per line.",
+      "arguments": [
+        {
+          "name": "request-id",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--trace"
+          ],
+          "type": "string",
+          "value": "trace-id",
+          "required": false,
+          "description": "Watch this trace id instead of a request"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Watch a request",
+          "command": "exactl request watch 3f2a9c1e"
+        },
+        {
+          "title": "Watch a trace as JSON lines",
+          "command": "exactl request watch --trace 7b1d4e60-1c2a-4e3b-9f10-2a6c8d9e0f11 -o jsonl"
+        }
+      ],
+      "output": "stream",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl request show",
+        "exactl request cancel"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "analyze"
+      ],
+      "summary": "Analyze the intent of a request",
+      "description": "Runs the intent analysis for an existing request. Choose the engine with `--engine`, and skip the cached result with `--force`.",
+      "arguments": [
+        {
+          "name": "request-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--engine"
+          ],
+          "type": "string",
+          "value": "engine",
+          "default": "heuristic",
+          "required": false,
+          "description": "Analysis engine: heuristic, llm, hybrid"
+        },
+        {
+          "flags": [
+            "--force"
+          ],
+          "required": false,
+          "description": "Force fresh analysis even if results are cached"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Analyze a request",
+          "command": "exactl request analyze 3f2a9c1e --engine heuristic"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl request clarify",
+        "exactl request show"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "cancel"
+      ],
+      "summary": "Cancel a pending request",
+      "description": "Cancels a request that is pending or waits for clarification. A request that already runs cannot be cancelled. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "request-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": false,
+          "description": "Why the request is cancelled"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Cancel a request",
+          "command": "exactl request cancel 3f2a9c1e --reason \"Duplicate\""
+        },
+        {
+          "title": "Cancel without a prompt",
+          "command": "exactl request cancel 3f2a9c1e --reason \"Duplicate\" --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl request show",
+        "exactl request list"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "clarify"
+      ],
+      "summary": "Answer the clarification questions of a request",
+      "description": "Sends answers as `id=text` pairs. Force the request on with `--proceed`, or stop the clarification with `--cancel`.",
+      "arguments": [
+        {
+          "name": "request-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--answer"
+          ],
+          "type": "string",
+          "value": "pair",
+          "required": false,
+          "description": "Answer in id=text form (repeatable)"
+        },
+        {
+          "flags": [
+            "--proceed"
+          ],
+          "required": false,
+          "description": "Force proceed with the current best-effort request body"
+        },
+        {
+          "flags": [
+            "--cancel"
+          ],
+          "required": false,
+          "description": "Cancel clarification and re-queue the request as-is"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving the clarification wait state"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Answer a question",
+          "command": "exactl request clarify 3f2a9c1e --answer \"q1=Use the staging database\""
+        },
+        {
+          "title": "Proceed with the best-effort request",
+          "command": "exactl request clarify 3f2a9c1e --proceed"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl request analyze",
+        "exactl request show"
+      ]
+    },
+    {
+      "path": [
+        "request",
+        "inspect"
+      ],
+      "summary": "Inspect the captured context of a trace",
+      "description": "Reads the prompts captured for a trace without changing anything. With `--json` it prints the record. With `--raw` it writes the exact bytes of one record and refuses a terminal.",
+      "arguments": [
+        {
+          "name": "trace-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--record"
+          ],
+          "type": "string",
+          "value": "uuid",
+          "required": false,
+          "description": "Inspect a specific captured record"
+        },
+        {
+          "flags": [
+            "--raw"
+          ],
+          "required": false,
+          "description": "Export the exact post-redaction bytes (requires --record or a single-record trace; refuses TTY)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List the records of a trace",
+          "command": "exactl request inspect 7b1d4e60-1c2a-4e3b-9f10-2a6c8d9e0f11"
+        },
+        {
+          "title": "Print one record as JSON",
+          "command": "exactl request inspect 7b1d4e60-1c2a-4e3b-9f10-2a6c8d9e0f11 --record 5d0c2f3a-6b7e-4a18-8c90-1e2f3a4b5c6d --json"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl request show",
+        "exactl request watch"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "list"
+      ],
+      "summary": "List plans awaiting review",
+      "description": "Lists the plans in review and the plans that need revision. Filter with `--status`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-s",
+            "--status"
+          ],
+          "type": "string",
+          "value": "status",
+          "required": false,
+          "description": "Filter by status (review, needs_revision)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List every plan",
+          "command": "exactl plan list"
+        },
+        {
+          "title": "List plans in review as JSON",
+          "command": "exactl plan list --status review -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl plan show",
+        "exactl plan approve"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "show"
+      ],
+      "summary": "Show the details of one plan",
+      "description": "Prints the plan metadata, its token usage and its content.",
+      "arguments": [
+        {
+          "name": "plan-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a plan",
+          "command": "exactl plan show plan-123"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl plan list",
+        "exactl plan approve"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "approve"
+      ],
+      "summary": "Approve plans and move them to the active workspace",
+      "description": "Approves each plan you name. With `--all` it approves every plan in review. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "ids",
+          "optional": true,
+          "variadic": true
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Approve every plan awaiting review"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Approve one plan",
+          "command": "exactl plan approve plan-123"
+        },
+        {
+          "title": "Approve every plan in review",
+          "command": "exactl plan approve --all"
+        },
+        {
+          "title": "Approve every plan without a prompt",
+          "command": "exactl plan approve --all --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl plan show",
+        "exactl plan reject"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "reject"
+      ],
+      "summary": "Reject a plan with a reason",
+      "description": "Rejects the plan and records why. The reason is required.",
+      "arguments": [
+        {
+          "name": "plan-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": true,
+          "description": "Rejection reason (required)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Reject a plan",
+          "command": "exactl plan reject plan-123 --reason \"Scope is too wide\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl plan revise",
+        "exactl plan show"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "revise"
+      ],
+      "summary": "Request a revision with review comments",
+      "description": "Sends the plan back to the agent with your comments. Repeat `--comment` for several comments.",
+      "arguments": [
+        {
+          "name": "plan-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--comment"
+          ],
+          "type": "string",
+          "value": "comment",
+          "required": true,
+          "description": "Review comment (can be specified multiple times)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Request a revision",
+          "command": "exactl plan revise plan-123 --comment \"Add a rollback step\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl plan reject",
+        "exactl plan show"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "amendment",
+        "list"
+      ],
+      "summary": "List plans awaiting amendment approval",
+      "description": "Lists the plans whose execution paused with a proposed amendment.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List pending amendments",
+          "command": "exactl plan amendment list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl plan amendment show",
+        "exactl plan amendment approve"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "amendment",
+        "show"
+      ],
+      "summary": "Show the details of proposed amendments",
+      "description": "Prints the added, updated and removed steps of each amendment. With `--all` it shows every proposed amendment.",
+      "arguments": [
+        {
+          "name": "ids",
+          "optional": true,
+          "variadic": true
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Show every proposed amendment"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show one amendment",
+          "command": "exactl plan amendment show plan-123"
+        },
+        {
+          "title": "Show every amendment",
+          "command": "exactl plan amendment show --all"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl plan amendment list",
+        "exactl plan amendment approve"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "amendment",
+        "approve"
+      ],
+      "summary": "Approve plan amendments",
+      "description": "Approves each amendment you name and lets the paused execution continue. With `--all` it approves every proposed amendment. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "ids",
+          "optional": true,
+          "variadic": true
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Approve every pending amendment"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Approve one amendment",
+          "command": "exactl plan amendment approve plan-123"
+        },
+        {
+          "title": "Approve every amendment",
+          "command": "exactl plan amendment approve --all"
+        },
+        {
+          "title": "Approve every amendment without a prompt",
+          "command": "exactl plan amendment approve --all --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl plan amendment show",
+        "exactl plan amendment reject"
+      ]
+    },
+    {
+      "path": [
+        "plan",
+        "amendment",
+        "reject"
+      ],
+      "summary": "Reject a plan amendment with a reason",
+      "description": "Rejects the amendment and records why. The reason is required.",
+      "arguments": [
+        {
+          "name": "plan-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": true,
+          "description": "Rejection reason (required)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Reject an amendment",
+          "command": "exactl plan amendment reject plan-123 --reason \"Out of scope\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl plan amendment show",
+        "exactl plan amendment approve"
+      ]
+    },
+    {
+      "path": [
+        "review",
+        "list"
+      ],
+      "summary": "List the pending reviews",
+      "description": "Lists the reviews of code changes and artifacts. Filter with `--status` and `--type`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-s",
+            "--status"
+          ],
+          "type": "string",
+          "value": "status",
+          "required": false,
+          "description": "Filter by status (pending, approved, rejected)"
+        },
+        {
+          "flags": [
+            "--type"
+          ],
+          "type": "string",
+          "value": "type",
+          "default": "all",
+          "required": false,
+          "description": "Filter by type (code, artifact, all)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List reviews",
+          "command": "exactl review list"
+        },
+        {
+          "title": "List approved code reviews as JSON",
+          "command": "exactl review list --status approved --type code -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl review show",
+        "exactl review approve"
+      ]
+    },
+    {
+      "path": [
+        "review",
+        "show"
+      ],
+      "summary": "Show the details and the diff of a review",
+      "description": "Prints the review summary, the verification state, the lint result, the commits and the diff. With `--diff` it prints only the diff.",
+      "arguments": [
+        {
+          "name": "review-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--diff"
+          ],
+          "required": false,
+          "description": "Show only the diff for the review"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show a review",
+          "command": "exactl review show request-123"
+        },
+        {
+          "title": "Show only the diff",
+          "command": "exactl review show request-123 --diff"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl review approve",
+        "exactl review reject"
+      ]
+    },
+    {
+      "path": [
+        "review",
+        "approve"
+      ],
+      "summary": "Approve a review and merge its change",
+      "description": "Merges the branch of a code review into main, or marks an artifact review as approved.",
+      "arguments": [
+        {
+          "name": "review-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Approve a review",
+          "command": "exactl review approve request-123"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl review show",
+        "exactl review reject"
+      ]
+    },
+    {
+      "path": [
+        "review",
+        "reject"
+      ],
+      "summary": "Reject a review with a reason",
+      "description": "Deletes the branch of a code review, or marks an artifact review as rejected. The reason is required.",
+      "arguments": [
+        {
+          "name": "review-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": true,
+          "description": "Rejection reason (required)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Reject a review",
+          "command": "exactl review reject request-123 --reason \"Breaks the build\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl review show",
+        "exactl review approve"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "list"
+      ],
+      "summary": "List every pending human decision",
+      "description": "Lists the pending items from every source with the command that decides each. Draft skills show only for the portal of `EXA_PORTAL`. Use `exactl skill list --portal <alias>` for another portal.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--kind"
+          ],
+          "type": "string",
+          "value": "kinds",
+          "required": false,
+          "description": "Only these kinds, comma-separated: plan, amendment, review, clarification, proposal, skill, wait, tool"
+        },
+        {
+          "flags": [
+            "-s",
+            "--status"
+          ],
+          "type": "string",
+          "value": "status",
+          "required": false,
+          "description": "Select wait states of another status (default: pending); lists no other kind"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List what waits for you",
+          "command": "exactl approval list"
+        },
+        {
+          "title": "List only tool confirmations",
+          "command": "exactl approval list --kind tool -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval show",
+        "exactl approval approve"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "show"
+      ],
+      "summary": "Show one pending approval",
+      "description": "Prints the kind of the item and its fields. Name it as `wait:<resume-token>` or `tool:<confirmation-id>`.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a wait state",
+          "command": "exactl approval show wait:550e8400-e29b-41d4-a716-446655440001"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval list",
+        "exactl approval approve"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "approve"
+      ],
+      "summary": "Approve a wait state or a tool confirmation",
+      "description": "Records your approval. Add a note with `--message`, or the actor that decides with `--resolved-by`.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--message"
+          ],
+          "type": "string",
+          "value": "message",
+          "required": false,
+          "description": "Resolution summary"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving this wait state, recorded for audit"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Approve a tool confirmation",
+          "command": "exactl approval approve tool:123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval reject",
+        "exactl approval show"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "reject"
+      ],
+      "summary": "Reject a wait state or deny a tool confirmation",
+      "description": "Records your refusal. A tool denial defaults to the reason `User declined`.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": false,
+          "description": "Why the item is rejected (a tool denial defaults to 'User declined')"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving this wait state, recorded for audit"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Deny a tool confirmation",
+          "command": "exactl approval reject tool:123e4567-e89b-42d3-a456-426614174000 --reason \"Not now\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval approve",
+        "exactl approval show"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "amend"
+      ],
+      "summary": "Mark a wait state as amended",
+      "description": "Records that you changed what the wait state asked for. Add a note with `--message`.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--message"
+          ],
+          "type": "string",
+          "value": "message",
+          "required": false,
+          "description": "Resolution summary"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving this wait state, recorded for audit"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Mark a wait state as amended",
+          "command": "exactl approval amend wait:550e8400-e29b-41d4-a716-446655440001 --message \"Scope reduced\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval approve",
+        "exactl approval show"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "expire"
+      ],
+      "summary": "Expire a pending wait state",
+      "description": "Ends a wait state that nobody answered in time.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--message"
+          ],
+          "type": "string",
+          "value": "message",
+          "required": false,
+          "description": "Resolution summary"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving this wait state, recorded for audit"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Expire a wait state",
+          "command": "exactl approval expire wait:550e8400-e29b-41d4-a716-446655440001"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl approval cancel",
+        "exactl approval show"
+      ]
+    },
+    {
+      "path": [
+        "approval",
+        "cancel"
+      ],
+      "summary": "Cancel a pending wait state",
+      "description": "Withdraws a wait state without a decision. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "approval-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--message"
+          ],
+          "type": "string",
+          "value": "message",
+          "required": false,
+          "description": "Resolution summary"
+        },
+        {
+          "flags": [
+            "--resolved-by"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Actor identity resolving this wait state, recorded for audit"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Cancel a wait state",
+          "command": "exactl approval cancel wait:550e8400-e29b-41d4-a716-446655440001"
+        },
+        {
+          "title": "Cancel without a prompt",
+          "command": "exactl approval cancel wait:550e8400-e29b-41d4-a716-446655440001 --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 4,
+          "name": "STATE_CONFLICT"
+        },
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl approval expire",
+        "exactl approval show"
+      ]
+    },
+    {
+      "path": [
+        "git",
+        "worktree",
+        "list"
+      ],
+      "summary": "List the git worktrees",
+      "description": "Lists the worktrees of the workspace repository. Target a portal with `--portal` or a path with `--repo`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Target a configured portal repository"
+        },
+        {
+          "flags": [
+            "--repo"
+          ],
+          "type": "string",
+          "value": "repo",
+          "required": false,
+          "description": "Target a repository path (absolute or relative)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List worktrees",
+          "command": "exactl git worktree list"
+        },
+        {
+          "title": "List the worktrees of a portal",
+          "command": "exactl git worktree list --portal api -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl git worktree prune",
+        "exactl git branch list"
+      ]
+    },
+    {
+      "path": [
+        "git",
+        "worktree",
+        "prune"
+      ],
+      "summary": "Prune stale git worktree metadata",
+      "description": "Removes the metadata of worktrees whose directories are gone. `--dry-run` shows what it would remove. Asks for confirmation unless `--dry-run` is set. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Target a configured portal repository"
+        },
+        {
+          "flags": [
+            "--repo"
+          ],
+          "type": "string",
+          "value": "repo",
+          "required": false,
+          "description": "Target a repository path (absolute or relative)"
+        },
+        {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "description": "Show what would be pruned"
+        },
+        {
+          "flags": [
+            "--verbose"
+          ],
+          "required": false,
+          "description": "Verbose output"
+        },
+        {
+          "flags": [
+            "--expire"
+          ],
+          "type": "string",
+          "value": "expire",
+          "required": false,
+          "description": "Prune entries older than <time> (e.g., 'now', '3.days.ago')"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Preview the prune",
+          "command": "exactl git worktree prune --dry-run"
+        },
+        {
+          "title": "Prune old entries",
+          "command": "exactl git worktree prune --expire 3.days.ago"
+        },
+        {
+          "title": "Prune without a prompt",
+          "command": "exactl git worktree prune --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl git worktree list",
+        "exactl git status"
+      ]
+    },
+    {
+      "path": [
+        "git",
+        "branch",
+        "list"
+      ],
+      "summary": "List the branches",
+      "description": "Lists the branches of the workspace repository, newest first, with the trace id of the last commit.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--pattern"
+          ],
+          "type": "string",
+          "value": "pattern",
+          "required": false,
+          "description": "Filter by pattern (e.g., 'feat/*')"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List branches",
+          "command": "exactl git branch list"
+        },
+        {
+          "title": "List feature branches",
+          "command": "exactl git branch list --pattern 'feat/*'"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl git log",
+        "exactl git status"
+      ]
+    },
+    {
+      "path": [
+        "git",
+        "status"
+      ],
+      "summary": "Show the repository status",
+      "description": "Shows the current branch and the modified, added, deleted and untracked files.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the status",
+          "command": "exactl git status"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl git branch list",
+        "exactl git log"
+      ]
+    },
+    {
+      "path": [
+        "git",
+        "log"
+      ],
+      "summary": "Search the commit log by trace id",
+      "description": "Lists the commits of every branch that carry the trace id.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--trace"
+          ],
+          "type": "string",
+          "value": "trace_id",
+          "required": true,
+          "description": "Filter by trace ID"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Find the commits of a trace",
+          "command": "exactl git log --trace 7b1d4e60"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl git branch list",
+        "exactl git status"
+      ]
+    },
+    {
+      "path": [
+        "daemon",
+        "start"
+      ],
+      "summary": "Start the Exaix daemon",
+      "description": "Starts the daemon and waits until it reports ready. Set the wait with `--ready-timeout`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--ready-timeout"
+          ],
+          "type": "number",
+          "value": "ms",
+          "required": false,
+          "description": "Milliseconds to wait for daemon.ready (default: daemon.ready_timeout_ms)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Start the daemon",
+          "command": "exactl daemon start"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 124,
+          "name": "TIMEOUT"
+        }
+      ],
+      "see_also": [
+        "exactl daemon status",
+        "exactl daemon stop"
+      ]
+    },
+    {
+      "path": [
+        "daemon",
+        "stop"
+      ],
+      "summary": "Stop the Exaix daemon",
+      "description": "Stops the running daemon. A request that is running finishes its current step first.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Stop the daemon",
+          "command": "exactl daemon stop"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl daemon status",
+        "exactl daemon start"
+      ]
+    },
+    {
+      "path": [
+        "daemon",
+        "restart"
+      ],
+      "summary": "Restart the Exaix daemon",
+      "description": "Stops the daemon and starts it again, so it reloads the configuration.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Restart the daemon",
+          "command": "exactl daemon restart"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl daemon status",
+        "exactl daemon logs"
+      ]
+    },
+    {
+      "path": [
+        "daemon",
+        "status"
+      ],
+      "summary": "Check whether the daemon runs",
+      "description": "Prints the daemon state, its process id and uptime, and the binary and workspace schema versions.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the daemon status",
+          "command": "exactl daemon status"
+        },
+        {
+          "title": "Show the daemon status as JSON",
+          "command": "exactl daemon status -o json"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl daemon start",
+        "exactl daemon logs"
+      ]
+    },
+    {
+      "path": [
+        "daemon",
+        "logs"
+      ],
+      "summary": "Show the daemon logs",
+      "description": "Prints the last lines of the daemon log. With `--follow` it keeps printing new lines until you stop it.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "lines",
+          "default": "50",
+          "required": false,
+          "description": "Number of lines to show"
+        },
+        {
+          "flags": [
+            "-f",
+            "--follow"
+          ],
+          "required": false,
+          "description": "Follow log output"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the last 50 lines",
+          "command": "exactl daemon logs --limit 50"
+        },
+        {
+          "title": "Follow the log",
+          "command": "exactl daemon logs --follow"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl daemon status",
+        "exactl daemon restart"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "add"
+      ],
+      "summary": "Add a portal to an external project",
+      "description": "Links the project at the target path under the alias and writes its context card.",
+      "arguments": [
+        {
+          "name": "target-path",
+          "optional": false,
+          "variadic": false
+        },
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--default-branch"
+          ],
+          "type": "string",
+          "value": "branch",
+          "required": false,
+          "description": "Default base branch for this portal"
+        },
+        {
+          "flags": [
+            "--execution-strategy"
+          ],
+          "type": "string",
+          "value": "strategy",
+          "required": false,
+          "description": "Execution strategy: branch (default) or worktree"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Add a portal",
+          "command": "exactl portal add ~/projects/api api"
+        },
+        {
+          "title": "Add a portal with a base branch",
+          "command": "exactl portal add ~/projects/api api --default-branch develop"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal list",
+        "exactl portal verify"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "list"
+      ],
+      "summary": "List the configured portals",
+      "description": "Lists every portal with its link, its status and its context card. Add the first one with `exactl portal add <path> <alias>`.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List portals",
+          "command": "exactl portal list"
+        },
+        {
+          "title": "List portals as JSON",
+          "command": "exactl portal list -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal show",
+        "exactl portal add"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "show"
+      ],
+      "summary": "Show the details of one portal",
+      "description": "Prints the target, the link, the status, the context card and the execution settings.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a portal",
+          "command": "exactl portal show api"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal verify",
+        "exactl portal refresh"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "remove"
+      ],
+      "summary": "Remove a portal",
+      "description": "Removes the link and archives the context card. `--keep-card` keeps the card in place. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--keep-card"
+          ],
+          "required": false,
+          "description": "Keep context card instead of archiving"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Remove a portal",
+          "command": "exactl portal remove api"
+        },
+        {
+          "title": "Remove without a prompt",
+          "command": "exactl portal remove api --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl portal list",
+        "exactl portal add"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "verify"
+      ],
+      "summary": "Verify the integrity of portals",
+      "description": "Checks one portal, or every portal without an alias, and lists the issues it finds.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Verify every portal",
+          "command": "exactl portal verify"
+        },
+        {
+          "title": "Verify one portal",
+          "command": "exactl portal verify api"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal show",
+        "exactl portal refresh"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "refresh"
+      ],
+      "summary": "Refresh the context card of a portal",
+      "description": "Scans the project again and rewrites its context card.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Refresh a portal",
+          "command": "exactl portal refresh api"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal show",
+        "exactl portal knowledge analyze"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "knowledge",
+        "analyze"
+      ],
+      "summary": "Analyze the codebase of a portal",
+      "description": "Gathers the codebase knowledge of the portal. Pick a depth with `--mode`. `--force` runs it again when fresh knowledge exists.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--mode"
+          ],
+          "type": "string",
+          "value": "mode",
+          "required": false,
+          "description": "Analysis mode: quick, standard, deep"
+        },
+        {
+          "flags": [
+            "--force"
+          ],
+          "required": false,
+          "description": "Force re-analysis even if fresh knowledge exists"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Analyze a portal",
+          "command": "exactl portal knowledge analyze api --mode deep"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal knowledge show",
+        "exactl portal refresh"
+      ]
+    },
+    {
+      "path": [
+        "portal",
+        "knowledge",
+        "show"
+      ],
+      "summary": "Show the gathered knowledge of a portal",
+      "description": "Prints the architecture overview, the key files, the conventions and the dependencies.",
+      "arguments": [
+        {
+          "name": "alias",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the knowledge",
+          "command": "exactl portal knowledge show api"
+        },
+        {
+          "title": "Show it as JSON",
+          "command": "exactl portal knowledge show api -o json"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl portal knowledge analyze",
+        "exactl portal show"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "get"
+      ],
+      "summary": "Print the effective value of a key",
+      "description": "Prints the value that the daemon uses for the key. `--profile` reads the value of a named profile.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--profile"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": false,
+          "description": "Target a named profile (reads profile.<name>.<path>)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Read a key",
+          "command": "exactl config get ai.timeout_ms"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config set",
+        "exactl config show"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "set"
+      ],
+      "summary": "Set a key",
+      "description": "Validates the value, writes it as an override and reloads the configuration. `--profile` writes it to a named profile.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        },
+        {
+          "name": "value",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--profile"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": false,
+          "description": "Target a named profile (writes profile.<name>.<path>)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Set a key",
+          "command": "exactl config set ai.timeout_ms 60000"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config get",
+        "exactl config rollback"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "unset"
+      ],
+      "summary": "Reset a key to its default",
+      "description": "Removes the override of the key, so the default applies again.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Reset a key",
+          "command": "exactl config unset ai.timeout_ms"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config set",
+        "exactl config diff"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "history"
+      ],
+      "summary": "Show the override history of a key",
+      "description": "Lists every override of the key, newest first. The history is append-only.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the history",
+          "command": "exactl config history ai.timeout_ms"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config rollback",
+        "exactl config set"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "rollback"
+      ],
+      "summary": "Revert a key to an earlier value",
+      "description": "Sets the key back to the value of a history id and appends a rollback row. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Roll a key back",
+          "command": "exactl config rollback ai.timeout_ms 3"
+        },
+        {
+          "title": "Roll back without a prompt",
+          "command": "exactl config rollback ai.timeout_ms 3 --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl config history",
+        "exactl config set"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "edit"
+      ],
+      "summary": "Edit the overrides in your editor",
+      "description": "Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Edit the overrides",
+          "command": "exactl config edit"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config diff",
+        "exactl config validate"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "block",
+        "add"
+      ],
+      "summary": "Block a key pattern from MCP writes",
+      "description": "Adds a glob pattern to the blocklist. MCP clients can then not write a key that matches it.",
+      "arguments": [
+        {
+          "name": "pattern",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--reason"
+          ],
+          "type": "string",
+          "value": "text",
+          "required": false,
+          "description": "Optional admin note for the block"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Block a pattern",
+          "command": "exactl config block add 'system.*' --reason \"Fixed by the admin\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config block list",
+        "exactl config lock add"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "block",
+        "remove"
+      ],
+      "summary": "Remove a blocklist pattern",
+      "description": "Removes the pattern from the blocklist.",
+      "arguments": [
+        {
+          "name": "pattern",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Remove a pattern",
+          "command": "exactl config block remove 'system.*'"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config block list",
+        "exactl config block add"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "block",
+        "list"
+      ],
+      "summary": "List the blocklist patterns",
+      "description": "Lists every pattern that MCP clients cannot write.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List the patterns",
+          "command": "exactl config block list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config block add",
+        "exactl config lock list"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "compact"
+      ],
+      "summary": "Compact the override history",
+      "description": "Keeps one row per key in the override history. It recovers database space and loses the older rows. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Compact the history",
+          "command": "exactl config compact"
+        },
+        {
+          "title": "Compact without a prompt",
+          "command": "exactl config compact --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl config history",
+        "exactl config diff"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "validate"
+      ],
+      "summary": "Validate the configuration",
+      "description": "Validates the whole configuration, or one key. Without a path it checks every key.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Validate everything",
+          "command": "exactl config validate"
+        },
+        {
+          "title": "Validate one key",
+          "command": "exactl config validate ai.timeout_ms"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl config show",
+        "exactl config diff"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "show"
+      ],
+      "summary": "Show the effective configuration",
+      "description": "Shows every setting with the value that applies. `--sources` lists the overridden keys with the source of each.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--sources"
+          ],
+          "required": false,
+          "description": "Include provenance source for each key"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the configuration",
+          "command": "exactl config show"
+        },
+        {
+          "title": "Show the sources",
+          "command": "exactl config show --sources -o json"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config get",
+        "exactl config diff"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "diff"
+      ],
+      "summary": "Show the keys that differ from the defaults",
+      "description": "Lists every key whose value is not the default, with the default and the current value.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the differences",
+          "command": "exactl config diff"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config show",
+        "exactl config unset"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "lock",
+        "add"
+      ],
+      "summary": "Lock a key against writes",
+      "description": "Locks the key, so the CLI, MCP clients and the daemon cannot change it.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--reason"
+          ],
+          "type": "string",
+          "value": "text",
+          "required": false,
+          "description": "Optional note for the lock"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Lock a key",
+          "command": "exactl config lock add ai.timeout_ms --reason \"Tuned for the CI\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config lock list",
+        "exactl config lock remove"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "lock",
+        "remove"
+      ],
+      "summary": "Unlock a key",
+      "description": "Removes the lock of the key.",
+      "arguments": [
+        {
+          "name": "path",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Unlock a key",
+          "command": "exactl config lock remove ai.timeout_ms"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config lock list",
+        "exactl config lock add"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "lock",
+        "list"
+      ],
+      "summary": "List the locked keys",
+      "description": "Lists every locked key with the name that locked it and the reason.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List the locks",
+          "command": "exactl config lock list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config lock add",
+        "exactl config block list"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "profile",
+        "use"
+      ],
+      "summary": "Set the active profile",
+      "description": "Makes the named profile the active one.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Use a profile",
+          "command": "exactl config profile use fast"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config profile list",
+        "exactl config show"
+      ]
+    },
+    {
+      "path": [
+        "config",
+        "profile",
+        "list"
+      ],
+      "summary": "List the profiles",
+      "description": "Lists every profile that has at least one override.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List the profiles",
+          "command": "exactl config profile list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl config profile use",
+        "exactl config show"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "create"
+      ],
+      "summary": "Create a new agent blueprint",
+      "description": "Writes the blueprint file of a new agent role. Seed it from an existing role with `--from`, or give the prompt inline or from a file.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--name"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": false,
+          "description": "Agent name (required)"
+        },
+        {
+          "flags": [
+            "-m",
+            "--model"
+          ],
+          "type": "string",
+          "value": "model",
+          "required": false,
+          "description": "Model in provider:model format (required)"
+        },
+        {
+          "flags": [
+            "--description"
+          ],
+          "type": "string",
+          "value": "description",
+          "required": false,
+          "description": "Brief description"
+        },
+        {
+          "flags": [
+            "--capabilities"
+          ],
+          "type": "string",
+          "value": "capabilities",
+          "required": false,
+          "description": "Comma-separated capabilities"
+        },
+        {
+          "flags": [
+            "--system-prompt"
+          ],
+          "type": "string",
+          "value": "prompt",
+          "required": false,
+          "description": "Inline system prompt"
+        },
+        {
+          "flags": [
+            "--system-prompt-file"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Load system prompt from file"
+        },
+        {
+          "flags": [
+            "--from"
+          ],
+          "type": "string",
+          "value": "agent-role-id",
+          "required": false,
+          "description": "Clone an existing agent role as a prototype (seeds model, capabilities, and body)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Create a blueprint",
+          "command": "exactl blueprint create code-reviewer --name \"Code Reviewer\" --model anthropic:claude-sonnet-5-5"
+        },
+        {
+          "title": "Clone a blueprint",
+          "command": "exactl blueprint create reviewer-2 --from code-reviewer"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint validate",
+        "exactl blueprint list"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "list"
+      ],
+      "summary": "List the agent blueprints",
+      "description": "Lists every blueprint with its model, capabilities and status. Filter with `--capability` and `--status`. Create the first one with `exactl blueprint create <agent-id> --name \"Name\" --model \"provider:model\"`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--capability"
+          ],
+          "type": "string",
+          "value": "capability",
+          "required": false,
+          "description": "Only show blueprints that declare this capability"
+        },
+        {
+          "flags": [
+            "--status"
+          ],
+          "type": "string",
+          "value": "status",
+          "required": false,
+          "description": "Only show blueprints in this lifecycle status (active|deprecated)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List blueprints",
+          "command": "exactl blueprint list"
+        },
+        {
+          "title": "List active blueprints as JSON",
+          "command": "exactl blueprint list --status active -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint show",
+        "exactl blueprint create"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "show"
+      ],
+      "summary": "Show the details of one blueprint",
+      "description": "Prints the name, the model, the capabilities, the version and a preview of the blueprint body.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a blueprint",
+          "command": "exactl blueprint show code-reviewer"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint edit",
+        "exactl blueprint validate"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "validate"
+      ],
+      "summary": "Validate a blueprint file",
+      "description": "Checks a blueprint by agent id, or any blueprint file with `--file`. It exits with a failure when the blueprint is invalid.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--file"
+          ],
+          "type": "string",
+          "value": "path",
+          "required": false,
+          "description": "Validate a blueprint file by path"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Validate a blueprint",
+          "command": "exactl blueprint validate code-reviewer"
+        },
+        {
+          "title": "Validate a file",
+          "command": "exactl blueprint validate --file agents/code-reviewer.md"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint show",
+        "exactl blueprint edit"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "edit"
+      ],
+      "summary": "Edit a blueprint in your editor",
+      "description": "Opens the blueprint file in `$EDITOR` and validates it when you close the editor.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Edit a blueprint",
+          "command": "exactl blueprint edit code-reviewer"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint validate",
+        "exactl blueprint show"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "remove"
+      ],
+      "summary": "Remove a blueprint",
+      "description": "Deletes the blueprint file. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Remove a blueprint",
+          "command": "exactl blueprint remove old-reviewer"
+        },
+        {
+          "title": "Remove without a prompt",
+          "command": "exactl blueprint remove old-reviewer --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint deprecate",
+        "exactl blueprint list"
+      ]
+    },
+    {
+      "path": [
+        "blueprint",
+        "deprecate"
+      ],
+      "summary": "Retire a blueprint without deleting it",
+      "description": "Marks the blueprint as deprecated. The file stays on disk, and no new request uses the role.",
+      "arguments": [
+        {
+          "name": "agent-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Deprecate a blueprint",
+          "command": "exactl blueprint deprecate old-reviewer"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl blueprint remove",
+        "exactl blueprint list"
+      ]
+    },
+    {
+      "path": [
+        "flow",
+        "list"
+      ],
+      "summary": "List the available flows",
+      "description": "Lists every flow of the workspace with its version, its step count and whether this edition can run it.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List flows",
+          "command": "exactl flow list"
+        },
+        {
+          "title": "List flows as JSON",
+          "command": "exactl flow list -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl flow show",
+        "exactl flow run"
+      ]
+    },
+    {
+      "path": [
+        "flow",
+        "show"
+      ],
+      "summary": "Show the details of one flow",
+      "description": "Prints the flow header, its dependency graph, its steps and its settings.",
+      "arguments": [
+        {
+          "name": "flow-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a flow",
+          "command": "exactl flow show code-review"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl flow validate",
+        "exactl flow bindings"
+      ]
+    },
+    {
+      "path": [
+        "flow",
+        "run"
+      ],
+      "summary": "Create a request that runs a flow",
+      "description": "Writes a request file for the flow and its task text. It takes the same options as `exactl request create`, except `--agent`.",
+      "arguments": [
+        {
+          "name": "flow-id",
+          "optional": false,
+          "variadic": false
+        },
+        {
+          "name": "description",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--priority"
+          ],
+          "type": "string",
+          "value": "priority",
+          "default": "normal",
+          "required": false,
+          "description": "Priority: low, normal, high, critical"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal alias for context"
+        },
+        {
+          "flags": [
+            "--target-branch"
+          ],
+          "type": "string",
+          "value": "branch",
+          "required": false,
+          "description": "Target branch for this request (portal-aware)"
+        },
+        {
+          "flags": [
+            "-m",
+            "--model"
+          ],
+          "type": "string",
+          "value": "model",
+          "required": false,
+          "description": "Named model configuration"
+        },
+        {
+          "flags": [
+            "--model-size"
+          ],
+          "type": "string",
+          "value": "size",
+          "required": false,
+          "description": "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)"
+        },
+        {
+          "flags": [
+            "--characteristic"
+          ],
+          "type": "string",
+          "value": "value",
+          "required": false,
+          "description": "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)"
+        },
+        {
+          "flags": [
+            "--thinking"
+          ],
+          "type": "string",
+          "value": "mode",
+          "required": false,
+          "description": "Extended thinking: bare --thinking means true; accepts true|false|auto"
+        },
+        {
+          "flags": [
+            "--effort"
+          ],
+          "type": "string",
+          "value": "tier",
+          "required": false,
+          "description": "Reasoning token budget: low|medium|high|auto (auto asks the system to decide)"
+        },
+        {
+          "flags": [
+            "--preferred-provider"
+          ],
+          "type": "string",
+          "value": "provider",
+          "required": false,
+          "description": "Narrow candidates to specific provider (skips cross-provider scoring)"
+        },
+        {
+          "flags": [
+            "--skills"
+          ],
+          "type": "string",
+          "value": "skills",
+          "required": false,
+          "description": "Comma-separated list of skills to inject"
+        },
+        {
+          "flags": [
+            "--subject"
+          ],
+          "type": "string",
+          "value": "subject",
+          "required": false,
+          "description": "Human-readable subject for the request"
+        },
+        {
+          "flags": [
+            "--acceptance-criteria"
+          ],
+          "type": "string",
+          "value": "criteria",
+          "required": false,
+          "description": "Acceptance criterion (repeatable: --acceptance-criteria 'A' --acceptance-criteria 'B')"
+        },
+        {
+          "flags": [
+            "--expected-outcome"
+          ],
+          "type": "string",
+          "value": "outcome",
+          "required": false,
+          "description": "Expected outcome (repeatable: --expected-outcome 'A' --expected-outcome 'B')"
+        },
+        {
+          "flags": [
+            "--overlay"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Per-run binding overlay file (repeatable: --overlay a.json --overlay b.toml)"
+        },
+        {
+          "flags": [
+            "--bind"
+          ],
+          "type": "string",
+          "value": "spec",
+          "required": false,
+          "description": "Per-run binding (repeatable), e.g. flow:research/step:compose=service=openai"
+        },
+        {
+          "flags": [
+            "--locked"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Replay a prior run's binding lock file"
+        },
+        {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "description": "Show what would be created without writing"
+        },
+        {
+          "flags": [
+            "--dry-run-context"
+          ],
+          "required": false,
+          "description": "Print a projected input-token breakdown without writing a request file or calling a real LLM"
+        },
+        {
+          "flags": [
+            "--analyze"
+          ],
+          "required": false,
+          "description": "Trigger immediate intent analysis for the request"
+        },
+        {
+          "flags": [
+            "--engine"
+          ],
+          "type": "string",
+          "value": "engine",
+          "default": "heuristic",
+          "required": false,
+          "description": "Analysis engine: heuristic, llm, hybrid"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Run a flow",
+          "command": "exactl flow run code-review \"Review the auth module\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl flow show",
+        "exactl request watch"
+      ]
+    },
+    {
+      "path": [
+        "flow",
+        "validate"
+      ],
+      "summary": "Validate a flow definition",
+      "description": "Checks the flow file against the flow schema. It exits with a failure when the flow is invalid.",
+      "arguments": [
+        {
+          "name": "flow-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Validate a flow",
+          "command": "exactl flow validate code-review"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl flow show",
+        "exactl flow bindings"
+      ]
+    },
+    {
+      "path": [
+        "flow",
+        "bindings"
+      ],
+      "summary": "Resolve the model bindings of every step",
+      "description": "Resolves the service, model, transport and interface of each LLM step across every layer, without calling a provider. It exits with a failure when a step has an issue.",
+      "arguments": [
+        {
+          "name": "flow-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--overlay"
+          ],
+          "type": "string",
+          "value": "file",
+          "required": false,
+          "description": "Per-run binding overlay file (repeatable)"
+        },
+        {
+          "flags": [
+            "--bind"
+          ],
+          "type": "string",
+          "value": "spec",
+          "required": false,
+          "description": "Per-run binding entry, e.g. flow:research/step:compose=service=openai (repeatable)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the bindings of a flow",
+          "command": "exactl flow bindings code-review"
+        },
+        {
+          "title": "Resolve with a per-run overlay",
+          "command": "exactl flow bindings code-review --overlay overlay.toml"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl flow validate",
+        "exactl flow run"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "list"
+      ],
+      "summary": "Show the memory banks summary",
+      "description": "Shows how many projects and executions the memory banks hold and when they were last active.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show the summary",
+          "command": "exactl memory list"
+        },
+        {
+          "title": "Show the summary as JSON",
+          "command": "exactl memory list -o json"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory project list",
+        "exactl memory execution list"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "search"
+      ],
+      "summary": "Search the memory banks",
+      "description": "Searches every memory bank for the query. Narrow it with `--portal` or `--tags`, or use `--use-embeddings` for a semantic search.",
+      "arguments": [
+        {
+          "name": "query",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Filter by portal"
+        },
+        {
+          "flags": [
+            "--tags"
+          ],
+          "type": "string",
+          "value": "tags",
+          "required": false,
+          "description": "Filter by tags (comma-separated)"
+        },
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "limit",
+          "default": "20",
+          "required": false,
+          "description": "Maximum results"
+        },
+        {
+          "flags": [
+            "--use-embeddings"
+          ],
+          "required": false,
+          "description": "Use embedding-based semantic search"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Search for a word",
+          "command": "exactl memory search retry"
+        },
+        {
+          "title": "Search one portal",
+          "command": "exactl memory search retry --portal api --limit 5"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory list",
+        "exactl memory project show"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "project",
+        "list"
+      ],
+      "summary": "List the project memories",
+      "description": "Lists every project memory with its pattern and decision counts.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "List project memories",
+          "command": "exactl memory project list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory project show",
+        "exactl memory search"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "project",
+        "show"
+      ],
+      "summary": "Show the memory of one project",
+      "description": "Shows the overview, the patterns, the decisions and the references of the portal.",
+      "arguments": [
+        {
+          "name": "portal",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a project memory",
+          "command": "exactl memory project show api"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl memory project list",
+        "exactl memory execution list"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "execution",
+        "list"
+      ],
+      "summary": "List the execution history",
+      "description": "Lists the recorded executions, newest first. Filter by portal and set how many to show with `--limit`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Filter by portal"
+        },
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "limit",
+          "default": "20",
+          "required": false,
+          "description": "Maximum results"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List executions",
+          "command": "exactl memory execution list"
+        },
+        {
+          "title": "List the last five executions of a portal",
+          "command": "exactl memory execution list --portal api -n 5"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory execution show",
+        "exactl memory list"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "execution",
+        "show"
+      ],
+      "summary": "Show one recorded execution",
+      "description": "Shows the status, the summary, the context files, the changes and the lessons of the execution.",
+      "arguments": [
+        {
+          "name": "trace-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show an execution",
+          "command": "exactl memory execution show 7b1d4e60"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl memory execution list",
+        "exactl memory project show"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "learning",
+        "remove"
+      ],
+      "summary": "Remove a global learning",
+      "description": "Marks the learning as deleted. The record stays for the audit trail. Asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "learning-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": false,
+          "description": "Deletion reason"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Remove a learning",
+          "command": "exactl memory learning remove l-1 --reason \"Out of date\""
+        },
+        {
+          "title": "Remove without a prompt",
+          "command": "exactl memory learning remove l-1 --reason \"Out of date\" --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl memory search",
+        "exactl memory proposal list"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "index",
+        "rebuild"
+      ],
+      "summary": "Rebuild the memory search indices",
+      "description": "Rebuilds the search indices of the memory banks. `--include-embeddings` also regenerates every embedding vector.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--include-embeddings"
+          ],
+          "required": false,
+          "description": "Regenerate embedding vectors for all learnings"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Rebuild the indices",
+          "command": "exactl memory index rebuild"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory search",
+        "exactl memory list"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "proposal",
+        "list"
+      ],
+      "summary": "List the pending memory proposals",
+      "description": "Lists the proposals that wait for approval. `--eligible` shows only the ones that auto-approval would take.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--eligible"
+          ],
+          "required": false,
+          "description": "Show only auto-approval eligible pending proposals"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List pending proposals",
+          "command": "exactl memory proposal list"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl memory proposal show",
+        "exactl memory proposal approve"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "proposal",
+        "show"
+      ],
+      "summary": "Show one pending proposal",
+      "description": "Shows the learning that the proposal would add and the scope it would merge into.",
+      "arguments": [
+        {
+          "name": "proposal-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Show a proposal",
+          "command": "exactl memory proposal show prop-1"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl memory proposal approve",
+        "exactl memory proposal reject"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "proposal",
+        "approve"
+      ],
+      "summary": "Approve pending proposals",
+      "description": "Approves the listed proposals, or every pending proposal with `--all`. `--dry-run` lists what auto-approval would take and changes nothing. `--all` asks for confirmation first. Pass `--yes` to confirm without a prompt, as scripts must.",
+      "arguments": [
+        {
+          "name": "proposal-ids",
+          "optional": true,
+          "variadic": true
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Approve every pending proposal"
+        },
+        {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "description": "Preview auto-approvable proposals without changing state"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Approve one proposal",
+          "command": "exactl memory proposal approve prop-1"
+        },
+        {
+          "title": "Approve every proposal",
+          "command": "exactl memory proposal approve --all"
+        },
+        {
+          "title": "Preview auto-approval",
+          "command": "exactl memory proposal approve --dry-run"
+        },
+        {
+          "title": "Approve every proposal without a prompt",
+          "command": "exactl memory proposal approve --all --yes"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 130,
+          "name": "CANCELLED"
+        }
+      ],
+      "see_also": [
+        "exactl memory proposal show",
+        "exactl memory proposal reject"
+      ]
+    },
+    {
+      "path": [
+        "memory",
+        "proposal",
+        "reject"
+      ],
+      "summary": "Reject a pending proposal",
+      "description": "Rejects the proposal and records the reason.",
+      "arguments": [
+        {
+          "name": "proposal-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "-r",
+            "--reason"
+          ],
+          "type": "string",
+          "value": "reason",
+          "required": true,
+          "description": "Rejection reason"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Reject a proposal",
+          "command": "exactl memory proposal reject prop-1 --reason \"Too narrow\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl memory proposal show",
+        "exactl memory proposal approve"
+      ]
+    },
+    {
+      "path": [
+        "dashboard"
+      ],
+      "summary": "Open the interactive dashboard",
+      "description": "Opens the terminal dashboard. It takes over the terminal until you quit it and prints no data of its own.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Open the dashboard",
+          "command": "exactl dashboard"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl request list",
+        "exactl daemon status"
+      ]
+    },
+    {
+      "path": [
+        "mcp",
+        "serve"
+      ],
+      "summary": "Start the MCP server",
+      "description": "Starts the Exaix MCP server on stdio. `--sse` serves it over HTTP on `--port` instead. The command runs until you stop it and prints no data of its own.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--sse"
+          ],
+          "required": false,
+          "description": "Use SSE/HTTP transport (default: stdio)"
+        },
+        {
+          "flags": [
+            "--port"
+          ],
+          "type": "number",
+          "value": "port",
+          "default": "3000",
+          "required": false,
+          "description": "Port for SSE transport"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Serve on stdio",
+          "command": "exactl mcp serve"
+        },
+        {
+          "title": "Serve over HTTP",
+          "command": "exactl mcp serve --sse --port 3000"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl mcp tool list",
+        "exactl mcp tool call"
+      ]
+    },
+    {
+      "path": [
+        "mcp",
+        "tool",
+        "list"
+      ],
+      "summary": "List the tools of an external MCP server",
+      "description": "Connects to the server and lists the name and description of each tool.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--server"
+          ],
+          "type": "string",
+          "value": "url",
+          "required": true,
+          "description": "URL of the MCP server"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List the tools",
+          "command": "exactl mcp tool list --server http://127.0.0.1:3000/mcp"
+        },
+        {
+          "title": "List them as JSON",
+          "command": "exactl mcp tool list --server http://127.0.0.1:3000/mcp -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl mcp tool call",
+        "exactl mcp serve"
+      ]
+    },
+    {
+      "path": [
+        "mcp",
+        "tool",
+        "call"
+      ],
+      "summary": "Call one tool of an external MCP server",
+      "description": "Connects to the server, calls the tool with the JSON object of `--args` and prints the result. Set `EXA_MCP_BEARER_TOKEN` for a server that needs a token.",
+      "arguments": [
+        {
+          "name": "tool",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--server"
+          ],
+          "type": "string",
+          "value": "url",
+          "required": true,
+          "description": "URL of the MCP server"
+        },
+        {
+          "flags": [
+            "--args"
+          ],
+          "type": "string",
+          "value": "json",
+          "required": false,
+          "description": "JSON arguments object for the tool call"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Call a tool",
+          "command": "exactl mcp tool call echo --server http://127.0.0.1:3000/mcp --args '{\"text\":\"hello\"}'"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl mcp tool list",
+        "exactl mcp serve"
+      ]
+    },
+    {
+      "path": [
+        "log",
+        "list"
+      ],
+      "summary": "Query the activity journal",
+      "description": "Lists the journal rows, newest first. Filter with `--filter key=value` or a bare event name, and count or list distinct values with `--count` and `--distinct`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--filter"
+          ],
+          "type": "string",
+          "value": "filter",
+          "required": false,
+          "description": "Filter by key=value (trace_id, action_type, agent_role, since) or a bare event name"
+        },
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "n",
+          "default": "50",
+          "required": false,
+          "description": "Show last N entries"
+        },
+        {
+          "flags": [
+            "--distinct"
+          ],
+          "type": "string",
+          "value": "field",
+          "required": false,
+          "description": "Return distinct values for specified field"
+        },
+        {
+          "flags": [
+            "--count"
+          ],
+          "required": false,
+          "description": "Return count aggregation by action_type"
+        },
+        {
+          "flags": [
+            "--payload"
+          ],
+          "type": "string",
+          "value": "pattern",
+          "required": false,
+          "description": "Filter by payload LIKE pattern"
+        },
+        {
+          "flags": [
+            "--actor"
+          ],
+          "type": "string",
+          "value": "actor",
+          "required": false,
+          "description": "Filter by actor"
+        },
+        {
+          "flags": [
+            "--target"
+          ],
+          "type": "string",
+          "value": "target",
+          "required": false,
+          "description": "Filter by target"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the last rows",
+          "command": "exactl log list"
+        },
+        {
+          "title": "Filter by trace",
+          "command": "exactl log list --filter trace_id=7b1d4e60 -n 20 -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl log wait",
+        "exactl log cost"
+      ]
+    },
+    {
+      "path": [
+        "log",
+        "wait"
+      ],
+      "summary": "Wait for a journal event",
+      "description": "Blocks until one of the events is journalled after the baseline, or until the timeout. It prints the matching event as one line with `-o jsonl`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--event"
+          ],
+          "type": "string",
+          "value": "event",
+          "required": false,
+          "description": "Action type to wait for (repeatable — OR semantics, e.g. daemon.ready)"
+        },
+        {
+          "flags": [
+            "--since"
+          ],
+          "type": "string",
+          "value": "since",
+          "required": false,
+          "description": "Only count events timestamped after this ISO datetime (default: events arriving while waiting)"
+        },
+        {
+          "flags": [
+            "--timeout"
+          ],
+          "type": "number",
+          "value": "timeout",
+          "default": "30",
+          "required": false,
+          "description": "Max wait in seconds"
+        },
+        {
+          "flags": [
+            "--payload"
+          ],
+          "type": "string",
+          "value": "pattern",
+          "required": false,
+          "description": "Only count events whose payload matches this LIKE pattern"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Wait for the daemon",
+          "command": "exactl log wait --event daemon.ready --timeout 60"
+        }
+      ],
+      "output": "stream",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 124,
+          "name": "TIMEOUT"
+        }
+      ],
+      "see_also": [
+        "exactl log list",
+        "exactl log verify"
+      ]
+    },
+    {
+      "path": [
+        "log",
+        "verify"
+      ],
+      "summary": "Verify the journal hash chain",
+      "description": "Checks the hash chain of the activity journal. It fails with exit code 1 when a row was changed.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Verify the journal",
+          "command": "exactl log verify"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl log list",
+        "exactl log cost"
+      ]
+    },
+    {
+      "path": [
+        "log",
+        "cost"
+      ],
+      "summary": "Show the cost of the LLM calls",
+      "description": "Lists the recorded calls with their cost and the source of the price, or groups them with `--group-by model`, `portal` or `service`. A group shows the share of its cost per source.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--trace"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": false,
+          "description": "Filter by trace ID"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Filter by portal alias"
+        },
+        {
+          "flags": [
+            "--since"
+          ],
+          "type": "string",
+          "value": "date",
+          "required": false,
+          "description": "Filter by date (ISO string)"
+        },
+        {
+          "flags": [
+            "-m",
+            "--model"
+          ],
+          "type": "string",
+          "value": "model",
+          "required": false,
+          "description": "Filter by model"
+        },
+        {
+          "flags": [
+            "--group-by"
+          ],
+          "type": "string",
+          "value": "dimension",
+          "required": false,
+          "description": "Group costs by model, portal or service"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List the recorded costs",
+          "command": "exactl log cost"
+        },
+        {
+          "title": "Group by service",
+          "command": "exactl log cost --group-by service -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl log list",
+        "exactl model list"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "list"
+      ],
+      "summary": "List the registry models",
+      "description": "Lists one row per service that serves a model, with its provenance, the verified date and the price per million tokens. Narrow it with `--model <author>/<model>`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--model"
+          ],
+          "type": "string",
+          "value": "model",
+          "required": false,
+          "description": "Only the services that serve this model, as <author>/<model>"
+        },
+        {
+          "flags": [
+            "--benchmark"
+          ],
+          "type": "string",
+          "value": "benchmark",
+          "required": false,
+          "description": "Show the advisory score column for a tracked benchmark (Team)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List the models",
+          "command": "exactl model list"
+        },
+        {
+          "title": "List one model as JSON",
+          "command": "exactl model list --model openai/gpt-4o-mini -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl model use",
+        "exactl model candidates"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "refresh"
+      ],
+      "summary": "Refresh the Team model catalog",
+      "description": "Tells you how the Team daemon refreshes the catalog. It needs the Team live registry and does nothing in Solo.",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "title": "Refresh the catalog",
+          "command": "exactl model refresh"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl model list",
+        "exactl model candidates"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "use"
+      ],
+      "summary": "Set the provider and its default model",
+      "description": "Sets the provider, and the default model when you give `<provider>:<model>`.",
+      "arguments": [
+        {
+          "name": "target",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Use a provider",
+          "command": "exactl model use anthropic:claude-sonnet-5-5"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl model list",
+        "exactl model candidates"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "candidates"
+      ],
+      "summary": "Curate the model candidate lists",
+      "description": "Writes the candidate list of a size, or a characteristic sub-list, and `--clear` empties it. `--list` shows every curated list.",
+      "arguments": [
+        {
+          "name": "entries",
+          "optional": true,
+          "variadic": true
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--size"
+          ],
+          "type": "string",
+          "value": "size",
+          "required": false,
+          "description": "Capability tier: S|M|L|XL"
+        },
+        {
+          "flags": [
+            "--characteristic"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": false,
+          "description": "Write a characteristic sub-list instead of the base list"
+        },
+        {
+          "flags": [
+            "--clear"
+          ],
+          "required": false,
+          "description": "Reset the size's candidate list to empty"
+        },
+        {
+          "flags": [
+            "--list"
+          ],
+          "required": false,
+          "description": "Show curated lists per size with unconfigured flags"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the lists",
+          "command": "exactl model candidates --list"
+        },
+        {
+          "title": "Set a list",
+          "command": "exactl model candidates --size M anthropic:claude-sonnet-5-5"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl model list",
+        "exactl model use"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "route",
+        "explain"
+      ],
+      "summary": "Explain the routing of a request",
+      "description": "Shows which agent role the routing policy selects for the request file and the ranked candidates. It runs nothing.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--request"
+          ],
+          "type": "string",
+          "value": "request",
+          "required": false,
+          "description": "Path to a request file"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Explain a request",
+          "command": "exactl model route explain --request Workspace/Requests/request-1.md"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl model route validate",
+        "exactl model list"
+      ]
+    },
+    {
+      "path": [
+        "model",
+        "route",
+        "validate"
+      ],
+      "summary": "Validate a routing policy file",
+      "description": "Checks a routing policy YAML file. It exits with a failure when the file is invalid.",
+      "arguments": [
+        {
+          "name": "policy-file",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "title": "Validate a policy",
+          "command": "exactl model route validate policies/routing.yaml"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl model route explain",
+        "exactl model list"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "list"
+      ],
+      "summary": "List skills",
+      "description": "Lists the skills of the current roots. `--all` also reports the folders that did not load.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--category"
+          ],
+          "type": "string",
+          "value": "category",
+          "required": false,
+          "description": "Filter by category: core, project, learned"
+        },
+        {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "description": "Include diagnostics for folders that did not load"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List skills",
+          "command": "exactl skill list"
+        },
+        {
+          "title": "List learned skills as JSON",
+          "command": "exactl skill list --category learned -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl skill show",
+        "exactl skill validate"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "show"
+      ],
+      "summary": "Show a skill",
+      "description": "Shows the current skill and its usage. `--revision` shows one stored revision instead.",
+      "arguments": [
+        {
+          "name": "skill-id",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--revision"
+          ],
+          "type": "string",
+          "value": "revision",
+          "required": false,
+          "description": "Show this stored revision instead of the current skill"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show a skill",
+          "command": "exactl skill show code-review"
+        },
+        {
+          "title": "Show a stored revision",
+          "command": "exactl skill show code-review --revision <revision-uuid>"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill revisions",
+        "exactl skill list"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "match"
+      ],
+      "summary": "Match skills for a request",
+      "description": "Ranks the skills whose triggers match the request text. Narrow it with a task type or tags.",
+      "arguments": [
+        {
+          "name": "request",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--task-type"
+          ],
+          "type": "string",
+          "value": "taskType",
+          "required": false,
+          "description": "Task type filter"
+        },
+        {
+          "flags": [
+            "--tags"
+          ],
+          "type": "string",
+          "value": "tags",
+          "required": false,
+          "description": "Comma-separated tags filter"
+        },
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "limit",
+          "default": "10",
+          "required": false,
+          "description": "Maximum results"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Match a request",
+          "command": "exactl skill match \"review the pull request\""
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl skill show",
+        "exactl skill list"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "derive"
+      ],
+      "summary": "Derive a draft skill from learnings",
+      "description": "Writes a draft skill from the listed learning ids. Review the draft, then approve its revision.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--learning-ids"
+          ],
+          "type": "string",
+          "value": "ids",
+          "required": true,
+          "description": "Comma-separated learning IDs to derive from"
+        },
+        {
+          "flags": [
+            "--name"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": true,
+          "description": "Name for the derived skill"
+        },
+        {
+          "flags": [
+            "--description"
+          ],
+          "type": "string",
+          "value": "desc",
+          "required": false,
+          "description": "Skill description"
+        },
+        {
+          "flags": [
+            "-i",
+            "--instructions"
+          ],
+          "type": "string",
+          "value": "instructions",
+          "required": false,
+          "description": "Skill instructions"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Derive a skill",
+          "command": "exactl skill derive --learning-ids l1,l2 --name \"Retry Handling\""
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill approve",
+        "exactl skill show"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "create"
+      ],
+      "summary": "Create a draft skill",
+      "description": "Writes a draft skill. It is not active until you approve the revision you reviewed.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--description"
+          ],
+          "type": "string",
+          "value": "desc",
+          "required": false,
+          "description": "Skill description"
+        },
+        {
+          "flags": [
+            "--category"
+          ],
+          "type": "string",
+          "value": "category",
+          "default": "project",
+          "required": false,
+          "description": "Category: core, project, learned"
+        },
+        {
+          "flags": [
+            "-i",
+            "--instructions"
+          ],
+          "type": "string",
+          "value": "instructions",
+          "required": false,
+          "description": "Skill instructions"
+        },
+        {
+          "flags": [
+            "-k",
+            "--keywords"
+          ],
+          "type": "string",
+          "value": "keywords",
+          "required": false,
+          "description": "Comma-separated trigger keywords"
+        },
+        {
+          "flags": [
+            "--task-types"
+          ],
+          "type": "string",
+          "value": "taskTypes",
+          "required": false,
+          "description": "Comma-separated trigger task types"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Create a skill",
+          "command": "exactl skill create \"Retry Handling\" -i \"Retry with backoff.\" -k retry,backoff"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill approve",
+        "exactl skill show"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "approve"
+      ],
+      "summary": "Approve a reviewed skill revision",
+      "description": "Activates the draft. The revision must be the one that was reviewed, or the command fails.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--revision"
+          ],
+          "type": "string",
+          "value": "revision",
+          "required": true,
+          "description": "Revision UUID that was reviewed"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Approve a revision",
+          "command": "exactl skill approve retry-handling --revision <revision-uuid>"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill show",
+        "exactl skill deprecate"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "deprecate"
+      ],
+      "summary": "Take a skill out of matching",
+      "description": "Stops the skill from matching. Approve a reviewed revision to bring it back.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Deprecate a skill",
+          "command": "exactl skill deprecate retry-handling"
+        }
+      ],
+      "output": "mutation",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill approve",
+        "exactl skill revisions"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "revisions"
+      ],
+      "summary": "List the stored revisions of a skill",
+      "description": "Lists every stored revision with its hash, first sighting and use counts.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": false,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "List revisions",
+          "command": "exactl skill revisions retry-handling"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill show",
+        "exactl skill approve"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "usage"
+      ],
+      "summary": "Show the skill usage of one trace",
+      "description": "Lists every model call of the trace that carried a skill, joined to the revision it used.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--trace"
+          ],
+          "type": "string",
+          "value": "trace",
+          "required": true,
+          "description": "Trace id to read"
+        },
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show usage",
+          "command": "exactl skill usage --trace 0b1c2d3e"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        }
+      ],
+      "see_also": [
+        "exactl skill revisions",
+        "exactl skill show"
+      ]
+    },
+    {
+      "path": [
+        "skill",
+        "validate"
+      ],
+      "summary": "Validate the skill roots",
+      "description": "Reports the typed validation reasons for the current skill roots. It exits with a failure when a skill is invalid.",
+      "arguments": [
+        {
+          "name": "name",
+          "optional": true,
+          "variadic": false
+        }
+      ],
+      "options": [
+        {
+          "flags": [
+            "--portal"
+          ],
+          "type": "string",
+          "value": "portal",
+          "required": false,
+          "description": "Portal whose project skills apply. Without it only global skills apply"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Validate every skill",
+          "command": "exactl skill validate"
+        },
+        {
+          "title": "Validate one skill",
+          "command": "exactl skill validate retry-handling"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
+          "code": 6,
+          "name": "INVALID"
+        }
+      ],
+      "see_also": [
+        "exactl skill list",
+        "exactl skill show"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "run"
+      ],
+      "summary": "Run evaluation scenarios",
+      "description": "Runs the selected scenarios in the scenario framework and records each run in the history. With `-o jsonl` it prints one event when the run starts and one when it ends, and the scenario output goes to stderr.\n\nThe command ends with the exit code of the scenario runner: 0 when every scenario passes, 1 when a scenario fails and 2 on an infrastructure error.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-P",
+            "--pack"
+          ],
+          "type": "string",
+          "value": "pack",
+          "required": false,
+          "description": "Run scenarios in a named pack (repeatable)"
+        },
+        {
+          "flags": [
+            "--tag"
+          ],
+          "type": "string",
+          "value": "tag",
+          "required": false,
+          "description": "Filter by tag (repeatable)"
+        },
+        {
+          "flags": [
+            "--scenario"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": false,
+          "description": "Run a single named scenario (repeatable)"
+        },
+        {
+          "flags": [
+            "--cell"
+          ],
+          "type": "string",
+          "value": "tool",
+          "required": false,
+          "description": "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run"
+        },
+        {
+          "flags": [
+            "--max-cost-usd"
+          ],
+          "type": "number",
+          "value": "usd",
+          "required": false,
+          "description": "Stop scheduling after accumulated tracked cost reaches this cap (skips remaining scenarios; never truncates a running task)"
+        },
+        {
+          "flags": [
+            "-v",
+            "--verbose"
+          ],
+          "required": false,
+          "description": "Show detailed output"
+        },
+        {
+          "flags": [
+            "--score-threshold"
+          ],
+          "type": "number",
+          "value": "threshold",
+          "default": "0.5",
+          "required": false,
+          "description": "Minimum suite score to pass"
+        },
+        {
+          "flags": [
+            "--trials"
+          ],
+          "type": "number",
+          "value": "n",
+          "default": "1",
+          "required": false,
+          "description": "Number of trials per scenario"
+        },
+        {
+          "flags": [
+            "--history-store"
+          ],
+          "type": "string",
+          "value": "store",
+          "default": "sqlite+jsonl",
+          "required": false,
+          "description": "History storage: sqlite+jsonl or jsonl"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Run one pack",
+          "command": "exactl eval run --pack eval-smoke"
+        },
+        {
+          "title": "Run one scenario",
+          "command": "exactl eval run --scenario read-file-roundtrip --trials 3"
+        }
+      ],
+      "output": "stream",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl eval history",
+        "exactl eval report"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "history"
+      ],
+      "summary": "Query the evaluation history",
+      "description": "Lists the recorded runs, oldest first, filtered by scenario, pack or date. Use `-n` to keep the last rows.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "n",
+          "required": false,
+          "description": "Show last N entries"
+        },
+        {
+          "flags": [
+            "--scenario"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": false,
+          "description": "Filter by scenario ID"
+        },
+        {
+          "flags": [
+            "--pack"
+          ],
+          "type": "string",
+          "value": "name",
+          "required": false,
+          "description": "Filter by pack name"
+        },
+        {
+          "flags": [
+            "--since"
+          ],
+          "type": "string",
+          "value": "date",
+          "required": false,
+          "description": "Filter to runs since date (ISO 8601)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the last runs",
+          "command": "exactl eval history --limit 10"
+        },
+        {
+          "title": "Filter by pack",
+          "command": "exactl eval history --pack eval-smoke -o json"
+        }
+      ],
+      "output": "collection",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl eval compare",
+        "exactl eval report"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "compare"
+      ],
+      "summary": "Compare two evaluation runs",
+      "description": "Prints the score and step differences between two recorded runs.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--run-a"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": true,
+          "description": "First run ID to compare"
+        },
+        {
+          "flags": [
+            "--run-b"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": true,
+          "description": "Second run ID to compare"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Compare two runs",
+          "command": "exactl eval compare --run-a run-1 --run-b run-2"
+        }
+      ],
+      "output": "item",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl eval history"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "report"
+      ],
+      "summary": "Print an evaluation report view",
+      "description": "Prints one report view as text: cost, families, lift, ablation, frontier, failures, external, robustness, interactive or memory. The frontier, failures and external views also print JSON with `-o json`.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--view"
+          ],
+          "type": "string",
+          "value": "view",
+          "default": "cost",
+          "required": false,
+          "description": "Report view: cost, families, lift, ablation, frontier, failures, external, robustness, interactive, or memory"
+        },
+        {
+          "flags": [
+            "--scenario"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": false,
+          "description": "Filter to a single scenario ID"
+        },
+        {
+          "flags": [
+            "--pack"
+          ],
+          "type": "string",
+          "value": "pack",
+          "required": false,
+          "description": "Filter to a single pack (e.g. swe-tasks)"
+        },
+        {
+          "flags": [
+            "-n",
+            "--limit"
+          ],
+          "type": "number",
+          "value": "n",
+          "required": false,
+          "description": "Limit to the last N runs"
+        },
+        {
+          "flags": [
+            "--group-by"
+          ],
+          "type": "string",
+          "value": "prefix",
+          "required": false,
+          "description": "Group by tag prefix: subsystem or entity"
+        },
+        {
+          "flags": [
+            "--run-ids"
+          ],
+          "type": "string",
+          "value": "ids",
+          "required": false,
+          "description": "robustness/interactive views only: comma-separated run IDs to scope the table to (regenerates a founding table exactly, regardless of later local runs)"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Show the cost view",
+          "command": "exactl eval report --view cost"
+        },
+        {
+          "title": "Show the frontier as JSON",
+          "command": "exactl eval report --view frontier -o json"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        }
+      ],
+      "see_also": [
+        "exactl eval history"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "calibration",
+        "generate"
+      ],
+      "summary": "Capture judge calls for calibration",
+      "description": "Runs real scenarios and writes the judge calls to a directory, so that `eval calibration score` can compare a judge with a reference.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "-P",
+            "--pack"
+          ],
+          "type": "string",
+          "value": "pack",
+          "required": false,
+          "description": "Run scenarios in a named pack (repeatable)"
+        },
+        {
+          "flags": [
+            "--tag"
+          ],
+          "type": "string",
+          "value": "tag",
+          "required": false,
+          "description": "Filter by tag (repeatable)"
+        },
+        {
+          "flags": [
+            "--scenario"
+          ],
+          "type": "string",
+          "value": "id",
+          "required": false,
+          "description": "Run a single named scenario (repeatable)"
+        },
+        {
+          "flags": [
+            "--cell"
+          ],
+          "type": "string",
+          "value": "tool",
+          "required": false,
+          "description": "Run only the matrix cell whose tool matches (e.g. claude-code, opencode)"
+        },
+        {
+          "flags": [
+            "--max-cost-usd"
+          ],
+          "type": "number",
+          "value": "usd",
+          "required": false,
+          "description": "Stop scheduling after accumulated tracked cost reaches this cap"
+        },
+        {
+          "flags": [
+            "-v",
+            "--verbose"
+          ],
+          "required": false,
+          "description": "Show detailed output"
+        },
+        {
+          "flags": [
+            "--capture-calibration-evidence"
+          ],
+          "type": "string",
+          "value": "dir",
+          "required": true,
+          "description": "Directory to capture real judge-call evidence into"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Capture the evidence",
+          "command": "exactl eval calibration generate --pack eval-smoke --capture-calibration-evidence evidence"
+        }
+      ],
+      "output": "stream",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl eval calibration score"
+      ]
+    },
+    {
+      "path": [
+        "eval",
+        "calibration",
+        "score"
+      ],
+      "summary": "Score judge agreement over captured evidence",
+      "description": "Scores how well a judge agrees with a reference evaluator over the captured calibration evidence.",
+      "arguments": [],
+      "options": [
+        {
+          "flags": [
+            "--capture-dir"
+          ],
+          "type": "string",
+          "value": "dir",
+          "required": true,
+          "description": "Directory captured by 'eval calibration generate'"
+        },
+        {
+          "flags": [
+            "--target"
+          ],
+          "type": "string",
+          "value": "target",
+          "required": true,
+          "description": "Target judge, as provider:model (e.g. claude-cli:claude-sonnet-5)"
+        },
+        {
+          "flags": [
+            "--reference"
+          ],
+          "type": "string",
+          "value": "reference",
+          "required": true,
+          "description": "Reference evaluator, as provider:model (e.g. codex-cli:gpt-5.6-sol)"
+        },
+        {
+          "flags": [
+            "--seed"
+          ],
+          "type": "string",
+          "value": "seed",
+          "required": true,
+          "description": "Deterministic selection seed"
+        },
+        {
+          "flags": [
+            "--sample-count"
+          ],
+          "type": "number",
+          "value": "n",
+          "required": false,
+          "description": "Number of eligible artifacts to score"
+        },
+        {
+          "flags": [
+            "--label-threshold"
+          ],
+          "type": "number",
+          "value": "n",
+          "required": false,
+          "description": "Pass/fail label threshold (0-1)"
+        },
+        {
+          "flags": [
+            "--isolated"
+          ],
+          "required": false,
+          "description": "Run the reference evaluator in the bwrap-sandboxed isolation profile"
+        },
+        {
+          "flags": [
+            "--report-file"
+          ],
+          "type": "string",
+          "value": "dir",
+          "required": false,
+          "description": "Directory to write the calibration report into"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Score a judge",
+          "command": "exactl eval calibration score --capture-dir evidence --target claude-cli:claude-sonnet-5 --reference codex-cli:gpt-5.6-sol --seed 1"
+        }
+      ],
+      "output": "protocol",
+      "exit_codes": [
+        {
+          "code": 1,
+          "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
+        }
+      ],
+      "see_also": [
+        "exactl eval calibration generate"
+      ]
+    }
+  ]
+}

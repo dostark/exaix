@@ -81,7 +81,7 @@ exactl request create "Update README in the MyProject portal" --portal MyProject
 exactl request create "Generate unit tests for src/math.ts" --model fast
 
 # 5. Analyze a request without executing it
-exactl request analyze "Implement a new authentication flow" --mode hybrid
+exactl request analyze <request-id> --engine hybrid
 ```
 
 ## 2. Installation & Deployment
@@ -749,7 +749,7 @@ exactl memory project show MyProject
 exactl memory search "database migration"
 
 # Search by tags
-exactl memory search --tags "error-handling,async"
+exactl memory search "error handling" --tags "error-handling,async"
 
 # List execution history
 exactl memory execution list --limit 10
@@ -883,11 +883,11 @@ Use the `exactl skill` command. Add `--portal <alias>` to include that portal's 
 # List all available skills; --all also reports folders that did not load
 exactl skill list
 exactl skill list --category core
-exactl skill list --all --format json
+exactl skill list --all -o json
 
 # Show a skill, or one stored revision of it
 exactl skill show testing-standard
-exactl skill show testing-standard --revision <revision-uuid> --format json
+exactl skill show testing-standard --revision <revision-uuid> -o json
 
 # Test skill matching for a specific request
 exactl skill match "Implement the feature and run tests"
@@ -900,7 +900,7 @@ exactl skill deprecate release-notes
 
 # History and audit
 exactl skill revisions release-notes
-exactl skill usage --trace <trace-id> --format json
+exactl skill usage --trace <trace-id> -o json
 exactl skill validate            # typed reasons for every folder; exits 1 when one is invalid
 ```
 
@@ -1072,6 +1072,135 @@ the command that replaces it on one line. The
 **What waits for a human.** `exactl approval list` shows every pending human decision from all eight sources,
 oldest first, with the exact command that decides each row. A source that takes longer than 30 seconds is skipped with a notice on stderr, and the command ends after it printed the other rows. See
 [Approval Commands](#approval-commands---resolve-wait-states-and-tool-confirmations) for the `approval` verbs.
+
+### 4.1c Command Summary
+
+The table lists every `exactl` command with its summary. It is generated from the command tree, and each row links to the page of its noun in the [CLI reference](cli/index.md), which lists the options, examples and exit codes. Run `deno task docs:cli` after you change a command.
+
+<!-- exactl-reference:start -->
+
+| Command                            | Summary                                             | Page                                                     |
+| ---------------------------------- | --------------------------------------------------- | -------------------------------------------------------- |
+| `exactl request create`            | Create a request for an agent or a flow             | [request](cli/request.md#exactl-request-create)          |
+| `exactl request list`              | List pending requests                               | [request](cli/request.md#exactl-request-list)            |
+| `exactl request show`              | Show the details of one request                     | [request](cli/request.md#exactl-request-show)            |
+| `exactl request watch`             | Follow the live events of a request                 | [request](cli/request.md#exactl-request-watch)           |
+| `exactl request analyze`           | Analyze the intent of a request                     | [request](cli/request.md#exactl-request-analyze)         |
+| `exactl request cancel`            | Cancel a pending request                            | [request](cli/request.md#exactl-request-cancel)          |
+| `exactl request clarify`           | Answer the clarification questions of a request     | [request](cli/request.md#exactl-request-clarify)         |
+| `exactl request inspect`           | Inspect the captured context of a trace             | [request](cli/request.md#exactl-request-inspect)         |
+| `exactl plan list`                 | List plans awaiting review                          | [plan](cli/plan.md#exactl-plan-list)                     |
+| `exactl plan show`                 | Show the details of one plan                        | [plan](cli/plan.md#exactl-plan-show)                     |
+| `exactl plan approve`              | Approve plans and move them to the active workspace | [plan](cli/plan.md#exactl-plan-approve)                  |
+| `exactl plan reject`               | Reject a plan with a reason                         | [plan](cli/plan.md#exactl-plan-reject)                   |
+| `exactl plan revise`               | Request a revision with review comments             | [plan](cli/plan.md#exactl-plan-revise)                   |
+| `exactl plan amendment list`       | List plans awaiting amendment approval              | [plan](cli/plan.md#exactl-plan-amendment-list)           |
+| `exactl plan amendment show`       | Show the details of proposed amendments             | [plan](cli/plan.md#exactl-plan-amendment-show)           |
+| `exactl plan amendment approve`    | Approve plan amendments                             | [plan](cli/plan.md#exactl-plan-amendment-approve)        |
+| `exactl plan amendment reject`     | Reject a plan amendment with a reason               | [plan](cli/plan.md#exactl-plan-amendment-reject)         |
+| `exactl review list`               | List the pending reviews                            | [review](cli/review.md#exactl-review-list)               |
+| `exactl review show`               | Show the details and the diff of a review           | [review](cli/review.md#exactl-review-show)               |
+| `exactl review approve`            | Approve a review and merge its change               | [review](cli/review.md#exactl-review-approve)            |
+| `exactl review reject`             | Reject a review with a reason                       | [review](cli/review.md#exactl-review-reject)             |
+| `exactl approval list`             | List every pending human decision                   | [approval](cli/approval.md#exactl-approval-list)         |
+| `exactl approval show`             | Show one pending approval                           | [approval](cli/approval.md#exactl-approval-show)         |
+| `exactl approval approve`          | Approve a wait state or a tool confirmation         | [approval](cli/approval.md#exactl-approval-approve)      |
+| `exactl approval reject`           | Reject a wait state or deny a tool confirmation     | [approval](cli/approval.md#exactl-approval-reject)       |
+| `exactl approval amend`            | Mark a wait state as amended                        | [approval](cli/approval.md#exactl-approval-amend)        |
+| `exactl approval expire`           | Expire a pending wait state                         | [approval](cli/approval.md#exactl-approval-expire)       |
+| `exactl approval cancel`           | Cancel a pending wait state                         | [approval](cli/approval.md#exactl-approval-cancel)       |
+| `exactl git worktree list`         | List the git worktrees                              | [git](cli/git.md#exactl-git-worktree-list)               |
+| `exactl git worktree prune`        | Prune stale git worktree metadata                   | [git](cli/git.md#exactl-git-worktree-prune)              |
+| `exactl git branch list`           | List the branches                                   | [git](cli/git.md#exactl-git-branch-list)                 |
+| `exactl git status`                | Show the repository status                          | [git](cli/git.md#exactl-git-status)                      |
+| `exactl git log`                   | Search the commit log by trace id                   | [git](cli/git.md#exactl-git-log)                         |
+| `exactl daemon start`              | Start the Exaix daemon                              | [daemon](cli/daemon.md#exactl-daemon-start)              |
+| `exactl daemon stop`               | Stop the Exaix daemon                               | [daemon](cli/daemon.md#exactl-daemon-stop)               |
+| `exactl daemon restart`            | Restart the Exaix daemon                            | [daemon](cli/daemon.md#exactl-daemon-restart)            |
+| `exactl daemon status`             | Check whether the daemon runs                       | [daemon](cli/daemon.md#exactl-daemon-status)             |
+| `exactl daemon logs`               | Show the daemon logs                                | [daemon](cli/daemon.md#exactl-daemon-logs)               |
+| `exactl portal add`                | Add a portal to an external project                 | [portal](cli/portal.md#exactl-portal-add)                |
+| `exactl portal list`               | List the configured portals                         | [portal](cli/portal.md#exactl-portal-list)               |
+| `exactl portal show`               | Show the details of one portal                      | [portal](cli/portal.md#exactl-portal-show)               |
+| `exactl portal remove`             | Remove a portal                                     | [portal](cli/portal.md#exactl-portal-remove)             |
+| `exactl portal verify`             | Verify the integrity of portals                     | [portal](cli/portal.md#exactl-portal-verify)             |
+| `exactl portal refresh`            | Refresh the context card of a portal                | [portal](cli/portal.md#exactl-portal-refresh)            |
+| `exactl portal knowledge analyze`  | Analyze the codebase of a portal                    | [portal](cli/portal.md#exactl-portal-knowledge-analyze)  |
+| `exactl portal knowledge show`     | Show the gathered knowledge of a portal             | [portal](cli/portal.md#exactl-portal-knowledge-show)     |
+| `exactl config get`                | Print the effective value of a key                  | [config](cli/config.md#exactl-config-get)                |
+| `exactl config set`                | Set a key                                           | [config](cli/config.md#exactl-config-set)                |
+| `exactl config unset`              | Reset a key to its default                          | [config](cli/config.md#exactl-config-unset)              |
+| `exactl config history`            | Show the override history of a key                  | [config](cli/config.md#exactl-config-history)            |
+| `exactl config rollback`           | Revert a key to an earlier value                    | [config](cli/config.md#exactl-config-rollback)           |
+| `exactl config edit`               | Edit the overrides in your editor                   | [config](cli/config.md#exactl-config-edit)               |
+| `exactl config block add`          | Block a key pattern from MCP writes                 | [config](cli/config.md#exactl-config-block-add)          |
+| `exactl config block remove`       | Remove a blocklist pattern                          | [config](cli/config.md#exactl-config-block-remove)       |
+| `exactl config block list`         | List the blocklist patterns                         | [config](cli/config.md#exactl-config-block-list)         |
+| `exactl config compact`            | Compact the override history                        | [config](cli/config.md#exactl-config-compact)            |
+| `exactl config validate`           | Validate the configuration                          | [config](cli/config.md#exactl-config-validate)           |
+| `exactl config show`               | Show the effective configuration                    | [config](cli/config.md#exactl-config-show)               |
+| `exactl config diff`               | Show the keys that differ from the defaults         | [config](cli/config.md#exactl-config-diff)               |
+| `exactl config lock add`           | Lock a key against writes                           | [config](cli/config.md#exactl-config-lock-add)           |
+| `exactl config lock remove`        | Unlock a key                                        | [config](cli/config.md#exactl-config-lock-remove)        |
+| `exactl config lock list`          | List the locked keys                                | [config](cli/config.md#exactl-config-lock-list)          |
+| `exactl config profile use`        | Set the active profile                              | [config](cli/config.md#exactl-config-profile-use)        |
+| `exactl config profile list`       | List the profiles                                   | [config](cli/config.md#exactl-config-profile-list)       |
+| `exactl blueprint create`          | Create a new agent blueprint                        | [blueprint](cli/blueprint.md#exactl-blueprint-create)    |
+| `exactl blueprint list`            | List the agent blueprints                           | [blueprint](cli/blueprint.md#exactl-blueprint-list)      |
+| `exactl blueprint show`            | Show the details of one blueprint                   | [blueprint](cli/blueprint.md#exactl-blueprint-show)      |
+| `exactl blueprint validate`        | Validate a blueprint file                           | [blueprint](cli/blueprint.md#exactl-blueprint-validate)  |
+| `exactl blueprint edit`            | Edit a blueprint in your editor                     | [blueprint](cli/blueprint.md#exactl-blueprint-edit)      |
+| `exactl blueprint remove`          | Remove a blueprint                                  | [blueprint](cli/blueprint.md#exactl-blueprint-remove)    |
+| `exactl blueprint deprecate`       | Retire a blueprint without deleting it              | [blueprint](cli/blueprint.md#exactl-blueprint-deprecate) |
+| `exactl flow list`                 | List the available flows                            | [flow](cli/flow.md#exactl-flow-list)                     |
+| `exactl flow show`                 | Show the details of one flow                        | [flow](cli/flow.md#exactl-flow-show)                     |
+| `exactl flow run`                  | Create a request that runs a flow                   | [flow](cli/flow.md#exactl-flow-run)                      |
+| `exactl flow validate`             | Validate a flow definition                          | [flow](cli/flow.md#exactl-flow-validate)                 |
+| `exactl flow bindings`             | Resolve the model bindings of every step            | [flow](cli/flow.md#exactl-flow-bindings)                 |
+| `exactl memory list`               | Show the memory banks summary                       | [memory](cli/memory.md#exactl-memory-list)               |
+| `exactl memory search`             | Search the memory banks                             | [memory](cli/memory.md#exactl-memory-search)             |
+| `exactl memory project list`       | List the project memories                           | [memory](cli/memory.md#exactl-memory-project-list)       |
+| `exactl memory project show`       | Show the memory of one project                      | [memory](cli/memory.md#exactl-memory-project-show)       |
+| `exactl memory execution list`     | List the execution history                          | [memory](cli/memory.md#exactl-memory-execution-list)     |
+| `exactl memory execution show`     | Show one recorded execution                         | [memory](cli/memory.md#exactl-memory-execution-show)     |
+| `exactl memory learning remove`    | Remove a global learning                            | [memory](cli/memory.md#exactl-memory-learning-remove)    |
+| `exactl memory index rebuild`      | Rebuild the memory search indices                   | [memory](cli/memory.md#exactl-memory-index-rebuild)      |
+| `exactl memory proposal list`      | List the pending memory proposals                   | [memory](cli/memory.md#exactl-memory-proposal-list)      |
+| `exactl memory proposal show`      | Show one pending proposal                           | [memory](cli/memory.md#exactl-memory-proposal-show)      |
+| `exactl memory proposal approve`   | Approve pending proposals                           | [memory](cli/memory.md#exactl-memory-proposal-approve)   |
+| `exactl memory proposal reject`    | Reject a pending proposal                           | [memory](cli/memory.md#exactl-memory-proposal-reject)    |
+| `exactl dashboard`                 | Open the interactive dashboard                      | [dashboard](cli/dashboard.md)                            |
+| `exactl mcp serve`                 | Start the MCP server                                | [mcp](cli/mcp.md#exactl-mcp-serve)                       |
+| `exactl mcp tool list`             | List the tools of an external MCP server            | [mcp](cli/mcp.md#exactl-mcp-tool-list)                   |
+| `exactl mcp tool call`             | Call one tool of an external MCP server             | [mcp](cli/mcp.md#exactl-mcp-tool-call)                   |
+| `exactl log list`                  | Query the activity journal                          | [log](cli/log.md#exactl-log-list)                        |
+| `exactl log wait`                  | Wait for a journal event                            | [log](cli/log.md#exactl-log-wait)                        |
+| `exactl log verify`                | Verify the journal hash chain                       | [log](cli/log.md#exactl-log-verify)                      |
+| `exactl log cost`                  | Show the cost of the LLM calls                      | [log](cli/log.md#exactl-log-cost)                        |
+| `exactl model list`                | List the registry models                            | [model](cli/model.md#exactl-model-list)                  |
+| `exactl model refresh`             | Refresh the Team model catalog                      | [model](cli/model.md#exactl-model-refresh)               |
+| `exactl model use`                 | Set the provider and its default model              | [model](cli/model.md#exactl-model-use)                   |
+| `exactl model candidates`          | Curate the model candidate lists                    | [model](cli/model.md#exactl-model-candidates)            |
+| `exactl model route explain`       | Explain the routing of a request                    | [model](cli/model.md#exactl-model-route-explain)         |
+| `exactl model route validate`      | Validate a routing policy file                      | [model](cli/model.md#exactl-model-route-validate)        |
+| `exactl skill list`                | List skills                                         | [skill](cli/skill.md#exactl-skill-list)                  |
+| `exactl skill show`                | Show a skill                                        | [skill](cli/skill.md#exactl-skill-show)                  |
+| `exactl skill match`               | Match skills for a request                          | [skill](cli/skill.md#exactl-skill-match)                 |
+| `exactl skill derive`              | Derive a draft skill from learnings                 | [skill](cli/skill.md#exactl-skill-derive)                |
+| `exactl skill create`              | Create a draft skill                                | [skill](cli/skill.md#exactl-skill-create)                |
+| `exactl skill approve`             | Approve a reviewed skill revision                   | [skill](cli/skill.md#exactl-skill-approve)               |
+| `exactl skill deprecate`           | Take a skill out of matching                        | [skill](cli/skill.md#exactl-skill-deprecate)             |
+| `exactl skill revisions`           | List the stored revisions of a skill                | [skill](cli/skill.md#exactl-skill-revisions)             |
+| `exactl skill usage`               | Show the skill usage of one trace                   | [skill](cli/skill.md#exactl-skill-usage)                 |
+| `exactl skill validate`            | Validate the skill roots                            | [skill](cli/skill.md#exactl-skill-validate)              |
+| `exactl eval run`                  | Run evaluation scenarios                            | [eval](cli/eval.md#exactl-eval-run)                      |
+| `exactl eval history`              | Query the evaluation history                        | [eval](cli/eval.md#exactl-eval-history)                  |
+| `exactl eval compare`              | Compare two evaluation runs                         | [eval](cli/eval.md#exactl-eval-compare)                  |
+| `exactl eval report`               | Print an evaluation report view                     | [eval](cli/eval.md#exactl-eval-report)                   |
+| `exactl eval calibration generate` | Capture judge calls for calibration                 | [eval](cli/eval.md#exactl-eval-calibration-generate)     |
+| `exactl eval calibration score`    | Score judge agreement over captured evidence        | [eval](cli/eval.md#exactl-eval-calibration-score)        |
+
+<!-- exactl-reference:end -->
 
 ### 4.1a Working with the TUI Dashboard
 
@@ -1262,7 +1391,7 @@ exactl request create "Build a web app" --flow web-development
 
 # From file (for complex/long requests)
 exactl request create --file ~/requirements.md
-exactl request create -f ./feature-spec.md --agent architect
+exactl request create --file ./feature-spec.md --agent architect
 
 # List pending requests
 exactl request list
@@ -1400,7 +1529,7 @@ another model. A `default_model` that names a fallback chain keeps the choosing 
 The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
 
 ```bash
-exactl log list --filter action_type=model.resolved --format json
+exactl log list --filter action_type=model.resolved -o json
 ```
 
 ##### `exactl model candidates` & `exactl model list` — Solo model curation (the curated model registry)
@@ -1522,7 +1651,7 @@ When a request enters the **REFINING** or **NEEDS_CLARIFICATION** status the qua
 exactl request clarify <trace-id>
 
 # Answer all questions interactively (prompts for each one)
-exactl request clarify <trace-id> --interactive
+exactl request clarify <request-id>
 
 # Supply specific answers by question ID
 exactl request clarify <trace-id> --answer r1q1="The users table" --answer r1q2="src/db/queries.ts"
@@ -2257,7 +2386,7 @@ exactl blueprint edit <agent-id>
 
 # Remove a blueprint
 exactl blueprint remove <agent-id>
-exactl blueprint remove security-auditor --force # Skip confirmation
+exactl blueprint remove security-auditor --yes # Skip the confirmation
 ```
 
 #### **Flow Commands** - Manage multi-agent workflows
@@ -3026,7 +3155,7 @@ exactl daemon status
 
 # View daemon logs
 exactl daemon logs
-exactl daemon logs --lines 100           # Show last 100 lines
+exactl daemon logs --limit 100           # Show last 100 lines
 exactl daemon logs --follow              # Stream logs (like tail -f)
 ```
 
@@ -3037,9 +3166,9 @@ in `docs/Exaix_Evaluation.md`.
 
 ```bash
 exactl eval run --pack smoke --trials 5
-exactl eval history --last 10
+exactl eval history --limit 10
 exactl eval compare --run-a <id> --run-b <id>
-exactl eval report --pack swe-tasks --format table
+exactl eval report --pack swe-tasks -o table
 ```
 
 #### **Skill Commands** - Manage Procedural Skills
@@ -3081,7 +3210,7 @@ $ exactl request create "Write the release notes" --skills release-notes
 
 ```bash
 exactl log list                    # Show last 20 events
-exactl log list --action config.updated
+exactl log list --filter config.updated
 exactl log cost                   # Aggregated cost report
 ```
 
@@ -3094,10 +3223,7 @@ The Model Context Protocol (MCP) allows external AI clients to interact with you
 exactl mcp serve
 
 # Start with debug logging
-exactl mcp serve --log-level debug
-
-# Check MCP server status
-exactl mcp status
+exactl mcp serve
 ```
 
 **Available MCP Tools:**
@@ -3160,22 +3286,22 @@ Exaix provides comprehensive CLI commands to access your workspace's memory bank
 
 ```bash
 # List all projects
-exactl memory projects
+exactl memory project list
 
 # Get project details
-exactl memory project MyProject
+exactl memory project show MyProject
 
 # List execution history
-exactl memory execution
+exactl memory execution list
 
 # Get specific execution details
-exactl memory execution trace-abc123
+exactl memory execution show trace-abc123
 
 # Search across all memory banks
 exactl memory search "database migration"
 
 # Search within specific project
-exactl memory search --project MyProject "API changes"
+exactl memory search "API changes" --portal MyProject
 ```
 
 **Features:**
@@ -3284,7 +3410,7 @@ exactl approval list --status fulfilled
 exactl approval show wait:<resume-token>
 
 # Approve a wait state (flow resumes from last checkpoint) or a tool confirmation
-exactl approval approve wait:<resume-token> -m "Approved after review"
+exactl approval approve wait:<resume-token> --message "Approved after review"
 exactl approval approve tool:<confirmation-id>
 
 # Reject a wait state or deny a tool confirmation
@@ -3292,9 +3418,9 @@ exactl approval reject wait:<resume-token> --reason "Does not meet criteria"
 exactl approval reject tool:<confirmation-id> --reason "Not needed"
 
 # Wait states only: amend, expire and cancel
-exactl approval amend wait:<resume-token> -m "Please revise approach"
-exactl approval expire wait:<resume-token> -m "Timed out"
-exactl approval cancel wait:<resume-token> -m "No longer needed"
+exactl approval amend wait:<resume-token> --message "Please revise approach"
+exactl approval expire wait:<resume-token> --message "Timed out"
+exactl approval cancel wait:<resume-token> --message "No longer needed"
 ```
 
 A tool confirmation takes one decision. A second `approve` or `reject` exits with code 4 and changes nothing, an unknown id exits with code 3, and a malformed id exits with code 2. A daemon timeout never overwrites a decision that a person made. A wait decision journals a `wait_state.command_resolved` row with the wait state id, the action, the status and who decided, and it never writes the resume token.
@@ -3335,10 +3461,10 @@ exactl config set ai.timeout_ms 45000
 exactl config unset ai.provider
 
 # Compare effective values against registry defaults
-exactl config diff --sources
+exactl config show --sources
 
 # Validate a key against its registered schema bounds without writing
-exactl config validate ai.timeout_ms 999999
+exactl config validate ai.timeout_ms
 ```
 
 **Audit & rollback:**
@@ -3374,10 +3500,10 @@ The daemon computes a SHA-256 checksum of the effective Config DB at boot and pe
 
 ```bash
 # Verify manually
-exactl config validate --integrity
+exactl log verify
 
 # Check the journal for integrity events
-exactl log list --action config.integrity_verified
+exactl log list --filter config.integrity_verified
 ```
 
 **Bulk editing:**
@@ -3430,12 +3556,12 @@ exactl eval run --pack smoke
 exactl eval run --tag smoke --trials 5 --score-threshold 0.7
 
 # Run in eval mode (writes history, produces eval-report.json)
-exactl eval run --pack smoke --eval-mode --score-threshold 0.6
+exactl eval run --pack smoke --score-threshold 0.6
 
 # Query evaluation history (SQLite default, --source jsonl to fall back)
-exactl eval history --last 10
-exactl eval history --pack smoke --since 2026-06-01 --format json
-exactl eval history --source jsonl --last 10
+exactl eval history --limit 10
+exactl eval history --pack smoke --since 2026-06-01 -o json
+exactl eval history --limit 10
 
 # Compare two evaluation runs side-by-side
 exactl eval compare --run-a <run-id> --run-b <run-id>
@@ -3447,7 +3573,7 @@ exactl eval report --view lift
 exactl eval report --view failures
 
 # View family-level report (swe-tasks pack)
-exactl eval report --pack swe-tasks --format table
+exactl eval report --pack swe-tasks -o table
 
 # External-benchmark comparability (Terminal-Bench, Docker required to run tasks live)
 exactl eval report --view external
@@ -3459,7 +3585,7 @@ exactl eval report --view robustness --run-ids <id,id,...>   # scope to an exact
 
 # Memory evaluation: per-ability retrieval quality plus consolidation/learning-effectiveness
 exactl eval report --view memory
-exactl eval report --view memory --format json
+exactl eval report --view memory -o json
 ```
 
 `eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
@@ -3496,24 +3622,24 @@ exactl log list
 exactl log list
 
 # Filter by action type
-exactl log list --action config.updated
-exactl log list --action config.integrity_mismatch
+exactl log list --filter config.updated
+exactl log list --filter config.integrity_mismatch
 
 # Filter by trace id
-exactl log list --trace-id <uuid>
+exactl log list --filter trace_id=<uuid>
 
 # Filter by agent
-exactl log list --agent my-agent
+exactl log list --filter agent_role=my-agent
 
 # Time range queries
-exactl log list --since "2026-06-01" --until "2026-06-07"
+exactl log list --filter since=2026-06-01
 
 # Aggregation
-exactl log list --action-type plan.approved --count
+exactl log list --filter plan.approved --count
 
 # Display cost reports
 exactl log cost
-exactl log cost --period monthly
+exactl log cost --since 2026-06-01
 ```
 
 To **wait** for an event instead of querying — a readiness barrier — use the `wait`
@@ -3618,7 +3744,6 @@ If these mismatch, run `exactl migrate check` for details.
 # Create requests quickly (instead of manual file creation)
 exactl request create "Add user authentication"    # Quick request
 exactl request create "Fix bug" --priority high    # With priority
-exactl request -i                           # Interactive mode
 
 # Human review workflow
 exactl plan list                           # See pending plans
@@ -3639,7 +3764,7 @@ exactl config edit                      # Bulk edit in $EDITOR
 exactl review list                      # See agent-created branches
 exactl review show <id>                 # Review code changes
 exactl review approve <id>              # Merge to main
-exactl review reject <id> --reason "..."# Delete branch
+exactl review reject <id> --reason "..." # Delete branch
 
 # Portal management
 exactl portal add ~/Dev/MyProject MyProject  # Mount external project
@@ -3669,10 +3794,9 @@ exactl skill list                          # List all skills
 
 # MCP server
 exactl mcp serve                          # Start MCP server for external clients
-exactl mcp status                          # Check MCP server status
 
 # Activity Journal
-exactl log list --tail 20                  # View recent activity
+exactl log list --limit 20                  # View recent activity
 exactl log list --filter action_type=error # Find errors
 exactl log list --count                    # Count activities by type
 
@@ -3696,7 +3820,7 @@ Query activity history:
 
 ```bash
 # View recent activity history
-exactl log list --tail 10
+exactl log list --limit 10
 
 # Filter by trace ID to see complete request lifecycle
 TRACE_ID=$(exactl log list --tail 1 --format json | jq -r '.[0].trace_id')
@@ -3715,7 +3839,7 @@ All CLI commands output human-readable text by default. JSON output is supported
 exactl plan list
 
 # Machine-readable JSON output
-exactl plan list --format json
+exactl plan list -o json
 ```
 
 ### 4.6 File Format Reference
@@ -4011,7 +4135,7 @@ journal. Historical payload-only cache values are not backfilled.
 exactl daemon status
 
 # View recent daemon logs
-exactl daemon logs --lines 50
+exactl daemon logs --limit 50
 
 # Check active git branches
 exactl git branch list --pattern "feat/*"
@@ -4123,7 +4247,7 @@ exactl daemon status
 # Uptime: 2:15:30
 
 # View recent activity
-exactl daemon logs --lines 20
+exactl daemon logs --limit 20
 
 # Check git repository status
 exactl git status
@@ -4753,7 +4877,7 @@ includePatterns = true   # Include project patterns
 To see what memories were injected for a request:
 
 ```bash
-exactl request show <request-id> --show-context
+exactl request inspect <request-id>
 ```
 
 ### 6.4 Retry & Recovery
@@ -6024,7 +6148,7 @@ The daemon exposes health endpoints and performs self-monitoring. checking:
 
 ```bash
 # Perform an ad-hoc health check
-exactl health check
+exactl daemon status
 ```
 
 ### 10.3 Activity Journal
@@ -6064,13 +6188,13 @@ exactl log list [options]
 exactl log list
 
 # Show only the last 10 entries
-exactl log list --tail 10
+exactl log list --limit 10
 
 # Output in JSON format for scripting
-exactl log list --format json
+exactl log list -o json
 
 # Display in table format for better readability
-exactl log list --format table
+exactl log list -o table
 ```
 
 #### Filtering by Trace ID
@@ -6192,7 +6316,7 @@ headers are excluded; request bodies can contain prompts and tool results. Provi
 the compatible profile suppress both request and response body dumps.
 
 ```bash
-exactl log list --filter action_type=provider.request_debug_dump --tail 10 --format json
+exactl log list --filter action_type=provider.request_debug_dump --limit 10 -o json
 ```
 
 **Security Auditing:**
@@ -6202,7 +6326,7 @@ exactl log list --filter action_type=provider.request_debug_dump --tail 10 --for
 exactl log list --payload %permission%denied% --payload %access%denied%
 
 # Audit all portal access
-exactl log list --filter action_type=portal.% --tail 100
+exactl log list --filter action_type=portal.% --limit 100
 
 # Check for sensitive data in logs
 exactl log list --payload %password% --payload %key% --payload %secret% | wc -l
@@ -6218,17 +6342,17 @@ exactl log list --filter action_type=request.created --distinct agent_role
 exactl log list --count --filter since=$(date -d '7 days ago' +%Y-%m-%d)
 
 # Monitor token usage trends
-exactl log list --payload %tokens% --tail 100 --format json | jq '.[] | .payload.tokens.total // 0' | paste -sd+ | bc
+exactl log list --payload %tokens% --limit 100 -o json | jq '.[] | .payload.tokens.total // 0' | paste -sd+ | bc
 ```
 
 **Compliance and Reporting:**
 
 ```bash
 # Export all activities for a specific month to JSON
-exactl log list --filter since=2024-01-01 --filter since=2024-02-01 --format json > january_activities.json
+exactl log list --filter since=2024-01-01 --filter since=2024-02-01 -o json > january_activities.json
 
 # Generate audit report for specific agent
-exactl log list --filter agent_role=production-agent --format json > production_audit.json
+exactl log list --filter agent_role=production-agent -o json > production_audit.json
 
 # Count human approvals vs automated actions
 exactl log list --filter action_type=plan.approved --count
@@ -6460,13 +6584,13 @@ Query cost information through the Activity Journal:
 
 ```bash
 # View recent cost-related activities
-exactl log list --payload %cost% --tail 10
+exactl log list --payload %cost% --limit 10
 
 # Find high-cost operations
-exactl log list --payload %tokens% --tail 20 --format json | jq '.[] | select(.payload.cost > 1.0)'
+exactl log list --payload %tokens% --limit 20 -o json | jq '.[] | select(.payload.cost > 1.0)'
 
 # Daily cost summary (requires external processing)
-exactl log list --filter since=$(date +%Y-%m-%d) --payload %cost% --format json > daily_costs.json
+exactl log list --filter since=$(date +%Y-%m-%d) --payload %cost% -o json > daily_costs.json
 ```
 
 ### 11.5 Cost Optimization Tips
@@ -6581,7 +6705,7 @@ exactl eval run --pack blueprint-eval
 exactl eval run --pack blueprint-eval --score-threshold 0.7
 
 # View run history
-exactl eval history --last 10
+exactl eval history --limit 10
 ```
 
 For the complete CLI reference, scoring model, scenario authoring guide, and

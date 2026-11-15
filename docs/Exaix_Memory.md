@@ -158,7 +158,7 @@ You can also inspect what memory holds at any time:
 ```bash
 exactl memory list
 exactl memory search "rate limiter"
-exactl memory search --tags "error-handling,async"
+exactl memory search "error handling" --tags "error-handling,async"
 exactl memory search "database migration" --use-embeddings
 ```
 

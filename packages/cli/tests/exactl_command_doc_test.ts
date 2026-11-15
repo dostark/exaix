@@ -51,7 +51,7 @@ Deno.test("terminal rendering prints see-also, exit codes and the docs link unde
   assertStringIncludes(text, "Exit codes");
   assertStringIncludes(text, "NOT_FOUND (3)");
   assertStringIncludes(text, "STATE_CONFLICT (4)");
-  assertStringIncludes(text, "In the Exaix repository: docs/cli/plan.md#approve");
+  assertStringIncludes(text, "In the Exaix repository: docs/cli/plan.md#exactl-plan-approve");
 });
 
 Deno.test("a doc without a lifecycle prints no lifecycle line", () => {
@@ -67,8 +67,8 @@ Deno.test("a description with a heading or a table is rejected", () => {
   );
 });
 
-Deno.test("exactlDocsLink points at the noun page and the verb anchor", () => {
-  assertEquals(exactlDocsLink(["plan", "approve"]), "docs/cli/plan.md#approve");
-  assertEquals(exactlDocsLink(["plan", "amendment", "list"]), "docs/cli/plan.md#amendment-list");
+Deno.test("exactlDocsLink points at the noun page and the heading anchor", () => {
+  assertEquals(exactlDocsLink(["plan", "approve"]), "docs/cli/plan.md#exactl-plan-approve");
+  assertEquals(exactlDocsLink(["plan", "amendment", "list"]), "docs/cli/plan.md#exactl-plan-amendment-list");
   assertEquals(exactlDocsLink(["doctor"]), "docs/cli/doctor.md");
 });
