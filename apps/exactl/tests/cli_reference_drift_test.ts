@@ -16,6 +16,7 @@ import { CliEdition, renderCliReference } from "../src/docs/cli_reference.ts";
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 const CLI_DOCS_DIR = join(REPO_ROOT, "docs", "cli");
 const USER_GUIDE = join(REPO_ROOT, "docs", "Exaix_User_Guide.md");
+const GENERATOR = join(REPO_ROOT, "scripts", "generate_cli_reference.ts");
 const REGENERATE_HINT = "Run `deno task docs:cli` and commit the result.";
 const BLOCK_START = "<!-- exactl-reference:start -->";
 const BLOCK_END = "<!-- exactl-reference:end -->";
@@ -49,4 +50,24 @@ Deno.test("the Solo reference names no Team command", async () => {
     assertNotMatch(await Deno.readTextFile(join(CLI_DOCS_DIR, name)), /export-otel/, name);
   }
   assertStringIncludes(await Deno.readTextFile(join(CLI_DOCS_DIR, "index.md")), "# exactl command reference");
+});
+
+Deno.test("the committed reference equals the rendered tree when the generator runs from another directory", async () => {
+  const names = [...reference.files.keys()].map((name) => join(CLI_DOCS_DIR, name));
+  const files = [...names, USER_GUIDE];
+  const before = await Promise.all(files.map((path) => Deno.readTextFile(path)));
+  const otherDir = await Deno.makeTempDir({ prefix: "exactl-generator-" });
+  try {
+    const { code, stderr } = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", "--config", join(REPO_ROOT, "deno.json"), GENERATOR, "--edition", "solo"],
+      cwd: otherDir,
+      stdout: "null",
+      stderr: "piped",
+    }).output();
+    assertEquals(code, 0, new TextDecoder().decode(stderr));
+    const after = await Promise.all(files.map((path) => Deno.readTextFile(path)));
+    assertEquals(after, before, "the generator formats with the settings of the repository");
+  } finally {
+    await Deno.remove(otherDir, { recursive: true });
+  }
 });

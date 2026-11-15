@@ -11,6 +11,7 @@
  */
 
 import { join } from "@std/path";
+import { z } from "zod";
 import type { IExaCtlCommandDoc } from "@exaix/cli";
 import { EXACTL_COMMAND_DOCS, EXACTL_NOUN_DOCS } from "../apps/exactl/src/command_docs/mod.ts";
 import { CliEdition, renderCliReference } from "../apps/exactl/src/docs/cli_reference.ts";
@@ -23,6 +24,7 @@ const SOLO_MANIFEST = join(SOLO_OUTPUT_DIR, "exactl-cli.json");
 const BLOCK_START = "<!-- exactl-reference:start -->";
 const BLOCK_END = "<!-- exactl-reference:end -->";
 const TARGET_FLAG = "--edition";
+const MANIFEST_SCHEMA = z.object({ commands: z.array(z.object({ path: z.array(z.string()) })) });
 
 /** The target named by `--edition`, Solo by default. */
 function targetOf(args: readonly string[]): CliEdition {
@@ -36,7 +38,7 @@ function targetOf(args: readonly string[]): CliEdition {
 
 /** The leaves of the committed Solo manifest as `plan show` strings. */
 async function soloPaths(): Promise<Set<string>> {
-  const manifest: { commands: Array<{ path: string[] }> } = JSON.parse(await Deno.readTextFile(SOLO_MANIFEST));
+  const manifest = MANIFEST_SCHEMA.parse(JSON.parse(await Deno.readTextFile(SOLO_MANIFEST)));
   return new Set(manifest.commands.map((command) => command.path.join(" ")));
 }
 
