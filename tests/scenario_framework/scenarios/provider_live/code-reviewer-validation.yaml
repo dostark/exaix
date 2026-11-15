@@ -18,7 +18,6 @@ steps:
       - "examples/code-reviewer"
       - "--portal"
       - "portal-exaix"
-      - "--plan-only"
       - "--file"
       - "$REQUEST_FIXTURE"
   - id: "wait-for-plan"

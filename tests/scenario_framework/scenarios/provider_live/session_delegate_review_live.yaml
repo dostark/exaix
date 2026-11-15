@@ -66,7 +66,7 @@ steps:
   - id: "verif-delegated-review"
     type: "exactl"
     command: "daemon"
-    args: ["status", "--full"]
+    args: ["status"]
     output_criteria:
       - id: "review-processed"
         score_weight: 1.0

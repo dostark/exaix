@@ -55,7 +55,6 @@ steps:
       "live-portal",
       "--agent",
       "senior-coder",
-      "--plan-only",
       "--thinking",
       "true",
     ]

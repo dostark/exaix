@@ -76,7 +76,7 @@ steps:
   - id: "verify-review-status"
     type: "exactl"
     command: "daemon"
-    args: ["status", "--full"]
+    args: ["status"]
     output_criteria:
       - id: "review-processed"
         score_weight: 0.5

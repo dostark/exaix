@@ -65,7 +65,6 @@ steps:
       "portal-sample-app",
       "--agent",
       "senior-coder",
-      "--plan-only",
     ]
     env:
       EXA_LLM_PROVIDER: "mock"

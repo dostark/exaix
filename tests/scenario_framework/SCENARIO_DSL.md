@@ -398,7 +398,7 @@ The most common step type. Runs `exactl <command> <args>` against the workspace 
       contains: ["daemon.started"]
 ```
 
-Examples: `exactl request create --agent <id> --plan-only --file $REQUEST_FIXTURE`,
+Examples: `exactl request create --agent <id> --file $REQUEST_FIXTURE`,
 `exactl review approve $REQUEST_ID`, `exactl log wait --event daemon.ready --since-rowid $JOURNAL_BASELINE`,
 `exactl flow validate <flow-id>`.
 
@@ -781,7 +781,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["create", "--agent", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--agent", "senior-coder", "--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"

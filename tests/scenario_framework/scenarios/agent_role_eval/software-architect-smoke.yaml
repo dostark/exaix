@@ -45,7 +45,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["create", "--agent", "software-architect", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["create", "--agent", "software-architect", "--file", "$REQUEST_FIXTURE"]
     cells: ["exactl"]
     output_criteria:
       - id: "request-submitted"
@@ -109,7 +109,6 @@ steps:
       "software-architect",
       "--portal",
       "portal-exaix",
-      "--plan-only",
       "--file",
       "$REQUEST_FIXTURE",
     ]

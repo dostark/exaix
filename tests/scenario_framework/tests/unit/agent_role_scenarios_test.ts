@@ -218,7 +218,7 @@ Deno.test("[agent_role_merge] code-analyst preserves both operations and both as
   const validation = await readScenario(join(SCENARIOS_DIR, "provider_live", `${SPLIT_ROLE}-validation.yaml`));
 
   const submitSmoke = smoke.steps.find((step) => step.command === "request");
-  assert(submitSmoke?.args?.includes("--plan-only"), "the smoke must still request a plan");
+  assert(submitSmoke?.args?.includes("create"), "the smoke must still submit a request");
   const waitSmoke = smoke.steps.find((step) => step.type === "wait-for-file");
   assert(waitSmoke?.args?.some((arg) => arg.endsWith("_plan.md")), "the smoke must still wait for a plan");
 
