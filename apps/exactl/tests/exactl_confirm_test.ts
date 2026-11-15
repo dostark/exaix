@@ -25,7 +25,12 @@ interface IJournaled {
   traceId: string | undefined;
 }
 
-function harness(terminal: boolean, answers: string[] = []) {
+interface ITerminals {
+  readonly stdin: boolean;
+  readonly stderr: boolean;
+}
+
+function harness(terminal: boolean | ITerminals, answers: string[] = []) {
   const journaled: IJournaled[] = [];
   const prompts: string[] = [];
   let reads = 0;
@@ -47,7 +52,7 @@ function harness(terminal: boolean, answers: string[] = []) {
         return Promise.resolve();
       },
     },
-    isTerminal: () => terminal,
+    isTerminal: () => typeof terminal === "boolean" ? terminal : terminal.stdin && terminal.stderr,
     flush: () => Promise.resolve(),
     readLine: () => {
       reads += 1;
@@ -123,4 +128,38 @@ Deno.test("each of --yes, a prompt answer, a decline and a refusal logs cli.conf
   ]);
   assertEquals(entries[0][0].traceId, TRACE_ID);
   assertEquals(entries[1][0].traceId, undefined);
+});
+
+Deno.test("requireInput throws USAGE without a terminal and with --no-input, and logs the refusal", async () => {
+  const noTty = harness(false);
+  const failure = await assertRejects(() => noTty.confirm.requireInput("config edit", { input: true }), ExaCtlError);
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
+  assertStringIncludes(failure.message, "needs a terminal");
+  assertEquals(payloadOf(noTty.journaled[0]), {
+    verb: "config edit",
+    mode: CliConfirmationMode.NO_TTY,
+    outcome: CliConfirmationOutcome.REFUSED,
+  });
+
+  const noInput = harness(true);
+  await assertRejects(() => noInput.confirm.requireInput("config edit", { input: false }), ExaCtlError);
+  assertEquals(payloadOf(noInput.journaled[0]).mode, CliConfirmationMode.NO_INPUT);
+
+  const allowed = harness(true);
+  await allowed.confirm.requireInput("config edit", { input: true });
+  assertEquals(allowed.journaled, []);
+});
+
+Deno.test("a prompt text with control sequences reaches the sink without them", async () => {
+  const { confirm, prompts } = harness(true, ["y"]);
+  await confirm.confirm(VERB, "Remove \x1b[31mold\x1b[0m\x07 reviewer?", { input: true });
+  assertEquals(prompts.join(""), "Remove old reviewer? [y/N] ");
+});
+
+Deno.test("stdin on a terminal and stderr redirected refuses with no_tty", async () => {
+  const { confirm, journaled, prompts } = harness({ stdin: true, stderr: false }, ["y"]);
+  const failure = await assertRejects(() => confirm.confirm(VERB, PROMPT, { input: true }), ExaCtlError);
+  assertEquals(failure.code, ExaCtlExitCode.USAGE);
+  assertEquals(payloadOf(journaled[0]).mode, CliConfirmationMode.NO_TTY);
+  assertEquals(prompts, []);
 });

@@ -7,7 +7,7 @@
  */
 
 import { reportRemoval } from "./removal_report.ts";
-import { confirmAction } from "../output/exactl_confirm.ts";
+import { confirmAction, requireInput } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { Command } from "@cliffy/command";
 import type { BlueprintStatus } from "@exaix/core";
@@ -170,6 +170,7 @@ function createBlueprintCommand(runtime: IExaCtlRuntime) {
     return new Command().action(async (options, ...args: string[]) => {
       const { renderer } = actionOutput(runtime, options, ExaCtlOutputFormat.TEXT);
       try {
+        await requireInput(runtime, "blueprint edit", options);
         await blueprintCommands.edit(args[0]);
         await renderer.mutation([{ id: args[0], action: ExaCtlVerb.EDIT, status: MutationStatus.EDITED }], false);
       } catch (error) {

@@ -12,7 +12,7 @@ import type { IExaCtlGlobalOptions, IExaCtlOutputSink } from "@exaix/cli";
 import { DomainEventType, type ICliConfirmationPayload } from "@exaix/core/events";
 import { CliConfirmationMode, CliConfirmationOutcome } from "@exaix/core/types";
 import type { IDatabaseService, IDisplayService, Opt, Reason } from "@exaix/core/types";
-import { readGlobalOptions } from "./exactl_output.ts";
+import { readGlobalOptions, stripTerminalControls } from "./exactl_output.ts";
 
 /** The parts of the runtime that a confirm helper reads. */
 export interface IConfirmRuntime {
@@ -64,16 +64,12 @@ export class ExaCtlConfirm {
       await this.journal(verb, CliConfirmationMode.YES, CliConfirmationOutcome.CONFIRMED, traceId);
       return;
     }
-    const refusal = options.input === false
-      ? CliConfirmationMode.NO_INPUT
-      : this.deps.isTerminal()
-      ? null
-      : CliConfirmationMode.NO_TTY;
+    const refusal = this.refusalMode(options);
     if (refusal !== null) {
       await this.journal(verb, refusal, CliConfirmationOutcome.REFUSED, traceId);
       throw new ExaCtlError(ExaCtlExitCode.USAGE, `${prompt} Cannot ask for confirmation here: pass --yes to confirm.`);
     }
-    await this.deps.sink.err(`${prompt}${PROMPT_SUFFIX}`);
+    await this.deps.sink.err(`${stripTerminalControls(prompt)}${PROMPT_SUFFIX}`);
     const answer = (await this.deps.readLine()).trim().toLowerCase();
     if (ACCEPTED_ANSWERS.has(answer)) {
       await this.journal(verb, CliConfirmationMode.PROMPT, CliConfirmationOutcome.CONFIRMED, traceId);
@@ -81,6 +77,26 @@ export class ExaCtlConfirm {
     }
     await this.journal(verb, CliConfirmationMode.PROMPT, CliConfirmationOutcome.DECLINED, traceId);
     throw new ExaCtlError(ExaCtlExitCode.CANCELLED, `Cancelled: ${verb}.`);
+  }
+
+  /** Returns when a person can answer or edit here. It throws USAGE under --no-input or without a terminal. */
+  async requireInput(
+    verb: string,
+    options: IConfirmOptions,
+    traceId: Opt<string, Reason.TraceAbsent> = undefined,
+  ): Promise<void> {
+    const refusal = this.refusalMode(options);
+    if (refusal === null) return;
+    await this.journal(verb, refusal, CliConfirmationOutcome.REFUSED, traceId);
+    throw new ExaCtlError(
+      ExaCtlExitCode.USAGE,
+      `${verb} needs a terminal: edit the file directly or run it from a terminal.`,
+    );
+  }
+
+  private refusalMode(options: IConfirmOptions): CliConfirmationMode | null {
+    if (options.input === false) return CliConfirmationMode.NO_INPUT;
+    return this.deps.isTerminal() ? null : CliConfirmationMode.NO_TTY;
   }
 
   private async journal(
@@ -100,7 +116,7 @@ function createExaCtlConfirm(runtime: IConfirmRuntime): ExaCtlConfirm {
   return new ExaCtlConfirm({
     display: runtime.display,
     sink: runtime.outputSink,
-    isTerminal: () => Deno.stdin.isTerminal(),
+    isTerminal: () => Deno.stdin.isTerminal() && Deno.stderr.isTerminal(),
     readLine: readStdinLine,
     flush: () => runtime.services.db.waitForFlush(),
   });
@@ -115,4 +131,14 @@ export function confirmAction(
   traceId: Opt<string, Reason.TraceAbsent> = undefined,
 ): Promise<void> {
   return createExaCtlConfirm(runtime).confirm(verb, prompt, readGlobalOptions(options), traceId);
+}
+
+/** Refuses an action that opens an editor when nobody can use one, from the merged options of the action. */
+export function requireInput(
+  runtime: IConfirmRuntime,
+  verb: string,
+  options: object | void,
+  traceId: Opt<string, Reason.TraceAbsent> = undefined,
+): Promise<void> {
+  return createExaCtlConfirm(runtime).requireInput(verb, readGlobalOptions(options), traceId);
 }

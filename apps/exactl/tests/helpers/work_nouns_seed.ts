@@ -11,6 +11,7 @@ import { join } from "@std/path";
 
 export const SEEDED_PLAN_ID = "plan-sweep";
 export const SEEDED_REQUEST_TRACE = "7b1d4e60-1c2a-4e3b-9f10-2a6c8d9e0f11";
+export const SEEDED_WAIT_TRACE = "trace-wait";
 export const SEEDED_WAIT_TOKEN = "550e8400-e29b-41d4-a716-446655440001";
 const SEEDED_WAIT_ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -30,10 +31,10 @@ export async function seedWorkNouns(root: string): Promise<void> {
     `---\ntrace_id: ${SEEDED_REQUEST_TRACE}\nstatus: pending\ncreated: 2026-01-03T00:00:00Z\ncreated_by: tester\nsource: cli\nsubject: Request of the sweep\n---\nBody of the request\n`,
   );
   await writeFile(
-    join(root, "Workspace", "WaitStates", "trace-wait", `${SEEDED_WAIT_ID}.json`),
+    join(root, "Workspace", "WaitStates", SEEDED_WAIT_TRACE, `${SEEDED_WAIT_ID}.json`),
     JSON.stringify({
       waitStateId: SEEDED_WAIT_ID,
-      traceId: "trace-wait",
+      traceId: SEEDED_WAIT_TRACE,
       kind: "plan_approval",
       status: "pending",
       artifactPath: "Workspace/Active/test-flow",

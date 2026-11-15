@@ -173,7 +173,7 @@ exactl config rollback ai.timeout_ms 3 --yes
 
 Edit the overrides in your editor
 
-Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor.
+Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor. It needs a terminal and refuses under `--no-input`.
 
 **Usage:** `exactl config edit`
 
@@ -190,6 +190,7 @@ exactl config edit
 **Exit codes**
 
 - FAILURE (1)
+- USAGE (2)
 
 **See also:** [exactl config diff](config.md#exactl-config-diff), [exactl config validate](config.md#exactl-config-validate)
 

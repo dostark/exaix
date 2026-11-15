@@ -78,10 +78,11 @@ export const BLUEPRINT_DOCS: readonly IExaCtlCommandDoc[] = [
   {
     path: [BLUEPRINT, ExaCtlVerb.EDIT],
     summary: "Edit a blueprint in your editor",
-    description: "Opens the blueprint file in `$EDITOR` and validates it when you close the editor.",
+    description:
+      "Opens the blueprint file in `$EDITOR` and validates it when you close the editor. It needs a terminal and refuses under `--no-input`.",
     examples: [{ title: "Edit a blueprint", command: "exactl blueprint edit code-reviewer" }],
     seeAlso: [exactlCommand(BLUEPRINT, ExaCtlVerb.VALIDATE), exactlCommand(BLUEPRINT, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

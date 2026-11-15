@@ -2658,7 +2658,7 @@
         "edit"
       ],
       "summary": "Edit the overrides in your editor",
-      "description": "Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor.",
+      "description": "Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor. It needs a terminal and refuses under `--no-input`.",
       "arguments": [],
       "options": [],
       "examples": [
@@ -2672,6 +2672,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
         }
       ],
       "see_also": [
@@ -3349,7 +3353,7 @@
         "edit"
       ],
       "summary": "Edit a blueprint in your editor",
-      "description": "Opens the blueprint file in `$EDITOR` and validates it when you close the editor.",
+      "description": "Opens the blueprint file in `$EDITOR` and validates it when you close the editor. It needs a terminal and refuses under `--no-input`.",
       "arguments": [
         {
           "name": "agent-id",
@@ -3373,6 +3377,10 @@
         {
           "code": 3,
           "name": "NOT_FOUND"
+        },
+        {
+          "code": 2,
+          "name": "USAGE"
         }
       ],
       "see_also": [

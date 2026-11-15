@@ -7,10 +7,17 @@
  * @related-files [apps/exactl/src/output/exactl_confirm.ts, apps/exactl/src/command_builders/blueprint_command.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 import { ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { runExactlSeededWorkspace } from "./helpers/exactl_cli_process.ts";
-import { SEEDED_PLAN_ID, SEEDED_REQUEST_TRACE, SEEDED_WAIT_TOKEN, seedWorkNouns } from "./helpers/work_nouns_seed.ts";
+import {
+  SEEDED_PLAN_ID,
+  SEEDED_REQUEST_TRACE,
+  SEEDED_WAIT_TOKEN,
+  SEEDED_WAIT_TRACE,
+  seedWorkNouns,
+} from "./helpers/work_nouns_seed.ts";
 import { seedOperationsA } from "./helpers/operations_a_seed.ts";
 
 const BLUEPRINT_ID = "old-reviewer";
@@ -105,4 +112,35 @@ Deno.test("--yes and a refusal each appear in the journal as cli.confirmation_re
     ["no_tty", "refused"],
     ["yes", "confirmed"],
   ]);
+});
+
+Deno.test("config edit and blueprint edit exit 2 without a terminal and never start the editor", async () => {
+  const marker = join(await Deno.makeTempDir(), "editor-ran");
+  const editor = join(await Deno.makeTempDir(), "editor.sh");
+  await Deno.writeTextFile(editor, `#!/bin/sh\ntouch "${marker}"\n`, { mode: 0o755 });
+  const runs = await runExactlSeededWorkspace(
+    seedAll,
+    [
+      CREATE_BLUEPRINT,
+      ["config", "edit"],
+      ["config", "edit", "--no-input"],
+      ["blueprint", "edit", BLUEPRINT_ID],
+      ["blueprint", "edit", BLUEPRINT_ID, "--no-input"],
+    ],
+    undefined,
+    undefined,
+    { EDITOR: editor },
+  );
+  runs.slice(1).forEach((run) => assertEquals(run.code, ExaCtlExitCode.USAGE, run.stderr));
+  assertFalse(await Deno.stat(marker).then(() => true, () => false));
+});
+
+Deno.test("approval cancel --yes journals the consent under the trace id of the wait state", async () => {
+  const [cancelled, journal] = await runExactlSeededWorkspace(seedAll, [
+    ["approval", "cancel", `wait:${SEEDED_WAIT_TOKEN}`, "--yes"],
+    ["log", "list", "--filter", "action_type=cli.confirmation_resolved", "-o", "json"],
+  ]);
+  assertEquals(cancelled.code, 0, cancelled.stderr);
+  const rows = JSON.parse(journal.stdout) as Array<{ trace_id: string }>;
+  assertEquals(rows.map((row) => row.trace_id), [SEEDED_WAIT_TRACE]);
 });

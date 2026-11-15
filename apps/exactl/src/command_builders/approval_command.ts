@@ -100,7 +100,8 @@ function decisionCommand(
     .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
     .action(async (options: IDecisionOptions, ...args: string[]) => {
       if (verb === ExaCtlVerb.CANCEL) {
-        await confirmAction(runtime, "approval cancel", `Cancel approval ${args[0]}?`, options);
+        const { fields } = await runtime.approvalCommands.show(args[0]);
+        await confirmAction(runtime, "approval cancel", `Cancel approval ${args[0]}?`, options, fields.traceId);
       }
       await report(
         actionOutput(runtime, options, ExaCtlOutputFormat.TEXT),

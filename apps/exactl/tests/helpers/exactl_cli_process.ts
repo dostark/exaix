@@ -35,12 +35,17 @@ export const TEAM_ENTRY: IExaCtlEntry = {
 };
 
 /** The parent environment without the test-mode switches that other test files set in this process, and without `unsetEnv`. */
-function childEnv(configPath: string, edition: string, unsetEnv: readonly string[]): Record<string, string> {
+function childEnv(
+  configPath: string,
+  edition: string,
+  unsetEnv: readonly string[],
+  extraEnv: Record<string, string>,
+): Record<string, string> {
   const env = Deno.env.toObject();
   for (const key of Object.keys(env)) {
     if (key.startsWith(TEST_ENV_PREFIX) || unsetEnv.includes(key)) delete env[key];
   }
-  return { ...env, EXA_CONFIG_PATH: configPath, EXAIX_EDITION: edition };
+  return { ...env, ...extraEnv, EXA_CONFIG_PATH: configPath, EXAIX_EDITION: edition };
 }
 
 /** Runs each `exactl <args>` in order against one temporary workspace that `seed` fills first. */
@@ -49,6 +54,7 @@ export async function runExactlSeededWorkspace(
   argsList: string[][],
   entry: IExaCtlEntry = SOLO_ENTRY,
   unsetEnv: readonly string[] = [],
+  extraEnv: Record<string, string> = {},
 ): Promise<IExaCtlCliRun[]> {
   const root = await Deno.makeTempDir({ prefix: "exactl-cli-" });
   try {
@@ -69,7 +75,7 @@ export async function runExactlSeededWorkspace(
         ],
         cwd: root,
         clearEnv: true,
-        env: childEnv(configPath, entry.edition, unsetEnv),
+        env: childEnv(configPath, entry.edition, unsetEnv, extraEnv),
         stdout: "piped",
         stderr: "piped",
       }).output();

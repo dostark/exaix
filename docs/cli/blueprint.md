@@ -163,7 +163,7 @@ exactl blueprint validate --file agents/code-reviewer.md
 
 Edit a blueprint in your editor
 
-Opens the blueprint file in `$EDITOR` and validates it when you close the editor.
+Opens the blueprint file in `$EDITOR` and validates it when you close the editor. It needs a terminal and refuses under `--no-input`.
 
 **Usage:** `exactl blueprint edit <agent-id>`
 
@@ -185,6 +185,7 @@ exactl blueprint edit code-reviewer
 
 - FAILURE (1)
 - NOT_FOUND (3)
+- USAGE (2)
 
 **See also:** [exactl blueprint validate](blueprint.md#exactl-blueprint-validate), [exactl blueprint show](blueprint.md#exactl-blueprint-show)
 

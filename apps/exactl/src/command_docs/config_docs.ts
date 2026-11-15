@@ -101,7 +101,7 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
     path: [CONFIG, ExaCtlVerb.EDIT],
     summary: "Edit the overrides in your editor",
     description:
-      "Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor.",
+      "Opens the overrides in `$EDITOR`. It validates every change and applies them together when you close the editor. It needs a terminal and refuses under `--no-input`.",
     examples: [
       { title: "Edit the overrides", command: "exactl config edit" },
     ],
@@ -109,7 +109,7 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[CONFIG, ExaCtlVerb.DIFF]),
       exactlCommand(...[CONFIG, ExaCtlVerb.VALIDATE]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE],
     output: ExaCtlOutputKind.MUTATION,
   },
   {

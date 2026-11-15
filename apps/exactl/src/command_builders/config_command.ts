@@ -6,7 +6,7 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/exactl_runtime.ts]
  */
 
-import { confirmAction } from "../output/exactl_confirm.ts";
+import { confirmAction, requireInput } from "../output/exactl_confirm.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
@@ -137,7 +137,8 @@ function createConfigCommand(runtime: IExaCtlRuntime) {
       );
     }),
   );
-  const edit = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }) => {
+  const edit = new Command().action(guarded(ExaCtlOutputFormat.TEXT, async ({ renderer }, options: void) => {
+    await requireInput(runtime, "config edit", options);
     await configCommands.edit();
     display.info("cli.config.edit", CONFIG_ID, { applied: true });
     await renderer.mutation([{ id: CONFIG_ID, action: ExaCtlVerb.EDIT, status: MutationStatus.APPLIED }], false);
