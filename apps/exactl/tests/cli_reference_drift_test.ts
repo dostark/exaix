@@ -68,6 +68,7 @@ Deno.test("the committed reference equals the rendered tree when the generator r
     const after = await Promise.all(files.map((path) => Deno.readTextFile(path)));
     assertEquals(after, before, "the generator formats with the settings of the repository");
   } finally {
+    await Promise.all(files.map((path, index) => Deno.writeTextFile(path, before[index])));
     await Deno.remove(otherDir, { recursive: true });
   }
 });
