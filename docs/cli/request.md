@@ -220,6 +220,7 @@ exactl request analyze 3f2a9c1e --engine heuristic
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl request clarify](request.md#exactl-request-clarify), [exactl request show](request.md#exactl-request-show)
 

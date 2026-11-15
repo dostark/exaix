@@ -37,6 +37,22 @@ Deno.test("plan show <missing> exits 3", async () => {
   assertStringIncludes(run.stderr, "Plan not found: no-such-plan");
 });
 
+const MISSING_ENTITY_COMMANDS: ReadonlyArray<readonly string[]> = [
+  ["portal", "show", "nope"],
+  ["portal", "verify", "nope"],
+  ["flow", "show", "nope"],
+  ["flow", "bindings", "nope"],
+  ["request", "analyze", "nope"],
+  ["config", "get", "no.such.key"],
+];
+
+Deno.test("portal show, portal verify, flow show, flow bindings, request analyze and config get of a missing entity exit 3", async () => {
+  const runs = await runExactlSeededWorkspace(() => {}, MISSING_ENTITY_COMMANDS.map((args) => [...args]));
+  runs.forEach((run, index) => {
+    assertEquals(run.code, ExaCtlExitCode.NOT_FOUND, `${MISSING_ENTITY_COMMANDS[index].join(" ")}: ${run.stderr}`);
+  });
+});
+
 Deno.test("plan approve <approved plan> exits 4", async () => {
   const [run] = await runExactlSeededWorkspace(
     (root) =>

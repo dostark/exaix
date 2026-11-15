@@ -1,7 +1,7 @@
 /**
  * @module FlowErrors
  * @path packages/flow/src/flow_errors.ts
- * @description The error types that a flow run throws: a failed execution and an aborted run.
+ * @description The error types that a flow run throws: a failed execution, an aborted run and a flow that does not exist.
  * @architectural-layer Flow
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/flow_step_recovery.ts]
  */
@@ -23,6 +23,14 @@ export class FlowExecutionError extends Error {
   ) {
     super(message);
     this.name = "FlowExecutionError";
+  }
+}
+
+/** No flow module has the id. */
+export class FlowNotFoundError extends Error {
+  constructor(readonly flowId: string) {
+    super(`Failed to load flow '${flowId}': module not found`);
+    this.name = "FlowNotFoundError";
   }
 }
 

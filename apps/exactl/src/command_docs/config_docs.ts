@@ -35,7 +35,7 @@ export const CONFIG_DOCS: readonly IExaCtlCommandDoc[] = [
       exactlCommand(...[CONFIG, ExaCtlVerb.SET]),
       exactlCommand(...[CONFIG, ExaCtlVerb.SHOW]),
     ],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {

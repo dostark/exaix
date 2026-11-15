@@ -16,6 +16,7 @@ import type { IDisplayService, IPortalDetails, IPortalInfo, IVerificationResult 
 import { PORTAL_ALIAS_MAX_LENGTH } from "@exaix/core";
 
 import { loadKnowledge, saveKnowledge } from "../knowledge/knowledge_persistence.ts";
+import { PortalNotFoundError } from "./portal_errors.ts";
 import type {
   IConfigService,
   IContextCardGeneratorService,
@@ -143,7 +144,7 @@ export class PortalService {
     try {
       await Deno.lstat(symlinkPath);
     } catch {
-      throw new Error(`Portal '${alias}' not found`);
+      throw new PortalNotFoundError(alias);
     }
     return { symlinkPath, contextCardPath };
   }
@@ -269,7 +270,18 @@ export class PortalService {
     });
   }
 
+  /** Throws when `alias` names a portal that has neither a configuration entry nor a symlink. */
+  private async requireKnownPortal(alias: Opt<string, Reason.OptionalContext>): Promise<void> {
+    if (!alias || this.configService.getPortal(alias)) return;
+    try {
+      await Deno.lstat(join(this.portalsDir, alias));
+    } catch {
+      throw new PortalNotFoundError(alias);
+    }
+  }
+
   async verify(alias?: Opt<string, Reason.OptionalContext>): Promise<IVerificationResult[]> {
+    await this.requireKnownPortal(alias);
     const results: IVerificationResult[] = [];
     const portalsToVerify = alias ? [alias] : (await this.list()).map((p) => p.alias);
 
@@ -340,7 +352,7 @@ export class PortalService {
     try {
       await Deno.lstat(symlinkPath);
     } catch {
-      throw new Error(`Portal '${alias}' not found`);
+      throw new PortalNotFoundError(alias);
     }
 
     const targetPath = await Deno.readLink(symlinkPath);
@@ -380,7 +392,7 @@ export class PortalService {
     try {
       await Deno.lstat(symlinkPath);
     } catch {
-      throw new Error(`Portal '${portalAlias}' not found`);
+      throw new PortalNotFoundError(portalAlias);
     }
 
     const projectsDir = pathBuilders.memoryProjectsPath(
@@ -398,7 +410,7 @@ export class PortalService {
     try {
       await Deno.lstat(symlinkPath);
     } catch {
-      throw new Error(`Portal '${alias}' not found`);
+      throw new PortalNotFoundError(alias);
     }
 
     const portalPath = await Deno.readLink(symlinkPath);

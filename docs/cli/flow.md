@@ -66,6 +66,7 @@ exactl flow show code-review
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl flow validate](flow.md#exactl-flow-validate), [exactl flow bindings](flow.md#exactl-flow-bindings)
 
@@ -187,6 +188,7 @@ exactl flow bindings code-review --overlay overlay.toml
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 - INVALID (6)
 
 **See also:** [exactl flow validate](flow.md#exactl-flow-validate), [exactl flow run](flow.md#exactl-flow-run)

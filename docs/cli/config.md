@@ -40,6 +40,7 @@ exactl config get ai.timeout_ms
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl config set](config.md#exactl-config-set), [exactl config show](config.md#exactl-config-show)
 

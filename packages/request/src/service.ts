@@ -223,7 +223,7 @@ export class RequestService {
     }
 
     const path = join(this.requestsDir, filename);
-    if (!await exists(path)) throw new Error(`Request not found: ${idOrFilename}`);
+    if (!await exists(path)) throw new RequestNotFoundError(idOrFilename);
 
     const content = await Deno.readTextFile(path);
     const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -376,7 +376,7 @@ export class RequestService {
 
   async analyze(requestId: string, options: { mode?: AnalysisMode; force?: boolean } = {}): Promise<IRequestAnalysis> {
     const filename = await this.findFilename(requestId);
-    if (!filename) throw new Error(`Request not found: ${requestId}`);
+    if (!filename) throw new RequestNotFoundError(requestId);
     const path = join(this.requestsDir, filename);
 
     // Return cached analysis unless caller explicitly requests a fresh run

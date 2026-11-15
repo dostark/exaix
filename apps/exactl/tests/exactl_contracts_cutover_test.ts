@@ -60,7 +60,7 @@ function readLeaves(docs: readonly IExaCtlCommandDoc[]): IExaCtlCommandDoc[] {
   return docs.filter((doc) => READ_KINDS.has(doc.output));
 }
 
-/** A read leaf with `-o json` prints JSON on stdout. A failure adds the JSON error shape on stderr. */
+/** A read leaf with `-o json` prints JSON on stdout. A failure adds the JSON error shape on stderr, and its code is 2 or one that the record lists. */
 function assertJsonContract(doc: IExaCtlCommandDoc, run: IExaCtlCliRun): void {
   const label = doc.path.join(" ");
   if (run.code === ExaCtlExitCode.OK) {
@@ -73,6 +73,20 @@ function assertJsonContract(doc: IExaCtlCommandDoc, run: IExaCtlCliRun): void {
   assert(typeof error.code === "string" && typeof error.message === "string", `${label}: ${last}`);
 }
 
+/** The reasons why the exit code of a failed leaf breaks the contract. It is 2 or one that the record lists, and the JSON error names it. */
+function exitCodeMismatch(doc: IExaCtlCommandDoc, run: IExaCtlCliRun): string[] {
+  if (run.code === ExaCtlExitCode.OK) return [];
+  const label = doc.path.join(" ");
+  const last = run.stderr.trim().split("\n").pop() ?? "";
+  const name = JSON.parse(last).error.code;
+  const mismatches: string[] = [];
+  if (run.code !== ExaCtlExitCode.USAGE && !doc.exitCodes.includes(run.code)) {
+    mismatches.push(`${label} exits ${run.code}, and its record lists ${doc.exitCodes.join(", ")}`);
+  }
+  if (name !== ExaCtlExitCode[run.code]) mismatches.push(`${label} reports ${name} for exit code ${run.code}`);
+  return mismatches;
+}
+
 async function sweepJson(docs: readonly IExaCtlCommandDoc[], entry: IExaCtlEntry): Promise<void> {
   const leaves = readLeaves(docs);
   assert(leaves.length > 40, "the sweep covers the read leaves of the tree");
@@ -82,6 +96,7 @@ async function sweepJson(docs: readonly IExaCtlCommandDoc[], entry: IExaCtlEntry
   });
   const runs = await runSwept(argsList, entry);
   runs.forEach((run, index) => assertJsonContract(leaves[index], run));
+  assertEquals(runs.flatMap((run, index) => exitCodeMismatch(leaves[index], run)), []);
 }
 
 async function sweepHelp(docs: readonly IExaCtlCommandDoc[], entry: IExaCtlEntry): Promise<void> {
@@ -95,7 +110,7 @@ async function sweepHelp(docs: readonly IExaCtlCommandDoc[], entry: IExaCtlEntry
   });
 }
 
-Deno.test("every COLLECTION and ITEM leaf prints JSON with -o json on the real binary", async () => {
+Deno.test("every leaf ends with 0, USAGE or a code that its doc record lists, and every COLLECTION and ITEM leaf prints JSON with -o json on the real binary", async () => {
   await sweepJson(EXACTL_COMMAND_DOCS, SOLO_ENTRY);
 });
 

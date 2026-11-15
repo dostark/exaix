@@ -442,6 +442,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2226,6 +2230,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2273,6 +2281,10 @@
           "name": "FAILURE"
         },
         {
+          "code": 3,
+          "name": "NOT_FOUND"
+        },
+        {
           "code": 2,
           "name": "USAGE"
         },
@@ -2316,6 +2328,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2349,6 +2365,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2400,6 +2420,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2438,6 +2462,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -2481,6 +2509,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -3531,6 +3563,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         }
       ],
       "see_also": [
@@ -3844,6 +3880,10 @@
         {
           "code": 1,
           "name": "FAILURE"
+        },
+        {
+          "code": 3,
+          "name": "NOT_FOUND"
         },
         {
           "code": 6,

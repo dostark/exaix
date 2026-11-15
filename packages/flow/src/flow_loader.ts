@@ -11,6 +11,7 @@ import { parse as parseYaml } from "@std/yaml";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
+import { FlowNotFoundError } from "./flow_errors.ts";
 import type { JSONValue } from "@exaix/core";
 import { APPROVAL_REQUIRED_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
@@ -121,7 +122,7 @@ export class FlowLoader {
       return flow;
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
-        throw new Error(`Failed to load flow '${flowId}': module not found`);
+        throw new FlowNotFoundError(flowId);
       }
       throw new Error(`Failed to load flow '${flowId}': ${error instanceof Error ? error.message : String(error)}`);
     }

@@ -106,6 +106,7 @@ exactl portal show api
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl portal verify](portal.md#exactl-portal-verify), [exactl portal refresh](portal.md#exactl-portal-refresh)
 
@@ -144,6 +145,7 @@ exactl portal remove api --yes
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 - USAGE (2)
 - CANCELLED (130)
 
@@ -180,6 +182,7 @@ exactl portal verify api
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl portal show](portal.md#exactl-portal-show), [exactl portal refresh](portal.md#exactl-portal-refresh)
 
@@ -208,6 +211,7 @@ exactl portal refresh api
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl portal show](portal.md#exactl-portal-show), [exactl portal knowledge analyze](portal.md#exactl-portal-knowledge-analyze)
 
@@ -241,6 +245,7 @@ exactl portal knowledge analyze api --mode deep
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl portal knowledge show](portal.md#exactl-portal-knowledge-show), [exactl portal refresh](portal.md#exactl-portal-refresh)
 
@@ -275,5 +280,6 @@ exactl portal knowledge show api -o json
 **Exit codes**
 
 - FAILURE (1)
+- NOT_FOUND (3)
 
 **See also:** [exactl portal knowledge analyze](portal.md#exactl-portal-knowledge-analyze), [exactl portal show](portal.md#exactl-portal-show)

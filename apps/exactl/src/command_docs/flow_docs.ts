@@ -43,7 +43,7 @@ export const FLOW_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Prints the flow header, its dependency graph, its steps and its settings.",
     examples: [{ title: "Show a flow", command: "exactl flow show code-review" }],
     seeAlso: [exactlCommand(FLOW, ExaCtlVerb.VALIDATE), exactlCommand(FLOW, ExaCtlVerb.BINDINGS)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -75,7 +75,7 @@ export const FLOW_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Resolve with a per-run overlay", command: "exactl flow bindings code-review --overlay overlay.toml" },
     ],
     seeAlso: [exactlCommand(FLOW, ExaCtlVerb.VALIDATE), exactlCommand(FLOW, ExaCtlVerb.RUN)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.INVALID],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.INVALID],
     output: ExaCtlOutputKind.ITEM,
   },
 ];

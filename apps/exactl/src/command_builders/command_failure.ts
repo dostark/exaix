@@ -9,12 +9,24 @@
 
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
+import { ConfigKeyNotFoundError } from "@exaix/core/config";
+import { RequestNotFoundError } from "@exaix/core/errors";
+import { FlowNotFoundError } from "@exaix/flow";
+import { PortalNotFoundError } from "@exaix/portal";
 
-/** The error a failed command throws. An ExaCtlError keeps its code and any other error becomes a FAILURE. */
+const NOT_FOUND_ERRORS: ReadonlyArray<abstract new (...args: never[]) => Error> = [
+  PortalNotFoundError,
+  FlowNotFoundError,
+  RequestNotFoundError,
+  ConfigKeyNotFoundError,
+];
+
+/** The error a failed command throws. An ExaCtlError keeps its code, a missing entity becomes NOT_FOUND and any other error becomes a FAILURE. */
 export function toExaCtlError(error: Error): ExaCtlError {
   if (error instanceof ExaCtlError) return error;
+  const missing = NOT_FOUND_ERRORS.some((type) => error instanceof type);
   return new ExaCtlError(
-    ExaCtlExitCode.FAILURE,
+    missing ? ExaCtlExitCode.NOT_FOUND : ExaCtlExitCode.FAILURE,
     error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
   );
 }

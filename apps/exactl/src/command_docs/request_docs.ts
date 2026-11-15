@@ -93,7 +93,7 @@ export const REQUEST_DOCS: readonly IExaCtlCommandDoc[] = [
       "Runs the intent analysis for an existing request. Choose the engine with `--engine`, and skip the cached result with `--force`.",
     examples: [{ title: "Analyze a request", command: "exactl request analyze 3f2a9c1e --engine heuristic" }],
     seeAlso: [exactlCommand(REQUEST, ExaCtlVerb.CLARIFY), exactlCommand(REQUEST, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {

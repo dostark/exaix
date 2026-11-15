@@ -49,7 +49,7 @@ export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop } from "./src/feedback_loop.ts";
 export { createFeedbackLoop, runSelfCorrectingAgent, SimpleImprovementAgent } from "./src/feedback_loop.ts";
 export { FlowRunner } from "./src/flow_runner.ts";
-export { FlowAbortError, FlowExecutionError } from "./src/flow_errors.ts";
+export { FlowAbortError, FlowExecutionError, FlowNotFoundError } from "./src/flow_errors.ts";
 export { toGateConfig } from "./src/flow_step_prompts.ts";
 export { FlowCapabilityUnavailableError, getInstalledFlowCapabilities } from "./src/flow_capabilities.ts";
 export { StepContentHasher } from "./src/step_content_hasher.ts";

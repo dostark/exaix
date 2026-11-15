@@ -11,7 +11,7 @@ import type { IExaCtlColumn } from "@exaix/cli";
 import type { IJsonRow } from "../output/exactl_output.ts";
 import { Table } from "@cliffy/table";
 import { join } from "@std/path";
-import { FlowLoader } from "@exaix/flow";
+import { FlowLoader, FlowNotFoundError } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL, MODEL_COLUMN_LABEL } from "@exaix/core";
 import { isCapabilityEligible } from "@exaix/core/composer";
@@ -130,7 +130,7 @@ export class FlowCommands extends BaseCommand {
       await renderer.text(`  Fail Fast: ${flow.settings?.failFast !== false}`);
       await renderer.text(`  Output Format: ${flow.output?.format || "markdown"}`);
     } catch (error) {
-      if (error instanceof Deno.errors.NotFound) {
+      if (error instanceof Deno.errors.NotFound || error instanceof FlowNotFoundError) {
         throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Flow '${flowId}' not found`);
       }
       throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error showing flow: ${errorMessage(error as Error)}`);
@@ -308,7 +308,7 @@ export class FlowCommands extends BaseCommand {
       if (hasIssues) throw new ExaCtlError(ExaCtlExitCode.INVALID, `Flow '${flowId}' has binding issues`);
     } catch (error) {
       if (error instanceof ExaCtlError) throw error;
-      if (error instanceof Deno.errors.NotFound) {
+      if (error instanceof Deno.errors.NotFound || error instanceof FlowNotFoundError) {
         throw new ExaCtlError(ExaCtlExitCode.NOT_FOUND, `Flow '${flowId}' not found`);
       }
       throw new ExaCtlError(ExaCtlExitCode.FAILURE, `Error resolving bindings: ${errorMessage(error as Error)}`);

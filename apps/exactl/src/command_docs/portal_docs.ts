@@ -59,7 +59,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Prints the target, the link, the status, the context card and the execution settings.",
     examples: [{ title: "Show a portal", command: "exactl portal show api" }],
     seeAlso: [exactlCommand(PORTAL, ExaCtlVerb.VERIFY), exactlCommand(PORTAL, ExaCtlVerb.REFRESH)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
   {
@@ -72,7 +72,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
       command: "exactl portal remove api --yes",
     }],
     seeAlso: [exactlCommand(PORTAL, ExaCtlVerb.LIST), exactlCommand(PORTAL, ExaCtlVerb.ADD)],
-    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND, ExaCtlExitCode.USAGE, ExaCtlExitCode.CANCELLED],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -84,7 +84,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Verify one portal", command: "exactl portal verify api" },
     ],
     seeAlso: [exactlCommand(PORTAL, ExaCtlVerb.SHOW), exactlCommand(PORTAL, ExaCtlVerb.REFRESH)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.COLLECTION,
   },
   {
@@ -93,7 +93,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
     description: "Scans the project again and rewrites its context card.",
     examples: [{ title: "Refresh a portal", command: "exactl portal refresh api" }],
     seeAlso: [exactlCommand(PORTAL, ExaCtlVerb.SHOW), exactlCommand(PORTAL, KNOWLEDGE, ExaCtlVerb.ANALYZE)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -103,7 +103,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
       "Gathers the codebase knowledge of the portal. Pick a depth with `--mode`. `--force` runs it again when fresh knowledge exists.",
     examples: [{ title: "Analyze a portal", command: "exactl portal knowledge analyze api --mode deep" }],
     seeAlso: [exactlCommand(PORTAL, KNOWLEDGE, ExaCtlVerb.SHOW), exactlCommand(PORTAL, ExaCtlVerb.REFRESH)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.MUTATION,
   },
   {
@@ -115,7 +115,7 @@ export const PORTAL_DOCS: readonly IExaCtlCommandDoc[] = [
       { title: "Show it as JSON", command: "exactl portal knowledge show api -o json" },
     ],
     seeAlso: [exactlCommand(PORTAL, KNOWLEDGE, ExaCtlVerb.ANALYZE), exactlCommand(PORTAL, ExaCtlVerb.SHOW)],
-    exitCodes: [ExaCtlExitCode.FAILURE],
+    exitCodes: [ExaCtlExitCode.FAILURE, ExaCtlExitCode.NOT_FOUND],
     output: ExaCtlOutputKind.ITEM,
   },
 ];

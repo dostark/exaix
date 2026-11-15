@@ -18,3 +18,4 @@ export { createPathResolver, type IPathResolverConfig, PathResolver } from "./sr
 export { checkPortalOperationAllowed, PortalPermissionsService } from "./src/portal_permissions.ts";
 
 export { PortalService } from "./src/portal.ts";
+export { PortalNotFoundError } from "./src/portal_errors.ts";
