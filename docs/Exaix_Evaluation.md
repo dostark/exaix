@@ -71,16 +71,16 @@ exactl eval run [options]
 
 **Options:**
 
-| Flag                     | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `-P, --pack <name>`      | Run all scenarios in a pack (repeatable)     |
-| `-t, --tag <tag>`        | Filter by tag (repeatable)                   |
-| `-s, --scenario <id>`    | Run a single named scenario (repeatable)     |
-| `--score-threshold <n>`  | Minimum suite score to pass (default: 0.5)   |
-| `--trials <N>`           | Number of trials per scenario (default: 1)   |
-| `--history-format <fmt>` | Storage: `sqlite+jsonl` (default) or `jsonl` |
-| `--max-cost-usd <n>`     | Stop scheduling at the cost cap (see below)  |
-| `-v, --verbose`          | Show detailed output                         |
+| Flag                    | Description                                  |
+| ----------------------- | -------------------------------------------- |
+| `-P, --pack <name>`     | Run all scenarios in a pack (repeatable)     |
+| `-t, --tag <tag>`       | Filter by tag (repeatable)                   |
+| `-s, --scenario <id>`   | Run a single named scenario (repeatable)     |
+| `--score-threshold <n>` | Minimum suite score to pass (default: 0.5)   |
+| `--trials <N>`          | Number of trials per scenario (default: 1)   |
+| `--history-store <fmt>` | Storage: `sqlite+jsonl` (default) or `jsonl` |
+| `--max-cost-usd <n>`    | Stop scheduling at the cost cap (see below)  |
+| `-v, --verbose`         | Show detailed output                         |
 
 **Examples:**
 
@@ -121,11 +121,11 @@ exactl eval history [options]
 
 | Flag              | Description                          |
 | ----------------- | ------------------------------------ |
-| `-l, --last <N>`  | Show last N entries                  |
+| `-n, --limit <N>` | Show last N entries                  |
 | `--scenario <id>` | Filter by scenario ID                |
 | `--pack <name>`   | Filter by pack name                  |
 | `--since <date>`  | Filter to runs since date (ISO 8601) |
-| `--format <fmt>`  | Output: `table` (default) or `json`  |
+| `-o <fmt>`        | Output: `table` (default) or `json`  |
 
 **Examples:**
 
@@ -166,13 +166,13 @@ Render a comparison over recorded history, grouped by `cell_id`/`provider`/`mode
 is selected with `--view`; the current views are `cost` (default), `families`, `lift`,
 `ablation`, `frontier`, `failures`, and `external` (§17, comparability against a public
 benchmark). Report views read the same tracked-cost, score, and cell
-fields the history rows carry (§9), and `--format json` renders machine-readable rows for CI
+fields the history rows carry (§9), and `-o json` renders machine-readable rows for CI
 trend jobs.
 
 **Usage:**
 
 ```bash
-exactl eval report [--view <view>] [--scenario <id>] [--last <n>] [--pack <name>] [--format json]
+exactl eval report [--view <view>] [--scenario <id>] [--limit <n>] [--pack <name>] [-o json]
 ```
 
 #### `--view cost` (default)
@@ -191,11 +191,11 @@ exactl eval report --view cost --scenario fix-bug-null-guard-cli-all
 #### `--view families`
 
 Per-task-family aggregate (mean score, pass@1, reconcile rate, duration) over the `task:` tag —
-the readout behind §12's subsystem reporting, narrowed to task families. `--format json` prints
+the readout behind §12's subsystem reporting, narrowed to task families. `-o json` prints
 the same rows as one JSON array.
 
 ```bash
-exactl eval report --view families [--pack <name>] [--format json]
+exactl eval report --view families [--pack <name>] [-o json]
 ```
 
 #### `--view lift` — harness lift
@@ -246,7 +246,7 @@ exactl eval report --view frontier -o json
 Every run that failed records _why_ (§9.6). This view aggregates those failure classes across
 history: per-class counts with the family × cell breakdown, and the **top class per cell** — so
 you can see at a glance whether a cell keeps dying on one specific failure mode. Supports
-`--format json`.
+`-o json`.
 
 ```bash
 exactl eval report --view failures
@@ -847,7 +847,7 @@ cp -r tests/scenario_framework/output/history/ archive/$(date +%Y-%m-%d)/
 ```bash
 #!/bin/bash
 # Compare last two smoke runs for regression detection
-LAST_TWO=$(exactl eval history --pack smoke --last 2 --format json | \
+LAST_TWO=$(exactl eval history --pack smoke --limit 2 -o json | \
   jq -r '.[].run_id' | tr '\n' ' ')
 RUN_A=$(echo $LAST_TWO | cut -d' ' -f2)
 RUN_B=$(echo $LAST_TWO | cut -d' ' -f1)

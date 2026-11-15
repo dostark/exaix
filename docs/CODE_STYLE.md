@@ -356,13 +356,48 @@ Every `exactl` command path is `exactl <noun> [<sub-noun>] <verb> [<id>…] [fla
   a sub-noun with its own verbs. A hyphenated leaf is allowed only when it is itself an `ExaCtlVerb` member.
 - Two paths never share one action handler. A second spelling of a command is a duplicate and fails the lint.
 - A bulk decision takes `--all` or one or more ids. Both together is a usage error.
-- A usage failure throws `ExaCtlError` with an `ExaCtlExitCode`. Only the root error handler turns it into an exit code.
+- A failure throws `ExaCtlError` with an `ExaCtlExitCode`. Only the root error handler turns it into an exit code (see [exactl Output, Errors and Command Docs](#exactl-output-and-docs)).
 - A removed path gets a row in `EXACTL_RENAMES`, never an alias. The row prints its replacement and exits 2.
   The lint fails when a path of the table exists in the live tree.
 - The allow-list fixture of the lint names a violation by rule and path, never by count, and may only lose entries.
   A stale entry fails the lint.
 
 <a id="edition-tier-boundary"></a>
+
+## exactl Output, Errors and Command Docs {#exactl-output-and-docs}
+
+These rules cover how an `exactl` command prints, fails and documents itself. The tests of `apps/exactl/tests/`
+hold them, and `apps/exactl/tests/exactl_contracts_cutover_test.ts` proves them through the real binaries.
+
+- **Print through the renderer.** A command returns its data and the builder prints it with the `ExaCtlOutputRenderer`
+  of `actionOutput(runtime, options, defaultFormat)`: `list` for rows, `item` for one entity, `mutation` for a result
+  and `event` for a stream. Only the output sink writes to stdout. A command never calls `console.log`. Progress lines
+  and notices go through the display, which writes to stderr.
+- **Fail with `ExaCtlError`.** A command throws `ExaCtlError(ExaCtlExitCode.<class>, message)` and never calls
+  `Deno.exit`. The class is `NOT_FOUND` for a missing item, `STATE_CONFLICT` for a wrong state, `INVALID` for a failed
+  validation, `TIMEOUT` for an expired wait, `USAGE` for a wrong argument and `FAILURE` for the rest. `failCommand` and
+  `toExaCtlError` in `apps/exactl/src/command_builders/command_failure.ts` turn a caught error into the typed one.
+  `DAEMON_UNAVAILABLE` and `CREDENTIALS` belong to `exactl doctor` alone. The root error handler prints the message once.
+- **Confirm a destructive verb.** A verb that removes or cancels something calls `confirmAction` from
+  `apps/exactl/src/output/exactl_confirm.ts` before it changes anything. It never reads standard input on its own.
+- **One meaning per short flag.** A short flag is allowed only when the policy of
+  `apps/exactl/tests/helpers/command_tree_lint_rules.ts` assigns its letter to that long option: `-o --output`,
+  `-q --quiet`, `-y --yes`, `-n --limit`, `-s --status`, `-r --reason`, `-m --model`, `-f --follow`, `-P --pack`,
+  `-i --instructions`, `-k --keywords` and `-v --verbose`. Any other option has a long name only.
+- **Document a new command.** Every leaf has exactly one doc record in `apps/exactl/src/command_docs/<noun>_docs.ts`,
+  listed in `apps/exactl/src/command_docs/mod.ts`, and the builder applies it with `documented()` or
+  `documentLeaves()`. The record holds:
+  - `summary`: imperative, at most 72 characters, no final period.
+  - `description`: paragraphs, inline code, bullet lists and fenced code only. No headings and no tables.
+  - `examples`: at least one full `exactl …` line that parses against the live tree.
+  - `seeAlso`: commands that exist in the tree.
+  - `exitCodes` and `output`: the codes the command can end with, and its output kind. Only the leaves that own the
+    terminal or stdout have the kind `PROTOCOL`.
+    A root noun also needs a noun record. A Team command keeps its record in its own package and the Team tests read it.
+- **Regenerate the reference.** After a change to an option or a record, run `deno task docs:cli`, and in a Team checkout
+  `deno task docs:cli:team`. They write `docs/cli/`, the command table of the User Guide and the Team pages. Never edit
+  those files by hand: `cli_reference_drift_test.ts` fails when they differ from the tree. Every `exactl …` line in a
+  fenced block of `docs/*.md` and the skill files must parse too (`docs_exactl_examples_test.ts`).
 
 ## Edition Tier Import Boundary {#edition-tier-boundary}
 

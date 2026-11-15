@@ -877,7 +877,7 @@ Skills load from an ordered list of roots. The first root that holds a name wins
 
 #### CLI Access
 
-Use the `exactl skill` command. Add `--portal <alias>` to include that portal's project skills. Add `--format table|json|md` for output.
+Use the `exactl skill` command. Add `--portal <alias>` to include that portal's project skills. Add `-o table|json|md` for output.
 
 ```bash
 # List all available skills; --all also reports folders that did not load
@@ -906,7 +906,7 @@ exactl skill validate            # typed reasons for every folder; exits 1 when 
 
 `approve` fails with exit code 1 when the draft changed after your review, so an old review never approves new content. `deprecate` takes a skill out of matching, and it needs a fresh approval to return. Exit code 0 means success, exit code 1 means a refused or failed operation, and exit code 2 means a malformed argument such as a revision that is not a UUID. Failures print a short message and never the body of a skill.
 
-Skill text is shown with terminal control characters removed, so a draft cannot change your terminal while you review it. `--format json` returns the exact stored text. A stored revision is readable only from its own portal or from global scope, so `show --revision` and `revisions` never reveal another portal's project skill.
+Skill text is shown with terminal control characters removed, so a draft cannot change your terminal while you review it. `-o json` returns the exact stored text. A stored revision is readable only from its own portal or from global scope, so `show --revision` and `revisions` never reveal another portal's project skill.
 
 Only `exactl skill show --revision` and `revisions` read stored history. A deleted or edited skill stays readable there, but a stored revision is never injected by itself.
 
@@ -1206,6 +1206,85 @@ The table lists every `exactl` command with its summary. It is generated from th
 | `exactl eval calibration score`    | Score judge agreement over captured evidence        | [eval](cli/eval.md#exactl-eval-calibration-score)        |
 
 <!-- exactl-reference:end -->
+
+### 4.1d Global Options and the Output Contract
+
+Six options work on every `exactl` command, before or after the command. `exactl -o json plan list` and `exactl plan list -o json` are the same command.
+
+| Option                  | Meaning                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `-o, --output <format>` | `table`, `json`, `jsonl`, `md` or `text`. Each command has its own default.             |
+| `--json`                | The same as `-o json`. It cannot be combined with another `-o` format.                  |
+| `-q, --quiet`           | Prints only the ids in a human format. It has no effect on `json` and `jsonl`.          |
+| `--no-color`            | Turns colors off. A non-empty `NO_COLOR` variable does the same.                        |
+| `--no-input`            | Never asks a question. A command that needs input fails with exit code 2.               |
+| `-y, --yes`             | Confirms a destructive action without a prompt (see [Confirmation](#41f-confirmation)). |
+
+**Data on stdout, messages on stderr.** A command prints its data, and only its data, on stdout. Progress lines, notices and errors go to stderr. This makes `exactl -o json plan list | jq` safe. In a machine format (`-o json`, `-o jsonl` or `--json`) a failure prints one line on stderr and ends with its exit code:
+
+```json
+{ "error": { "code": "NOT_FOUND", "message": "Plan not found: plan-9" } }
+```
+
+**Output kinds.** Every command prints one of five kinds of output.
+
+| Kind       | What it prints                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| Collection | Rows: a table for people, a JSON array, or JSON lines. Every `list` command is a collection.                    |
+| Item       | One entity: a text block for people, one JSON object. Every `show` command is an item.                          |
+| Mutation   | The result of a change: one line on stderr, and the changed entity with `-o json`.                              |
+| Stream     | Events over time as JSON lines, for example `exactl request watch`.                                             |
+| Protocol   | Owns stdout or the terminal: `dashboard`, `mcp serve`, `daemon logs`, `eval report` and the completion scripts. |
+
+The [CLI reference](cli/index.md) states the kind, the options, the examples and the exit codes of every command. It is generated from the same records as `exactl <command> --help`.
+
+### 4.1e Exit Codes
+
+Every `exactl` command ends with one of these codes, so a script can tell a missing item from a conflict or a timeout.
+
+| Code | Name                 | Meaning                                                                                                                                                                |
+| ---- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | `OK`                 | The command succeeded. A warning of `exactl doctor` is still 0.                                                                                                        |
+| 1    | `FAILURE`            | Any failure that has no more specific code.                                                                                                                            |
+| 2    | `USAGE`              | A wrong or missing argument or option, or a confirmation that cannot be asked.                                                                                         |
+| 3    | `NOT_FOUND`          | The plan, request, review, blueprint, skill or other item does not exist.                                                                                              |
+| 4    | `STATE_CONFLICT`     | The item is in the wrong state, for example a plan that was approved already.                                                                                          |
+| 5    | `DAEMON_UNAVAILABLE` | `exactl doctor` found a PID file whose process is dead.                                                                                                                |
+| 6    | `INVALID`            | A validation failed: `skill validate`, `flow validate`, `blueprint validate`, `log verify`, `config validate`, or `exactl doctor` for the schema or the configuration. |
+| 7    | `CREDENTIALS`        | `exactl doctor` found that the default provider has no credential.                                                                                                     |
+| 124  | `TIMEOUT`            | `exactl log wait` or `exactl daemon start` ran out of time.                                                                                                            |
+| 130  | `CANCELLED`          | You declined a confirmation prompt.                                                                                                                                    |
+
+`exactl eval run` and the other eval commands that start the scenario runner end with the code of that runner: 0 when every scenario passes, 1 when a scenario fails and 2 on an infrastructure error. In a machine format its JSON error names such a code `CHILD_EXIT`.
+
+### 4.1f Confirmation
+
+These commands change or remove something that is hard to get back, so they ask first:
+
+- `exactl blueprint remove`, `exactl portal remove` and `exactl git worktree prune`,
+- `exactl config rollback` and `exactl config compact`,
+- `exactl memory learning remove`, `exactl request cancel` and `exactl approval cancel`,
+- the bulk forms `exactl plan approve --all`, `exactl plan amendment approve --all` and `exactl memory proposal approve --all`.
+
+On a terminal the command asks `[y/N]` on stderr. Pass `--yes` to confirm without the prompt. Without a terminal, or with `--no-input`, a confirming command fails with exit code 2 and the text `pass --yes to confirm` before it changes anything, so it never waits for a prompt that nobody sees. A declined prompt ends with exit code 130. A dry run (`exactl git worktree prune --dry-run`) never asks.
+
+Each consent, refusal and declined prompt is one `cli.confirmation_resolved` row in the journal, with the command, the way consent was given (`yes`, `prompt`, `no_tty` or `no_input`) and the result (`confirmed`, `declined` or `refused`). `--force` keeps one meaning: `exactl portal knowledge analyze --force` analyzes again although the knowledge is fresh.
+
+### 4.1g Health Check and Shell Completion
+
+`exactl doctor` runs five read-only checks and prints one row for each:
+
+| Check      | What it tests                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| `schema`   | The workspace schema against the schema of the binary.                                         |
+| `config`   | The configuration file against the registered settings.                                        |
+| `daemon`   | The PID file: no file is a warning, a live process passes, a dead process fails.               |
+| `pricing`  | The models that have no price or a price older than `model_registry.price_staleness_max_days`. |
+| `provider` | The default provider starts, which needs its credential.                                       |
+
+Each row is `PASS`, `WARN` or `FAIL`. A warning, such as a stopped daemon or an old price, does not change the exit code. The exit code is the class of the first failing check: 6 for the schema or the configuration, 5 for a dead daemon process and 7 for a missing credential. `exactl doctor --schema` runs only the schema check and replaces the old `exactl migrate check`. With `-o json` it prints one object for each check.
+
+`exactl completion bash`, `exactl completion fish` and `exactl completion zsh` print the completion script of a shell. Add `source <(exactl completion bash)` to `~/.bashrc` to complete commands and options with the Tab key.
 
 ### 4.1a Working with the TUI Dashboard
 
@@ -3193,7 +3272,7 @@ exactl skill usage --trace <trace-id>
 exactl skill validate [name]
 ```
 
-Every `exactl skill` command accepts `--portal` and `--format`.
+Every `exactl skill` command accepts `--portal` and the global `-o` option.
 
 **Review flow:**
 
@@ -3366,7 +3445,7 @@ PID: 12345
 Uptime: 2:15:30
 
 # View recent logs
-$ exactl daemon logs --lines 20
+$ exactl daemon logs --limit 20
 
 # Follow logs in real-time
 $ exactl daemon logs --follow
@@ -3605,7 +3684,7 @@ both views' methodology, safety model, and the `--run-ids` reproducibility optio
 (per memory-ability recall/precision/MRR/nDCG/answer-correctness/abstention, plus a second table
 for the cross-cutting consolidation-quality/staleness/learning-effectiveness metrics; see
 `docs/Exaix_Evaluation.md` §19 for the ability taxonomy, metric definitions, and the
-per-corpus/per-provider/per-date positioning caveat); `--format json` gives machine-readable rows.
+per-corpus/per-provider/per-date positioning caveat); `-o json` gives machine-readable rows.
 `--max-cost-usd` stops scheduling once
 accumulated tracked cost reaches the cap (remaining scenarios skipped, never a task truncated
 mid-run). Full documentation in `docs/Exaix_Evaluation.md`.
@@ -3828,7 +3907,7 @@ Query activity history:
 exactl log list --limit 10
 
 # Filter by trace ID to see complete request lifecycle
-TRACE_ID=$(exactl log list --tail 1 --format json | jq -r '.[0].trace_id')
+TRACE_ID=$(exactl log list --limit 1 -o json | jq -r '.[0].trace_id')
 exactl log list --filter trace_id=$TRACE_ID
 
 # Audit all errors across the system
@@ -6170,9 +6249,9 @@ exactl log list [options]
 
 | Option                                   | Description                                     | Default |
 | ---------------------------------------- | ----------------------------------------------- | ------- |
-| `--tail <n>`, `-n <n>`                   | Show the last N entries                         | 50      |
+| `--limit <n>`, `-n <n>`                  | Show the last N entries                         | 50      |
 | `--filter <key=value>`, `-f <key=value>` | Filter by criteria (can be used multiple times) | None    |
-| `--format <format>`                      | Output format: `text`, `table`, `json`          | `text`  |
+| `-o, --output <format>`                  | Output format: `text`, `table`, `json`          | `text`  |
 | `--distinct <field>`                     | Return distinct values for specified field      | None    |
 | `--count`                                | Return count aggregation by action_type         | false   |
 | `--payload <pattern>`                    | Filter by payload LIKE pattern                  | None    |
@@ -6209,7 +6288,7 @@ exactl log list -o table
 exactl log list --filter trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Get the trace ID from a recent request and investigate
-TRACE_ID=$(exactl log list --tail 1 --format json | jq -r '.[0].trace_id')
+TRACE_ID=$(exactl log list --limit 1 -o json | jq -r '.[0].trace_id')
 exactl log list --filter trace_id=$TRACE_ID
 ```
 
@@ -6308,7 +6387,7 @@ exactl log list --payload %timeout% --payload %error%
 
 ```bash
 # Find the trace ID of a failed request
-FAILED_TRACE=$(exactl log list --filter action_type=request.failed --tail 1 --format json | jq -r '.[0].trace_id')
+FAILED_TRACE=$(exactl log list --filter action_type=request.failed --limit 1 -o json | jq -r '.[0].trace_id')
 
 # Investigate the complete failure chain
 exactl log list --filter trace_id=$FAILED_TRACE
@@ -6485,7 +6564,7 @@ Exaix provides comprehensive cost tracking and budget management for AI provider
 Use `exactl log cost` to inspect persisted provider calls. Add `--group-by model` or
 `--group-by portal` for per-group call counts, prompt/completion tokens,
 cache-read/cache-creation tokens, and total USD cost. The same view is available
-as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace-id`, and
+as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace`, and
 `--since` apply before grouping. Without `--group-by`, the command shows the
 existing per-call table and totals.
 

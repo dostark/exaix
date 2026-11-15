@@ -685,11 +685,11 @@ When `trace_scope` is absent the criterion keeps its original global semantics.
 
 ### Command output
 
-| kind                          | fields             | asserts                             |
-| ----------------------------- | ------------------ | ----------------------------------- |
-| `command-exit-code`           | `equals` (int)     | the subprocess exit code            |
-| `command-output-contains`     | `contains: []`     | stdout contains every string        |
-| `command-output-not-contains` | `not_contains: []` | stdout contains none of the strings |
+| kind                          | fields             | asserts                                        |
+| ----------------------------- | ------------------ | ---------------------------------------------- |
+| `command-exit-code`           | `equals` (int)     | the subprocess exit code                       |
+| `command-output-contains`     | `contains: []`     | stdout plus stderr contain every string        |
+| `command-output-not-contains` | `not_contains: []` | stdout plus stderr contain none of the strings |
 
 ### Environment / state
 

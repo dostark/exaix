@@ -18,6 +18,46 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 239 (exactl Output, Exit-Code and Help Contracts)
+
+### Added
+
+- `-o, --output table|json|jsonl|md|text`, `--json`, `-q`, `--no-color`, `--no-input` and `-y, --yes` work on every `exactl` command before or after the command, and every list and show command prints machine-readable JSON with `-o json` (see [Global Options and the Output Contract](Exaix_User_Guide.md#41d-global-options-and-the-output-contract)).
+- In a machine format a failure prints `{"error":{"code":"…","message":"…"}}` on stderr and ends with its exit code.
+- `exactl doctor` runs five read-only checks (schema, config, daemon, provider and pricing), prints one row for each, and exits with 6, 5 or 7 for the first failing check, and `exactl doctor --schema` runs only the schema check (see [Health Check and Shell Completion](Exaix_User_Guide.md#41g-health-check-and-shell-completion)).
+- `exactl completion bash`, `exactl completion fish` and `exactl completion zsh` print the completion script of a shell.
+- `exactl <command> --help` shows a summary, the examples, the related commands, the exit codes and a link to the reference page of the command, and the same text is generated into [docs/cli/](cli/index.md) and the command table of the User Guide with `deno task docs:cli`.
+- `exactl log cost` shows the source of each price and groups costs with `--group-by model`, `portal` or `service`.
+- `cli.confirmation_resolved` is a journal event that records each consent, refusal and declined prompt of a confirming command.
+
+### Changed
+
+- Messages, progress lines and errors go to stderr in every format, so stdout carries only data and `exactl -o json … | jq` is safe.
+- Every failure ends with a code that names its class: 3 for a missing item, 4 for a state conflict, 6 for an invalid result, 124 for a timeout, 2 for a usage error and 1 for the rest (see [Exit Codes](Exaix_User_Guide.md#41e-exit-codes)).
+- `exactl blueprint remove`, `exactl portal remove`, `exactl git worktree prune`, `exactl config rollback`, `exactl config compact`, `exactl memory learning remove`, `exactl request cancel`, `exactl approval cancel` and the `--all` forms of the approve commands ask for confirmation, and without a terminal or with `--no-input` they exit with code 2 until you pass `--yes` (see [Confirmation](Exaix_User_Guide.md#41f-confirmation)).
+- `-q` prints only ids in a human format, and each short flag has one meaning on every command, so the other short flags are removed (the one-letter flags that stay are `-o`, `-q`, `-y`, `-n`, `-s`, `-r`, `-m`, `-f`, `-P`, `-i`, `-k` and `-v`).
+- `exactl eval run` and the other eval commands that start the scenario runner end with the exit code of the runner, and a JSON error names such a code `CHILD_EXIT`.
+- `exactl config validate` exits with code 6 when the report holds issues, `exactl log verify` exits with code 6 for a broken journal chain, and an unknown skill exits with code 3.
+- `exactl request create` without a description exits with code 2.
+
+### Removed
+
+- The options in the table below stop working: each prints the option that replaces it on one line and exits with code 2.
+- `exactl migrate` and `exactl migrate check` stop working, and `exactl doctor --schema` replaces them.
+- `exactl blueprint remove --force` stops working, because it never skipped a check, and `--yes` replaces it.
+
+### exactl option renames
+
+| Removed option                                | Replacement       |
+| --------------------------------------------- | ----------------- |
+| `--format`                                    | `-o, --output`    |
+| `--tail`, `--lines` and `--last`              | `-n, --limit`     |
+| `--trace-id`                                  | `--trace`         |
+| `--history-format`                            | `--history-store` |
+| `exactl blueprint remove --force`             | `--yes`           |
+| `exactl request create --agent-role` and `-a` | `--agent`         |
+| `exactl eval calibration score --output`      | `--report-file`   |
+
 ## Unreleased — Phase 238 (exactl Command Grammar and Consolidation)
 
 ### Added

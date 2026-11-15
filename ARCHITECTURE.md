@@ -460,7 +460,7 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
 ## exactl Command Tree {#exactl-command-tree}
 
 `exactl` follows one grammar, `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]`. Three enums in
-`apps/exactl/src/exactl_constants.ts` hold it: `ExaCtlCommandName` (the 19 roots), `ExaCtlSubNoun` and
+`apps/exactl/src/exactl_constants.ts` hold it: `ExaCtlCommandName` (the 20 roots), `ExaCtlSubNoun` and
 `ExaCtlVerb` (the closed verb set). A new verb, sub-noun or root is a change to its enum.
 
 - **Builder layout.** `apps/exactl/src/exactl.ts` registers one root per `ExaCtlCommandName` member. Each root
@@ -468,14 +468,33 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
   shared `IExaCtlRuntime`. The builders hold wiring only. The behavior lives in the command classes under
   `apps/exactl/src/commands/`, which a builder reaches through the runtime.
 - **Root error handler.** `apps/exactl/src/exactl_error_handler.ts` is the only place that maps a failure to an
-  exit code. A builder throws `ExaCtlError` with an `ExaCtlExitCode` (2 usage, 3 not found, 4 state conflict). The handler prints
-  the message to stderr and exits with that code. A usage error changes no state, so it writes no journal event.
+  exit code, and `apps/exactl/src/exactl.ts` is the only file that holds `Deno.exit`, as a value. A builder throws
+  `ExaCtlError` with an `ExaCtlExitCode` (1 failure, 2 usage, 3 not found, 4 state conflict, 6 invalid, 124 timeout,
+  130 cancelled). The handler prints the message to stderr and exits with that code. In a machine format it prints
+  `{"error":{"code","message"}}` instead, and a child process code that has no name is `CHILD_EXIT`. A usage error
+  changes no state, so it writes no journal event.
+- **Output contract.** `apps/exactl/src/output/exactl_output.ts` holds the `ExaCtlOutputRenderer`. A command returns
+  data, and the renderer prints a collection, an item, a mutation or an event in the format that the global options
+  select (`-o`, `--json`, `-q`, `--no-color`). The display logger writes to stderr, so stdout carries only data.
+  `@exaix/cli` holds the contract types: `ExaCtlExitCode`, `ExaCtlError`, `ExaCtlOutputKind`, the global option
+  interface and the doc record.
+- **Confirmation.** `apps/exactl/src/output/exactl_confirm.ts` asks for consent before eleven destructive verbs act.
+  Without a terminal or with `--no-input` it throws a usage error that names `--yes`. Each outcome is one
+  `cli.confirmation_resolved` journal row, written out before the process ends.
+- **Doc records and the generator.** The text of every command lives in one record under
+  `apps/exactl/src/command_docs/`. `documented()` renders it into `--help`, and
+  `apps/exactl/src/docs/cli_reference.ts` renders it with the walked tree into `docs/cli/`, a JSON manifest and the
+  command table of the User Guide. `scripts/generate_cli_reference.ts` (`deno task docs:cli` and `docs:cli:team`) writes
+  the files, and the drift tests fail when they fall behind. A Team command keeps its record in its own package.
+- **Doctor and completion.** `exactl doctor` runs five read-only checks (schema, config, daemon, provider, pricing)
+  over probes that other commands own, and is the only producer of exit codes 5 and 7. `exactl completion` prints the
+  scripts of cliffy, and its hidden callback command stays out of the docs and the lint rules.
 - **Rename hints.** The hard cut of the older command spellings keeps no alias. `apps/exactl/src/exactl_renames.ts`
   holds `EXACTL_RENAMES`, a table of removed paths and their replacements, and `findRename` and `renameHint`. The
   table runs only after cliffy rejects a path: the handler then prints `use '<replacement>'` and exits 2.
 - **Tree-lint.** `apps/exactl/tests/command_tree_lint_test.ts` walks the live tree with
   `apps/exactl/src/docs/command_tree_walk.ts` and holds the grammar: every leaf is an `ExaCtlVerb`, no compound leaf, no
-  duplicate handler, and no path of `EXACTL_RENAMES` in the tree. Its allow-list fixture is empty and may only shrink.
+  duplicate handler, and no path of `EXACTL_RENAMES` in the tree. Its allow-list fixture holds only the `completion` shell names and may only shrink.
 - **Pending human decisions.** `exactl approval list` merges eight sources, one per kind: plan, amendment, review,
   clarification, proposal, skill, wait and tool. `apps/exactl/src/commands/approval_sources.ts` defines each source
   over the command that owns the data. `ApprovalCommands.list` runs them in parallel, hides a clarification wait
