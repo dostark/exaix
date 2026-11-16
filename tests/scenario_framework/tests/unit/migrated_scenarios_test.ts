@@ -22,7 +22,7 @@ import { loadBindingLayers, resolveBinding } from "@exaix/ai";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
 
 /** The `[ai].provider` a cell's config pins, or an empty string when it pins none. */
 function configProvider(configRelPath: string): string {

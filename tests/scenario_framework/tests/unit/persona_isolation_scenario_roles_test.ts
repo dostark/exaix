@@ -15,7 +15,7 @@ import { loadCellCatalog, resolveScenarioMatrixCells } from "../../runner/cell_c
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 
 const FRAMEWORK_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../..");
-const CATALOG_PATH = join(FRAMEWORK_ROOT, "..", "..", "configs", "eval-cells.toml");
+const CATALOG_PATH = join(FRAMEWORK_ROOT, "..", "..", "configs", "model_presets.toml");
 const EXPECTED_ROLE_BY_SCENARIO = {
   "swe-write-tests-uncovered": "senior-coder",
   "swe-fix-bug-null-guard": "senior-coder",

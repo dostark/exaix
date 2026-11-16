@@ -502,7 +502,7 @@ Deno.test("[bindings] overlayRequestBindings gives every exactl request step its
 });
 
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
 const FIX_BUG_NULL_GUARD_PATH = join(FRAMEWORK_HOME, "scenarios", "swe_tasks", "fix-bug-null-guard.yaml");
 
 Deno.test("[matrix] cells and from_catalog are mutually exclusive, and axes is rejected", () => {

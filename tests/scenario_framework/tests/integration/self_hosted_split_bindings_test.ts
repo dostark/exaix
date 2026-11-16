@@ -187,7 +187,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const catalog = await Deno.readTextFile(join(FRAMEWORK_HOME, "..", "..", "configs", "eval-cells.toml"));
+    const catalog = await Deno.readTextFile(join(FRAMEWORK_HOME, "..", "..", "configs", "model_presets.toml"));
     assertStringIncludes(catalog, "supports_tool_choice = false", "the fixture must declare no tool-choice support");
     assertStringIncludes(
       catalog,

@@ -1,7 +1,7 @@
 /**
  * @module LivePresetsTest
  * @path tests/integration/live_presets_test.ts
- * @description Proves that an in-process live test is configured and gated by the cell preset of configs/eval-cells.toml that names its service: the preset gives the binding, the catalog entries and the requires_key and requires_optin predicates, and the shared cell evaluator skips with a named reason.
+ * @description Proves that an in-process live test is configured and gated by the cell preset of configs/model_presets.toml that names its service: the preset gives the binding, the catalog entries and the requires_key and requires_optin predicates, and the shared cell evaluator skips with a named reason.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing]
  * @related-files [tests/helpers/live_presets.ts, tests/scenario_framework/runner/cell_catalog.ts]

@@ -207,9 +207,8 @@ export const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: st
   },
   "opencode-go": {
     bin: "opencode",
-    // Pins the eval-cells.toml catalog's opencode-go/deepseek-v4-flash cell. No hardcoded
-    // --dir: this shape is reused by both the standard matrix path (/worktree) and the
-    // Terminal-Bench template (/app) — opencode defaults to cwd, set by buildJailLaunch's --workdir.
+    // Pins the opencode-go/deepseek-v4-flash preset of model_presets.toml.
+    // It sets no --dir, because opencode defaults to the working directory that buildJailLaunch sets.
     args: ["run", "--format", "json", "--model", "opencode-go/deepseek-v4-flash"],
   },
 };
@@ -347,7 +346,7 @@ export const MatrixCellSchema = z.object({
  *  catalog preset names in `from_catalog`. `axes` was documentary only and is gone. */
 export const MatrixSchema = z.object({
   cells: z.array(MatrixCellSchema).min(1).optional(),
-  /** Catalog preset names, resolved from `configs/eval-cells.toml` before expansion. */
+  /** Catalog preset names, resolved from `configs/model_presets.toml` before expansion. */
   from_catalog: z.array(NON_EMPTY).min(1).optional(),
 }).strict().refine(
   (matrix) => (matrix.cells === undefined) !== (matrix.from_catalog === undefined),

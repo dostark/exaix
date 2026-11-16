@@ -338,7 +338,7 @@ Deno.test("[judge][regression] with no judge binding the env path is unchanged",
 });
 
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
 
 type CatalogEntry = Awaited<ReturnType<typeof loadScenarioCatalog>>[number];
 

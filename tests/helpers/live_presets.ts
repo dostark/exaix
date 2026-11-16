@@ -1,7 +1,7 @@
 /**
  * @module LivePresets
  * @path tests/helpers/live_presets.ts
- * @description Configures and gates an in-process live test by the cell preset of configs/eval-cells.toml that names its service. The `live-<service>` row gives the binding, the catalog entries and the requires_bin, requires_key and requires_optin predicates, and the cell evaluator of the scenario runner decides whether the test runs, so a test and a scenario cell skip for the same named reason.
+ * @description Configures and gates an in-process live test by the cell preset of configs/model_presets.toml that names its service. The `live-<service>` row gives the binding, the catalog entries and the requires_bin, requires_key and requires_optin predicates, and the cell evaluator of the scenario runner decides whether the test runs, so a test and a scenario cell skip for the same named reason.
  * @architectural-layer Test
  * @dependencies [@exaix/schemas, @exaix/testing]
  * @related-files [
@@ -20,7 +20,7 @@ import {
 } from "../scenario_framework/runner/cell_catalog.ts";
 import { cellPredicateSkipReason } from "../scenario_framework/runner/matrix_expander.ts";
 
-const CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
 /** The prefix of a preset row that a live test reads. The rest of the name is the service id. */
 const LIVE_PRESET_PREFIX = "live-";
 const DEFAULT_SELECTOR = "default";
@@ -38,7 +38,7 @@ function presetOf(service: string): ICatalogPreset {
     throw new Error(
       `no live preset names service ${service}: add a [tool.${
         livePresetName(service)
-      }] row to configs/eval-cells.toml with its binding, key and opt-in`,
+      }] row to configs/model_presets.toml with its binding, key and opt-in`,
     );
   }
   return preset;

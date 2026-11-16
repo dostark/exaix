@@ -51,7 +51,7 @@ export interface ILlmTestPreset {
 /** The operator override for every live-provider test, in the phase-204 --bind syntax. */
 export const EXA_TEST_BIND_ENV = "EXA_TEST_BIND";
 
-/** The providers with wire-conformance fixtures, with the replay facts that no catalog row carries. Each spec comes from its `live-<service>` row of configs/eval-cells.toml. */
+/** The providers with wire-conformance fixtures, with the replay facts that no catalog row carries. Each spec comes from its `live-<service>` row of configs/model_presets.toml. */
 const PRESET_FACTS: ReadonlyArray<Pick<ILlmTestPreset, "id" | "groupedReplay" | "acceptsToolAliases">> = [
   { id: "google", groupedReplay: true },
   { id: "anthropic", groupedReplay: true },
@@ -68,7 +68,7 @@ export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = PRESET_FACTS.map((fac
 /** The live tests' default service: the DeepSeek API, an openai-chat provider whose boot registration declares grouped replay. */
 const LIVE_DEFAULT_SERVICE = "deepseek";
 
-/** The built-in catalog plus the models and services that the `live-*` rows of configs/eval-cells.toml declare.
+/** The built-in catalog plus the models and services that the `live-*` rows of configs/model_presets.toml declare.
  *  Each call returns a fresh copy. */
 export function llmTestCatalog(): IBindingCatalog {
   return mergeCatalogs(buildBuiltInCatalog(), liveCatalogOverlay());

@@ -22,7 +22,7 @@ import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
 const SCENARIO_PATH = join(
   REPO_ROOT,
   "tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml",

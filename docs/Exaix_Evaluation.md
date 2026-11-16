@@ -1047,14 +1047,14 @@ exactl eval report --pack swe-tasks
 
 ### Configuration
 
-Cells are configured in `configs/eval-cells.toml`, the reference catalog scenario authors
+Cells are configured in `configs/model_presets.toml`, the reference catalog scenario authors
 consult when declaring `matrix.cells[]` entries (`tests/scenario_framework/tests/unit/cell_catalog_test.ts`
 validates it structurally). The opencode Go tier (`opencode-go/deepseek-v4-flash`) is the
 default opencode cell. The claude-code cell requires the `claude` CLI binary on PATH. Both
 are `[cli_delegate]`-driven, real swe_tasks cells.
 
 Codex is not a swe_tasks/`[cli_delegate]` cell: no swe_tasks scenario declares a codex
-matrix entry. `configs/eval-cells.toml`'s `[tool.codex]` entry (`codex-cli/gpt-5.6-terra`)
+matrix entry. `configs/model_presets.toml`'s `[tool.codex]` entry (`codex-cli/gpt-5.6-terra`)
 is exclusively consumed by the separate `agent_flows` pack's `flow_strategy_react.yaml`
 scenario, proving Codex through the embedded ReAct-loop provider
 (`[ai].provider = "codex-cli"`) — distinct from this `[cli_delegate]`-driven `swe_tasks`
@@ -1065,7 +1065,7 @@ for the full comparison table.
 ### Presets, bindings, judges and pins
 
 A scenario selects a provider setup with `matrix: { from_catalog: [<preset>] }` instead of
-hand-listing cells. A preset is a `[tool.<name>]` row in `configs/eval-cells.toml`: a base config
+hand-listing cells. A preset is a `[tool.<name>]` row in `configs/model_presets.toml`: a base config
 plus optional `bindings` and `catalog` tables and the usual `requires_*` predicates. The scenario,
 the cell and an operator (`--overlay`, `--bind`) can each add bindings; later layers win, and a
 scenario `pin:` entry (with a reason) keeps the fields a qualification run depends on. A judge binds

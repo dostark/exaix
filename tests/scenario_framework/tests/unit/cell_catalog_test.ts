@@ -1,7 +1,7 @@
 /**
  * @module CellCatalogTest
  * @path tests/scenario_framework/tests/unit/cell_catalog_test.ts
- * @description Validates the eval cell catalog (configs/eval-cells.toml). Phase 203 Step 2
+ * @description Validates the eval cell catalog (configs/model_presets.toml). Phase 203 Step 2
  *   turns each `[tool.<name>]` row into a named preset that a scenario selects with
  *   `matrix.from_catalog`. This file asserts the preset fields, the `tool`/`requires_bin`
  *   defaults, the `bindings.default` model agreement with each row's own config, sentinel
@@ -27,7 +27,7 @@ const MIXED_REALM_PRESETS = new Set(["ollama-chat", "split-strong-local", "self-
 const IN_PROCESS_LIVE_PREFIX = "live-";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const CATALOG_PATH = resolve(REPO_ROOT, "configs", "eval-cells.toml");
+const CATALOG_PATH = resolve(REPO_ROOT, "configs", "model_presets.toml");
 
 /** The `[ai]` block of a config TOML — the provider and model a preset's row pins. */
 interface IConfigAiBlock {
@@ -114,7 +114,7 @@ Deno.test("[CellCatalog] the exactl presets name the exactl tool and keep native
 
 Deno.test("[CellCatalog] a row without a tool field defaults to the exactl tool", async () => {
   await withTempDir(async (dir) => {
-    const path = join(dir, "eval-cells.toml");
+    const path = join(dir, "model_presets.toml");
     await Deno.writeTextFile(
       path,
       [
@@ -181,7 +181,7 @@ Deno.test("[CellCatalog] a preset's default binding names the canonical model it
 
 Deno.test("[CellCatalog] a preset catalog carrying the fixture-port sentinel loads unresolved", async () => {
   await withTempDir(async (dir) => {
-    const path = join(dir, "eval-cells.toml");
+    const path = join(dir, "model_presets.toml");
     await Deno.writeTextFile(
       path,
       [

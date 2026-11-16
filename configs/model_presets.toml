@@ -1,4 +1,4 @@
-# Cell Catalog — the named presets a scenario selects with `matrix.from_catalog`.
+# Model Presets — the named presets a scenario selects with `matrix.from_catalog`, and the live-test rows.
 # A scenario lists preset names instead of copying a config path, a provider label and the
 # prerequisite predicates into every cell. Adding a provider or model tier requires only a
 # new entry here — no YAML edits.
