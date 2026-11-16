@@ -323,6 +323,20 @@ Deno.test("[model-cli] model candidates rejects an ambiguous bare name with qual
   });
 });
 
+Deno.test("[model-cli] model candidates rejects a provider:model entry and keeps the file unchanged", async () => {
+  await withTomlConfig(async (configPath, read) => {
+    // The resolver looks each entry up as a provider name, so a provider:model pair would be skipped without a message.
+    const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
+    await cmd.setCandidates("M", ["anthropic"]);
+    await assertRejects(
+      () => cmd.setCandidates("M", ["anthropic", "anthropic:claude-sonnet-4"]),
+      Error,
+      "provider name",
+    );
+    assertEquals(read().model_sizes?.M?.candidates, ["anthropic"]);
+  });
+});
+
 Deno.test("[model-cli] model candidates stores unregistered-provider entries flagged unconfigured (G10)", async () => {
   await withTomlConfig(async (configPath, read) => {
     // "madeup" is not a registered provider and matches no model → stored but flagged

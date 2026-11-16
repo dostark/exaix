@@ -100,6 +100,8 @@ const NO_VALUE = "-";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const VERIFIED_DATE_LENGTH = 10;
 const MODEL_ID_SEPARATOR = "/";
+/** The separator of a provider:model pair, which a curated list does not accept. */
+const PROVIDER_MODEL_PAIR_SEPARATOR = ":";
 const PROVIDER_NAME_SEPARATOR = "-";
 const SUBSCRIPTION_SUFFIX = "-cli";
 const LOCAL_SERVICES: ReadonlySet<string> = new Set(["ollama", "llamacpp", "self-hosted"]);
@@ -276,6 +278,11 @@ export class ModelCommands {
   private async validateEntries(entries: string[]): Promise<void> {
     const registered = new Set(await this.registry.getAllProviders());
     for (const entry of entries) {
+      if (entry.includes(PROVIDER_MODEL_PAIR_SEPARATOR)) {
+        throw new Error(
+          `Curate a provider name (e.g. anthropic), not a provider:model pair: '${entry}'. The resolver reads each entry as a provider.`,
+        );
+      }
       const provider = this.providerOf(entry);
       if (registered.has(provider)) continue; // known provider — usable
       const matches = await this.matchesForBareName(entry);
@@ -302,7 +309,7 @@ export class ModelCommands {
   }
 
   private providerOf(entry: string): string {
-    const idx = entry.indexOf(":");
+    const idx = entry.indexOf(PROVIDER_MODEL_PAIR_SEPARATOR);
     return idx > 0 ? entry.slice(0, idx) : entry;
   }
 
