@@ -141,8 +141,8 @@ function localEndpoint(endpoint: string, allowInsecure: boolean): URL {
   return url;
 }
 
-/** Documented chat paths a self-hosted service may expose. */
-const SELF_HOSTED_PATHS = ["/v1/chat/completions", "/chat/completions"];
+/** A self-hosted service exposes its chat route at a path that ends with this suffix. */
+const SELF_HOSTED_PATH_SUFFIX = "/chat/completions";
 
 /** HTTPS for any host, plain HTTP only on loopback with the explicit opt-in. */
 function selfHostedEndpoint(endpoint: string, allowInsecure: boolean): URL {
@@ -156,7 +156,7 @@ function selfHostedEndpoint(endpoint: string, allowInsecure: boolean): URL {
   if (
     (url.protocol !== SCHEME_HTTPS && !insecureLoopback) ||
     url.username || url.password || url.search || url.hash ||
-    !SELF_HOSTED_PATHS.includes(url.pathname)
+    !url.pathname.endsWith(SELF_HOSTED_PATH_SUFFIX)
   ) {
     throw new ProviderFactoryError(
       "Compatible self-hosted endpoint must use HTTPS, or opted-in loopback HTTP on a documented path",

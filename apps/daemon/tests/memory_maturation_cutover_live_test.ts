@@ -3,7 +3,9 @@
  * @path apps/daemon/tests/memory_maturation_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
  *   memory_maturation_cutover_test.ts, against a real provider instead of MockProviderFactory.
- *   Not CI-run: live-provider convention. EXA_TEST_BIND binds the provider and model (phase-204 --bind syntax).
+ *   Not CI-run: live-provider convention. It runs only when EXA_TEST_ENABLE_PAID_LLM=1 and the key of the bound
+ *   service (OPENCODE_API_KEY) are set. The default binding is DeepSeek V4.1 Flash on OpenCode Go.
+ *   EXA_TEST_BIND binds another provider and model (phase-204 --bind syntax).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
  *   behavior end-to-end (capture → extract → pending → approval attempt → retrieve → reflect),
@@ -20,7 +22,12 @@ import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrat
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
 import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalog } from "@exaix/testing";
-import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../tests/helpers/llm_bindings.ts";
+import {
+  createLlmProvider,
+  liveLlmSpec,
+  OPENCODE_GO_PRESET_ID,
+  paidLlmEnabled,
+} from "../../../tests/helpers/llm_bindings.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
@@ -43,7 +50,7 @@ import type { IApplicationContext, IMemoryCostRouter, ISkillsService } from "@ex
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
-const liveSpec = liveLlmSpec();
+const liveSpec = liveLlmSpec(OPENCODE_GO_PRESET_ID);
 const testProvider = liveSpec.service ?? "unbound";
 const testModel = liveSpec.service_model_id ?? liveSpec.model ?? "unbound";
 
@@ -55,7 +62,7 @@ async function loadPolicyInstructions(): Promise<string> {
 
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  ignore: !llmKeyPresent(liveSpec),
+  ignore: !paidLlmEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

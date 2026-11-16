@@ -23,6 +23,7 @@ import {
   STEP_KIND_AGENT,
 } from "@exaix/ai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import { OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE, ProviderType } from "@exaix/core";
 import { buildBuiltInCatalog } from "@exaix/model-registry";
 import {
   BindOneOffSchema,
@@ -49,6 +50,18 @@ export interface ILlmTestPreset {
 /** The operator override for every live-provider test, in the phase-204 --bind syntax. */
 export const EXA_TEST_BIND_ENV = "EXA_TEST_BIND";
 
+/** A live test that spends money runs only when this variable is `1`, and its service key is set. */
+export const PAID_LLM_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
+const PAID_OPT_IN_VALUE = "1";
+
+/** The OpenCode Go preset: DeepSeek V4.1 Flash through the OpenCode Go subscription. */
+export const OPENCODE_GO_PRESET_ID = "opencode-go";
+const OPENCODE_GO_SERVICE = "opencode-go";
+const OPENCODE_GO_MODEL = "deepseek-v4.1-flash";
+const OPENCODE_GO_CANONICAL_MODEL = `deepseek/${OPENCODE_GO_MODEL}`;
+const OPENCODE_GO_KEY_ENV = "OPENCODE_API_KEY";
+const OPENCODE_GO_ENDPOINT = "https://opencode.ai/inference/go/openai/v1/chat/completions";
+
 export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
   { id: "google", spec: { service: "google", service_model_id: "gemini-3.8-flash" }, groupedReplay: true },
   {
@@ -65,6 +78,12 @@ export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
   {
     id: "deepseek",
     spec: { service: "deepseek", service_model_id: "deepseek-v4-pro" },
+    groupedReplay: true,
+    acceptsToolAliases: false,
+  },
+  {
+    id: OPENCODE_GO_PRESET_ID,
+    spec: { service: OPENCODE_GO_SERVICE, service_model_id: OPENCODE_GO_MODEL },
     groupedReplay: true,
     acceptsToolAliases: false,
   },
@@ -93,6 +112,17 @@ export function llmTestCatalog(): IBindingCatalog {
     catalog.models[model.canonical] = { model_provider: model.service };
     catalog.services[model.service]!.serves[model.canonical] = model.serviceModelId;
   }
+  // A self-hosted openai-chat service declares its own endpoint and key variable, as an operator catalog does.
+  catalog.models[OPENCODE_GO_CANONICAL_MODEL] = { model_provider: "deepseek" };
+  catalog.services[OPENCODE_GO_SERVICE] = {
+    adapter: ProviderType.OPENAI_CHAT,
+    profile: OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+    endpoint: OPENCODE_GO_ENDPOINT,
+    transport: "cloud",
+    interface: "api",
+    key_env: OPENCODE_GO_KEY_ENV,
+    serves: { [OPENCODE_GO_CANONICAL_MODEL]: OPENCODE_GO_MODEL },
+  };
   return catalog;
 }
 
@@ -131,10 +161,10 @@ function presetSpec(id: string): IBindingSpec {
   return preset.spec;
 }
 
-/** The binding every live-provider test uses: EXA_TEST_BIND, else the DeepSeek preset. */
-export function liveLlmSpec(): IBindingSpec {
+/** The binding a live-provider test uses: EXA_TEST_BIND, else the named preset, which is the DeepSeek preset by default. */
+export function liveLlmSpec(presetId: string = LIVE_PRESET_ID): IBindingSpec {
   const override = Deno.env.get(EXA_TEST_BIND_ENV);
-  return override ? parseBindOverride(override) : presetSpec(LIVE_PRESET_ID);
+  return override ? parseBindOverride(override) : presetSpec(presetId);
 }
 
 /** The binding the grouped-replay live harness uses: EXA_TEST_BIND, else the DeepSeek preset. */
@@ -182,4 +212,9 @@ export function llmKeyEnv(spec: IBindingSpec): string | undefined {
 export function llmKeyPresent(spec: IBindingSpec): boolean {
   const keyEnv = llmKeyEnv(spec);
   return keyEnv === undefined || (Deno.env.get(keyEnv) ?? "").length > 0;
+}
+
+/** True when the paid opt-in variable is `1` and the key of the spec's service is set. It gates a live test that spends money. */
+export function paidLlmEnabled(spec: IBindingSpec): boolean {
+  return Deno.env.get(PAID_LLM_OPT_IN_ENV) === PAID_OPT_IN_VALUE && llmKeyPresent(spec);
 }

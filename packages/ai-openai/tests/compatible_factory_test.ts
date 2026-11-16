@@ -538,6 +538,8 @@ Deno.test("[phase203.factory][security] self-hosted rejects every endpoint outsi
     ["https://gpu.internal/v1/chat/completions#fragment", false],
     ["https://gpu.internal/v1/models", false],
     ["https://gpu.internal/chat/completions/", false],
+    ["https://gpu.internal/v1/chat/completions/extra", false],
+    ["https://gpu.internal/v1/chat/completionsx", false],
     ["not-a-url", false],
   ];
   for (const [endpoint, allowInsecureLoopback] of rejections) {
@@ -554,6 +556,7 @@ Deno.test("[phase203.factory] self-hosted accepts HTTPS anywhere and plain HTTP 
   const acceptances: Array<[string, boolean]> = [
     ["https://gpu.internal/v1/chat/completions", false],
     ["https://gpu.internal/chat/completions", false],
+    ["https://opencode.ai/inference/go/openai/v1/chat/completions", false],
     ["https://127.0.0.1:11434/v1/chat/completions", false],
     ["http://127.0.0.1:11434/v1/chat/completions", true],
     ["http://127.0.0.1:11434/chat/completions", true],
