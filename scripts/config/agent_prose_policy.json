@@ -25,7 +25,7 @@
   "sources": [
     {
       "path": "Skills/requirements-analysis/SKILL.md",
-      "contentHash": "4149f245fd58f4519cb571c1be4a1b8ca6ffe6531c5b1b4973f779321cda5cd4",
+      "contentHash": "75c79be4952930c1b130c08147e6d132e6fa023709aa6fda98b8e33ff668bf66",
       "kind": "mixed",
       "spans": [
         {
@@ -39,6 +39,14 @@
         {
           "selector": "heading:Requirements Gathering",
           "contentHash": "73c7e623a473fe059678bc701a25d66e4b313a2c9c0b927dc8576655f2ffb59e",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "guidance prose",
+          "sentenceModes": []
+        },
+        {
+          "selector": "heading:Specify before building",
+          "contentHash": "6dcacecc761afe4b9342d1c19f736ab7dd92a3c7b8c2127763b6e3868669f95d",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "guidance prose",
@@ -86,11 +94,11 @@
         }
       ],
       "review": {
-        "reviewer": "Codex, approved requirements-analysis proposal revision 1",
-        "reviewedHash": "4149f245fd58f4519cb571c1be4a1b8ca6ffe6531c5b1b4973f779321cda5cd4",
+        "reviewer": "Claude Code (Claude Sonnet 5.5), reviewed the merged specification-first guidance against the STE rules on 2026-11-16",
+        "reviewedHash": "75c79be4952930c1b130c08147e6d132e6fa023709aa6fda98b8e33ff668bf66",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "5a45c6c9141a09d8ec15587dc243d2c4a5dee5dddf61a35f7622ea8bb8890c99",
+        "classificationHash": "e129ad27ba2deca3ecce0851baff0741e4fa363a6e85c72693279fbe5d020638",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {
@@ -165,7 +173,7 @@
     },
     {
       "path": "Skills/requirements-analysis/exaix.yaml",
-      "contentHash": "313be14a86cad5ecf5a2a143360dff5c4869c72c07661d59ad4d73789574edfa",
+      "contentHash": "f042a4b4babceed6680675fb68794d5e06208c627d05e1c9485e737052bd350e",
       "kind": "mixed",
       "spans": [
         {
@@ -178,15 +186,15 @@
         },
         {
           "selector": "yaml:constraints[0]",
-          "contentHash": "033ede9cbc318b4b2e60657b2c0d5f8aa84460bcce779c38777d14ec3e0929c5",
+          "contentHash": "e7bdb8dff313f747835f93531e4f732263dfb3ae02a6f78d4f8b67eb01b22a03",
           "kind": "instruction",
-          "mode": "descriptive",
+          "mode": "procedural",
           "reason": "sidecar prose value",
           "sentenceModes": []
         },
         {
           "selector": "yaml:constraints[1]",
-          "contentHash": "2502e8f6eeb00081f610760c35ddd4e0606907a68fff9e07993b3af82ee7ff49",
+          "contentHash": "fdac720485fedeed41600a61f6224e08bc2a4ec64ca8ece6d7d56f3848bd79c2",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -194,7 +202,7 @@
         },
         {
           "selector": "yaml:constraints[2]",
-          "contentHash": "bd1275bffc3fa19672e7fa5a916aaae8cff2a239587110b046729fead0ea76d4",
+          "contentHash": "033ede9cbc318b4b2e60657b2c0d5f8aa84460bcce779c38777d14ec3e0929c5",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -202,7 +210,7 @@
         },
         {
           "selector": "yaml:constraints[3]",
-          "contentHash": "5373667c257b58519b3a4efa2b6aab561543d44b13d7e2fcafd82e57143aadea",
+          "contentHash": "2502e8f6eeb00081f610760c35ddd4e0606907a68fff9e07993b3af82ee7ff49",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -210,7 +218,7 @@
         },
         {
           "selector": "yaml:constraints[4]",
-          "contentHash": "8a000cb3b8526f9dcc8fc48b6c3b837896db683a0b129de8298872921599a902",
+          "contentHash": "bd1275bffc3fa19672e7fa5a916aaae8cff2a239587110b046729fead0ea76d4",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -218,7 +226,7 @@
         },
         {
           "selector": "yaml:constraints[5]",
-          "contentHash": "705c29c7522bcd161789f915e6d16e2350a0a0a9f753d5f3d24d9fdbd13df995",
+          "contentHash": "5373667c257b58519b3a4efa2b6aab561543d44b13d7e2fcafd82e57143aadea",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -226,15 +234,15 @@
         },
         {
           "selector": "yaml:constraints[6]",
-          "contentHash": "bd7b56e7642b22f541088ae3f2486b42b645b55af97fc91daab0ac70ed13f618",
+          "contentHash": "8a000cb3b8526f9dcc8fc48b6c3b837896db683a0b129de8298872921599a902",
           "kind": "instruction",
-          "mode": "procedural",
+          "mode": "descriptive",
           "reason": "sidecar prose value",
           "sentenceModes": []
         },
         {
           "selector": "yaml:constraints[7]",
-          "contentHash": "065fabad3ecf3eb910b2d60fc48b1405473780f273798ab6cc6ba87e93dfb0b1",
+          "contentHash": "705c29c7522bcd161789f915e6d16e2350a0a0a9f753d5f3d24d9fdbd13df995",
           "kind": "instruction",
           "mode": "descriptive",
           "reason": "sidecar prose value",
@@ -242,6 +250,22 @@
         },
         {
           "selector": "yaml:constraints[8]",
+          "contentHash": "bd7b56e7642b22f541088ae3f2486b42b645b55af97fc91daab0ac70ed13f618",
+          "kind": "instruction",
+          "mode": "procedural",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[9]",
+          "contentHash": "065fabad3ecf3eb910b2d60fc48b1405473780f273798ab6cc6ba87e93dfb0b1",
+          "kind": "instruction",
+          "mode": "descriptive",
+          "reason": "sidecar prose value",
+          "sentenceModes": []
+        },
+        {
+          "selector": "yaml:constraints[10]",
           "contentHash": "dffe340a4b8c31685d5af510a4c113bf6f9a1126d576ee17481dc1674bf03cb2",
           "kind": "instruction",
           "mode": "descriptive",
@@ -249,7 +273,7 @@
           "sentenceModes": []
         },
         {
-          "selector": "yaml:constraints[9]",
+          "selector": "yaml:constraints[11]",
           "contentHash": "eebdb78bb837ccbaa0081f2e5be52e1492a9c1101bf55ea87e0790ffee84f6a3",
           "kind": "instruction",
           "mode": "procedural",
@@ -354,11 +378,11 @@
         }
       ],
       "review": {
-        "reviewer": "Codex, approved requirements-analysis proposal revision 1",
-        "reviewedHash": "313be14a86cad5ecf5a2a143360dff5c4869c72c07661d59ad4d73789574edfa",
+        "reviewer": "Claude Code (Claude Sonnet 5.5), reviewed the merged specification-first guidance against the STE rules on 2026-11-16",
+        "reviewedHash": "f042a4b4babceed6680675fb68794d5e06208c627d05e1c9485e737052bd350e",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "533446fe37222fa4eccffe728897cd97ad7a4c4c4b6c493480d014f206dcb3f1",
+        "classificationHash": "c1345fef9380dc73cf89aecac45bd182a9581fa0df01dbe41d7c0f873fcfb47d",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {

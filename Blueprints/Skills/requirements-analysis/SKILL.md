@@ -13,6 +13,16 @@ description: "Framework for translating business needs into clear, actionable te
 - Uncover implicit requirements
 - Identify constraints and limitations
 
+## Specify before building
+
+- Write the specification before any implementation starts. It is the contract for the work.
+- State acceptance criteria that a later review can use as its rubric. Judge the result
+  against the specification, not against general quality.
+- Ground the specification in the real codebase. Name the architecture layer, conventions,
+  and existing patterns that the change must follow.
+- When a requirement changes or proves infeasible, revise the specification first. Then
+  continue the work. Mark dependent criteria stale until they are revised.
+
 ## Resolve material uncertainty
 
 Read the request, project terminology, relevant configuration, and accepted

@@ -7,7 +7,9 @@ triggers:
     - user-stories
     - acceptance-criteria
 constraints:
-  - 'Every requirement must be testable — if you cannot write a pass/fail check for it, it is not a requirement'
+  - Write the specification before implementation, and state acceptance criteria that a later review can use as its rubric
+  - Revise the specification before continuing the work when a requirement changes or proves infeasible
+  - "Every requirement must be testable — if you cannot write a pass/fail check for it, it is not a requirement"
   - Separate functional requirements from non-functional constraints explicitly
   - Identify assumptions and risks alongside every requirement
   - Inspect existing project terminology, configuration, and accepted decisions before asking questions
@@ -32,7 +34,7 @@ quality_criteria:
     description: Every acceptance criterion is a pass/fail check
     weight: 40
   - name: Completeness
-    description: 'Functional, non-functional, edge cases, and constraints are all covered'
+    description: "Functional, non-functional, edge cases, and constraints are all covered"
     weight: 30
   - name: Traceability
     description: Every requirement maps back to a business need or user story
@@ -40,4 +42,4 @@ quality_criteria:
 applies_to:
   agents:
     - product-manager
-    - '*'
+    - "*"

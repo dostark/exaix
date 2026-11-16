@@ -65,7 +65,7 @@ The full task → doc catalog is auto-generated and always current: **[.copilot/
 | Behavioral guidelines       | [§ below](#behavioral-guidelines)                                                                                                          |
 | Architecture (ground truth) | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                                                       |
 | Coding standards            | [docs/CODE_STYLE.md](./docs/CODE_STYLE.md)                                                                                                 |
-| Spec-driven development     | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                                                                     |
+| Spec-driven development     | [Blueprints/Skills/requirements-analysis/SKILL.md](Blueprints/Skills/requirements-analysis/SKILL.md)                                       |
 | Commit messages             | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                                                                         |
 | Plan-driven multi-step work | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md), [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md) |
 | Active phase plans / status | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                                                                       |
