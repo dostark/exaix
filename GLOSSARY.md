@@ -290,6 +290,14 @@ A scripted run, written as a YAML file, that drives Exaix through a task and sco
 
 A named group of Evaluation Scenarios, such as `smoke` or `agent_flows`. `exactl eval run --pack <name>` runs one, `exactl eval history` lists past runs, `exactl eval compare` compares two runs, and `exactl eval report` renders a comparison report across runs.
 
+### Matrix Cell
+
+One combination of tool, provider, model and daemon configuration that a scenario runs. A scenario with a matrix runs once for each cell, and the evaluation history records every run under the `cell_id` of its cell. `exactl eval report` compares cells with each other.
+
+### Model Preset
+
+A named row of `configs/model_presets.toml` that holds the settings of one provider and model: the daemon configuration, the binding, the catalog entries, and the prerequisites that decide whether it can run (`requires_bin`, `requires_key` and `requires_optin`). A scenario selects presets by name to build its matrix cells. A live test reads the `live-<service>` preset of its service without running a matrix, so it gets its configuration and its skip reason from the same row.
+
 ### Judge Calibration
 
 The check of how closely an LLM judge agrees with a reference, so that its scores can be trusted. `exactl eval calibration generate` runs real scenarios and captures real judge calls as evidence, and `exactl eval calibration score` scores the agreement.
