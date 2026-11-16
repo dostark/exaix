@@ -5078,7 +5078,7 @@
         },
         {
           "title": "Set a list",
-          "command": "exactl model candidates --size M anthropic:claude-sonnet-5-5"
+          "command": "exactl model candidates --size M anthropic ollama"
         }
       ],
       "output": "mutation",

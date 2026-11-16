@@ -130,7 +130,7 @@ exactl model candidates --list
 Set a list:
 
 ```bash
-exactl model candidates --size M anthropic:claude-sonnet-5-5
+exactl model candidates --size M anthropic ollama
 ```
 
 **Output:** mutation.

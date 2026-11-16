@@ -76,7 +76,7 @@ export const MODEL_DOCS: readonly IExaCtlCommandDoc[] = [
       "Writes the candidate list of a size, or a characteristic sub-list, and `--clear` empties it. `--list` shows every curated list.",
     examples: [
       { title: "Show the lists", command: "exactl model candidates --list" },
-      { title: "Set a list", command: "exactl model candidates --size M anthropic:claude-sonnet-5-5" },
+      { title: "Set a list", command: "exactl model candidates --size M anthropic ollama" },
     ],
     seeAlso: [
       exactlCommand(...[MODEL, ExaCtlVerb.LIST]),
