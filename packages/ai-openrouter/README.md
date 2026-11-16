@@ -2,7 +2,7 @@
 
 OpenRouter provider for Exaix. One API key reaches the models in the OpenRouter catalog through `https://openrouter.ai/api/v1`.
 
-Setup, the configuration keys and the per-model caveats are in the [Exaix User Guide, section 2.4.4](../../docs/Exaix_User_Guide.md#244-enterprise-providers-vertex-ai-openrouter).
+Setup, the configuration keys and the per-model caveats are in the [Model Settings, enterprise providers](../../docs/Model_Settings.md#enterprise-providers-vertex-ai-openrouter).
 
 ## Behavior
 

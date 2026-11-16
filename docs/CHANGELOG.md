@@ -385,11 +385,11 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- Scenario YAML accepts `bindings:`, `catalog:` and a `pin:` list, so a scenario sets the service, model, transport and interface for its flow steps and judges without editing a config file (see [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+- Scenario YAML accepts `bindings:`, `catalog:` and a `pin:` list, so a scenario sets the service, model, transport and interface for its flow steps and judges without editing a config file (see [Model bindings for flow steps](Model_Settings.md#model-bindings-for-flow-steps)).
 - Scenario matrices accept `from_catalog` preset names, so a model variant is a preset row rather than a copied config file, and a preset carries its own `bindings` and `catalog`.
 - The scenario runner accepts repeatable `--overlay <file>` and `--bind <selector>=<field>=<value>` flags that override any flow step or judge for one run, above the scenario and cell layers.
 - Scenario judges bind through `judge` and `judge:<step-id>` selectors, resolve against the same request stack as the step they grade, and appear in the run's evidence.
-- The `openai-chat` provider adds a `self-hosted` profile for an operator-declared endpoint and model, covering vLLM, LiteLLM and Ollama servers, with an optional service key and a per-service `supports_tool_choice` (see [OpenAI-compatible Chat Completions](Exaix_User_Guide.md#openai-compatible-chat-completions-openai-chat)).
+- The `openai-chat` provider adds a `self-hosted` profile for an operator-declared endpoint and model, covering vLLM, LiteLLM and Ollama servers, with an optional service key and a per-service `supports_tool_choice` (see [OpenAI-compatible Chat Completions](Model_Settings.md#openai-compatible-chat-completions-openai-chat)).
 - The built-in catalog serves Ollama's OpenAI-compatible endpoint as the `ollama-chat` service, and documented vLLM and LiteLLM overlay examples ship with it.
 - Scenario runs write binding evidence with the overlay files and their digests, each request's lock entries, the resolved judges and their request scope, and the pin decisions.
 
@@ -407,7 +407,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- Flow steps and gate judges can run on their own service, model, transport and interface, set through `[bindings]` and `[catalog.*]` in `exa.config.toml`, daemon overlay files, or per-run overlays (see [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+- Flow steps and gate judges can run on their own service, model, transport and interface, set through `[bindings]` and `[catalog.*]` in `exa.config.toml`, daemon overlay files, or per-run overlays (see [Model bindings for flow steps](Model_Settings.md#model-bindings-for-flow-steps)).
 - `exactl request` accepts repeatable `--overlay <file>` and `--bind <selector>=<field>=<value>` flags and a `--locked <lock-file>` flag that replays a saved resolution.
 - `exactl flow bindings <flow-id>` previews each LLM step's resolved service, model and winning source, and exits non-zero on any issue.
 - Flow authors can set `binding:` on a step and pin fields with a reason, so a broader override keeps the pinned value and an exact override is refused.
@@ -437,7 +437,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 - The `openai-chat` provider type talks to OpenAI and DeepSeek Chat Completions endpoints through
   two qualified profiles with ready-made presets (see
-  [OpenAI-compatible Chat Completions](Exaix_User_Guide.md#openai-compatible-chat-completions-openai-chat)).
+  [OpenAI-compatible Chat Completions](Model_Settings.md#openai-compatible-chat-completions-openai-chat)).
 - `[ai.compatible]` sets the profile, endpoint and byte limits for an `openai-chat` model, and a
   named model can override one field.
 - Provider failures for `openai-chat` report one reason code such as `credential_missing`,

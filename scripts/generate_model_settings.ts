@@ -1,14 +1,14 @@
 #!/usr/bin/env -S deno run -A
 /**
- * @module GenerateProviderSettings
- * @path scripts/generate_provider_settings.ts
- * @description Writes docs/Exaix_Provider_Settings.md, the one reference of the environment variables and presets that choose a provider, service, transport and model. The tables come from the binding catalog, the rows of tests/configs/model_presets.toml and the scenario files, so they cannot drift from the code.
+ * @module GenerateModelSettings
+ * @path scripts/generate_model_settings.ts
+ * @description Rewrites the generated table blocks of docs/Model_Settings.md. The tables come from the binding catalog, the rows of tests/configs/model_presets.toml and the scenario files, so they cannot drift from the code. The text around the blocks is written by hand.
  *
  * Usage:
- *   deno task docs:providers
+ *   deno task docs:models
  * @architectural-layer Tooling
  * @dependencies [@exaix/model-registry, @std/fs, @std/path]
- * @related-files ["tests/configs/model_presets.toml", "tests/helpers/live_presets.ts", "tests/docs/provider_settings_drift_test.ts"]
+ * @related-files ["tests/configs/model_presets.toml", "tests/helpers/live_presets.ts", "tests/docs/model_settings_drift_test.ts"]
  */
 
 import { join, relative } from "@std/path";
@@ -27,7 +27,7 @@ export interface IOtherVariable {
 }
 
 const REPO_ROOT = join(import.meta.dirname ?? ".", "..");
-export const PROVIDER_SETTINGS_DOC = join(REPO_ROOT, "docs", "Exaix_Provider_Settings.md");
+export const MODEL_SETTINGS_DOC = join(REPO_ROOT, "docs", "Model_Settings.md");
 const PRESETS_PATH = join(REPO_ROOT, "tests", "configs", "model_presets.toml");
 const SCENARIOS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "scenarios");
 const LIVE_PREFIX = "live-";
@@ -116,34 +116,6 @@ export const OTHER_VARIABLES: readonly IOtherVariable[] = [
   },
 ];
 
-const SELECTION_ROWS: readonly (readonly string[])[] = [
-  [
-    "Production (daemon and exactl)",
-    "The operator binding layers when they exist, see [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps). Otherwise `EXA_LLM_PROVIDER` and `EXA_LLM_MODEL`, then the `[ai]` section of `exa.config.toml`, then the built-in `mock` provider.",
-  ],
-  [
-    "A flow step",
-    "The `--bind` and `--overlay` options of `exactl request create`, the step binding of the flow and the catalog. `exactl flow bindings <flow>` previews the result.",
-  ],
-  [
-    "An in-process live test",
-    "`EXA_TEST_BIND`, else the `default` binding of the `live-<service>` row of `tests/configs/model_presets.toml`. The row of the bound service also decides whether the test runs.",
-  ],
-  [
-    "A scenario",
-    "The preset row that `--cell <tool or provider>` selects. The runner `tests/scenario_framework/runner/main.ts` adds `--overlay <file>` and `--bind <spec>` layers above it.",
-  ],
-];
-
-function selectionSection(): string {
-  return `## How a run chooses its provider, service, transport and model
-
-${table(["Where the run happens", "What chooses the settings, strongest first"], SELECTION_ROWS)}
-
-A key in the environment never starts a billable run. A run starts when its opt-in variable is set and, for a billable service, the key is set. A transport (\`cloud\` or \`local\`) and an interface (\`api\` or \`cli\`) belong to the service, so choosing a service chooses them. No environment variable sets them alone.
-`;
-}
-
 interface ILoadedSettings {
   services: Record<string, ICatalogService>;
   presets: Record<string, ICatalogPreset>;
@@ -189,7 +161,7 @@ function table(header: readonly string[], rows: readonly (readonly string[])[]):
 const code = (value: Opt<string, Reason.OptionalInput>): string =>
   value === undefined || value === "" ? NONE : `\`${value}\``;
 
-function servicesSection(services: Record<string, ICatalogService>): string {
+function servicesTable(services: Record<string, ICatalogService>): string {
   const rows = Object.entries(services).sort(([left], [right]) => left.localeCompare(right)).map(([id, service]) => [
     code(id),
     code(service.adapter),
@@ -199,12 +171,7 @@ function servicesSection(services: Record<string, ICatalogService>): string {
     code(service.requires_optin),
     code(service.endpoint),
   ]);
-  return `## Services
-
-Each service fixes its transport and interface. The built-in services come from \`packages/model-registry/src/binding_catalog.ts\`. The \`live-*\` rows of \`tests/configs/model_presets.toml\` add the others, such as \`opencode-go\`.
-
-${table(["Service", "Adapter", "Transport", "Interface", "Key variable", "Opt-in variable", "Endpoint"], rows)}
-`;
+  return table(["Service", "Adapter", "Transport", "Interface", "Key variable", "Opt-in variable", "Endpoint"], rows);
 }
 
 type Usage = { kind: string; services: Set<string>; presets: Set<string>; scenarios: Set<string> };
@@ -234,7 +201,7 @@ function usageOf(settings: ILoadedSettings): Map<string, Usage> {
 const list = (values: Set<string>): string =>
   values.size === 0 ? NONE : [...values].sort().map((value) => `\`${value}\``).join(", ");
 
-function credentialsSection(settings: ILoadedSettings): string {
+function keysTable(settings: ILoadedSettings): string {
   const rows = [...usageOf(settings)].sort(([left], [right]) => left.localeCompare(right)).map(([name, use]) => [
     code(name),
     use.kind,
@@ -242,12 +209,7 @@ function credentialsSection(settings: ILoadedSettings): string {
     list(use.presets),
     list(use.scenarios),
   ]);
-  return `## Keys and opt-ins
-
-Every key and opt-in variable that a service, a preset row or a scenario names, with the places that use it. A billable service needs its key and \`EXA_TEST_ENABLE_PAID_LLM\`. A local runtime or a subscription CLI needs its \`EXA_MATRIX_*\` opt-in. An opt-in counts when it is non-empty.
-
-${table(["Variable", "Kind", "Services", "Preset rows", "Scenarios"], rows)}
-`;
+  return table(["Variable", "Kind", "Services", "Preset rows", "Scenarios"], rows);
 }
 
 function bindingOf(spec: Opt<IBindingSpec, Reason.OptionalInput>): string {
@@ -258,7 +220,7 @@ function bindingOf(spec: Opt<IBindingSpec, Reason.OptionalInput>): string {
   return fields.length === 0 ? NONE : `\`${fields.join(",")}\``;
 }
 
-function liveSection(presets: Record<string, ICatalogPreset>): string {
+function liveTable(presets: Record<string, ICatalogPreset>): string {
   const rows = Object.entries(presets).filter(([name]) => name.startsWith(LIVE_PREFIX)).sort(([left], [right]) =>
     left.localeCompare(right)
   ).map(([name, preset]) => [
@@ -269,15 +231,10 @@ function liveSection(presets: Record<string, ICatalogPreset>): string {
     code(preset.requires_key),
     code(preset.requires_optin),
   ]);
-  return `## Live-test rows
-
-An in-process live test reads the row of its service. Select another provider, service or model with \`EXA_TEST_BIND='default=<binding>'\`, where \`<binding>\` is the value of the Binding column or the binding of another service. The gate then follows the bound service.
-
-${table(["Row", "Provider", "Binding", "Binary on PATH", "Key variable", "Opt-in variable"], rows)}
-`;
+  return table(["Row", "Provider", "Binding", "Binary on PATH", "Key variable", "Opt-in variable"], rows);
 }
 
-function cellsSection(presets: Record<string, ICatalogPreset>): string {
+function cellsTable(presets: Record<string, ICatalogPreset>): string {
   const rows = Object.entries(presets).filter(([name]) => !name.startsWith(LIVE_PREFIX)).sort(([left], [right]) =>
     left.localeCompare(right)
   ).map(([name, preset]) => [
@@ -289,52 +246,44 @@ function cellsSection(presets: Record<string, ICatalogPreset>): string {
     code(preset.requires_key),
     code(preset.requires_optin),
   ]);
-  return `## Scenario cells
-
-A scenario selects these rows with \`matrix.from_catalog\`, and \`--cell <tool or provider>\` runs one of them. Each row names the daemon configuration that the cell boots, in \`tests/configs/\`.
-
-${table(["Cell", "Tool", "Provider", "Model", "Binary on PATH", "Key variable", "Opt-in variable"], rows)}
-`;
+  return table(["Cell", "Tool", "Provider", "Model", "Binary on PATH", "Key variable", "Opt-in variable"], rows);
 }
 
-function otherSection(): string {
+function otherTable(): string {
   const rows = OTHER_VARIABLES.map((variable) => [
     code(variable.name),
     variable.scope,
     variable.purpose,
     code(variable.readBy),
   ]);
-  return `## Other variables
-
-${table(["Variable", "Scope", "Purpose", "Read by"], rows)}
-`;
+  return table(["Variable", "Scope", "Purpose", "Read by"], rows);
 }
 
-/** The whole page, from the catalog, the preset rows and the scenario files. */
-export async function renderProviderSettings(): Promise<string> {
+const BLOCK_NAMES = ["services", "keys", "live", "cells", "other"] as const;
+
+/** The text of `existing` with each generated block rewritten from the catalog, the preset rows and the scenario files. */
+export async function renderModelSettings(existing: string): Promise<string> {
   const settings = await loadSettings();
-  return [
-    `---
-title: "Provider, service, transport and model settings"
-description: "The environment variables and presets that choose a provider, service, transport and model"
----
-
-<!-- Generated by \`deno task docs:providers\`. Do not edit. -->
-
-# Provider, service, transport and model settings
-
-One reference of the settings that choose a provider, a service, a transport and a model, for production, for tests and for scenarios. The tables come from the binding catalog, the rows of \`tests/configs/model_presets.toml\` and the scenario files. The [User Guide](Exaix_User_Guide.md#53-environment-variable-reference) explains the variables in prose.
-`,
-    selectionSection(),
-    servicesSection(settings.services),
-    credentialsSection(settings),
-    liveSection(settings.presets),
-    cellsSection(settings.presets),
-    otherSection(),
-  ].join("\n");
+  const tables: Record<(typeof BLOCK_NAMES)[number], string> = {
+    services: servicesTable(settings.services),
+    keys: keysTable(settings),
+    live: liveTable(settings.presets),
+    cells: cellsTable(settings.presets),
+    other: otherTable(),
+  };
+  let text = existing;
+  for (const name of BLOCK_NAMES) {
+    const start = `<!-- model-settings:${name}:start -->`;
+    const end = `<!-- model-settings:${name}:end -->`;
+    const from = text.indexOf(start);
+    const to = text.indexOf(end);
+    if (from === -1 || to === -1 || to < from) throw new Error(`${MODEL_SETTINGS_DOC} has no ${name} block`);
+    text = `${text.slice(0, from + start.length)}\n\n${tables[name]}\n\n${text.slice(to)}`;
+  }
+  return text;
 }
 
 if (import.meta.main) {
-  await Deno.writeTextFile(PROVIDER_SETTINGS_DOC, await renderProviderSettings());
-  console.log(`wrote ${relative(REPO_ROOT, PROVIDER_SETTINGS_DOC)}`);
+  await Deno.writeTextFile(MODEL_SETTINGS_DOC, await renderModelSettings(await Deno.readTextFile(MODEL_SETTINGS_DOC)));
+  console.log(`wrote ${relative(REPO_ROOT, MODEL_SETTINGS_DOC)}`);
 }

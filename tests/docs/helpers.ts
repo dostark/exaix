@@ -13,6 +13,13 @@ export async function readUserGuide(): Promise<string> {
 }
 
 /**
+ * Read the Model Settings document
+ */
+export async function readModelSettings(): Promise<string> {
+  return await Deno.readTextFile("docs/Model_Settings.md");
+}
+
+/**
  * Check if a template file exists
  */
 export async function templateExists(filename: string): Promise<boolean> {

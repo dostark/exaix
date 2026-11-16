@@ -18,11 +18,11 @@ import {
 } from "@exaix/schemas";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import { resolveBinding } from "@exaix/ai";
-import { readUserGuide } from "./helpers.ts";
+import { readModelSettings } from "./helpers.ts";
 
 async function bindingGuide(): Promise<string> {
-  const guide = await readUserGuide();
-  const heading = "#### Model bindings for flow steps";
+  const guide = await readModelSettings();
+  const heading = "## Model bindings for flow steps";
   const start = guide.indexOf(heading);
   assert(start >= 0, `Missing ${heading} section`);
   const end = guide.indexOf("\n#### ", start + heading.length);

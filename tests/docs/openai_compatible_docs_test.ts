@@ -13,7 +13,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { CompatibleChatConfigSchema } from "@exaix/schemas/ai_config.ts";
 import { BindingOverlaySchema } from "@exaix/schemas/model_binding.ts";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS } from "@exaix/core";
-import { readUserGuide } from "./helpers.ts";
+import { readModelSettings, readUserGuide } from "./helpers.ts";
 
 const COMPATIBLE_KEYS = [
   "profile",
@@ -49,7 +49,8 @@ function section(text: string, heading: string): string {
 Deno.test("User Guide documents the openai-chat keys, presets, secrets and pinned models", async () => {
   const guide = await readUserGuide();
   const compatible = section(guide, "### 11.6 Supported Providers") +
-    section(guide, "### 5.3a Execution Configuration");
+    section(guide, "### 5.3a Execution Configuration") +
+    section(await readModelSettings(), "## OpenAI-compatible Chat Completions (`openai-chat`)");
   for (const token of [...COMPATIBLE_KEYS, ...PRESETS, ...SECRET_VARIABLES, "openai-chat", "[ai.compatible]"]) {
     assertStringIncludes(compatible, token);
   }
@@ -60,7 +61,7 @@ Deno.test("User Guide documents the openai-chat keys, presets, secrets and pinne
 });
 
 Deno.test("User Guide openai-chat TOML example parses through ConfigSchema", async () => {
-  const guide = await readUserGuide();
+  const guide = await readModelSettings();
   const blocks = [...guide.matchAll(/```toml\n([\s\S]*?)```/g)].map((match) => match[1]);
   const example = blocks.find((block) => block.includes('provider = "openai-chat"'));
   assert(example, "User Guide has no openai-chat TOML example");
@@ -71,7 +72,7 @@ Deno.test("User Guide openai-chat TOML example parses through ConfigSchema", asy
 });
 
 Deno.test("User Guide inheritance and finite-cost TOML example parses through ConfigSchema", async () => {
-  const guide = await readUserGuide();
+  const guide = await readModelSettings();
   const blocks = [...guide.matchAll(/```toml\n([\s\S]*?)```/g)].map((match) => match[1]);
   const example = blocks.find((block) => block.includes("[models.strict.compatible]"));
   assert(example, "User Guide has no inheritance TOML example");
@@ -82,7 +83,7 @@ Deno.test("User Guide inheritance and finite-cost TOML example parses through Co
 });
 
 Deno.test("User Guide lists every provider factory reason code from source", async () => {
-  const guide = await readUserGuide();
+  const guide = await readModelSettings();
   const source = await Deno.readTextFile("packages/ai/src/errors.ts");
   const union = source.match(/(?:export )?type ProviderFactoryReasonCode =([\s\S]*?);/)?.[1] ?? "";
   const codes = [...union.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
@@ -116,7 +117,7 @@ Deno.test("Architecture native tool-calling section describes the compatible cal
 });
 
 Deno.test("Compatible documentation describes strict null normalization, false thinking and dynamic preflight", async () => {
-  const guide = await readUserGuide();
+  const guide = await readModelSettings();
   const architecture = await readArchitecture();
   for (const raw of [guide, architecture]) {
     const text = raw.replace(/\s+/g, " ");
@@ -128,12 +129,12 @@ Deno.test("Compatible documentation describes strict null normalization, false t
 });
 
 Deno.test("[docs] the self-hosted example parses and the profile list matches the schema enum", async () => {
-  const guide = await readUserGuide();
+  const guide = await readModelSettings();
   const profileRow = guide.split("\n").find((line) => line.startsWith("| `profile` "));
   assert(profileRow, "User Guide has no profile key row");
   const profiles = CompatibleChatConfigSchema.shape.profile.options;
   for (const profile of profiles) assertStringIncludes(profileRow, `\`${profile}\``);
-  const subsection = section(guide, "#### OpenAI-compatible Chat Completions (`openai-chat`)");
+  const subsection = section(guide, "## OpenAI-compatible Chat Completions (`openai-chat`)");
   assert(!subsection.includes("plus a loopback fixture profile"), "stale profile count");
   for (const token of ["supports_tool_choice", "EXA_COMPAT_SELF_HOSTED_API_KEY", "unpriced"]) {
     assertStringIncludes(subsection, token);
@@ -157,7 +158,7 @@ Deno.test("[docs] Architecture names the self-hosted profile and supportsToolCho
 });
 
 Deno.test("[docs] the User Guide names the key source the factory reads", async () => {
-  const subsection = section(await readUserGuide(), "#### OpenAI-compatible Chat Completions (`openai-chat`)")
+  const subsection = section(await readModelSettings(), "## OpenAI-compatible Chat Completions (`openai-chat`)")
     .replace(/\s+/g, " ");
   const keyRule = subsection.match(/\*\*Key\.\*\*[^\n]*?(?= - \*\*|$)/)?.[0] ?? "";
   assertStringIncludes(keyRule, "key_env");

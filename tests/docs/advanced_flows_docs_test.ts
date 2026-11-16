@@ -21,7 +21,7 @@ import { CRITERIA } from "@exaix/core/evaluation";
 import { CAP_VOTING } from "@exaix/core/composer";
 import { BindingOverlaySchema, ConfigSchema, FlowSchema } from "@exaix/schemas";
 import * as flowControlErrors from "../../packages/flow/src/errors/flow_control_errors.ts";
-import { readUserGuide } from "./helpers.ts";
+import { readModelSettings, readUserGuide } from "./helpers.ts";
 
 const BLUEPRINT_IDS = [
   "self-correcting-implementation",
@@ -147,8 +147,8 @@ Deno.test("[docs] overlay examples match the shipped companion overlay files", a
   }
 });
 
-Deno.test("[docs] the guide says --overlay reads TOML directly", async () => {
-  const text = flat(await readUserGuide());
+Deno.test("[docs] the guide and Model Settings say --overlay reads TOML directly", async () => {
+  const text = flat((await readUserGuide()) + (await readModelSettings()));
   assertStringIncludes(text, "`--overlay` reads them directly");
   assertStringIncludes(text, "parses a file as TOML when its name ends in `.toml`");
   assertFalse(text.includes("even if a filename ends in `.toml`"));

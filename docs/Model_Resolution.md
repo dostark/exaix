@@ -215,5 +215,5 @@ An unbound flow step runs on the boot provider and reports it the same way. A
 `cli_delegate` step runs its session tool, so it carries no fixed client. Plan
 generation, plan execution and other non-flow requests do not use flow-step bindings;
 plan execution reports the boot provider as its fixed client. See
-[Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps) for
+[Model bindings for flow steps](Model_Settings.md#model-bindings-for-flow-steps) for
 selectors, overlay precedence, pins, diagnostics and replay locks.

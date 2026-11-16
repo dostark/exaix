@@ -54,9 +54,9 @@ Deno.test("User Guide documents the communication requirement", async () => {
 
 Deno.test("User Guide states token savings are not guaranteed", async () => {
   const guide = await read(USER_GUIDE_PATH);
-  const lower = guide.toLowerCase();
-  assert(
-    lower.includes("not guaranteed") && lower.includes("token"),
+  assertStringIncludes(
+    guide.toLowerCase(),
+    "no guaranteed token savings",
     "User Guide must state that token savings are not guaranteed by the instruction",
   );
 });
