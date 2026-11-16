@@ -1366,32 +1366,7 @@ exactl request create "Refactor utils module" --model-size M --thinking --effort
 exactl request create "Audit dependencies" --model-size XL --preferred-provider anthropic
 ```
 
-**Resolution precedence (Solo, the curated model registry).** For a `--model-size` request the resolver tries, in order:
-
-1. An explicit `provider:model` (e.g. `--model anthropic:claude-opus-4.5`) — passed through as-is
-   (`explicit_override`). Solo does not validate the model name against a catalog, so a typo
-   surfaces as a provider error at call time.
-1. A **curated list** for the size (`model_sizes.<SIZE>.candidates`) — the first healthy,
-   registered provider wins (`preferred_list`).
-1. Capability/cost **scoring** across registered providers (`preset_default` /
-   `characteristics_scored`), with local/free providers exempt from budget filtering.
-
-(Team adds catalog validation for step 1, benchmark-driven `best` ranking and a usage
-tiebreak to step 3, and a multi-route pricing decision on top of any winner — see
-[`docs/Model_Resolution.md`](Model_Resolution.md) for the full picture.)
-
-**Daemon execution uses one client.** Plan execution and flow steps run on the daemon's
-`agents.default_model` client, or on a flow step's bound service. There the resolver reports
-that client with reason `fixed_client` instead of choosing: `--model-size`,
-`--characteristic` and `--preferred-provider` do not change the provider, while `--thinking`
-and `--effort` still apply. Change `agents.default_model`, or bind a flow step, to run on
-another model. A `default_model` that names a fallback chain keeps the choosing behavior above.
-
-The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
-
-```bash
-exactl log list --filter action_type=model.resolved -o json
-```
+The resolver turns these flags into one provider and model, records the reason, and journals a `model.resolved` event. [Model Resolution](Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the rules, the reasons and the fixed client of daemon execution.
 
 ##### `exactl model candidates` & `exactl model list` — Solo model curation (the curated model registry)
 
@@ -1437,36 +1412,7 @@ Notes:
 
 ##### Team: live model catalog (the Team edition model registry)
 
-Enable a self-updating model catalog with the `[model_registry]` config block. Top-level keys
-must come before any `[model_registry.*]` sub-table (standard TOML ordering):
-
-```toml
-[model_registry]
-enabled = true                       # off by default — false/absent is byte-identical to Solo
-refresh_on_start = false             # true = one immediate refresh at daemon boot
-catalog_refresh_cron = "0 */6 * * *" # how often the catalog is checked (default: every 6h)
-pricing_refresh_cron = "0 3 * * *"   # how often prices are checked (default: daily)
-route_policy = "cheapest"            # cheapest | reliability | native_first | user_order
-route_policy_price_tolerance = 0.05  # 5% near-tie band under "cheapest"
-usage_tiebreak = false               # opt-in: break no-characteristics ties by usage history
-cost_divergence_tolerance_pct = 5    # flag a reported-vs-computed cost mismatch beyond this
-
-[model_registry.admission]
-keep_native_whole = true   # keep your main providers' full catalogs (not just curated entries)
-top_n = 25                 # for large marketplace catalogs (e.g. OpenRouter): admit only the top N benchmarked models
-
-[model_registry.route_order]
-# only read when route_policy = "user_order" — explicit per-model provider order
-"claude-opus-4.5" = ["anthropic", "openrouter"]
-
-[model_registry.benchmark_source]
-enabled = true                       # on by default once model_registry.enabled = true
-tracked_benchmarks = ["swe_bench_verified", "swe_bench_pro", "gpqa"]
-
-[model_registry.benchmark_map]
-# which tracked benchmark(s) inform the "best" characteristic for each kind of task
-feature = ["swe_bench_verified", "swe_bench_pro"]
-```
+Enable the self-updating catalog with `model_registry.enabled = true`. [Team model registry](Model_Settings.md#team-model-registry-live-catalog) lists every key of the `[model_registry]` block.
 
 With the catalog enabled, `exactl model candidates` validates an explicit entry against the live
 catalog (and auto-admits a real-but-unused model on first use, instead of Solo's pass-through),
@@ -1483,10 +1429,6 @@ exactl model list --benchmark swe_bench_verified
 See [`docs/Model_Resolution.md`](Model_Resolution.md) for the full explanation of what each
 setting does — curation, characteristics (including the benchmark-driven `best`), the live
 catalog, multi-route pricing, and cost accuracy.
-
-> **Data license note (Team benchmark ingest):** `model_registry.benchmark_source` pulls
-> community-maintained scores from [models.dev](https://models.dev/), which is MIT-licensed —
-> confirmed safe to ingest and redistribute as advisory scoring data.
 
 See the **Model Registry** row of the edition comparison table in
 [`docs/Reference_Data.md`](Reference_Data.md#edition-model--component-availability) for how

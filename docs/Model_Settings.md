@@ -11,6 +11,7 @@ The one place for every way to configure a provider, a service, a transport and 
 
 - [Choosing a provider, service, transport and model](#choosing-a-provider-service-transport-and-model)
 - [Cloud providers](#cloud-providers-anthropic-openai-google), [enterprise providers](#enterprise-providers-vertex-ai-openrouter), [provider strategy](#provider-strategy) and [subscription CLI providers](#subscription-billed-cli-providers-codex-cli)
+- [Team model registry](#team-model-registry-live-catalog)
 - [Environment variables](#environment-variables)
 - [Model bindings for flow steps](#model-bindings-for-flow-steps) and [`openai-chat`](#openai-compatible-chat-completions-openai-chat)
 - [Testing and CI model aliases](#testing-and-ci-model-aliases)
@@ -91,11 +92,7 @@ cheapest = ["ollama"]
   model is never treated as "cheapest" — only a genuinely known price qualifies.
 - Curate these lists from the CLI instead of editing TOML by hand — see
   [`exactl model candidates` and `exactl model list`](Exaix_User_Guide.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
-- **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
-  stricter routing rigor arrive with the Team edition (the Team edition model registry); Solo behaviour is unchanged
-  when no Team module is present. For the full precedence chain, characteristic scoring
-  (including Team's benchmark-driven `best`), the live catalog, multi-route pricing, and
-  cost-accuracy semantics, see **[`docs/Model_Resolution.md`](Model_Resolution.md)**.
+- **Editions:** the Solo floor is a static, offline catalog. A live catalog and stricter routing arrive with the Team edition, see [Team model registry](#team-model-registry-live-catalog). [Model Resolution](Model_Resolution.md) explains the precedence chain, characteristic scoring, multi-route pricing and cost accuracy.
 
 ### Provider comparison
 
@@ -257,6 +254,44 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 Codex integration path with its own sandbox model — see
 [§2.5.7](Exaix_User_Guide.md#257-codex-sandbox-and-permitted-path-security). This subsection covers only the
 ReAct-loop analysis/planning provider above.
+
+## Team model registry (live catalog)
+
+The Team edition can keep its model catalog current. It is off by default, and with it off Team behaves exactly like Solo. [Model Resolution](Model_Resolution.md#5-the-team-live-catalog) explains what each setting does. The `[model_registry]` block sets it up:
+
+Top-level keys must come before any `[model_registry.*]` sub-table (standard TOML ordering):
+
+```toml
+[model_registry]
+enabled = true                       # off by default — false/absent is byte-identical to Solo
+refresh_on_start = false             # true = one immediate refresh at daemon boot
+catalog_refresh_cron = "0 */6 * * *" # how often the catalog is checked (default: every 6h)
+pricing_refresh_cron = "0 3 * * *"   # how often prices are checked (default: daily)
+route_policy = "cheapest"            # cheapest | reliability | native_first | user_order
+route_policy_price_tolerance = 0.05  # 5% near-tie band under "cheapest"
+usage_tiebreak = false               # opt-in: break no-characteristics ties by usage history
+cost_divergence_tolerance_pct = 5    # flag a reported-vs-computed cost mismatch beyond this
+
+[model_registry.admission]
+keep_native_whole = true   # keep your main providers' full catalogs (not just curated entries)
+top_n = 25                 # for large marketplace catalogs (e.g. OpenRouter): admit only the top N benchmarked models
+
+[model_registry.route_order]
+# only read when route_policy = "user_order" — explicit per-model provider order
+"claude-opus-4.5" = ["anthropic", "openrouter"]
+
+[model_registry.benchmark_source]
+enabled = true                       # on by default once model_registry.enabled = true
+tracked_benchmarks = ["swe_bench_verified", "swe_bench_pro", "gpqa"]
+
+[model_registry.benchmark_map]
+# which tracked benchmark(s) inform the "best" characteristic for each kind of task
+feature = ["swe_bench_verified", "swe_bench_pro"]
+```
+
+> **Data license note (Team benchmark ingest):** `model_registry.benchmark_source` pulls
+> community-maintained scores from [models.dev](https://models.dev/), which is MIT-licensed —
+> confirmed safe to ingest and redistribute as advisory scoring data.
 
 ## Environment variables
 
