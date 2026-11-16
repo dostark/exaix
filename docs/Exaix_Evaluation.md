@@ -1053,14 +1053,21 @@ validates it structurally). The opencode Go tier (`opencode-go/deepseek-v4-flash
 default opencode cell. The claude-code cell requires the `claude` CLI binary on PATH. Both
 are `[cli_delegate]`-driven, real swe_tasks cells.
 
-Codex is not a swe_tasks/`[cli_delegate]` cell: no swe_tasks scenario declares a codex
-matrix entry. `tests/configs/model_presets.toml`'s `[tool.codex]` entry (`codex-cli/gpt-5.6-terra`)
-is exclusively consumed by the separate `agent_flows` pack's `flow_strategy_react.yaml`
-scenario, proving Codex through the embedded ReAct-loop provider
-(`[ai].provider = "codex-cli"`) — distinct from this `[cli_delegate]`-driven `swe_tasks`
-cell system and from Mode-3 session delegation (`[session_delegate] tool = "codex"`); see
+Codex is not a `[cli_delegate]` cell. Eight swe_tasks scenarios list the `codex` preset
+(`codex-cli/gpt-5.6-terra` in `tests/configs/model_presets.toml`), and it runs them through the
+embedded ReAct-loop provider (`[ai].provider = "codex-cli"`). That path is distinct from the
+`[cli_delegate]`-driven cells of this pack and from Mode-3 session delegation
+(`[session_delegate] tool = "codex"`); see
 `tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`
 for the full comparison table.
+
+**Known limit of the Codex ReAct cell.** The Codex CLI is an agent. It runs its own tools in a
+read-only sandbox and then answers in prose, so it does not emit the action blocks that a
+tool-using ReAct step needs. A task that needs file writes ends with `No actions generated in
+ReAct iteration`. A run on 2026-11-16 scored `swe-write-tests-uncovered` 0.4 and
+`swe-map-dependencies` 0.364 on both `gpt-5.6-terra` and `gpt-6.1-sol`, so a larger model does not
+change it. The `flow-strategy-react` and `planning-read-only-tools-live` scenarios, which need no
+write, pass on the same cell.
 
 ### Presets, bindings, judges and pins
 
