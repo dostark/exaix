@@ -129,8 +129,8 @@ Deno.test("[llm_bindings] a cli-delegate service is still refused, because it is
 });
 
 Deno.test("[llm_bindings] the Codex CLI live gate needs its opt-in and the binary, and no key", async () => {
-  await withEnv({ EXA_MATRIX_CODEX_CLI: null }, () => {
-    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }) ?? "", "EXA_MATRIX_CODEX_CLI");
+  await withEnv({ EXA_MATRIX_CODEX: null }, () => {
+    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }) ?? "", "EXA_MATRIX_CODEX");
   });
   assertEquals(llmKeyEnv({ service: "codex-cli" }), undefined);
 });
