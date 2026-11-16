@@ -16,8 +16,10 @@ export const SCENARIO_REPO_ROOT_ENV = "EXA_SCENARIO_REPO_ROOT";
 
 /** The repo root: EXA_SCENARIO_REPO_ROOT when set, else three levels up from a script in
  *  tests/scenario_framework/scripts/. */
-export function scenarioRepoRoot(scriptDirectory: string): string {
-  const override = Deno.env.get(SCENARIO_REPO_ROOT_ENV);
-  if (override && override.length > 0) return resolve(override);
+export function scenarioRepoRoot(
+  scriptDirectory: string,
+  override: string = Deno.env.get(SCENARIO_REPO_ROOT_ENV) ?? "",
+): string {
+  if (override.length > 0) return resolve(override);
   return resolve(scriptDirectory, "..", "..", "..");
 }

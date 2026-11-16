@@ -10,22 +10,19 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { withEnv } from "@exaix/testing";
-import { resolveScenarioRepoRoot, SCENARIO_REPO_ROOT_ENV } from "../../runner/synthetic_runner.ts";
+import { resolveScenarioRepoRoot } from "../../runner/synthetic_runner.ts";
 
 const CI_SOURCE = await Deno.readTextFile(new URL("../../../../scripts/ci.ts", import.meta.url));
 
-Deno.test("[repo_root] resolveScenarioRepoRoot prefers EXA_SCENARIO_REPO_ROOT", async () => {
-  await withEnv({ [SCENARIO_REPO_ROOT_ENV]: "/opt/exaix-checkout" }, () => {
-    assertEquals(resolveScenarioRepoRoot("/tmp/deployed/framework/scenario_framework/runner"), "/opt/exaix-checkout");
-  });
+Deno.test("[repo_root] resolveScenarioRepoRoot prefers the override that EXA_SCENARIO_REPO_ROOT supplies", () => {
+  assertEquals(
+    resolveScenarioRepoRoot("/tmp/deployed/framework/scenario_framework/runner", "/opt/exaix-checkout"),
+    "/opt/exaix-checkout",
+  );
 });
 
-Deno.test("[repo_root] resolveScenarioRepoRoot derives the repo root from the runner location without the override", async () => {
-  await withEnv({ [SCENARIO_REPO_ROOT_ENV]: null }, () => {
-    const derived = resolveScenarioRepoRoot("/repo/tests/scenario_framework/runner");
-    assertEquals(derived, "/repo");
-  });
+Deno.test("[repo_root] resolveScenarioRepoRoot derives the repo root from the runner location without the override", () => {
+  assertEquals(resolveScenarioRepoRoot("/repo/tests/scenario_framework/runner", ""), "/repo");
 });
 
 Deno.test("[repo_root] the scenarios command exports EXA_SCENARIO_REPO_ROOT so a deployed framework finds the repo", () => {

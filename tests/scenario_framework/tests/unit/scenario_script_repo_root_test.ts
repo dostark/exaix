@@ -8,22 +8,17 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { withEnv } from "@exaix/testing";
 import { resolve } from "@std/path";
-import { SCENARIO_REPO_ROOT_ENV, scenarioRepoRoot } from "../../scripts/scenario_repo_root.ts";
+import { scenarioRepoRoot } from "../../scripts/scenario_repo_root.ts";
 
 const SCRIPTS = ["call_mcp_tool.ts", "probe_sse_liveness.ts"];
 
-Deno.test("[script-repo-root] scenarioRepoRoot prefers EXA_SCENARIO_REPO_ROOT", async () => {
-  await withEnv({ [SCENARIO_REPO_ROOT_ENV]: "/opt/checkout" }, () => {
-    assertEquals(scenarioRepoRoot("/tmp/deploy/framework/scenario_framework/scripts"), "/opt/checkout");
-  });
+Deno.test("[script-repo-root] scenarioRepoRoot prefers the override that EXA_SCENARIO_REPO_ROOT supplies", () => {
+  assertEquals(scenarioRepoRoot("/tmp/deploy/framework/scenario_framework/scripts", "/opt/checkout"), "/opt/checkout");
 });
 
-Deno.test("[script-repo-root] scenarioRepoRoot derives the root without the override", async () => {
-  await withEnv({ [SCENARIO_REPO_ROOT_ENV]: null }, () => {
-    assertEquals(scenarioRepoRoot("/repo/tests/scenario_framework/scripts"), "/repo");
-  });
+Deno.test("[script-repo-root] scenarioRepoRoot derives the root without the override", () => {
+  assertEquals(scenarioRepoRoot("/repo/tests/scenario_framework/scripts", ""), "/repo");
 });
 
 Deno.test("[script-repo-root] the MCP and SSE scripts use the shared resolver, not a walk-up", async () => {
