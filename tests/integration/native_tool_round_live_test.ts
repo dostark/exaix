@@ -24,10 +24,9 @@ import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
-import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/llm_bindings.ts";
+import { createLlmProvider, liveReplayLlmSpec, paidLlmEnabled } from "../helpers/llm_bindings.ts";
 
 const LIVE_FILES = ["a.txt", "b.txt", "c.txt"] as const;
-const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 const DEEPSEEK_SERVICE = "deepseek";
 const ANTHROPIC_SERVICE = "anthropic";
 /** A prompt that makes Claude Haiku 5.5 think before its three reads: adaptive thinking decides per request. */
@@ -36,7 +35,7 @@ const THINKING_PROMPT =
 const PORTAL_ALIAS = "live";
 
 const liveSpec = liveReplayLlmSpec();
-const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && llmKeyPresent(liveSpec);
+const liveEnabled = paidLlmEnabled(liveSpec);
 const liveName = liveSpec.service ?? "unbound";
 
 const READ_FILE_TOOL: ITool = {

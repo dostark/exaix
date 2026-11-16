@@ -6,7 +6,7 @@
  *   service and a model. EXA_TEST_BIND overrides the live binding, in the --bind syntax
  *   `selector=field=value,field=value`. The helper never reads EXA_LLM_* routing variables.
  * @architectural-layer Test
- * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/schemas]
+ * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/schemas, @exaix/testing]
  * @related-files [
  *   "packages/ai/src/bindings/binding_resolver.ts",
  *   "packages/model-registry/src/binding_catalog.ts",
@@ -25,6 +25,7 @@ import {
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE, ProviderType } from "@exaix/core";
 import { buildBuiltInCatalog } from "@exaix/model-registry";
+import { paidLlmEnabledFor } from "@exaix/testing";
 import {
   BindOneOffSchema,
   type Config,
@@ -49,10 +50,6 @@ export interface ILlmTestPreset {
 
 /** The operator override for every live-provider test, in the phase-204 --bind syntax. */
 export const EXA_TEST_BIND_ENV = "EXA_TEST_BIND";
-
-/** A live test that spends money runs only when this variable is `1`, and its service key is set. */
-export const PAID_LLM_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
-const PAID_OPT_IN_VALUE = "1";
 
 /** The OpenCode Go preset: DeepSeek V4.1 Flash through the OpenCode Go subscription. */
 export const OPENCODE_GO_PRESET_ID = "opencode-go";
@@ -208,13 +205,8 @@ export function llmKeyEnv(spec: IBindingSpec): string | undefined {
   return llmTestCatalog().services[spec.service ?? ""]?.key_env;
 }
 
-/** True when the spec needs no key, or its key variable is set. Used to gate live tests. */
-export function llmKeyPresent(spec: IBindingSpec): boolean {
-  const keyEnv = llmKeyEnv(spec);
-  return keyEnv === undefined || (Deno.env.get(keyEnv) ?? "").length > 0;
-}
-
-/** True when the paid opt-in variable is `1` and the key of the spec's service is set. It gates a live test that spends money. */
+/** True when the operator opted in with EXA_TEST_ENABLE_PAID_LLM=1 and the key of the spec's service is set. It gates a live test that spends money. */
 export function paidLlmEnabled(spec: IBindingSpec): boolean {
-  return Deno.env.get(PAID_LLM_OPT_IN_ENV) === PAID_OPT_IN_VALUE && llmKeyPresent(spec);
+  const keyEnv = llmKeyEnv(spec);
+  return paidLlmEnabledFor(keyEnv === undefined ? [] : [keyEnv]);
 }

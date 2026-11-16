@@ -28,7 +28,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../../tests/helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmSpec, paidLlmEnabled } from "../../../../tests/helpers/llm_bindings.ts";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
@@ -120,7 +120,7 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
 Deno.test({
   name:
     `[live] ReActLoopStrategy (${testProvider}:${testModel}): a real model uses the AVAILABLE TOOLS list, comprehends the tool result content, and recognizes STATUS: COMPLETE to terminate`,
-  ignore: !llmKeyPresent(liveSpec),
+  ignore: !paidLlmEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

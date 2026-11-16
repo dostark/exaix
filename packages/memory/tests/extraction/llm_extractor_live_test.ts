@@ -7,8 +7,8 @@
  *   execution fixture, alongside the deterministic heuristic baseline, and writes the measured
  *   quality evidence to `exaix-dev-docs/evidence/phase-147/step-2-extraction-quality.json`.
  *   Not CI-run: the extraction provider is bound through EXA_TEST_BIND (phase-204 --bind syntax,
- *   default the DeepSeek preset), gated on the bound service's own API key. The judge is a CLI
- *   provider (`claude-cli` by default, subscription-authenticated) or an API service bound the same way.
+ *   default the DeepSeek preset). It runs only with EXA_TEST_ENABLE_PAID_LLM=1 and the key of the
+ *   bound service. The judge is a CLI provider (`claude-cli` by default, subscription-authenticated) or an API service bound the same way.
  * @architectural-layer Services (test)
  * @related-files ["apps/daemon/tests/memory_maturation_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
  */
@@ -17,7 +17,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 
-import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../../tests/helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmSpec, paidLlmEnabled } from "../../../../tests/helpers/llm_bindings.ts";
 import {
   CliDelegateModelProvider,
   DEFAULT_CLAUDE_CLI_BIN,
@@ -145,7 +145,7 @@ function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, trace
 
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  ignore: Deno.env.get("CI") === "true" || !llmKeyPresent(liveSpec),
+  ignore: !paidLlmEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

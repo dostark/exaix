@@ -17,21 +17,15 @@ import { RequestProcessor } from "@exaix/request";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "@exaix/testing";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
-import { readFixtureTextSync } from "@exaix/testing";
+import { paidLlmOptedIn, readFixtureTextSync } from "@exaix/testing";
 
-const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
+const optedIn = paidLlmOptedIn();
 Deno.test(
-  { name: "LLM provider integration (manual) - end-to-end RequestProcessor", ignore: _enabled !== "1" },
+  { name: "LLM provider integration (manual) - end-to-end RequestProcessor", ignore: !optedIn },
   async (_t) => {
     // Manual integration test - opt-in only. Requires EXA_TEST_ENABLE_PAID_LLM=1 and
     // EXA_TEST_OPENAI_API_KEY set.
-    const enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
     const apiKey = Deno.env.get("EXA_TEST_OPENAI_API_KEY");
-
-    if (enabled !== "1") {
-      console.warn("Skipping manual integration test: EXA_TEST_ENABLE_PAID_LLM is not set to '1' (opt-in required)");
-      return;
-    }
 
     if (!apiKey) {
       console.warn("Skipping manual integration test: EXA_TEST_OPENAI_API_KEY not set");

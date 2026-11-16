@@ -22,6 +22,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { resolveToolsRoundPolicy } from "@exaix/schemas/tools_round_policy.ts";
 import { ToolsRoundLoop } from "@exaix/core";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
+import { paidLlmEnabledFor } from "@exaix/testing";
 import { createLlmProvider } from "../helpers/llm_bindings.ts";
 import { runPlanningRound as runNativePlanningRound } from "../helpers/native_tool_round_harness.ts";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
@@ -56,12 +57,11 @@ import {
 } from "./helpers/parallel_round_daemon.ts";
 import { assertAndRecordParallelOffOverride, type IParallelResponseCounts } from "./helpers/parallel_off_override.ts";
 
-const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
-const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(LIVE_KEY_ENV) ?? "") !== "";
+const liveEnabled = paidLlmEnabledFor([LIVE_KEY_ENV]);
 const ANTHROPIC_KEY_ENV = "ANTHROPIC_API_KEY";
-const anthropicEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(ANTHROPIC_KEY_ENV) ?? "") !== "";
-const openaiEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(OPENAI_KEY_ENV) ?? "") !== "";
-const openrouterEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(OPENROUTER_KEY_ENV) ?? "") !== "";
+const anthropicEnabled = paidLlmEnabledFor([ANTHROPIC_KEY_ENV]);
+const openaiEnabled = paidLlmEnabledFor([OPENAI_KEY_ENV]);
+const openrouterEnabled = paidLlmEnabledFor([OPENROUTER_KEY_ENV]);
 /** A live model must batch at least two calls in one response for the override to be observable. */
 const MINIMUM_BATCH = 2;
 /** The shipped planning cap is three. A live model may list a directory before its three reads, so this case allows eight. */

@@ -413,7 +413,7 @@ Tests run automatically on:
 ### Common Pitfalls
 
 1. **CI mode detection**: Use `isCIMode()` helper, not raw `CI` env var
-1. **Paid LLM tests**: Disabled in CI unless `EXA_TEST_ENABLE_PAID_LLM=1`
+1. **Paid LLM tests**: Run only with `EXA_TEST_ENABLE_PAID_LLM=1` and the key of the service. Gate a live test with `paidLlmEnabled` or `paidLlmEnabledFor`, never with your own variable or a key check (`tests/integration/paid_llm_gating_guard_test.ts` enforces this)
 1. **Binary dependencies**: Don't require compiled binaries in tests
 
 ### Running Locally Like CI

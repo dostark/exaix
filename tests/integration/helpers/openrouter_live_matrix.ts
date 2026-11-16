@@ -17,7 +17,7 @@ import { OPENROUTER_PROVIDER_METADATA, OpenRouterProviderFactory, PROVIDER_OPENR
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { type IRequestAnalysis, RequestAnalysisCoreSchema } from "@exaix/schemas/request_analysis.ts";
 import { LlmAnalyzer } from "@exaix/request";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, paidLlmEnabledFor } from "@exaix/testing";
 import { createOutputValidator } from "@exaix/tool-runtime";
 
 export interface IWireObservation {
@@ -75,7 +75,7 @@ const OTHER_KEYS: readonly string[] = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "G
 
 /** Live tests require both the explicit paid opt-in and the OpenRouter key. */
 export function liveMatrixEnabled(): boolean {
-  return Deno.env.get("EXA_TEST_ENABLE_PAID_LLM") === "1" && Boolean(Deno.env.get("OPENROUTER_API_KEY"));
+  return paidLlmEnabledFor(["OPENROUTER_API_KEY"]);
 }
 
 /** Refuses a matrix run that could use an ambient credential for another provider. */

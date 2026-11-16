@@ -19,8 +19,7 @@ import * as TEST_CONST from "@exaix/testing";
  * Check if test should run (opt-in required)
  */
 function shouldSkipTest(): { skip: boolean; reason?: string } {
-  const enabled = Deno.env.get(TEST_CONST.ENV_TEST_ENABLE_PAID_LLM);
-  if (enabled !== TEST_CONST.ENV_TEST_ENABLE_PAID_LLM_VALUE) {
+  if (!TEST_CONST.paidLlmOptedIn()) {
     return {
       skip: true,
       reason: TEST_CONST.SKIP_MSG_OPT_IN_REQUIRED,

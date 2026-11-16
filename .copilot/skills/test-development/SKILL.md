@@ -365,7 +365,9 @@ EXA_TEST_OPENAI_API_KEY. Use `isTestMode()` / `isCIMode()` from
 
 CI pitfalls
   - Treat CI as truthy (CI=true), not strictly "1".
-  - Paid LLM disabled unless EXA_TEST_ENABLE_PAID_LLM=1.
+  - Paid LLM disabled unless EXA_TEST_ENABLE_PAID_LLM=1. Gate a live LLM test with
+    paidLlmEnabled / paidLlmEnabledFor (@exaix/testing), never its own variable or a key
+    check alone. paid_llm_gating_guard_test.ts fails otherwise.
   - Avoid compiled binaries; prefer `new Deno.Command(Deno.execPath(), { args: ["run",
     "--allow-all", ...] })`.
 

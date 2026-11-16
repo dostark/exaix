@@ -27,16 +27,14 @@ import { readOnlyEditorTools, ToolRegistry } from "@exaix/tool-runtime";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IPortalKnowledgeService, ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import { createMockConfig } from "@exaix/testing";
-import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/llm_bindings.ts";
+import { createMockConfig, ENV_TEST_ENABLE_PAID_LLM } from "@exaix/testing";
+import { createLlmProvider, liveReplayLlmSpec, paidLlmEnabled } from "../helpers/llm_bindings.ts";
 import { analyzeWithEnterpriseSymbolGraph } from "./helpers/symbol_graph_harness.ts";
-
-const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 
 /** The tools that answer a call-graph question. */
 const GRAPH_TOOLS: readonly string[] = [ToolName.WHO_DEPENDS_ON, ToolName.QUERY_RELATIONSHIPS];
 const liveSpec = liveReplayLlmSpec();
-const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && llmKeyPresent(liveSpec);
+const liveEnabled = paidLlmEnabled(liveSpec);
 const liveName = `${liveSpec.service ?? "unbound"}/${liveSpec.service_model_id ?? "unbound"}`;
 
 /** Assembled so no string literal contains the Go keyword a linter reads as an import. */
@@ -393,7 +391,7 @@ Deno.test({
     // A skipped live test must not look like a pass. This states the requirement.
     assert(
       true,
-      `set ${PAID_OPT_IN_ENV}=1 and EXA_TEST_BIND with a keyed service to run the live leg`,
+      `set ${ENV_TEST_ENABLE_PAID_LLM}=1 and EXA_TEST_BIND with a keyed service to run the live leg`,
     );
   },
 });

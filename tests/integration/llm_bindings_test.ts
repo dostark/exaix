@@ -15,7 +15,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
-import { withEnv } from "@exaix/testing";
+import { ENV_TEST_ENABLE_PAID_LLM, withEnv } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import {
   createLlmProvider,
@@ -25,7 +25,6 @@ import {
   LLM_TEST_PRESETS,
   llmKeyEnv,
   OPENCODE_GO_PRESET_ID,
-  PAID_LLM_OPT_IN_ENV,
   paidLlmEnabled,
   resolveLlmBinding,
 } from "../helpers/llm_bindings.ts";
@@ -145,16 +144,16 @@ Deno.test("[llm_bindings] EXA_TEST_BIND still overrides a requested preset", asy
 
 Deno.test("[llm_bindings] a live run needs the paid opt-in variable and the key of its service", async () => {
   const spec = liveLlmSpec(OPENCODE_GO_PRESET_ID);
-  await withEnv({ [PAID_LLM_OPT_IN_ENV]: null, [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: null, [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
     assertEquals(paidLlmEnabled(spec), false, "a key alone must not enable a paid run");
   });
-  await withEnv({ [PAID_LLM_OPT_IN_ENV]: "1", [OPENCODE_GO_KEY_ENV]: null }, () => {
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", [OPENCODE_GO_KEY_ENV]: null }, () => {
     assertEquals(paidLlmEnabled(spec), false, "the opt-in alone must not enable a run without a key");
   });
-  await withEnv({ [PAID_LLM_OPT_IN_ENV]: "0", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "0", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
     assertEquals(paidLlmEnabled(spec), false, "only the value 1 opts in");
   });
-  await withEnv({ [PAID_LLM_OPT_IN_ENV]: "1", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
     assertEquals(paidLlmEnabled(spec), true);
   });
 });
