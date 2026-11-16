@@ -14,7 +14,7 @@ matrix:
   cells:
     - tool: codex
       provider: codex-cli
-      config: configs/codex-terra-61-skill-eval.toml
+      config: tests/configs/codex-terra-61-skill-eval.toml
       requires_bin: "codex"
 steps:
   - id: prepare-request-context

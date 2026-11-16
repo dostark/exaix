@@ -266,21 +266,21 @@ const EXACTL_MULTI_PROVIDER_MATRIX: IMatrixBlock = {
     {
       tool: "exactl",
       provider: "anthropic",
-      config: "configs/anthropic-no-delegate.toml",
+      config: "tests/configs/anthropic-no-delegate.toml",
       requires_bin: "true",
       requires_key: "ANTHROPIC_API_KEY",
     },
     {
       tool: "exactl",
       provider: "openai",
-      config: "configs/openai-no-delegate.toml",
+      config: "tests/configs/openai-no-delegate.toml",
       requires_bin: "true",
       requires_key: "OPENAI_API_KEY",
     },
     {
       tool: "exactl",
       provider: "google",
-      config: "configs/google-no-delegate.toml",
+      config: "tests/configs/google-no-delegate.toml",
       requires_bin: "true",
       requires_key: "GOOGLE_API_KEY",
     },
@@ -502,14 +502,14 @@ Deno.test("[bindings] overlayRequestBindings gives every exactl request step its
 });
 
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "tests", "configs", "model_presets.toml");
 const FIX_BUG_NULL_GUARD_PATH = join(FRAMEWORK_HOME, "scenarios", "swe_tasks", "fix-bug-null-guard.yaml");
 
 Deno.test("[matrix] cells and from_catalog are mutually exclusive, and axes is rejected", () => {
   const oneCell = [{
     tool: "exactl",
     provider: "anthropic",
-    config: "configs/anthropic-no-delegate.toml",
+    config: "tests/configs/anthropic-no-delegate.toml",
     requires_bin: "true",
   }];
 
@@ -541,7 +541,7 @@ Deno.test("[matrix] a cell may carry its own bindings and catalog for the cell l
     cells: [{
       tool: "exactl",
       provider: "anthropic",
-      config: "configs/anthropic-no-delegate.toml",
+      config: "tests/configs/anthropic-no-delegate.toml",
       requires_bin: "true",
       bindings: { default: { model: "anthropic/claude-sonnet-5" } },
       catalog: {
@@ -583,34 +583,34 @@ const PRIOR_HAND_LISTED_CELLS: IMatrixCell[] = [
   {
     tool: "claude-code",
     provider: "$CELL_PROVIDER",
-    config: "configs/claude-cli-delegate-all.toml",
+    config: "tests/configs/claude-cli-delegate-all.toml",
     requires_bin: "claude",
   },
-  { tool: "codex", provider: "$CELL_PROVIDER", config: "configs/codex-cli-react.toml", requires_bin: "codex" },
+  { tool: "codex", provider: "$CELL_PROVIDER", config: "tests/configs/codex-cli-react.toml", requires_bin: "codex" },
   {
     tool: "opencode",
     provider: "$CELL_PROVIDER",
-    config: "configs/opencode-cli-delegate-all.toml",
+    config: "tests/configs/opencode-cli-delegate-all.toml",
     requires_bin: "opencode",
   },
   {
     tool: "exactl",
     provider: "anthropic",
-    config: "configs/anthropic-no-delegate.toml",
+    config: "tests/configs/anthropic-no-delegate.toml",
     requires_bin: "true",
     requires_key: "ANTHROPIC_API_KEY",
   },
   {
     tool: "exactl",
     provider: "openai",
-    config: "configs/openai-no-delegate.toml",
+    config: "tests/configs/openai-no-delegate.toml",
     requires_bin: "true",
     requires_key: "OPENAI_API_KEY",
   },
   {
     tool: "exactl",
     provider: "google",
-    config: "configs/google-no-delegate.toml",
+    config: "tests/configs/google-no-delegate.toml",
     requires_bin: "true",
     requires_key: "GOOGLE_API_KEY",
   },
@@ -679,7 +679,7 @@ Deno.test("[phase211.matrix] fix-bug-null-guard expands to a cell set that inclu
   const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
   const resolved = resolveCatalogCells(catalog, matrix.from_catalog!);
 
-  const openrouter = resolved.filter((cell) => cell.config === "configs/openrouter-no-delegate.toml");
+  const openrouter = resolved.filter((cell) => cell.config === "tests/configs/openrouter-no-delegate.toml");
   assertEquals(openrouter.length, 1, "the OpenRouter DeepSeek cell is selected exactly once");
   assertEquals(openrouter[0].tool, "exactl");
   assertEquals(openrouter[0].provider, "openrouter");
@@ -747,13 +747,13 @@ Deno.test("[step8] a step only a skipped cell owns stays out of the suite-score 
       {
         tool: "exactl",
         provider: "mock",
-        config: "configs/agent-flows-mock-pattern.toml",
+        config: "tests/configs/agent-flows-mock-pattern.toml",
         requires_bin: "true",
       },
       {
         tool: "live",
         provider: "live",
-        config: "configs/anthropic-no-delegate.toml",
+        config: "tests/configs/anthropic-no-delegate.toml",
         requires_bin: "true",
         requires_optin: "EXA_MATRIX_AGENT_ROLE_LIVE",
       },

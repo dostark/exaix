@@ -21,8 +21,8 @@ const DOGFOOD_ROOT_SENTINEL = "__DOGFOOD_ROOT__";
 const BOOT_TIMEOUT_MS = 15000;
 
 const CASES = [
-  { preset: "configs/openai-chat.toml", credentialEnv: "OPENAI_API_KEY", host: "api.openai.com" },
-  { preset: "configs/deepseek-chat.toml", credentialEnv: "DEEPSEEK_API_KEY", host: "api.deepseek.com" },
+  { preset: "tests/configs/openai-chat.toml", credentialEnv: "OPENAI_API_KEY", host: "api.openai.com" },
+  { preset: "tests/configs/deepseek-chat.toml", credentialEnv: "DEEPSEEK_API_KEY", host: "api.deepseek.com" },
 ] as const;
 
 for (const { preset, credentialEnv, host } of CASES) {

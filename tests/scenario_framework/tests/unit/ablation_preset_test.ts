@@ -20,7 +20,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 
-const CONFIGS_DIR = join(REPO_ROOT, "configs");
+const CONFIGS_DIR = join(REPO_ROOT, "tests", "configs");
 const PRESET_NAMES = ["skills", "quality-gate", "portal-knowledge"] as const;
 
 const TOGGLE_LINES = ["inject_in_prompt =", "injection_enabled =", "enabled ="];

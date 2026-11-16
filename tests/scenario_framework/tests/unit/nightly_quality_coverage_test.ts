@@ -85,7 +85,7 @@ Deno.test("nightly quality: representative shipped flows have judged artifact va
 });
 
 Deno.test("nightly quality: shipped flow steps bind to the qualified DeepSeek service", async () => {
-  const config = new ConfigService(resolve(REPO_ROOT, "configs/subsystem-live.toml")).get();
+  const config = new ConfigService(resolve(REPO_ROOT, "tests/configs/subsystem-live.toml")).get();
   assertEquals(config.ai?.timeout_ms, 180000, "bound API calls need the live planning timeout");
   const layers = await loadBindingLayers(config);
   const ref = {

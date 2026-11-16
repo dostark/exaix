@@ -1,7 +1,7 @@
 /**
  * @module ScenarioFrameworkCellCatalog
  * @path tests/scenario_framework/runner/cell_catalog.ts
- * @description Phase 203 Step 2 — the eval cell catalog, `configs/model_presets.toml`, read as a
+ * @description Phase 203 Step 2 — the eval cell catalog, `tests/configs/model_presets.toml`, read as a
  *   set of named presets. A scenario selects presets with `matrix.from_catalog` instead of
  *   copying a config path, a provider label and the prerequisite predicates into every cell.
  *   Each `[tool.<name>]` row is one preset named `<name>`. The resolver turns preset names

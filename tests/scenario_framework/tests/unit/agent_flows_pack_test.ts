@@ -162,13 +162,13 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] forced-ReAct scenario keeps OpenCod
   assertEquals(scenario.matrix?.cells?.[0], {
     tool: "opencode",
     provider: "opencode-cli",
-    config: "configs/opencode-no-delegate.toml",
+    config: "tests/configs/opencode-no-delegate.toml",
     requires_bin: "opencode",
   });
   assertEquals(scenario.matrix?.cells?.[1], {
     tool: "codex",
     provider: "codex-cli",
-    config: "configs/codex-cli-react.toml",
+    config: "tests/configs/codex-cli-react.toml",
     requires_bin: "codex",
     requires_optin: "EXA_MATRIX_CODEX",
   });

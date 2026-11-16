@@ -1,7 +1,7 @@
 /**
  * @module CellCatalogTest
  * @path tests/scenario_framework/tests/unit/cell_catalog_test.ts
- * @description Validates the eval cell catalog (configs/model_presets.toml). Phase 203 Step 2
+ * @description Validates the eval cell catalog (tests/configs/model_presets.toml). Phase 203 Step 2
  *   turns each `[tool.<name>]` row into a named preset that a scenario selects with
  *   `matrix.from_catalog`. This file asserts the preset fields, the `tool`/`requires_bin`
  *   defaults, the `bindings.default` model agreement with each row's own config, sentinel
@@ -27,7 +27,7 @@ const MIXED_REALM_PRESETS = new Set(["ollama-chat", "split-strong-local", "self-
 const IN_PROCESS_LIVE_PREFIX = "live-";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const CATALOG_PATH = resolve(REPO_ROOT, "configs", "model_presets.toml");
+const CATALOG_PATH = resolve(REPO_ROOT, "tests", "configs", "model_presets.toml");
 
 /** The `[ai]` block of a config TOML — the provider and model a preset's row pins. */
 interface IConfigAiBlock {
@@ -61,7 +61,7 @@ Deno.test("[CellCatalog] a preset carries every field its row declares", async (
 
   const claudeCode = catalog.presets["claude-code"]!;
   assertEquals(claudeCode.tool, "claude-code");
-  assertEquals(claudeCode.config, "configs/claude-cli-delegate-all.toml");
+  assertEquals(claudeCode.config, "tests/configs/claude-cli-delegate-all.toml");
   assertEquals(claudeCode.provider, "claude-cli");
   assertEquals(claudeCode.model, "claude-sonnet-5");
   assertEquals(claudeCode.requires_bin, "claude");
@@ -70,7 +70,7 @@ Deno.test("[CellCatalog] a preset carries every field its row declares", async (
 
   const codex = catalog.presets["codex"]!;
   assertEquals(codex.tool, "codex");
-  assertEquals(codex.config, "configs/codex-cli-react.toml");
+  assertEquals(codex.config, "tests/configs/codex-cli-react.toml");
   assertEquals(codex.provider, "codex-cli");
   assertEquals(codex.model, "gpt-5.6-terra");
   assertEquals(codex.requires_bin, "codex");
@@ -100,14 +100,14 @@ Deno.test("[CellCatalog] the exactl presets name the exactl tool and keep native
   const openai = catalog.presets["exactl-openai"]!;
   assertEquals(openai.tool, "exactl");
   assertEquals(openai.provider, "openai");
-  assertEquals(openai.config, "configs/openai-no-delegate.toml");
+  assertEquals(openai.config, "tests/configs/openai-no-delegate.toml");
   assertEquals(openai.requires_key, "OPENAI_API_KEY");
   assertEquals(openai.requires_bin, "true");
 
   const google = catalog.presets["exactl-google"]!;
   assertEquals(google.tool, "exactl");
   assertEquals(google.provider, "google");
-  assertEquals(google.config, "configs/google-no-delegate.toml");
+  assertEquals(google.config, "tests/configs/google-no-delegate.toml");
   assertEquals(google.requires_key, "GOOGLE_API_KEY");
   assertEquals(google.requires_bin, "true");
 });
@@ -119,7 +119,7 @@ Deno.test("[CellCatalog] a row without a tool field defaults to the exactl tool"
       path,
       [
         "[tool.bare]",
-        'config = "configs/anthropic-no-delegate.toml"',
+        'config = "tests/configs/anthropic-no-delegate.toml"',
         'provider = "anthropic"',
         'requires_key = "ANTHROPIC_API_KEY"',
         "",
@@ -186,7 +186,7 @@ Deno.test("[CellCatalog] a preset catalog carrying the fixture-port sentinel loa
       path,
       [
         "[tool.fixture]",
-        'config = "configs/anthropic-no-delegate.toml"',
+        'config = "tests/configs/anthropic-no-delegate.toml"',
         'provider = "anthropic"',
         'requires_key = "ANTHROPIC_API_KEY"',
         "",
@@ -217,9 +217,9 @@ Deno.test("[CellCatalog] resolveCatalogCells keeps the declared order", async ()
 
   assertEquals(cells.map((cell) => cell.tool), ["opencode", "exactl", "claude-code"]);
   assertEquals(cells.map((cell) => cell.config), [
-    "configs/opencode-cli-delegate-all.toml",
-    "configs/google-no-delegate.toml",
-    "configs/claude-cli-delegate-all.toml",
+    "tests/configs/opencode-cli-delegate-all.toml",
+    "tests/configs/google-no-delegate.toml",
+    "tests/configs/claude-cli-delegate-all.toml",
   ]);
   assertEquals(cells.map((cell) => cell.requires_bin), ["opencode", "true", "claude"]);
 });
@@ -234,7 +234,7 @@ Deno.test("[phase203.cell_catalog] the self-hosted presets declare their binding
 
   const ollama = catalog.presets["ollama-chat"]!;
   assertEquals(ollama.tool, "exactl");
-  assertEquals(ollama.config, "configs/ollama-chat.toml");
+  assertEquals(ollama.config, "tests/configs/ollama-chat.toml");
   assertEquals(ollama.provider, "openai-chat");
   assertEquals(ollama.model, "llama3.1:8b");
   assertEquals(ollama.requires_optin, "EXA_MATRIX_OLLAMA");
@@ -248,7 +248,7 @@ Deno.test("[phase203.cell_catalog] the self-hosted presets declare their binding
   assertEquals(split.catalog?.models?.["meta/llama3.1:8b"]?.model_provider, "meta");
 
   const fixture = catalog.presets["self-hosted-fixture"]!;
-  assertEquals(fixture.config, "configs/compat-fixture-base.toml");
+  assertEquals(fixture.config, "tests/configs/compat-fixture-base.toml");
   // The config and the catalog both carry the fixture-port sentinel.
   // The cell may only run when a fixture supplies the port.
   assertEquals(fixture.requires_optin, "EXA_COMPAT_FIXTURE_PORT");
@@ -288,7 +288,7 @@ Deno.test("[phase203.cell_catalog] a preset's opt-in travels onto the resolved c
 });
 
 Deno.test("[phase203.cell_catalog] the fixture base config grants the fixture host and carries no compatible block", async () => {
-  const raw = await Deno.readTextFile(resolve(REPO_ROOT, "configs/compat-fixture-base.toml"));
+  const raw = await Deno.readTextFile(resolve(REPO_ROOT, "tests/configs/compat-fixture-base.toml"));
   assertStringIncludes(
     raw,
     'allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]',
@@ -314,7 +314,7 @@ Deno.test("[phase203.cell_catalog] exactl-openrouter selects the openrouter serv
 
   // The binding swaps in the openrouter service, so the config can stay the shipped one.
   assertEquals(openrouter.tool, "exactl");
-  assertEquals(openrouter.config, "configs/anthropic-no-delegate.toml");
+  assertEquals(openrouter.config, "tests/configs/anthropic-no-delegate.toml");
   assertEquals(openrouter.provider, "anthropic");
   assertEquals(openrouter.model, "claude-sonnet-5");
   assertEquals(openrouter.requires_key, "OPENROUTER_API_KEY");
@@ -330,7 +330,7 @@ Deno.test("[phase211.cell_catalog] exactl-openrouter-deepseek-flash runs the Ope
   const catalog = await loadCellCatalog(CATALOG_PATH);
   const preset = catalog.presets["exactl-openrouter-deepseek-flash"]!;
   assertEquals(preset.tool, "exactl");
-  assertEquals(preset.config, "configs/openrouter-no-delegate.toml");
+  assertEquals(preset.config, "tests/configs/openrouter-no-delegate.toml");
   assertEquals(preset.provider, "openrouter");
   assertEquals(preset.model, "~deepseek/deepseek-flash-latest");
   assertEquals(preset.requires_bin, "true");
@@ -358,7 +358,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-claude",
       tool: "claude-code",
-      config: "configs/planning-live.claude.toml",
+      config: "tests/configs/planning-live.claude.toml",
       provider: "claude-cli",
       model: "claude-haiku-4-5",
       requires_bin: "claude",
@@ -366,7 +366,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-codex",
       tool: "codex",
-      config: "configs/planning-live.codex.toml",
+      config: "tests/configs/planning-live.codex.toml",
       provider: "codex-cli",
       model: "gpt-5.6-terra",
       requires_bin: "codex",
@@ -375,7 +375,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-opencode",
       tool: "opencode",
-      config: "configs/planning-live.opencode.toml",
+      config: "tests/configs/planning-live.opencode.toml",
       provider: "opencode-cli",
       model: "opencode-go/deepseek-v4-flash",
       requires_bin: "opencode",
@@ -384,7 +384,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-anthropic",
       tool: "exactl",
-      config: "configs/planning-live.anthropic.toml",
+      config: "tests/configs/planning-live.anthropic.toml",
       provider: "anthropic",
       model: "claude-sonnet-5",
       requires_bin: "true",
@@ -392,7 +392,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-openai",
       tool: "exactl",
-      config: "configs/planning-live.openai.toml",
+      config: "tests/configs/planning-live.openai.toml",
       provider: "openai",
       model: "gpt-5-mini",
       requires_bin: "true",
@@ -400,7 +400,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-google",
       tool: "exactl",
-      config: "configs/planning-live.google.toml",
+      config: "tests/configs/planning-live.google.toml",
       provider: "google",
       model: "gemini-3.8-flash",
       requires_bin: "true",
@@ -408,7 +408,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-openrouter",
       tool: "exactl",
-      config: "configs/planning-live.openrouter.toml",
+      config: "tests/configs/planning-live.openrouter.toml",
       provider: "openrouter",
       model: "openrouter/auto",
       requires_bin: "true",
@@ -416,7 +416,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
     {
       name: "planning-live-deepseek",
       tool: "exactl",
-      config: "configs/planning-live.deepseek.toml",
+      config: "tests/configs/planning-live.deepseek.toml",
       provider: "openai-chat",
       model: "deepseek-v4-pro",
       requires_bin: "true",

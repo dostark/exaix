@@ -15,7 +15,7 @@ matrix:
   cells:
     - tool: "opencode"
       provider: "opencode-cli"
-      config: "configs/opencode-cli-delegate-all.toml"
+      config: "tests/configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
 steps:
   - id: "start-daemon"

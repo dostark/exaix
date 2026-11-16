@@ -108,7 +108,7 @@ provider setup it runs on. Prefer these forms over a hand-listed matrix or an `E
 env block; the full reference is [`SCENARIO_DSL.md` §2.3](./SCENARIO_DSL.md).
 
 1. **Name a preset.** Write `matrix: { from_catalog: [<preset>] }` and add a `[tool.<preset>]` row to
-   `configs/model_presets.toml` when none fits. A model variant is a new preset row, not a copied TOML
+   `tests/configs/model_presets.toml` when none fits. A model variant is a new preset row, not a copied TOML
    file. `MatrixSchema` takes `cells` or `from_catalog`, never both, and the old `axes` map is gone.
    Cell ids keep the `${tool}-${provider}` form.
 1. **Bind steps.** Add a `bindings:` table to the scenario (`ScenarioSchema`), to a cell

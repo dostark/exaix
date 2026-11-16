@@ -25,7 +25,7 @@ matrix:
   cells:
     - tool: "codex"
       provider: "codex-cli"
-      config: "configs/codex-cli-portal-graph.toml"
+      config: "tests/configs/codex-cli-portal-graph.toml"
       requires_bin: "codex"
       requires_optin: "EXA_MATRIX_CODEX"
 steps:

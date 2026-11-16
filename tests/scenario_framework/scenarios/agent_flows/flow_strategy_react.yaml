@@ -15,11 +15,11 @@ matrix:
   cells:
     - tool: "opencode"
       provider: "opencode-cli"
-      config: "configs/opencode-no-delegate.toml"
+      config: "tests/configs/opencode-no-delegate.toml"
       requires_bin: "opencode"
     - tool: "codex"
       provider: "codex-cli"
-      config: "configs/codex-cli-react.toml"
+      config: "tests/configs/codex-cli-react.toml"
       requires_bin: "codex"
       requires_optin: "EXA_MATRIX_CODEX"
 steps:

@@ -14,7 +14,7 @@ matrix:
   cells:
     - tool: live
       provider: claude-cli
-      config: configs/claude-sonnet-4-6-skill-eval.toml
+      config: tests/configs/claude-sonnet-4-6-skill-eval.toml
       requires_bin: "claude"
 steps:
   - id: capture-workspace-baseline

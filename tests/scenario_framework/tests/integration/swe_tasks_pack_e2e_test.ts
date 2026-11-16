@@ -18,7 +18,7 @@ import { withTempDir } from "@exaix/testing";
 
 const FRAMEWORK_HOME = resolve(new URL(".", import.meta.url).pathname, "../..");
 const REPO_ROOT = resolve(FRAMEWORK_HOME, "..", "..");
-const CELL_CATALOG_PATH = resolve(REPO_ROOT, "configs", "model_presets.toml");
+const CELL_CATALOG_PATH = resolve(REPO_ROOT, "tests", "configs", "model_presets.toml");
 const MULTI_CELL_SCENARIO = "scenarios/swe_tasks/fix-bug-null-guard.yaml";
 
 const EXPECTED_SW_TASKS_IDS = [

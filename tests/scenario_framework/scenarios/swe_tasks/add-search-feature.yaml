@@ -16,15 +16,15 @@ matrix:
   cells:
     - tool: "claude-code"
       provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
+      config: "tests/configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
     - tool: "opencode"
       provider: "$CELL_PROVIDER"
-      config: "configs/opencode-cli-delegate-all.toml"
+      config: "tests/configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
     - tool: "exactl"
       provider: "anthropic"
-      config: "configs/anthropic-no-delegate.toml"
+      config: "tests/configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
 steps:

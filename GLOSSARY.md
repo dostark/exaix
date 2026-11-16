@@ -296,7 +296,7 @@ One combination of tool, provider, model and daemon configuration that a scenari
 
 ### Model Preset
 
-A named row of `configs/model_presets.toml` that holds the settings of one provider and model: the daemon configuration, the binding, the catalog entries, and the prerequisites that decide whether it can run (`requires_bin`, `requires_key` and `requires_optin`). A scenario selects presets by name to build its matrix cells. A live test reads the `live-<service>` preset of its service without running a matrix, so it gets its configuration and its skip reason from the same row.
+A named row of `tests/configs/model_presets.toml` that holds the settings of one provider and model: the daemon configuration, the binding, the catalog entries, and the prerequisites that decide whether it can run (`requires_bin`, `requires_key` and `requires_optin`). A scenario selects presets by name to build its matrix cells. A live test reads the `live-<service>` preset of its service without running a matrix, so it gets its configuration and its skip reason from the same row.
 
 ### Judge Calibration
 

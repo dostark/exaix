@@ -22,7 +22,7 @@ import { loadBindingLayers, resolveBinding } from "@exaix/ai";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "tests", "configs", "model_presets.toml");
 
 /** The `[ai].provider` a cell's config pins, or an empty string when it pins none. */
 function configProvider(configRelPath: string): string {
@@ -61,25 +61,30 @@ function priorCellFromRow(row: PriorCellRow): IMatrixCell {
   };
 }
 
-const CLAUDE_CELL: PriorCellRow = ["claude-code", "$CELL_PROVIDER", "configs/claude-cli-delegate-all.toml", "claude"];
-const CODEX_CELL: PriorCellRow = ["codex", "$CELL_PROVIDER", "configs/codex-cli-react.toml", "codex"];
+const CLAUDE_CELL: PriorCellRow = [
+  "claude-code",
+  "$CELL_PROVIDER",
+  "tests/configs/claude-cli-delegate-all.toml",
+  "claude",
+];
+const CODEX_CELL: PriorCellRow = ["codex", "$CELL_PROVIDER", "tests/configs/codex-cli-react.toml", "codex"];
 const OPENCODE_CELL: PriorCellRow = [
   "opencode",
   "$CELL_PROVIDER",
-  "configs/opencode-cli-delegate-all.toml",
+  "tests/configs/opencode-cli-delegate-all.toml",
   "opencode",
 ];
 const ANTHROPIC_CELL: PriorCellRow = [
   "exactl",
   "anthropic",
-  "configs/anthropic-no-delegate.toml",
+  "tests/configs/anthropic-no-delegate.toml",
   "true",
   "ANTHROPIC_API_KEY",
 ];
 const OPENAI_CHAT_CELL: PriorCellRow = [
   "exactl",
   "openai-chat",
-  "configs/openai-chat.toml",
+  "tests/configs/openai-chat.toml",
   "true",
   "OPENAI_API_KEY",
 ];
@@ -109,10 +114,10 @@ const MIGRATED_SCENARIOS: IMigratedScenario[] = [
     priorCells: [
       CLAUDE_CELL,
       CODEX_CELL,
-      ["claude-haiku-4-5", "$CELL_PROVIDER", "configs/claude-haiku-4-5-delegate-all.toml", "claude"],
+      ["claude-haiku-4-5", "$CELL_PROVIDER", "tests/configs/claude-haiku-4-5-delegate-all.toml", "claude"],
       OPENCODE_CELL,
-      ["opencode-north-mini-code", "$CELL_PROVIDER", "configs/opencode-north-mini-code-free.toml", "opencode"],
-      ["opencode-laguna-free", "$CELL_PROVIDER", "configs/opencode-laguna-free.toml", "opencode"],
+      ["opencode-north-mini-code", "$CELL_PROVIDER", "tests/configs/opencode-north-mini-code-free.toml", "opencode"],
+      ["opencode-laguna-free", "$CELL_PROVIDER", "tests/configs/opencode-laguna-free.toml", "opencode"],
       ANTHROPIC_CELL,
     ],
   },
@@ -154,14 +159,21 @@ const MIGRATED_SCENARIOS: IMigratedScenario[] = [
       "planning-live-deepseek",
     ],
     priorCells: [
-      ["claude-code", "claude-cli", "configs/planning-live.claude.toml", "claude"],
-      ["codex", "codex-cli", "configs/planning-live.codex.toml", "codex", undefined, "EXA_MATRIX_CODEX"],
-      ["opencode", "opencode-cli", "configs/planning-live.opencode.toml", "opencode", undefined, "EXA_MATRIX_OPENCODE"],
-      ["exactl", "anthropic", "configs/planning-live.anthropic.toml", "true", "ANTHROPIC_API_KEY"],
-      ["exactl", "openai", "configs/planning-live.openai.toml", "true", "OPENAI_API_KEY"],
-      ["exactl", "google", "configs/planning-live.google.toml", "true", "GOOGLE_API_KEY"],
-      ["exactl", "openrouter", "configs/planning-live.openrouter.toml", "true", "OPENROUTER_API_KEY"],
-      ["exactl", "openai-chat", "configs/planning-live.deepseek.toml", "true", "DEEPSEEK_API_KEY"],
+      ["claude-code", "claude-cli", "tests/configs/planning-live.claude.toml", "claude"],
+      ["codex", "codex-cli", "tests/configs/planning-live.codex.toml", "codex", undefined, "EXA_MATRIX_CODEX"],
+      [
+        "opencode",
+        "opencode-cli",
+        "tests/configs/planning-live.opencode.toml",
+        "opencode",
+        undefined,
+        "EXA_MATRIX_OPENCODE",
+      ],
+      ["exactl", "anthropic", "tests/configs/planning-live.anthropic.toml", "true", "ANTHROPIC_API_KEY"],
+      ["exactl", "openai", "tests/configs/planning-live.openai.toml", "true", "OPENAI_API_KEY"],
+      ["exactl", "google", "tests/configs/planning-live.google.toml", "true", "GOOGLE_API_KEY"],
+      ["exactl", "openrouter", "tests/configs/planning-live.openrouter.toml", "true", "OPENROUTER_API_KEY"],
+      ["exactl", "openai-chat", "tests/configs/planning-live.deepseek.toml", "true", "DEEPSEEK_API_KEY"],
     ],
   },
 ];

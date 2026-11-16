@@ -15,7 +15,7 @@ matrix:
   cells:
     - tool: "claude-code"
       provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
+      config: "tests/configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
 steps:
   - id: "patch-blueprint-capability"

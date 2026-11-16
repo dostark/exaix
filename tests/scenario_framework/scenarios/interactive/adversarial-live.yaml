@@ -11,7 +11,7 @@ matrix:
   cells:
     - tool: "claude-code"
       provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-interactive.toml"
+      config: "tests/configs/claude-cli-delegate-interactive.toml"
       requires_bin: "claude"
 steps:
   - id: "start-daemon"

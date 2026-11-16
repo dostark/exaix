@@ -36,7 +36,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 const REPO_ROOT = fromFileUrl(new URL("../../../..", import.meta.url));
 
 function parsePreset(name: string): ReturnType<typeof ConfigSchema.parse> {
-  const text = Deno.readTextFileSync(join(REPO_ROOT, "configs", `eval-ablate-${name}.toml`));
+  const text = Deno.readTextFileSync(join(REPO_ROOT, "tests", "configs", `eval-ablate-${name}.toml`));
   return ConfigSchema.parse(parse(text));
 }
 

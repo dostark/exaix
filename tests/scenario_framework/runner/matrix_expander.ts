@@ -346,7 +346,7 @@ export const MatrixCellSchema = z.object({
  *  catalog preset names in `from_catalog`. `axes` was documentary only and is gone. */
 export const MatrixSchema = z.object({
   cells: z.array(MatrixCellSchema).min(1).optional(),
-  /** Catalog preset names, resolved from `configs/model_presets.toml` before expansion. */
+  /** Catalog preset names, resolved from `tests/configs/model_presets.toml` before expansion. */
   from_catalog: z.array(NON_EMPTY).min(1).optional(),
 }).strict().refine(
   (matrix) => (matrix.cells === undefined) !== (matrix.from_catalog === undefined),

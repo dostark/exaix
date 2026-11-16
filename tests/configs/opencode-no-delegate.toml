@@ -4,7 +4,7 @@ log_level = "info"
 allow_net = []
 
 # Phase 159 Step 6: the react-strategy half of the cli_delegate-vs-react comparison —
-# same opencode-go/deepseek-v4-flash model as configs/opencode-cli-delegate-all.toml, but
+# same opencode-go/deepseek-v4-flash model as tests/configs/opencode-cli-delegate-all.toml, but
 # [cli_delegate] stays disabled so a `strategy: "react"` flow step resolves ReActLoopStrategy
 # against this real, live provider instead of spawning the headless CLI.
 [ai]

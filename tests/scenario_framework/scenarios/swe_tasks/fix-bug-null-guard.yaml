@@ -13,7 +13,7 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  # Preset names from configs/model_presets.toml. The first six resolved cells are claude-code, codex, opencode, exactl-native, exactl-openai and exactl-google, with unchanged cell ids so history attribution stays comparable.
+  # Preset names from tests/configs/model_presets.toml. The first six resolved cells are claude-code, codex, opencode, exactl-native, exactl-openai and exactl-google, with unchanged cell ids so history attribution stays comparable.
   # The OpenRouter DeepSeek cell follows them and is skipped when OPENROUTER_API_KEY is unset.
   from_catalog: [
     "claude-code",

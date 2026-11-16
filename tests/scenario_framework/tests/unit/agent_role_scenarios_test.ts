@@ -149,14 +149,14 @@ Deno.test("[agent_role_merge] each merged role declares a pattern-mock cell and 
     const { mock, live } = cellsByTool(scenario.matrix.cells);
 
     // The mock cell runs on the pattern mock, whose config names its own provider.
-    assertEquals(mock.config, "configs/agent-flows-mock-pattern.toml", `${role} mock cell config`);
+    assertEquals(mock.config, "tests/configs/agent-flows-mock-pattern.toml", `${role} mock cell config`);
     assertEquals(mock.provider, "mock", `${role} mock cell provider`);
     assertEquals(configProvider(mock.config), "mock", `${role} mock cell config must pin provider mock`);
     assertEquals(mock.requires_optin, undefined, `${role} mock cell must run in CI`);
 
     // The live cell is opt-in, so CI records a skip instead of a failure.
     assertEquals(live.requires_optin, LIVE_CELL_OPT_IN, `${role} live cell needs the opt-in`);
-    assertEquals(live.config, "configs/subsystem-live.toml", `${role} live cell config`);
+    assertEquals(live.config, "tests/configs/subsystem-live.toml", `${role} live cell config`);
     assertEquals(live.requires_key, "DEEPSEEK_API_KEY", `${role} live driver needs its configured key`);
     assertEquals(live.provider, "openai-chat", `${role} must not override its provider with an unknown name`);
     assertEquals(configProvider(live.config), "openai-chat", `${role} live cell config provider`);

@@ -176,8 +176,9 @@ Deno.test("[phase203.catalog] the built-in ollama-chat service constructs throug
 Deno.test("[phase203.catalog] split-strong-local's role:web-explorer binding constructs", async () => {
   ProviderRegistry.clear();
   bootstrapProviderRegistry();
-  const preset = SplitStrongLocalFileSchema.parse(parseToml(await Deno.readTextFile("configs/model_presets.toml")))
-    .tool["split-strong-local"];
+  const preset =
+    SplitStrongLocalFileSchema.parse(parseToml(await Deno.readTextFile("tests/configs/model_presets.toml")))
+      .tool["split-strong-local"];
   const presetBindings = preset.bindings;
   const presetCatalog = preset.catalog;
   const builtIn = buildBuiltInCatalog();

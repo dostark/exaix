@@ -23,7 +23,7 @@ const COMPATIBLE_KEYS = [
   "max_tool_argument_bytes",
   "max_history_bytes",
 ];
-const PRESETS = ["configs/openai-chat.toml", "configs/deepseek-chat.toml"];
+const PRESETS = ["tests/configs/openai-chat.toml", "tests/configs/deepseek-chat.toml"];
 const SECRET_VARIABLES = ["OPENAI_API_KEY", "DEEPSEEK_API_KEY"];
 
 async function readArchitecture(): Promise<string> {

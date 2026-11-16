@@ -23,11 +23,11 @@ matrix:
   cells:
     - tool: claude-code
       provider: $CELL_PROVIDER
-      config: configs/persona-response-claude-cli-delegate.toml
+      config: tests/configs/persona-response-claude-cli-delegate.toml
       requires_bin: claude
     - tool: codex
       provider: $CELL_PROVIDER
-      config: configs/persona-response-codex-cli-react.toml
+      config: tests/configs/persona-response-codex-cli-react.toml
       requires_bin: codex
 steps:
   - id: patch-blueprint-capability

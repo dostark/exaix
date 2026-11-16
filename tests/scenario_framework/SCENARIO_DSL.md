@@ -153,11 +153,11 @@ matrix:
   cells:
     - tool: "claude-code"
       provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
+      config: "tests/configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
     - tool: "opencode"
       provider: "$CELL_PROVIDER"
-      config: "configs/opencode-cli-delegate-all.toml"
+      config: "tests/configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
 ```
 
@@ -189,14 +189,14 @@ pin:
     reason: provider-qualification
     note: "Phase 155 DeepSeek live leg"
 matrix:
-  from_catalog: [self-hosted-fixture] # presets from configs/model_presets.toml
+  from_catalog: [self-hosted-fixture] # presets from tests/configs/model_presets.toml
 ```
 
 **Binding fields.** An entry sets any of `service`, `model_provider`, `model`, `service_model_id`,
 `transport`, `interface`, `effort` and `thinking`. Selectors are `default`, `role:<agent-role>`,
 `flow:<flow-id>`, `flow:<flow-id>/step:<step-id-or-glob>`, and the judge selectors below.
 
-**Presets.** `matrix.from_catalog` names `[tool.<name>]` rows in `configs/model_presets.toml`. A preset
+**Presets.** `matrix.from_catalog` names `[tool.<name>]` rows in `tests/configs/model_presets.toml`. A preset
 (`ICatalogPreset`) is a base `config` plus optional `bindings` and `catalog` tables and the same
 `requires_bin`, `requires_key` and `requires_optin` predicates a hand-listed cell carries. A model
 variant is therefore a new preset row, not a copied config file. A preset whose `requires_optin`

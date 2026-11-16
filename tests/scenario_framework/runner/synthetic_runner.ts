@@ -181,7 +181,7 @@ export function resolveScenarioRepoRoot(runnerDirectory: string): string {
 const REPO_ROOT = resolveScenarioRepoRoot(import.meta.dirname!);
 
 /** The eval cell catalog a `matrix.from_catalog` block resolves its preset names against. */
-const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "model_presets.toml");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "tests", "configs", "model_presets.toml");
 
 /** Catalogs the daemon resolves against the WORKSPACE root rather than the repo, and which a
  *  fresh sandbox therefore lacks entirely — without these a flow request is rejected as

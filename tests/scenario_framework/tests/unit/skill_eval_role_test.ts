@@ -37,9 +37,9 @@ Deno.test("skill evaluation requests select existing agent role blueprints", asy
 });
 
 Deno.test("failed skill evaluation cases select Codex Terra with high effort", async () => {
-  const preset = parseToml(await Deno.readTextFile(join(REPO_ROOT, "configs/claude-sonnet-4-6-skill-eval.toml")));
+  const preset = parseToml(await Deno.readTextFile(join(REPO_ROOT, "tests/configs/claude-sonnet-4-6-skill-eval.toml")));
   assertEquals(preset.ai, { provider: "claude-cli", model: "claude-sonnet-4-6" });
-  const codex = parseToml(await Deno.readTextFile(join(REPO_ROOT, "configs/codex-terra-61-skill-eval.toml")));
+  const codex = parseToml(await Deno.readTextFile(join(REPO_ROOT, "tests/configs/codex-terra-61-skill-eval.toml")));
   assertEquals(codex.ai, { provider: "codex-cli", model: "gpt-6.1-terra" });
   assertEquals(ConfigSchema.safeParse(codex).success, true);
   for (const group of [1, 2, 3, 4, 5, 6]) {
@@ -64,7 +64,9 @@ Deno.test("failed skill evaluation cases select Codex Terra with high effort", a
       if ([2, 4, 5].includes(group)) {
         assertStringIncludes(
           text,
-          codexConfig ? "configs/codex-terra-61-skill-eval.toml" : "configs/claude-sonnet-4-6-skill-eval.toml",
+          codexConfig
+            ? "tests/configs/codex-terra-61-skill-eval.toml"
+            : "tests/configs/claude-sonnet-4-6-skill-eval.toml",
         );
       }
     }

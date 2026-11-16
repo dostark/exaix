@@ -15,7 +15,7 @@ matrix:
   cells:
     - tool: "exactl"
       provider: "openai-chat"
-      config: "configs/deepseek-chat-live.toml"
+      config: "tests/configs/deepseek-chat-live.toml"
       requires_bin: "true"
       requires_key: "DEEPSEEK_API_KEY"
 steps:

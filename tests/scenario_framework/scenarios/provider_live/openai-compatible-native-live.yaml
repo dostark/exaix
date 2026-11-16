@@ -23,7 +23,7 @@ matrix:
   cells:
     - tool: "exactl"
       provider: "openai-chat"
-      config: "configs/openai-chat-live.toml"
+      config: "tests/configs/openai-chat-live.toml"
       requires_bin: "true"
       requires_key: "OPENAI_API_KEY"
 steps:

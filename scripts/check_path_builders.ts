@@ -311,15 +311,17 @@ async function findPathBuilderViolations(): Promise<IViolation[]> {
       violations.push(...scanFile(repoPath, text));
     }
   }
-  for await (
-    const entry of walk(join(REPO_ROOT, "configs"), {
-      includeDirs: false,
-      exts: [".toml"],
-      skip: [/[/\\]node_modules[/\\]/],
-    })
-  ) {
-    const repoPath = relative(REPO_ROOT, entry.path);
-    violations.push(...scanToml(repoPath, await Deno.readTextFile(entry.path)));
+  for (const configsDir of [join(REPO_ROOT, "configs"), join(REPO_ROOT, "tests", "configs")]) {
+    for await (
+      const entry of walk(configsDir, {
+        includeDirs: false,
+        exts: [".toml"],
+        skip: [/[/\\]node_modules[/\\]/],
+      })
+    ) {
+      const repoPath = relative(REPO_ROOT, entry.path);
+      violations.push(...scanToml(repoPath, await Deno.readTextFile(entry.path)));
+    }
   }
   for await (
     const entry of walk(join(REPO_ROOT, "tests"), {

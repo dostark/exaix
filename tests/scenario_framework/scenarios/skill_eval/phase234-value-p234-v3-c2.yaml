@@ -10,7 +10,7 @@ matrix:
   cells:
     - tool: opencode-go
       provider: opencode-cli
-      config: configs/opencode-go-deepseek-41-flash-skill-eval.toml
+      config: tests/configs/opencode-go-deepseek-41-flash-skill-eval.toml
       requires_bin: "opencode"
 steps:
   - id: start-daemon

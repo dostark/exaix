@@ -70,7 +70,7 @@ function makeOpts(overrides: Partial<ISweTaskTemplateOptions> = {}): ISweTaskTem
       {
         tool: "claude-code",
         provider: "$CELL_PROVIDER",
-        config: "configs/claude-cli-delegate-all.toml",
+        config: "tests/configs/claude-cli-delegate-all.toml",
         requiresBin: "claude",
       },
       {

@@ -18,7 +18,7 @@ matrix:
   cells:
     - tool: live
       provider: openai-chat
-      config: configs/subsystem-live.toml
+      config: tests/configs/subsystem-live.toml
       requires_bin: "true"
       requires_key: DEEPSEEK_API_KEY
 steps:

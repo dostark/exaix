@@ -1061,7 +1061,7 @@ block), and `EXA_SESSION_DELEGATE_TOOL` selects the tool. There is **no**
 
 A matrix names its cells in exactly one of two ways. `cells:` lists them inline, which a
 one-off or experimental cell needs. `from_catalog:` names presets from
-[`configs/model_presets.toml`](../../configs/model_presets.toml), which is the preferred form because
+[`tests/configs/model_presets.toml`](../../tests/configs/model_presets.toml), which is the preferred form because
 the config path, the provider label and the prerequisite predicates live in one place:
 
 ```yaml
@@ -1126,16 +1126,16 @@ matrix:
   cells:
     - tool: "claude-code"
       provider: "anthropic"
-      config: "configs/claude-cli-delegate-all.toml"
+      config: "tests/configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
     - tool: "claude-code"
       provider: "anthropic"
-      config: "configs/claude-cli-delegate-all.toml"
+      config: "tests/configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
       harness: "bare"
     - tool: "claude-code"
       provider: "anthropic"
-      config: "configs/eval-ablate-skills.toml"
+      config: "tests/configs/eval-ablate-skills.toml"
       requires_bin: "claude"
       ablate: "skills"
 ```

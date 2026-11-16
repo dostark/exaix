@@ -16,11 +16,11 @@ matrix:
   cells:
     - tool: exactl
       provider: mock
-      config: configs/agent-flows-mock-pattern.toml
+      config: tests/configs/agent-flows-mock-pattern.toml
       requires_bin: "true"
     - tool: live
       provider: openai-chat
-      config: configs/subsystem-live.toml
+      config: tests/configs/subsystem-live.toml
       requires_bin: "true"
       requires_key: DEEPSEEK_API_KEY
       requires_optin: EXA_MATRIX_AGENT_ROLE_LIVE

@@ -19,7 +19,7 @@ Deno.test("[TemplateMatrix] emits CLI-delegate steps when cells have requires_bi
       {
         tool: "claude-code",
         provider: "$CELL_PROVIDER",
-        config: "configs/claude-cli-delegate-all.toml",
+        config: "tests/configs/claude-cli-delegate-all.toml",
         requiresBin: "claude",
       },
     ],
@@ -39,7 +39,7 @@ Deno.test("[TemplateMatrix] emits direct-API steps when cells have no requires_b
       {
         tool: "exactl",
         provider: "anthropic",
-        config: "configs/anthropic-no-delegate.toml",
+        config: "tests/configs/anthropic-no-delegate.toml",
         requiresKey: "ANTHROPIC_API_KEY",
       },
     ],
@@ -55,7 +55,7 @@ Deno.test("[TemplateMatrix] YAML parses as valid scenario schema", () => {
       {
         tool: "claude-code",
         provider: "$CELL_PROVIDER",
-        config: "configs/claude-cli-delegate-all.toml",
+        config: "tests/configs/claude-cli-delegate-all.toml",
         requiresBin: "claude",
       },
     ],
@@ -71,7 +71,7 @@ Deno.test("[TemplateMatrix] emits scoring weights from options", () => {
     cells: [{
       tool: "claude-code",
       provider: "$CELL_PROVIDER",
-      config: "configs/claude-cli-delegate-all.toml",
+      config: "tests/configs/claude-cli-delegate-all.toml",
       requiresBin: "claude",
     }],
     scoringWeights: { tests_pass: 0.25, llm_judge_quality: 0.35 },
@@ -85,7 +85,7 @@ Deno.test("[TemplateMatrix] emits trajectory sequence from options", () => {
     cells: [{
       tool: "exactl",
       provider: "anthropic",
-      config: "configs/anthropic-no-delegate.toml",
+      config: "tests/configs/anthropic-no-delegate.toml",
       requiresKey: "ANTHROPIC_API_KEY",
     }],
     trajectorySequence: [{ tool: "read_file" }, { tool: "patch_file" }, { tool: "run_command" }],
@@ -110,7 +110,7 @@ function makeOpts(overrides: Partial<ISweTaskTemplateOptions>): ISweTaskTemplate
       {
         tool: "claude-code",
         provider: "$CELL_PROVIDER",
-        config: "configs/claude-cli-delegate-all.toml",
+        config: "tests/configs/claude-cli-delegate-all.toml",
         requiresBin: "claude",
       },
     ],

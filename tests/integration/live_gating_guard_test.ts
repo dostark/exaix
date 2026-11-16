@@ -1,7 +1,7 @@
 /**
  * @module LiveGatingGuardTest
  * @path tests/integration/live_gating_guard_test.ts
- * @description Fails when a test enables itself for a live call by its own code. A live test reads its opt-in, key and binary through the `live-<service>` preset row of configs/model_presets.toml, so one set of predicates governs every live run.
+ * @description Fails when a test enables itself for a live call by its own code. A live test reads its opt-in, key and binary through the `live-<service>` preset row of tests/configs/model_presets.toml, so one set of predicates governs every live run.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path, @exaix/testing]
  * @related-files [tests/helpers/live_presets.ts, tests/helpers/llm_bindings.ts]

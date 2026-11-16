@@ -24,42 +24,42 @@
 
 [tool.claude-code]
 tool = "claude-code"
-config = "configs/claude-cli-delegate-all.toml"
+config = "tests/configs/claude-cli-delegate-all.toml"
 provider = "claude-cli"
 model = "claude-sonnet-5"
 requires_bin = "claude"
 
 [tool.claude-haiku-4-5]
 tool = "claude-haiku-4-5"
-config = "configs/claude-haiku-4-5-delegate-all.toml"
+config = "tests/configs/claude-haiku-4-5-delegate-all.toml"
 provider = "claude-cli"
 model = "claude-haiku-4-5"
 requires_bin = "claude"
 
 [tool.opencode]
 tool = "opencode"
-config = "configs/opencode-cli-delegate-all.toml"
+config = "tests/configs/opencode-cli-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
 
 [tool.opencode-north-mini-code]
 tool = "opencode-north-mini-code"
-config = "configs/opencode-north-mini-code-free.toml"
+config = "tests/configs/opencode-north-mini-code-free.toml"
 provider = "opencode-cli"
 model = "opencode/north-mini-code-free"
 requires_bin = "opencode"
 
 [tool.opencode-go]
 tool = "opencode-go"
-config = "configs/opencode-go-delegate-all.toml"
+config = "tests/configs/opencode-go-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
 
 [tool.exactl-native]
 tool = "exactl"
-config = "configs/anthropic-no-delegate.toml"
+config = "tests/configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
 requires_bin = "true"
@@ -73,7 +73,7 @@ model = "anthropic/claude-sonnet-5"
 # documentary, so this row differs from `exactl-native` only by that label.
 [tool.exactl-generic]
 tool = "exactl"
-config = "configs/anthropic-no-delegate.toml"
+config = "tests/configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
 requires_bin = "true"
@@ -85,7 +85,7 @@ model = "anthropic/claude-sonnet-5"
 
 [tool.exactl-openai]
 tool = "exactl"
-config = "configs/openai-no-delegate.toml"
+config = "tests/configs/openai-no-delegate.toml"
 provider = "openai"
 model = "gpt-5.6-terra"
 requires_bin = "true"
@@ -97,7 +97,7 @@ model = "openai/gpt-5.6-terra"
 
 [tool.exactl-google]
 tool = "exactl"
-config = "configs/google-no-delegate.toml"
+config = "tests/configs/google-no-delegate.toml"
 provider = "google"
 model = "gemini-3.8-flash"
 requires_bin = "true"
@@ -112,7 +112,7 @@ model = "google/gemini-3.8-flash"
 # The row's provider stays the config's provider: only the service is swapped.
 [tool.exactl-openrouter]
 tool = "exactl"
-config = "configs/anthropic-no-delegate.toml"
+config = "tests/configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
 requires_bin = "true"
@@ -126,7 +126,7 @@ model = "anthropic/claude-sonnet-5"
 # The OpenRouter provider on its own config, with no binding. Phase 211 Step 10 (Q26).
 [tool.exactl-openrouter-deepseek-flash]
 tool = "exactl"
-config = "configs/openrouter-no-delegate.toml"
+config = "tests/configs/openrouter-no-delegate.toml"
 provider = "openrouter"
 model = "~deepseek/deepseek-flash-latest"
 requires_bin = "true"
@@ -135,21 +135,21 @@ native_tools = true
 
 [tool.opencode-laguna-free]
 tool = "opencode-laguna-free"
-config = "configs/opencode-laguna-free.toml"
+config = "tests/configs/opencode-laguna-free.toml"
 provider = "opencode-cli"
 model = "opencode/laguna-s-2.1-free"
 requires_bin = "opencode"
 
 [tool.codex]
 tool = "codex"
-config = "configs/codex-cli-react.toml"
+config = "tests/configs/codex-cli-react.toml"
 provider = "codex-cli"
 model = "gpt-5.6-terra"
 requires_bin = "codex"
 
 [tool.openai-chat]
 tool = "exactl"
-config = "configs/openai-chat.toml"
+config = "tests/configs/openai-chat.toml"
 provider = "openai-chat"
 model = "gpt-6-luna"
 requires_bin = "true"
@@ -162,7 +162,7 @@ model = "openai/gpt-6-luna"
 
 [tool.deepseek-chat]
 tool = "exactl"
-config = "configs/deepseek-chat.toml"
+config = "tests/configs/deepseek-chat.toml"
 provider = "openai-chat"
 model = "deepseek-v4-pro"
 requires_bin = "true"
@@ -180,7 +180,7 @@ model = "deepseek/deepseek-v4-pro"
 # exists, because the catalog derives preferences from registered providers and `meta` is not one.
 [tool.ollama-chat]
 tool = "exactl"
-config = "configs/ollama-chat.toml"
+config = "tests/configs/ollama-chat.toml"
 provider = "openai-chat"
 model = "llama3.1:8b"
 requires_bin = "true"
@@ -199,7 +199,7 @@ model_provider = "meta"
 [tool.split-strong-local]
 tool = "exactl"
 provider = "mixed"
-config = "configs/anthropic-no-delegate.toml"
+config = "tests/configs/anthropic-no-delegate.toml"
 requires_bin = "true"
 requires_key = "ANTHROPIC_API_KEY"
 requires_optin = "EXA_MATRIX_OLLAMA"
@@ -220,7 +220,7 @@ model_provider = "meta"
 # port sentinel and an unset port would otherwise fail config materialization.
 [tool.self-hosted-fixture]
 tool = "exactl"
-config = "configs/compat-fixture-base.toml"
+config = "tests/configs/compat-fixture-base.toml"
 provider = "openai-chat"
 requires_bin = "true"
 requires_optin = "EXA_COMPAT_FIXTURE_PORT"
@@ -252,14 +252,14 @@ model_provider = "fixture"
 # scenario migrates to `from_catalog` without changing a cell id or a run predicate.
 [tool.planning-live-claude]
 tool = "claude-code"
-config = "configs/planning-live.claude.toml"
+config = "tests/configs/planning-live.claude.toml"
 provider = "claude-cli"
 model = "claude-haiku-4-5"
 requires_bin = "claude"
 
 [tool.planning-live-codex]
 tool = "codex"
-config = "configs/planning-live.codex.toml"
+config = "tests/configs/planning-live.codex.toml"
 provider = "codex-cli"
 model = "gpt-5.6-terra"
 requires_bin = "codex"
@@ -267,7 +267,7 @@ requires_optin = "EXA_MATRIX_CODEX"
 
 [tool.planning-live-opencode]
 tool = "opencode"
-config = "configs/planning-live.opencode.toml"
+config = "tests/configs/planning-live.opencode.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
@@ -275,35 +275,35 @@ requires_optin = "EXA_MATRIX_OPENCODE"
 
 [tool.planning-live-anthropic]
 tool = "exactl"
-config = "configs/planning-live.anthropic.toml"
+config = "tests/configs/planning-live.anthropic.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
 requires_key = "ANTHROPIC_API_KEY"
 
 [tool.planning-live-openai]
 tool = "exactl"
-config = "configs/planning-live.openai.toml"
+config = "tests/configs/planning-live.openai.toml"
 provider = "openai"
 model = "gpt-5-mini"
 requires_key = "OPENAI_API_KEY"
 
 [tool.planning-live-google]
 tool = "exactl"
-config = "configs/planning-live.google.toml"
+config = "tests/configs/planning-live.google.toml"
 provider = "google"
 model = "gemini-3.8-flash"
 requires_key = "GOOGLE_API_KEY"
 
 [tool.planning-live-openrouter]
 tool = "exactl"
-config = "configs/planning-live.openrouter.toml"
+config = "tests/configs/planning-live.openrouter.toml"
 provider = "openrouter"
 model = "openrouter/auto"
 requires_key = "OPENROUTER_API_KEY"
 
 [tool.planning-live-deepseek]
 tool = "exactl"
-config = "configs/planning-live.deepseek.toml"
+config = "tests/configs/planning-live.deepseek.toml"
 provider = "openai-chat"
 model = "deepseek-v4-pro"
 requires_key = "DEEPSEEK_API_KEY"
@@ -315,7 +315,7 @@ requires_key = "DEEPSEEK_API_KEY"
 # live service is a new row here, and the catalog tables of every `live-*` row join the test catalog.
 [tool.live-deepseek]
 tool = "exactl"
-config = "configs/deepseek-chat.toml"
+config = "tests/configs/deepseek-chat.toml"
 provider = "openai-chat"
 model = "deepseek-v4-pro"
 requires_bin = "true"
@@ -328,7 +328,7 @@ service_model_id = "deepseek-v4-pro"
 
 [tool.live-google]
 tool = "exactl"
-config = "configs/google-no-delegate.toml"
+config = "tests/configs/google-no-delegate.toml"
 provider = "google"
 model = "gemini-3.8-flash"
 requires_bin = "true"
@@ -341,7 +341,7 @@ service_model_id = "gemini-3.8-flash"
 
 [tool.live-anthropic]
 tool = "exactl"
-config = "configs/anthropic-no-delegate.toml"
+config = "tests/configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-haiku-5-5"
 requires_bin = "true"
@@ -354,7 +354,7 @@ service_model_id = "claude-haiku-5-5"
 
 [tool.live-openai]
 tool = "exactl"
-config = "configs/openai-no-delegate.toml"
+config = "tests/configs/openai-no-delegate.toml"
 provider = "openai"
 model = "gpt-5-mini"
 requires_bin = "true"
@@ -367,7 +367,7 @@ service_model_id = "gpt-5-mini"
 
 [tool.live-openrouter]
 tool = "exactl"
-config = "configs/openrouter-no-delegate.toml"
+config = "tests/configs/openrouter-no-delegate.toml"
 provider = "openrouter"
 model = "openai/gpt-4o-mini"
 requires_bin = "true"
@@ -383,7 +383,7 @@ service_model_id = "openai/gpt-4o-mini"
 # self-hosted profile accepts because the path only has to end with /chat/completions.
 [tool.live-opencode-go]
 tool = "exactl"
-config = "configs/opencode-go-chat.toml"
+config = "tests/configs/opencode-go-chat.toml"
 provider = "openai-chat"
 model = "deepseek-v4.1-flash"
 requires_bin = "true"
@@ -418,7 +418,7 @@ user-agent = "exaix-live-tests/1.0"
 # has its own EXA_MATRIX opt-in. A missing server or model fails the test with its named cause.
 [tool.live-ollama-chat]
 tool = "exactl"
-config = "configs/ollama-chat.toml"
+config = "tests/configs/ollama-chat.toml"
 provider = "openai-chat"
 model = "llama3.1:8b"
 requires_bin = "true"
@@ -434,7 +434,7 @@ model_provider = "meta"
 # The llama.cpp provider has no catalog service yet, so this row carries predicates only. No scenario selects it.
 [tool.live-llamacpp]
 tool = "exactl"
-config = "configs/ollama-chat.toml"
+config = "tests/configs/ollama-chat.toml"
 provider = "llamacpp"
 requires_bin = "true"
 requires_optin = "EXA_MATRIX_LLAMACPP"
@@ -442,7 +442,7 @@ requires_optin = "EXA_MATRIX_LLAMACPP"
 # The Codex CLI is a subscription provider: it needs the binary on PATH and a logged-in session, and it bills no key.
 [tool.live-codex-cli]
 tool = "exactl"
-config = "configs/codex-cli-react.toml"
+config = "tests/configs/codex-cli-react.toml"
 provider = "codex-cli"
 model = "gpt-5.6-terra"
 requires_bin = "codex"
@@ -458,14 +458,14 @@ service_model_id = "gpt-5.6-terra"
 # logged-in session, and a remote service has its own EXA_MATRIX opt-in.
 [tool.live-mcp-deepwiki]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "mcp"
 requires_bin = "true"
 requires_optin = "EXA_MATRIX_MCP_DEEPWIKI"
 
 [tool.live-mcp-github]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "mcp"
 requires_bin = "true"
 requires_key = "GITHUB_TOKEN"
@@ -473,42 +473,42 @@ requires_optin = "EXA_MATRIX_MCP_GITHUB"
 
 [tool.live-models-dev]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "models.dev"
 requires_bin = "true"
 requires_optin = "EXA_MATRIX_MODELS_DEV"
 
 [tool.live-calibration-sandbox]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "claude-cli"
 requires_bin = "claude"
 requires_optin = "EXA_MATRIX_CALIBRATION_SANDBOX"
 
 [tool.live-delegation-claude-code]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "claude-cli"
 requires_bin = "claude"
 requires_optin = "EXA_MATRIX_DELEGATION"
 
 [tool.live-delegation-opencode]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "opencode-cli"
 requires_bin = "opencode"
 requires_optin = "EXA_MATRIX_DELEGATION"
 
 [tool.live-session-delegate-cycle]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "opencode-cli"
 requires_bin = "opencode"
 requires_optin = "EXA_MATRIX_SESSION_DELEGATE_CYCLE"
 
 [tool.live-learning-effectiveness]
 tool = "exactl"
-config = "configs/agent-flows-mock-pattern.toml"
+config = "tests/configs/agent-flows-mock-pattern.toml"
 provider = "claude-cli"
 requires_bin = "claude"
 requires_optin = "EXA_MATRIX_LEARNING_EFFECTIVENESS"
@@ -516,7 +516,7 @@ requires_optin = "EXA_MATRIX_LEARNING_EFFECTIVENESS"
 # The Ollama provider with its own server, used by the live JSON plan test. It shares the EXA_MATRIX_OLLAMA opt-in with ollama-chat.
 [tool.live-ollama]
 tool = "exactl"
-config = "configs/ollama-chat.toml"
+config = "tests/configs/ollama-chat.toml"
 provider = "ollama"
 requires_bin = "true"
 requires_optin = "EXA_MATRIX_OLLAMA"

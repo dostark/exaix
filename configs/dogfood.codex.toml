@@ -6,7 +6,7 @@ log_level = "info"
 # required whenever [dogfood.context] is enabled below, independent of any outbound API
 # host. The shipped codex-cli provider itself is still subprocess-based (no direct Deno
 # fetch) — outbound allow_net otherwise stays empty, matching
-# configs/codex-cli-react.toml's posture (Phase 167 Step 3).
+# tests/configs/codex-cli-react.toml's posture (Phase 167 Step 3).
 allow_net = ["127.0.0.1"]
 
 # Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).

@@ -132,7 +132,7 @@ function expandBareClaudeCell(): { args: string[] } {
     cells: [{
       tool: "claude-code",
       provider: "anthropic",
-      config: "configs/claude-cli-delegate-all.toml",
+      config: "tests/configs/claude-cli-delegate-all.toml",
       requires_bin: "claude",
       harness: "bare",
     }],
@@ -316,7 +316,7 @@ function expandBareOpencodeGoCell(): { command: string; args: string[] } {
     cells: [{
       tool: "opencode-go",
       provider: "opencode-cli",
-      config: "configs/opencode-go-delegate-all.toml",
+      config: "tests/configs/opencode-go-delegate-all.toml",
       requires_bin: "opencode",
       harness: "bare",
     }],

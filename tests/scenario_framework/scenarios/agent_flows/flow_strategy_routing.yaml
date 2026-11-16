@@ -15,7 +15,7 @@ matrix:
   cells:
     - tool: "exactl"
       provider: "mock"
-      config: "configs/agent-flows-mock-pattern.toml"
+      config: "tests/configs/agent-flows-mock-pattern.toml"
       requires_bin: "true"
 steps:
   - id: "start-daemon"
