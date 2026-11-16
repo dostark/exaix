@@ -33,6 +33,7 @@ import {
   type IRunnableStepGroup,
   MATRIX_START_DAEMON_STEP_ID,
   overlayRequestBindings,
+  requireRunnableGroup,
   resolveCellConfig,
   resolveRunnableSteps,
   stepsOnlySkippedCellsOwn,
@@ -474,7 +475,7 @@ export async function runSyntheticScenario(
       selectedCell: options.selectedCell,
     },
   );
-  const firstRunnable = runnableGroups.find((g) => g.status === "run");
+  const firstRunnable = requireRunnableGroup(loadedScenario.scenario.id, runnableGroups);
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
   // Steps only a skipped cell owns are absent from this run by design.
   // The manifest's unexecuted-step penalty therefore leaves them out of the score.

@@ -28,6 +28,8 @@ import {
   MATRIX_START_DAEMON_STEP_ID,
   MatrixSchema,
   overlayRequestBindings,
+  requireRunnableGroup,
+  resolveRunnableSteps,
   stepsOnlySkippedCellsOwn,
 } from "../../runner/matrix_expander.ts";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
@@ -766,4 +768,29 @@ Deno.test("[step8] a step only a skipped cell owns stays out of the suite-score 
   assertEquals([...excluded], ["validate-live-plan"]);
   assertEquals(excluded.has(MATRIX_START_DAEMON_STEP_ID), false, "a shared step must stay scored");
   assertEquals(excluded.has("submit-request"), false, "the runnable cell's own step must stay scored");
+});
+
+Deno.test("[scenario_matrix] requireRunnableGroup refuses a matrix whose cells all skip and names every reason", () => {
+  const groups = resolveRunnableSteps({ steps: [startDaemonStep()], matrix: FOUR_CELL_MATRIX }, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+    selectedCell: "no-such-cell",
+  });
+  const error = assertThrows(() => requireRunnableGroup("demo-scenario", groups), Error);
+  assertStringIncludes(error.message, "demo-scenario");
+  assertStringIncludes(error.message, "--cell no-such-cell");
+  for (const group of groups) assertStringIncludes(error.message, group.cell!.tool);
+});
+
+Deno.test("[scenario_matrix] requireRunnableGroup returns the first group that runs", () => {
+  const groups = resolveRunnableSteps({ steps: [startDaemonStep()], matrix: FOUR_CELL_MATRIX }, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+  });
+  assertEquals(requireRunnableGroup("demo-scenario", groups), groups.find((group) => group.status === "run"));
+});
+
+Deno.test("[scenario_matrix] requireRunnableGroup lets a scenario without a matrix run all its steps", () => {
+  const groups = resolveRunnableSteps({ steps: [otherStep()], matrix: undefined }, { env: {}, binOnPath: () => true });
+  assertEquals(requireRunnableGroup("demo-scenario", groups)?.steps.length, 1);
 });

@@ -555,6 +555,17 @@ export function dockerProbeSkipReason(
   return binOnPath(DOCKER_BIN) ? null : `binary '${DOCKER_BIN}' not on PATH`;
 }
 
+/** The first group that runs. A matrix whose cells all skip throws, because running its steps with no cell would use the base config. A scenario without a matrix keeps its single group. */
+export function requireRunnableGroup(
+  scenarioId: string,
+  groups: readonly IRunnableStepGroup[],
+): IRunnableStepGroup | undefined {
+  const runnable = groups.find((group) => group.status === MatrixCellStatus.RUN);
+  if (runnable || groups.length === 0) return runnable;
+  const reasons = groups.map((group) => `${group.cell?.tool ?? "cell"}: ${group.skipReason ?? "skipped"}`);
+  throw new Error(`No matrix cell of scenario ${scenarioId} can run. ${reasons.join("; ")}`);
+}
+
 /** The runner integration seam: turns a loaded scenario into the runnable groups the runner
  *  executes. A scenario with a `matrix:` block is expanded via `expandMatrix()`; a matrix-less
  *  scenario yields a single pass-through group carrying its own steps unchanged. */
