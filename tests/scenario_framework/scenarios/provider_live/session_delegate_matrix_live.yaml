@@ -126,14 +126,24 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  # --- Codex-only: trace-scoped audit-chain proof ---
-  # The shared assert-reconciled-clean check below uses the journal-event-exists criterion, which has no trace_scoped support. These four steps assert the same four-event session.delegate.* audit chain scoped to this run's request trace,
+  # The delegate writes return.json before the coordinator journals the briefed, returned and reconciled events, so wait for the reconciled event first.
+  - id: "wait-for-codex-reconciled"
+    type: "exactl"
+    cells: ["codex"]
+    command: "log"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
+
+  # --- Codex-only: delegation-scoped audit-chain proof ---
+  # The shared assert-reconciled-clean check below uses the journal-event-exists criterion, which has no trace_scoped support. These four steps assert the same four-event session.delegate.* audit chain scoped to the delegation trace that this run's request launched,
   # so a leftover row from an earlier scenario in a shared sandbox can never satisfy them.
   - id: "assert-codex-briefed"
     type: "journal-assert"
     cells: ["codex"]
     action_type: "session.delegate.briefed"
-    trace_scoped: true
+    delegation_scoped: true
     output_criteria:
       - id: "codex-briefed-recorded"
         kind: "command-exit-code"
@@ -144,7 +154,7 @@ steps:
     type: "journal-assert"
     cells: ["codex"]
     action_type: "session.delegate.launched"
-    trace_scoped: true
+    delegation_scoped: true
     payload_equals:
       - path: "tool"
         value: "codex"
@@ -158,7 +168,7 @@ steps:
     type: "journal-assert"
     cells: ["codex"]
     action_type: "session.delegate.returned"
-    trace_scoped: true
+    delegation_scoped: true
     payload_equals:
       - path: "accepted"
         value: true
@@ -172,7 +182,7 @@ steps:
     type: "journal-assert"
     cells: ["codex"]
     action_type: "session.delegate.reconciled"
-    trace_scoped: true
+    delegation_scoped: true
     payload_not_contains: ["rejected"]
     output_criteria:
       - id: "codex-reconciled-accepted"

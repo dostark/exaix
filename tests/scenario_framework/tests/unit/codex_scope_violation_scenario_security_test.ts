@@ -19,7 +19,7 @@ Deno.test("[codex_scope_violation_live][security] asserts the fail-closed reconc
   const step = scenario.steps.find((s) => s.id === "assert-fail-closed-reconciled");
   assert(step, "assert-fail-closed-reconciled step must exist");
   assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
-  assertEquals(step!.trace_scoped, true);
+  assertEquals(step!.delegation_scoped, true);
   assertEquals(step!.action_type, DomainEventType.SessionDelegateReconciled);
   assertEquals(step!.action_type, "session.delegate.reconciled");
   assert(
@@ -33,7 +33,7 @@ Deno.test("[codex_scope_violation_live][security] asserts session.delegate.scope
   const step = scenario.steps.find((s) => s.id === "assert-no-scope-violation");
   assert(step, "assert-no-scope-violation step must exist");
   assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
-  assertEquals(step!.trace_scoped, true);
+  assertEquals(step!.delegation_scoped, true);
   assertEquals(step!.action_type, DomainEventType.SessionDelegateScopeViolation);
   assertEquals(step!.action_type, "session.delegate.scope_violation");
   assertEquals(step!.expect_count, 0);

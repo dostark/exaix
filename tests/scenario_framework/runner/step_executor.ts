@@ -750,6 +750,27 @@ export function resolveCurrentTrace(
   }
 }
 
+const NO_DELEGATION_MESSAGE = "no delegation was launched by the current request";
+
+/** The delegation traces that the request trace launched. A delegation runs under its own trace, and its launched event names the request trace as `parent_trace_id`. */
+function resolveDelegationTraces(workspaceRoot: string, requestTrace: string): string[] {
+  const dbPath = pathBuilders.runtimePath(workspaceRoot, "journal.db");
+  let db: Database | undefined;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    const rows = db
+      .prepare(
+        "SELECT DISTINCT trace_id FROM activity WHERE action_type = 'session.delegate.launched' AND json_extract(payload, '$.parent_trace_id') = ?",
+      )
+      .all<{ trace_id: string }>(requestTrace);
+    return rows.map((row) => row.trace_id);
+  } catch {
+    return [];
+  } finally {
+    db?.close();
+  }
+}
+
 /** A `patch-blueprint` step: add capabilities to a sandboxed blueprint's frontmatter. */
 async function executePatchBlueprintStep(
   options: IExecuteScenarioStepOptions,
@@ -975,9 +996,13 @@ function executeJournalAssertStep(
   startedAtEpochMs: number,
 ): IScenarioStepExecutionResult {
   const workspaceRoot = options.cwd || Deno.cwd();
-  const traceId = options.step.trace_scoped
+  const requestTrace = options.step.trace_scoped || options.step.delegation_scoped
     ? resolveCurrentTrace(workspaceRoot, options.traceBaselineRowid ?? options.journalBaselineRowid)
     : undefined;
+  const traceId = options.step.trace_scoped ? requestTrace : undefined;
+  const delegationTraceIds = options.step.delegation_scoped && requestTrace
+    ? resolveDelegationTraces(workspaceRoot, requestTrace)
+    : [];
 
   const where: string[] = [];
   const params: Array<string | number | boolean> = [];
@@ -996,6 +1021,10 @@ function executeJournalAssertStep(
   if (traceId) {
     where.push("trace_id = ?");
     params.push(traceId);
+  }
+  if (options.step.delegation_scoped && delegationTraceIds.length > 0) {
+    where.push(`trace_id IN (${delegationTraceIds.map(() => "?").join(", ")})`);
+    params.push(...delegationTraceIds);
   }
   for (const entry of options.step.payload_equals ?? []) {
     where.push(`json_extract(payload, '$.${safeJsonPath(entry.path)}') = ?`);
@@ -1018,6 +1047,9 @@ function executeJournalAssertStep(
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
+    if (options.step.delegation_scoped && delegationTraceIds.length === 0) {
+      throw new Error(NO_DELEGATION_MESSAGE);
+    }
     if (options.step.sums && Object.keys(options.step.sums).length) {
       const columns = Object.entries(options.step.sums)
         .map(([column, path]) =>

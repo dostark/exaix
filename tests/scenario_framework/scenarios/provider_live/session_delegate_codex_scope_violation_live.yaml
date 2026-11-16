@@ -108,7 +108,7 @@ steps:
   - id: "assert-fail-closed-reconciled"
     type: "journal-assert"
     action_type: "session.delegate.reconciled"
-    trace_scoped: true
+    delegation_scoped: true
     payload_equals:
       - path: "decision"
         value: "changes_made"
@@ -123,7 +123,7 @@ steps:
   - id: "assert-no-scope-violation"
     type: "journal-assert"
     action_type: "session.delegate.scope_violation"
-    trace_scoped: true
+    delegation_scoped: true
     expect_count: 0
     output_criteria:
       - id: "no-scope-violation-event"

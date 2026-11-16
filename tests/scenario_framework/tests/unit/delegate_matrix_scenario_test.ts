@@ -197,7 +197,7 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 5 cell-run
   }
 });
 
-Deno.test("[delegate_matrix] the codex-only trace-scoped steps assert the exact briefed/launched(tool=codex)/returned(accepted)/reconciled(accepted) chain, scoped to the codex cell only", async () => {
+Deno.test("[delegate_matrix] the codex-only delegation-scoped steps assert the exact briefed/launched(tool=codex)/returned(accepted)/reconciled(accepted) chain, scoped to the codex cell only", async () => {
   const scenario = await parseMatrixScenario();
   const byId = new Map(scenario.steps.map((s) => [s.id, s]));
 
@@ -210,7 +210,7 @@ Deno.test("[delegate_matrix] the codex-only trace-scoped steps assert the exact 
   for (const step of [briefed, launched, returned, reconciled]) {
     assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
     assertEquals(step!.cells, ["codex"], `${step!.id} must be scoped to the codex cell only`);
-    assertEquals(step!.trace_scoped, true, `${step!.id} must be trace_scoped`);
+    assertEquals(step!.delegation_scoped, true, `${step!.id} must be delegation_scoped`);
   }
 
   assertEquals(briefed!.action_type, "session.delegate.briefed");

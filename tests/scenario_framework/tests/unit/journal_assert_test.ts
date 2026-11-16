@@ -12,7 +12,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertObjectMatch } from "@std/assert";
+import { assertEquals, assertObjectMatch, assertStringIncludes } from "@std/assert";
 import { Database } from "@db/sqlite";
 import { executeScenarioStep, substituteRuntimeVars } from "../../runner/step_executor.ts";
 import { ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -35,6 +35,7 @@ type JournalAssertConfig = {
   action_types?: string[];
   action_type_prefix?: string;
   trace_scoped?: boolean;
+  delegation_scoped?: boolean;
   payload_equals?: Array<{ path: string; value: string | number | boolean }>;
   payload_contains?: string[];
   payload_not_contains?: string[];
@@ -118,6 +119,60 @@ Deno.test("[journal_assert] trace_scoped resolves to the FIRST request.created (
       cwd: ws,
     });
     assertEquals(result.exitCode, 1, "$TRACE_ID must resolve to the first request.created (trace-1)");
+  });
+});
+
+// delegation_scoped
+
+const DELEGATION_ROWS: Array<[string, string, string]> = [
+  ["trace-req", "request.created", "{}"],
+  ["trace-del", "session.delegate.launched", '{"parent_trace_id":"trace-req"}'],
+  ["trace-del", "session.delegate.briefed", '{"parent_trace_id":"trace-req"}'],
+  ["trace-del", "session.delegate.returned", '{"accepted":true}'],
+  ["trace-other", "session.delegate.scope_violation", "{}"],
+];
+
+Deno.test("[journal_assert] delegation_scoped reads the delegation trace that the current request launched", async () => {
+  await withJournal(DELEGATION_ROWS, async (ws) => {
+    const returned = await executeScenarioStep({
+      step: journalAssertStep({ action_type: "session.delegate.returned", delegation_scoped: true, expect_count: 1 }),
+      cwd: ws,
+    });
+    assertEquals(returned.exitCode, 0, `the returned event of the delegation must match, got: ${returned.stderr}`);
+    const requestScoped = await executeScenarioStep({
+      step: journalAssertStep({ action_type: "session.delegate.returned", trace_scoped: true, expect_count: 1 }),
+      cwd: ws,
+    });
+    assertEquals(requestScoped.exitCode, 1, "trace_scoped alone cannot see the returned event of the child trace");
+  });
+});
+
+Deno.test("[journal_assert] delegation_scoped ignores the rows of another delegation trace", async () => {
+  await withJournal(DELEGATION_ROWS, async (ws) => {
+    const result = await executeScenarioStep({
+      step: journalAssertStep({
+        action_type: "session.delegate.scope_violation",
+        delegation_scoped: true,
+        expect_count: 0,
+      }),
+      cwd: ws,
+    });
+    assertEquals(result.exitCode, 0, `a violation of another trace must not count, got: ${result.stderr}`);
+  });
+});
+
+Deno.test("[journal_assert] delegation_scoped fails an absence check when the request launched no delegation", async () => {
+  await withJournal(DEFAULT_ROWS, async (ws) => {
+    const result = await executeScenarioStep({
+      step: journalAssertStep({
+        action_type: "session.delegate.scope_violation",
+        delegation_scoped: true,
+        expect_count: 0,
+      }),
+      cwd: ws,
+    });
+    assertEquals(result.exitCode, 1, "an absence check must not pass when no delegation exists");
+    assertStringIncludes(result.stderr, "no delegation");
   });
 });
 

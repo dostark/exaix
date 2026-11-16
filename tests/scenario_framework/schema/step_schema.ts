@@ -465,6 +465,8 @@ export const ScenarioStepSchema = z.object({
   action_types: z.array(NON_EMPTY_STRING).min(1).optional(),
   action_type_prefix: NON_EMPTY_STRING.optional(),
   trace_scoped: z.boolean().optional(),
+  // journal-assert: scopes to the delegation traces that the current request launched. It fails when none exist.
+  delegation_scoped: z.boolean().optional(),
   payload_equals: z.array(
     z.object({
       path: NON_EMPTY_STRING,
