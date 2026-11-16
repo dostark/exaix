@@ -47,7 +47,7 @@ import {
   EvaluationResultSchema,
   resolveCriterionPreset,
 } from "@exaix/core/evaluation";
-import { type Config, DEFAULT_MODEL_PRESETS, EFFORT_AUTO, type IResolvedBinding } from "@exaix/schemas";
+import { type Config, DEFAULT_MODEL_SIZE_PROFILES, EFFORT_AUTO, type IResolvedBinding } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { getEvaluationResultJsonSchema, getJudgeScoreJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
@@ -2280,7 +2280,7 @@ export async function callLlmEndpoint(
   };
   const eventLogger = createMockEventLogger();
   const config = createMockConfig(resolveEvalLlmJudgeConfigRoot(), {
-    model_presets: DEFAULT_MODEL_PRESETS,
+    model_sizes: DEFAULT_MODEL_SIZE_PROFILES,
   });
 
   const resolver = new ModelResolver(

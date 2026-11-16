@@ -50,7 +50,7 @@ The service that accepts a `ModelIntent` and returns a concrete `{provider, mode
 
 ### ModelSize
 
-The capability tier labels `S`, `M`, `L`, and `XL`, each mapped to a preset profile in `exa.config.toml` (`[model_presets]`) that specifies `min_context_window`, `max_cost_per_mtok`, and `supports_thinking`. S is for simple, cheap tasks (e.g., formatting); XL is for complex work requiring large context and deep reasoning.
+The capability tier labels `S`, `M`, `L`, and `XL`, each mapped to a size profile in `exa.config.toml` (`[model_sizes]`) that specifies `min_context_window`, `max_cost_per_mtok`, and `supports_thinking`. S is for simple, cheap tasks (e.g., formatting); XL is for complex work requiring large context and deep reasoning.
 
 ### Capability Tier
 
@@ -74,7 +74,7 @@ The catalog of known provider and model pairs with their context windows, capabi
 
 ### Model Candidates
 
-A curated, ordered list of preferred providers for one **ModelSize**, set in `model_presets.<SIZE>.candidates`. The ModelResolver tries the list before any scoring, and the first healthy provider wins. `exactl model candidates` edits it.
+A curated, ordered list of preferred providers for one **ModelSize**, set in `model_sizes.<SIZE>.candidates`. The ModelResolver tries the list before any scoring, and the first healthy provider wins. `exactl model candidates` edits it.
 
 ### Routing Policy
 

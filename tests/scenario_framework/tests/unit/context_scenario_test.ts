@@ -113,7 +113,7 @@ Deno.test("[context_scenario] both Claude cells route planning and review throug
     const config = parseToml(await Deno.readTextFile(join(REPOSITORY_ROOT, configPath))) as {
       ai?: { provider?: string; model?: string };
       models?: { default?: { provider?: string; model?: string } };
-      model_presets?: { L?: { candidates?: string[] } };
+      model_sizes?: { L?: { candidates?: string[] } };
       session_delegate?: { model?: string };
     };
     assertEquals(config.ai?.provider, "claude-cli", `${configPath} [ai] must not call the Anthropic API`);
@@ -129,7 +129,7 @@ Deno.test("[context_scenario] both Claude cells route planning and review throug
       `${configPath} default review model must use Claude Code`,
     );
     assertEquals(
-      config.model_presets?.L?.candidates,
+      config.model_sizes?.L?.candidates,
       ["claude-cli"],
       `${configPath} size-L quality-judge turns must not fall back to another provider`,
     );

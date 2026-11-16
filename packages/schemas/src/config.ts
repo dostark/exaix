@@ -269,8 +269,11 @@ export const ModelRegistryConfigSchema = z.object({
   adapter_base_urls: z.record(z.string(), z.string()).default({}),
 }).optional();
 
-/** ModelPreset — capability profile for model_size-based selection. */
-const ModelPresetSchema = z.object({
+const RETIRED_MODEL_PRESETS_MESSAGE =
+  "model_presets was renamed to model_sizes: rename the section in your configuration";
+
+/** ModelSizeProfile — capability profile for model_size-based selection. */
+const ModelSizeProfileSchema = z.object({
   max_cost_per_mtok: z.number().min(0),
   min_context_window: z.number().int().min(1),
   supports_thinking: z.boolean(),
@@ -278,9 +281,9 @@ const ModelPresetSchema = z.object({
   characteristics: z.record(z.string(), z.array(z.string())).optional(),
 });
 
-export type ModelPreset = z.infer<typeof ModelPresetSchema>;
+export type ModelSizeProfile = z.infer<typeof ModelSizeProfileSchema>;
 
-export const DEFAULT_MODEL_PRESETS: Record<string, ModelPreset> = {
+export const DEFAULT_MODEL_SIZE_PROFILES: Record<string, ModelSizeProfile> = {
   S: { max_cost_per_mtok: 0.5, min_context_window: 8_192, supports_thinking: false },
   M: { max_cost_per_mtok: 3, min_context_window: 32_000, supports_thinking: true },
   L: { max_cost_per_mtok: 15, min_context_window: 128_000, supports_thinking: true },
@@ -546,8 +549,10 @@ const ConfigObjectSchema = z.object({
       path: [MODEL_CONFIG_FIELD],
     }),
   ).optional(),
-  /** Capability presets keyed by model_size (S/M/L/XL). */
-  model_presets: z.record(z.string(), ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
+  /** Capability profiles keyed by model size (S/M/L/XL). */
+  model_sizes: z.record(z.string(), ModelSizeProfileSchema).default(DEFAULT_MODEL_SIZE_PROFILES),
+  /** The retired name of model_sizes. A config that still holds it fails, so curated candidates are never ignored. */
+  model_presets: z.never({ error: RETIRED_MODEL_PRESETS_MESSAGE }).optional(),
   /** AI provider endpoints configuration */
   ai_endpoints: z.record(z.string(), z.string()).optional().default({}),
   /** AI retry configuration */

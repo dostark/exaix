@@ -303,7 +303,7 @@ binary happens to be on PATH first.
 **Direct-API matrix cells** (several cells sharing `tool: exactl`, one per HTTP provider) need three things
 the CLI-delegate cells do not:
 
-- Each cell's config pins `[model_presets.M]` and `[model_presets.L]` with `candidates = ["<provider>"]` and
+- Each cell's config pins `[model_sizes.M]` and `[model_sizes.L]` with `candidates = ["<provider>"]` and
   a `max_cost_per_mtok` value (the config schema requires it, and without the presets the resolver rejects
   the model id).
 - `--cell exactl` matches every cell with that `tool`, and each cell is gated only by its `requires_key`, so

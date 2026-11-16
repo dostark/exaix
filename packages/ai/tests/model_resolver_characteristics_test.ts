@@ -16,7 +16,7 @@ import { createStubCostTracker, createStubHealthChecker } from "./helpers/servic
 import { ModelResolver } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
-import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
+import { DEFAULT_MODEL_SIZE_PROFILES } from "@exaix/schemas";
 import { OPENROUTER_PROVIDER_METADATA } from "@exaix/ai-openrouter";
 
 function registerProvider(
@@ -96,8 +96,8 @@ Deno.test("cheapest ranks per-model prices on the Solo registry preset path", as
     });
     const health = createStubHealthChecker();
     const config = createTestConfig();
-    config.model_presets = {
-      ...DEFAULT_MODEL_PRESETS,
+    config.model_sizes = {
+      ...DEFAULT_MODEL_SIZE_PROFILES,
       M: { min_context_window: 8192, max_cost_per_mtok: 100, supports_thinking: false },
     };
     const resolver = new ModelResolver(
@@ -120,8 +120,8 @@ Deno.test("Solo registry treats output-only prices as unknown for cheapest input
     registerProvider("competitor", { modelInfo: () => Promise.resolve({ inputPerMtok: 1, contextWindow: 262_144 }) });
     const health = createStubHealthChecker();
     const config = createTestConfig();
-    config.model_presets = {
-      ...DEFAULT_MODEL_PRESETS,
+    config.model_sizes = {
+      ...DEFAULT_MODEL_SIZE_PROFILES,
       M: { min_context_window: 8192, max_cost_per_mtok: 100, supports_thinking: false },
     };
     const resolver = new ModelResolver(

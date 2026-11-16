@@ -244,7 +244,7 @@ model = "llama3.2"
 curate a **preferred list** per size so your favourite providers win before any scoring:
 
 ```toml
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 3
 min_context_window = 32000
 supports_thinking = true
@@ -252,7 +252,7 @@ supports_thinking = true
 candidates = ["anthropic", "ollama"]
 
 # Optional intra-list reorder hints for a given --characteristic.
-[model_presets.M.characteristics]
+[model_sizes.M.characteristics]
 cheapest = ["ollama"]
 ```
 
@@ -1598,7 +1598,7 @@ exactl request create "Audit dependencies" --model-size XL --preferred-provider 
 1. An explicit `provider:model` (e.g. `--model anthropic:claude-opus-4.5`) — passed through as-is
    (`explicit_override`). Solo does not validate the model name against a catalog, so a typo
    surfaces as a provider error at call time.
-1. A **curated list** for the size (`model_presets.<SIZE>.candidates`) — the first healthy,
+1. A **curated list** for the size (`model_sizes.<SIZE>.candidates`) — the first healthy,
    registered provider wins (`preferred_list`).
 1. Capability/cost **scoring** across registered providers (`preset_default` /
    `characteristics_scored`), with local/free providers exempt from budget filtering.
@@ -1623,7 +1623,7 @@ exactl log list --filter action_type=model.resolved -o json
 ##### `exactl model candidates` & `exactl model list` — Solo model curation (the curated model registry)
 
 Curate the per-size preferred lists and inspect the Solo model floor without editing TOML by hand.
-Curated lists are written back to `exa.config.toml` (`model_presets.<SIZE>.candidates`) — the same
+Curated lists are written back to `exa.config.toml` (`model_sizes.<SIZE>.candidates`) — the same
 surface the resolver reads — so there is no separate database.
 
 ```bash
@@ -4808,7 +4808,7 @@ only scored higher or lower:
 Size tiers map to capability profiles in `exa.config.toml`:
 
 ```toml
-[model_presets]
+[model_sizes]
 S = { max_cost_per_mtok = 0.5,  min_context_window = 8192,   supports_thinking = false }
 M = { max_cost_per_mtok = 3,    min_context_window = 32000,  supports_thinking = true  }
 L = { max_cost_per_mtok = 15,   min_context_window = 128000, supports_thinking = true  }
@@ -4818,14 +4818,14 @@ XL = { max_cost_per_mtok = 75,  min_context_window = 200000, supports_thinking =
 Override individual fields per tier:
 
 ```toml
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 5
 ```
 
 Restrict eligible providers for a tier with `candidates`:
 
 ```toml
-[model_presets.L]
+[model_sizes.L]
 candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
 ```
 

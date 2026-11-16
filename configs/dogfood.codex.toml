@@ -66,7 +66,7 @@ harden_permissions = true
 
 # Pin the curated list to codex-cli so a size-M request (request analysis/plan generation)
 # cannot resolve to any other provider via ProviderSelector's scoring path.
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false

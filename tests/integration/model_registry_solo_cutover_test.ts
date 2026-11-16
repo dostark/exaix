@@ -4,7 +4,7 @@
  * @description Phase 134 Step 7 — the Solo cutover proof, in-process and spy-verified.
  *   Drives the same ModelResolver the daemon's agent_executor.resolveModelFromBlueprint
  *   invokes, and asserts the phase's cutover properties without a live daemon:
- *   (1) a curated `model_presets.M.candidates` list resolves with `reason: "preferred_list"`
+ *   (1) a curated `model_sizes.M.candidates` list resolves with `reason: "preferred_list"`
  *       and performs ZERO `getModelPricing` lookups (D7 + local-first: the preferred-list
  *       path never prices);
  *   (2) a local/non-cheapest preset intent resolves with ZERO pricing lookups;
@@ -23,7 +23,7 @@
 import { assertEquals } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { HealthStatus, IModelRegistry } from "@exaix/core/types";
-import type { Config, ModelPreset } from "@exaix/schemas";
+import type { Config, ModelSizeProfile } from "@exaix/schemas";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "../../packages/ai/src/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "../../packages/ai/tests/helpers/service_stubs.ts";
@@ -42,13 +42,13 @@ function registerLocalProvider(name: string): void {
   });
 }
 
-function permissivePreset(candidates?: string[]): ModelPreset {
+function permissivePreset(candidates?: string[]): ModelSizeProfile {
   return {
     max_cost_per_mtok: 999,
     min_context_window: 1,
     supports_thinking: false,
     ...(candidates ? { candidates } : {}),
-  } as ModelPreset;
+  } as ModelSizeProfile;
 }
 
 /** A registry that counts every getModelPricing call so tests can assert zero. */
@@ -92,7 +92,7 @@ function makeResolver(config: Config, registry?: IModelRegistry): ModelResolver 
 function configWithCandidates(candidates: string[]): Config {
   return {
     ...createTestConfig(),
-    model_presets: { S: permissivePreset(), M: permissivePreset(candidates) },
+    model_sizes: { S: permissivePreset(), M: permissivePreset(candidates) },
   } as Config;
 }
 
@@ -136,7 +136,7 @@ Deno.test({
     try {
       const registry = createPricingSpyRegistry();
       const resolver = makeResolver(
-        { ...createTestConfig(), model_presets: { S: permissivePreset(), M: permissivePreset() } } as Config,
+        { ...createTestConfig(), model_sizes: { S: permissivePreset(), M: permissivePreset() } } as Config,
         registry,
       );
       // No `characteristics: ["cheapest"]` → the F1 pricing branch is never entered.

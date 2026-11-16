@@ -37,13 +37,13 @@ max_tool_result_tokens = 2000
 alias = "live-portal"
 target_path = "__DOGFOOD_ROOT__/live-portal"
 
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 1000
 min_context_window = 32000
 supports_thinking = false
 candidates = ["anthropic"]
 
-[model_presets.L]
+[model_sizes.L]
 max_cost_per_mtok = 1000
 min_context_window = 64000
 supports_thinking = false

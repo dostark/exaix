@@ -18,11 +18,11 @@ import type {
   IModelCallOptions,
   IModelIntent,
   IResolvedModel,
-  ModelPreset,
   ModelResolutionReason,
   ModelSize,
+  ModelSizeProfile,
 } from "@exaix/schemas";
-import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
+import { DEFAULT_MODEL_SIZE_PROFILES, getDefaultModels } from "@exaix/schemas";
 import { isRetryable } from "./providers/common.ts";
 import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_selector.ts";
 import type { IProviderMetadata } from "./provider_registry.ts";
@@ -222,7 +222,7 @@ export class ModelResolver {
       matches.push({ provider: bareName, model: defaults[bareName] ?? bareName });
     }
 
-    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const presets = this.config.model_sizes ?? DEFAULT_MODEL_SIZE_PROFILES;
     for (const preset of Object.values(presets)) {
       if (preset.candidates?.includes(bareName)) {
         const defaults = getDefaultModels();
@@ -262,7 +262,7 @@ export class ModelResolver {
 
   private async tryResolveCurated(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model_size) return null;
-    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const presets = this.config.model_sizes ?? DEFAULT_MODEL_SIZE_PROFILES;
     const preset = presets[intent.model_size];
     if (!preset?.candidates?.length) return null;
 
@@ -360,7 +360,7 @@ export class ModelResolver {
       return resolved;
     }
 
-    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const presets = this.config.model_sizes ?? DEFAULT_MODEL_SIZE_PROFILES;
     const resolved = await resolvePresetFromSize(intent.model_size, presets);
     resolved.options = this.buildCallOptions(intent);
     resolved.attempt = 1;
@@ -678,7 +678,7 @@ export class ModelResolver {
   }
 
   private profileFor(size: ModelSize): ICapabilityProfile {
-    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const presets = this.config.model_sizes ?? DEFAULT_MODEL_SIZE_PROFILES;
     const profile = presets[size];
     if (!profile) return {};
     return {
@@ -897,7 +897,7 @@ export class ModelResolver {
  *  constraints (cost, context window, thinking) against registered providers. */
 export async function resolvePresetFromSize(
   size: string,
-  configPresets: Record<string, ModelPreset> = DEFAULT_MODEL_PRESETS,
+  configPresets: Record<string, ModelSizeProfile> = DEFAULT_MODEL_SIZE_PROFILES,
 ): Promise<IResolvedModel> {
   const profile = configPresets[size];
   if (!profile) {

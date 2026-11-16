@@ -15,7 +15,7 @@
  *   Two-route: the stub OpenAI server is made to also serve Anthropic's
  *   `claude-stub-curated` model id, so `model_catalog` gets two rows for one model
  *   name after refresh_on_start. The agent role carries model_size but no explicit model,
- *   so ModelResolver falls through tryResolveCurated (no model_presets.M.candidates
+ *   so ModelResolver falls through tryResolveCurated (no model_sizes.M.candidates
  *   configured) to the scored resolveOnce path, whose model_registry.getModelsByCapability
  *   lookup resolves the winning provider's model to the real catalog entry
  *   "claude-stub-curated" — then `route_policy = "cheapest"` (default) picks a route and
@@ -60,7 +60,7 @@ const PLAN_FAILURE_ACTIONS: readonly string[] = ["plan.execution_failed", "plan.
 const PLAN_TERMINAL_ACTIONS: readonly string[] = ["plan.execution_completed", ...PLAN_FAILURE_ACTIONS];
 
 // NO explicit model, just model_size: M — forces ModelResolver's scored resolveOnce path
-// (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
+// (not tryResolveCurated, which returns null with no model_sizes.M.candidates configured).
 // resolveOnce's getModelsByCapability lookup swaps in the real catalog entry so routesFor finds 2 rows.
 function writeTwoRouteAgentRole(root: string): void {
   const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
@@ -147,7 +147,7 @@ function writeTeamConfig(
   const presetLines = withModelSizePreset
     ? [
       "",
-      "[model_presets.M]",
+      "[model_sizes.M]",
       "max_cost_per_mtok = 100",
       // Excludes a host-local model, such as Ollama's 8192-token llama3.2, from the scored M candidates.
       // The stub routes advertise 100k+ tokens, so both still qualify.

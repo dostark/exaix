@@ -46,7 +46,7 @@ export async function preparePlanningWorkspace(root: string, caseId: string): Pr
     ai: live.ai,
     models: live.models,
     agents: live.agents,
-    model_presets: live.model_presets,
+    model_sizes: live.model_sizes,
     request_analysis: live.request_analysis,
     ...(live.cli_delegate ? { cli_delegate: live.cli_delegate } : {}),
   };

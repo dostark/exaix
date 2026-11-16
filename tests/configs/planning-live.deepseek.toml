@@ -39,13 +39,13 @@ alias = "live-portal"
 target_path = "__DOGFOOD_ROOT__/live-portal"
 
 # Keep model resolution on the configured provider.
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 1000
 min_context_window = 32000
 supports_thinking = false
 candidates = ["openai-chat"]
 
-[model_presets.L]
+[model_sizes.L]
 max_cost_per_mtok = 1000
 min_context_window = 64000
 supports_thinking = false

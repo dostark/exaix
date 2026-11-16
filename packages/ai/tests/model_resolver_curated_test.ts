@@ -8,7 +8,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
-import type { Config, ModelPreset } from "@exaix/schemas";
+import type { Config, ModelSizeProfile } from "@exaix/schemas";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
@@ -47,15 +47,15 @@ function makeResolver(
 
 function presetForSize(
   size: string,
-  overrides: Partial<ModelPreset> = {},
-): ModelPreset {
-  const defaults: Record<string, ModelPreset> = {
+  overrides: Partial<ModelSizeProfile> = {},
+): ModelSizeProfile {
+  const defaults: Record<string, ModelSizeProfile> = {
     S: { max_cost_per_mtok: 0.5, min_context_window: 8_192, supports_thinking: false },
     M: { max_cost_per_mtok: 3, min_context_window: 32_000, supports_thinking: true },
     L: { max_cost_per_mtok: 15, min_context_window: 128_000, supports_thinking: true },
     XL: { max_cost_per_mtok: 75, min_context_window: 200_000, supports_thinking: true },
   };
-  return { ...defaults[size], ...overrides } as ModelPreset;
+  return { ...defaults[size], ...overrides } as ModelSizeProfile;
 }
 
 function configWithCandidates(
@@ -64,7 +64,7 @@ function configWithCandidates(
 ): Config {
   return {
     ...createTestConfig(),
-    model_presets: {
+    model_sizes: {
       S: presetForSize("S", { candidates, characteristics }),
       M: presetForSize("M"),
       L: presetForSize("L"),

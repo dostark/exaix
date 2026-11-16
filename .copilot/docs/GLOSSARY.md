@@ -450,7 +450,7 @@ floor) or `unknown` (no price on record). An `unknown`-priced model is never tre
 ### Curated list
 
 A user-defined, per-size ordered list of preferred providers
-(`model_presets.<SIZE>.candidates`). The resolver tries it before any scoring; the first
+(`model_sizes.<SIZE>.candidates`). The resolver tries it before any scoring; the first
 healthy, registered provider wins and the resolution is journalled with
 `reason: preferred_list`. An optional `characteristics` sub-map reorders the list for a
 given `--characteristic` (e.g. `cheapest`).

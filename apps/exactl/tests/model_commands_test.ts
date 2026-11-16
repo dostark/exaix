@@ -7,7 +7,7 @@
  *   + model list). Covers registry-backed display, curated-list writes with
  *   Solo validation semantics (G10), dedup, clear idempotency, and unconfigured flags.
  *   Curated lists persist to exa.config.toml (TOML write-back) — the surface the
- *   resolver reads (config.model_presets) — honoring the phase's zero-DB constraint.
+ *   resolver reads (config.model_sizes) — honoring the phase's zero-DB constraint.
  *   Phase 134 Step 6 — model list + model candidates curation, provenance/staleness display.
  */
 
@@ -88,7 +88,7 @@ function createPopulatedRegistry(): IModelRegistry {
 
 /** Config shape used for reading back written TOML in assertions. */
 interface IModelPresetsToml {
-  model_presets?: Record<string, { candidates?: string[]; characteristics?: Record<string, string[]> }>;
+  model_sizes?: Record<string, { candidates?: string[]; characteristics?: Record<string, string[]> }>;
 }
 
 /** Run `fn` with a fresh exa.config.toml path; returns a reader for its parsed content. */
@@ -289,13 +289,13 @@ Deno.test("[model-cli] model candidates --size M writes candidates; --list round
     // (it looks each entry up via ProviderRegistry.getProviderMetadata).
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.setCandidates("M", ["anthropic", "ollama"]);
-    assertEquals(read().model_presets?.M?.candidates, ["anthropic", "ollama"]);
+    assertEquals(read().model_sizes?.M?.candidates, ["anthropic", "ollama"]);
 
     const listed = await cmd.listCandidates();
     assertEquals(listed["M"]?.entries.map((e) => e.entry), ["anthropic", "ollama"]);
 
     await cmd.clearCandidates("M");
-    assertEquals(read().model_presets?.M?.candidates, []);
+    assertEquals(read().model_sizes?.M?.candidates, []);
   });
 });
 
@@ -329,7 +329,7 @@ Deno.test("[model-cli] model candidates stores unregistered-provider entries fla
     // unconfigured (Solo pre-curation allowance).
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.setCandidates("M", ["madeup"]);
-    assertEquals(read().model_presets?.M?.candidates, ["madeup"]);
+    assertEquals(read().model_sizes?.M?.candidates, ["madeup"]);
 
     const listed = await cmd.listCandidates();
     const entry = listed["M"]?.entries.find((e) => e.entry === "madeup");
@@ -358,7 +358,7 @@ Deno.test("[model-cli] model candidates --size M writing 3 entries where the 2nd
       "Ambiguous",
     );
     // No partial state: candidates key never written.
-    assertEquals(read().model_presets?.M?.candidates, undefined);
+    assertEquals(read().model_sizes?.M?.candidates, undefined);
   });
 });
 
@@ -367,7 +367,7 @@ Deno.test("[model-cli] --clear on an already-empty candidates list succeeds (ide
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.clearCandidates("M");
     await cmd.clearCandidates("M");
-    assertEquals(read().model_presets?.M?.candidates, []);
+    assertEquals(read().model_sizes?.M?.candidates, []);
   });
 });
 
@@ -375,7 +375,7 @@ Deno.test("[model-cli] --size M writing the same entry twice produces a single e
   await withTomlConfig(async (configPath, read) => {
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.setCandidates("M", ["anthropic", "anthropic"]);
-    assertEquals(read().model_presets?.M?.candidates, ["anthropic"]);
+    assertEquals(read().model_sizes?.M?.candidates, ["anthropic"]);
   });
 });
 
@@ -383,7 +383,7 @@ Deno.test("[model-cli] model candidates --size M --characteristic cheapest write
   await withTomlConfig(async (configPath, read) => {
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     await cmd.setCharacteristic("M", "cheapest", ["ollama"]);
-    assertEquals(read().model_presets?.M?.characteristics?.cheapest, ["ollama"]);
+    assertEquals(read().model_sizes?.M?.characteristics?.cheapest, ["ollama"]);
   });
 });
 

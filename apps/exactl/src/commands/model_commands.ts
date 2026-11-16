@@ -3,7 +3,7 @@
  * @path apps/exactl/src/commands/model_commands.ts
  * @description Solo curation CLI — `exactl model list` (registry-backed
  *   display of the DefaultModelRegistry floor) and `exactl model candidates` (curate the
- *   per-size `model_presets.<SIZE>.candidates` list + `characteristics` sub-map that the
+ *   per-size `model_sizes.<SIZE>.candidates` list + `characteristics` sub-map that the
  *   ModelResolver reads). Curated lists persist via TOML write-back to exa.config.toml —
  *   the surface the resolver reads — so the loop closes with zero DB (Phase 134, Solo).
  * @architectural-layer CLI
@@ -14,7 +14,7 @@
 
 import { parse, stringify } from "@std/toml";
 import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
-import { DEFAULT_MODEL_PRESETS, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
+import { DEFAULT_MODEL_SIZE_PROFILES, ModelRegistryConfigSchema } from "@exaix/schemas/config.ts";
 import { ExaCtlError, ExaCtlExitCode } from "@exaix/cli/errors/exactl_errors.ts";
 
 /** One serving edge of the registry: a model on a service with its price and provenance. */
@@ -80,15 +80,15 @@ interface IPresetMap {
 }
 
 /**
- * Only `model_presets` is typed; other keys survive the parse→mutate→stringify round-trip.
+ * Only `model_sizes` is typed. Other keys survive the parse, mutate and stringify round trip.
  */
 interface IConfigToml {
-  model_presets?: IPresetMap;
+  model_sizes?: IPresetMap;
   /** The Team live-registry block; only `enabled` is read by the CLI. */
   model_registry?: { enabled?: boolean };
 }
 
-/** Valid capability tiers for curated lists (mirrors ModelSize / DEFAULT_MODEL_PRESETS keys). */
+/** Valid capability tiers for curated lists (mirrors ModelSize / DEFAULT_MODEL_SIZE_PROFILES keys). */
 const VALID_SIZES: readonly string[] = ["S", "M", "L", "XL"];
 
 /** The configured default of `model_registry.price_staleness_max_days`, read from the schema. */
@@ -251,7 +251,7 @@ export class ModelCommands {
     const cfg = this.readConfig();
     const registered = new Set(await this.registry.getAllProviders());
     const result: Record<string, ISizeCandidates> = {};
-    const presets = cfg.model_presets ?? {};
+    const presets = cfg.model_sizes ?? {};
     for (const [size, preset] of Object.entries(presets)) {
       const candidates = preset.candidates ?? [];
       result[size] = {
@@ -337,13 +337,13 @@ export class ModelCommands {
     await Deno.writeTextFile(path, stringify(raw));
   }
 
-  /** Creates the preset for `size`, seeded from DEFAULT_MODEL_PRESETS when absent, so a
+  /** Creates the preset for `size`, seeded from DEFAULT_MODEL_SIZE_PROFILES when absent, so a
    *  curated write never leaves required fields missing (ConfigService would fail validation). */
   private ensurePreset(cfg: IConfigToml, size: string): IModelPresetToml {
-    cfg.model_presets ??= {};
-    if (!cfg.model_presets[size]) {
-      const base = DEFAULT_MODEL_PRESETS[size];
-      cfg.model_presets[size] = base
+    cfg.model_sizes ??= {};
+    if (!cfg.model_sizes[size]) {
+      const base = DEFAULT_MODEL_SIZE_PROFILES[size];
+      cfg.model_sizes[size] = base
         ? {
           max_cost_per_mtok: base.max_cost_per_mtok,
           min_context_window: base.min_context_window,
@@ -351,7 +351,7 @@ export class ModelCommands {
         }
         : {};
     }
-    return cfg.model_presets[size];
+    return cfg.model_sizes[size];
   }
 
   // Rendering helpers

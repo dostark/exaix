@@ -9,14 +9,14 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
-import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
+import { DEFAULT_MODEL_SIZE_PROFILES, getDefaultModels } from "@exaix/schemas";
 import type { Config } from "@exaix/schemas";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 
-const M_PROFILE = DEFAULT_MODEL_PRESETS.M;
+const M_PROFILE = DEFAULT_MODEL_SIZE_PROFILES.M;
 
 function makeProductionResolver(registry: DefaultModelRegistry): ModelResolver {
   const selector = new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker());

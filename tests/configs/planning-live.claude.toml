@@ -31,13 +31,13 @@ max_tool_result_tokens = 2000
 [[portals]]
 alias = "live-portal"
 target_path = "__DOGFOOD_ROOT__/live-portal"
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false
 candidates = ["claude-cli"]
 
-[model_presets.L]
+[model_sizes.L]
 max_cost_per_mtok = 0
 min_context_window = 64000
 supports_thinking = false

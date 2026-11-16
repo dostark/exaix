@@ -5,7 +5,7 @@
  *   `ModelCommands.setCandidates` writes a curated provider list to exa.config.toml,
  *   `ConfigService` loads that TOML, and `ModelResolver` honours the list, emitting
  *   `reason: "preferred_list"`. Proves the CLI write surface and the resolver read
- *   surface are the same (config.model_presets) with zero DB.
+ *   surface are the same (config.model_sizes) with zero DB.
  * @architectural-layer Integration
  * @related-files [apps/exactl/src/commands/model_commands.ts, packages/ai/src/model_resolver.ts, packages/core/src/config/service.ts]
  * @phase-134 Step 6 integration — full Solo curation loop reaching preferred_list.
@@ -51,7 +51,7 @@ Deno.test("[integration] a list curated via config model is honoured by the next
 
     // 2. Load the freshly written TOML the same way the daemon does.
     const config = new ConfigService(configPath).get();
-    assertEquals(config.model_presets?.M?.candidates, ["beta", "gamma"]);
+    assertEquals(config.model_sizes?.M?.candidates, ["beta", "gamma"]);
 
     // 3. Resolve a size-M intent — the curated list must win with preferred_list.
     const logger = createMockEventLogger();

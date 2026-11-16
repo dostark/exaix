@@ -36,7 +36,7 @@ enabled = true
 [request_analysis]
 enabled = true
 
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false

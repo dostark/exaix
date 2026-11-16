@@ -7,7 +7,7 @@
  * @dependencies [@std/assert, @exaix/schemas]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { ConfigSchema } from "../src/config.ts";
 
 const MINIMAL_CONFIG = {
@@ -21,7 +21,7 @@ const MINIMAL_CONFIG = {
 
 const FULL_PRESETS_CONFIG = {
   ...MINIMAL_CONFIG,
-  model_presets: {
+  model_sizes: {
     S: { max_cost_per_mtok: 0.5, min_context_window: 8192, supports_thinking: false },
     M: { max_cost_per_mtok: 3, min_context_window: 32000, supports_thinking: true },
     L: { max_cost_per_mtok: 15, min_context_window: 128000, supports_thinking: true },
@@ -29,32 +29,32 @@ const FULL_PRESETS_CONFIG = {
   },
 };
 
-Deno.test("[step132.2] model_presets.S parses as a capability profile", () => {
+Deno.test("[step132.2] model_sizes.S parses as a capability profile", () => {
   const config = ConfigSchema.parse(FULL_PRESETS_CONFIG);
 
-  assertEquals(config.model_presets!.S.max_cost_per_mtok, 0.5);
-  assertEquals(config.model_presets!.M.supports_thinking, true);
-  assertEquals(config.model_presets!.L.min_context_window, 128000);
-  assertEquals(config.model_presets!.XL.max_cost_per_mtok, 75);
+  assertEquals(config.model_sizes!.S.max_cost_per_mtok, 0.5);
+  assertEquals(config.model_sizes!.M.supports_thinking, true);
+  assertEquals(config.model_sizes!.L.min_context_window, 128000);
+  assertEquals(config.model_sizes!.XL.max_cost_per_mtok, 75);
 });
 
-Deno.test("[step132.2] model_presets accepts partial override (only cost changed)", () => {
+Deno.test("[step132.2] model_sizes accepts partial override (only cost changed)", () => {
   const config = ConfigSchema.parse({
     ...MINIMAL_CONFIG,
-    model_presets: {
+    model_sizes: {
       M: { max_cost_per_mtok: 5, min_context_window: 32000, supports_thinking: true },
     },
   });
 
-  assertEquals(config.model_presets!.M.max_cost_per_mtok, 5);
-  assertEquals(config.model_presets!.M.min_context_window, 32000);
-  assertEquals(config.model_presets!.M.supports_thinking, true);
+  assertEquals(config.model_sizes!.M.max_cost_per_mtok, 5);
+  assertEquals(config.model_sizes!.M.min_context_window, 32000);
+  assertEquals(config.model_sizes!.M.supports_thinking, true);
 });
 
-Deno.test("[step132.2] model_presets with optional candidates array", () => {
+Deno.test("[step132.2] model_sizes with optional candidates array", () => {
   const config = ConfigSchema.parse({
     ...MINIMAL_CONFIG,
-    model_presets: {
+    model_sizes: {
       L: {
         max_cost_per_mtok: 15,
         min_context_window: 128000,
@@ -64,18 +64,25 @@ Deno.test("[step132.2] model_presets with optional candidates array", () => {
     },
   });
 
-  assertEquals(config.model_presets!.L.candidates!.length, 2);
-  assertEquals(config.model_presets!.L.candidates![0], "anthropic:claude-sonnet");
+  assertEquals(config.model_sizes!.L.candidates!.length, 2);
+  assertEquals(config.model_sizes!.L.candidates![0], "anthropic:claude-sonnet");
 });
 
-Deno.test("[step132.2] model_presets rejects invalid min_context_window (negative)", () => {
+Deno.test("[step132.2] model_sizes rejects invalid min_context_window (negative)", () => {
   assertThrows(
     () =>
       ConfigSchema.parse({
         ...MINIMAL_CONFIG,
-        model_presets: {
+        model_sizes: {
           S: { max_cost_per_mtok: 0.5, min_context_window: -1, supports_thinking: false },
         },
       }),
   );
+});
+
+Deno.test("[model_sizes] the retired model_presets key is rejected and the error names model_sizes", () => {
+  const result = ConfigSchema.safeParse({ ...MINIMAL_CONFIG, model_presets: { M: { max_cost_per_mtok: 3 } } });
+  assertEquals(result.success, false);
+  const message = result.success ? "" : result.error.issues.map((issue) => issue.message).join("; ");
+  assertStringIncludes(message, "model_sizes");
 });

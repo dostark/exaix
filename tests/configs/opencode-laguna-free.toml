@@ -34,7 +34,7 @@ enabled = true
 # Pin the curated list to opencode-cli so a size-M request cannot resolve to any other
 # (metered) provider via ProviderSelector's scoring path — mirrors the Phase 134 Solo
 # curated-list pin used by the other cli-delegate configs, adapted to this provider type.
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false

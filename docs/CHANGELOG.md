@@ -32,6 +32,7 @@
 
 ### Changed
 
+- The `[model_presets]` section of `exa.config.toml` is now `[model_sizes]`, and `model_sizes.<SIZE>.candidates` holds the curated provider list of a size. A configuration that still has `[model_presets]` fails to load with an error that names `model_sizes`, so rename the section and keep its contents.
 - Messages, progress lines and errors go to stderr in every format, so stdout carries only data and `exactl -o json … | jq` is safe.
 - Every failure ends with a code that names its class: 3 for a missing item, 4 for a state conflict, 6 for an invalid result, 124 for a timeout, 2 for a usage error and 1 for the rest (see [Exit Codes](Exaix_User_Guide.md#41e-exit-codes)).
 - `exactl blueprint remove`, `exactl portal remove`, `exactl git worktree prune`, `exactl config rollback`, `exactl config compact`, `exactl memory learning remove`, `exactl request cancel`, `exactl approval cancel` and the `--all` forms of the approve commands ask for confirmation, and without a terminal or with `--no-input` they exit with code 2 until you pass `--yes` (see [Confirmation](Exaix_User_Guide.md#41f-confirmation)).

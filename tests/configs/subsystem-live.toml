@@ -35,7 +35,7 @@ gates = ["code_changes"]
 [portal_knowledge]
 auto_analyze_on_mount = false
 
-[model_presets.M]
+[model_sizes.M]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false

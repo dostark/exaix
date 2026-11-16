@@ -11,7 +11,7 @@ import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { ICostTracker } from "@exaix/core";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import type { HealthStatus, IModelRegistry } from "@exaix/core/types";
-import type { Config, ModelPreset } from "@exaix/schemas";
+import type { Config, ModelSizeProfile } from "@exaix/schemas";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
@@ -90,12 +90,12 @@ function makeResolver(
   );
 }
 
-function presetForSize(size: string): ModelPreset {
-  const defaults: Record<string, ModelPreset> = {
+function presetForSize(size: string): ModelSizeProfile {
+  const defaults: Record<string, ModelSizeProfile> = {
     S: { max_cost_per_mtok: 999, min_context_window: 1, supports_thinking: false },
     M: { max_cost_per_mtok: 999, min_context_window: 1, supports_thinking: false },
   };
-  return defaults[size] as ModelPreset;
+  return defaults[size] as ModelSizeProfile;
 }
 
 function makeEmptyRegistry(): IModelRegistry {
@@ -215,7 +215,7 @@ Deno.test({
     });
     const config = {
       ...createTestConfig(),
-      model_presets: { S: presetForSize("S"), M: presetForSize("M") },
+      model_sizes: { S: presetForSize("S"), M: presetForSize("M") },
     } as Config;
     const resolver = makeResolver(undefined, config, makeEmptyRegistry());
     const result = await resolver.resolve({
@@ -241,7 +241,7 @@ Deno.test({
     });
     const config = {
       ...createTestConfig(),
-      model_presets: { S: presetForSize("S"), M: presetForSize("M") },
+      model_sizes: { S: presetForSize("S"), M: presetForSize("M") },
     } as Config;
     const registry = makePricingSpyRegistry();
     const resolver = makeResolver(undefined, config, registry);
@@ -268,7 +268,7 @@ Deno.test({
     });
     const config = {
       ...createTestConfig(),
-      model_presets: { S: presetForSize("S"), M: presetForSize("M") },
+      model_sizes: { S: presetForSize("S"), M: presetForSize("M") },
     } as Config;
     const resolver = makeResolver(undefined, config, makeEmptyRegistry());
     await assertRejects(
@@ -307,7 +307,7 @@ Deno.test({
     });
     const config = {
       ...createTestConfig(),
-      model_presets: { S: presetForSize("S"), M: presetForSize("M") },
+      model_sizes: { S: presetForSize("S"), M: presetForSize("M") },
     } as Config;
     const resolver = makeResolver(createZeroCostTracker(), config, makeEmptyRegistry());
     const result = await resolver.resolve({
@@ -343,7 +343,7 @@ Deno.test({
     });
     const config = {
       ...createTestConfig(),
-      model_presets: {
+      model_sizes: {
         S: presetForSize("S"),
         M: { ...presetForSize("M"), candidates: [curated] },
       },

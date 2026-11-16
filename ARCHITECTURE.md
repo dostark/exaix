@@ -1106,7 +1106,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
                    [Team: IResolutionStrategy.validateExplicit — live-catalog
                     validation + auto-admit on first use; Solo: pass-through]
                 └─→ tryResolveBareName (bare model name — provider or curated match)
-                   └─→ tryResolveCurated (the curated model registry: model_presets.<SIZE>.candidates —
+                   └─→ tryResolveCurated (the curated model registry: model_sizes.<SIZE>.candidates —
                        first healthy registered provider in the list wins)
                       └─→ tryResolveFromPreset (model_size → preset profile)
                          └─→ fallback iteration (intent.fallbacks[])
