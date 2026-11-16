@@ -23,7 +23,11 @@ import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
-import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./persona_response_trial.ts";
+import {
+  assertPersonaExperimentEnv,
+  readCachedPersonaTrialSnapshot,
+  writePersonaResponseTrial,
+} from "./persona_response_trial.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { writeProviderLiveEvidence, writeRunBindingEvidence } from "./provider_live_evidence.ts";
 import { BindingIncompatibleError } from "@exaix/ai";
@@ -253,6 +257,7 @@ await new Command()
         const personaRunId = crypto.randomUUID();
 
         try {
+          if (entry.pack === "persona_response_eval") assertPersonaExperimentEnv(Deno.env.toObject());
           const result = await runSyntheticScenario({
             frameworkHome,
             scenarioPath: entry.scenario_path,

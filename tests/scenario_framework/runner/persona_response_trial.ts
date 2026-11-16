@@ -28,6 +28,24 @@ export interface IPersonaTrialSnapshot {
   evidence: IPersonaRoleResponseEvidence;
 }
 
+const PERSONA_VARIANTS: readonly string[] = ["shipped", "generic", "empty"];
+const PERSONA_EXPERIMENT_ID_ENV = "EXA_PERSONA_EXPERIMENT_ID";
+const PERSONA_VARIANT_ENV = "EXA_PERSONA_VARIANT";
+
+/** Refuses a persona response run that lacks the experiment variables. Only the persona isolation script sets them. */
+export function assertPersonaExperimentEnv(env: Readonly<Record<string, string | undefined>>): void {
+  const missing: string[] = [];
+  if (!env[PERSONA_EXPERIMENT_ID_ENV]) missing.push(PERSONA_EXPERIMENT_ID_ENV);
+  if (!PERSONA_VARIANTS.includes(env[PERSONA_VARIANT_ENV] ?? "")) {
+    missing.push(`${PERSONA_VARIANT_ENV} (${PERSONA_VARIANTS.join(", ")})`);
+  }
+  if (missing.length === 0) return;
+  throw new Error(
+    `A persona response scenario needs ${missing.join(" and ")}. ` +
+      "These scenarios run as arms of a persona isolation experiment: use scripts/run_persona_isolation.ts with a manifest.",
+  );
+}
+
 const EvidenceSchema = z.object({
   traceId: z.string().uuid(),
   agentRole: z.string().min(1),
