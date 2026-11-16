@@ -5248,18 +5248,27 @@ exactl daemon start
 
 #### 5.3.3 Test Environment Variables
 
-The live tests bind their provider and model with `EXA_TEST_BIND`. Three other variables control the manual tests and the paid-call opt-in.
+The live tests bind their provider and model with `EXA_TEST_BIND`. The other variables control the paid-call opt-in and the model of the provider tests.
 
 | Variable                   | Purpose                                                                                                                               | Validation                                                                              | Example                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `EXA_TEST_BIND`            | Binds the live-test provider and model, in the `--bind` syntax `selector=field=value,field=value`.                                    | Parsed by the binding schema. An unknown service or model fails the test before a call. | `export EXA_TEST_BIND='default=service=openai,service_model_id=gpt-5-mini'` |
 | `EXA_TEST_ENABLE_PAID_LLM` | Opt-in for billable providers in test or CI mode. Without it, the daemon refuses a billable provider at boot, and routing skips them. | `"1"` to enable                                                                         | `export EXA_TEST_ENABLE_PAID_LLM=1`                                         |
-| `EXA_TEST_OPENAI_API_KEY`  | API key for the manual OpenAI integration tests. Those tests skip when it is unset.                                                   | Non-empty string                                                                        | `export EXA_TEST_OPENAI_API_KEY="sk-…"`                                     |
 | `EXA_TEST_LLM_MODEL`       | Model ID for the `packages/ai` provider tests (`free_providers_test.ts`, `openai_shim_retry_test.ts`). Default `gpt-5-mini`.          | Model ID string                                                                         | `export EXA_TEST_LLM_MODEL=gpt-5-mini`                                      |
 
-**One switch for live LLM tests:** Every live test that calls a paid model runs only when `EXA_TEST_ENABLE_PAID_LLM=1` and the key of its service are both set. A key in the environment alone never starts a paid run, and without the opt-in the test is reported as ignored. A test enables itself through `paidLlmEnabled` (`tests/helpers/llm_bindings.ts`) or `paidLlmEnabledFor` (`@exaix/testing`), and `tests/integration/paid_llm_gating_guard_test.ts` fails when a test reads the variable or a provider key by its own code.
+**Live runs are configured and gated by cell presets.** A live test reads the `live-<service>` row of `configs/eval-cells.toml` that names its service, through `tests/helpers/live_presets.ts`. The row gives the binding, the `catalog` entries (service, transport, endpoint, models) and the `requires_bin`, `requires_key` and `requires_optin` predicates, so a test and a scenario cell skip for the same named reason. A test that cannot run prints that reason, for example `opt-in env 'EXA_TEST_ENABLE_PAID_LLM' is unset`, and is reported as ignored. A new live service is a new row.
 
-**Live-test defaults:** The ReAct and extractor live tests use the DeepSeek preset (`deepseek-v4-pro`) and need `DEEPSEEK_API_KEY`. The memory maturation live test uses the OpenCode Go preset (`deepseek-v4.1-flash` at `https://opencode.ai/inference/go/openai/v1/chat/completions`) and needs `OPENCODE_API_KEY`. The native-round replay test uses the DeepSeek preset by default. Set `EXA_TEST_BIND` to select the Google preset (`gemini-3.8-flash`) instead. It runs only with `EXA_TEST_ENABLE_PAID_LLM=1` and `GOOGLE_API_KEY`.
+| Kind of live run                                                                                                                 | What must be set                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Billable cloud service (`live-deepseek`, `-google`, `-anthropic`, `-openai`, `-openrouter`, `-opencode-go`)                      | `EXA_TEST_ENABLE_PAID_LLM=1` and the key of the service (`DEEPSEEK_API_KEY`, `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `OPENCODE_API_KEY`)                                                                     |
+| Local runtime (`live-ollama-chat`, `live-ollama`)                                                                                | `EXA_MATRIX_OLLAMA`, a running Ollama server and the pulled model. `OLLAMA_BASE_URL` points at another host.                                                                                                                                        |
+| Local runtime (`live-llamacpp`)                                                                                                  | `EXA_MATRIX_LLAMACPP` and a running llama.cpp server                                                                                                                                                                                                |
+| Remote service (`live-mcp-deepwiki`, `-mcp-github`, `-models-dev`)                                                               | `EXA_MATRIX_MCP_DEEPWIKI`, `EXA_MATRIX_MCP_GITHUB` with `GITHUB_TOKEN`, or `EXA_MATRIX_MODELS_DEV`                                                                                                                                                  |
+| Subscription CLI (`live-delegation-*`, `live-calibration-sandbox`, `live-learning-effectiveness`, `live-session-delegate-cycle`) | The CLI on `PATH` and logged in, and `EXA_MATRIX_DELEGATION`, `EXA_MATRIX_CALIBRATION_SANDBOX`, `EXA_MATRIX_LEARNING_EFFECTIVENESS` or `EXA_MATRIX_SESSION_DELEGATE_CYCLE`. The session cycle also needs the Anthropic and OpenRouter rows to hold. |
+
+A key in the environment never starts a run. An opt-in variable counts when it is non-empty, and CI jobs never set it. An opted-in local run expects a working server, so a missing server or model fails the test and names the step that fixes it. Choose the provider with `EXA_TEST_BIND` (the `--bind` layer), which also changes which preset gates the run: the preset of the bound service decides. A scenario run selects a row with `--cell` and adds layers with `--overlay` and `--bind`, as in [Evaluation](Exaix_Evaluation.md). `tests/integration/live_gating_guard_test.ts` fails when a test reads an opt-in variable or a provider key by its own code.
+
+**Live-test defaults:** The ReAct and extractor live tests use the `live-deepseek` row (`deepseek-v4-pro`). The memory maturation live test uses the `live-opencode-go` row (`deepseek-v4.1-flash` at `https://opencode.ai/inference/go/openai/v1/chat/completions`), which declares its own service. The native-round replay test uses the DeepSeek row by default. Set `EXA_TEST_BIND` to select the Google row (`gemini-3.8-flash`) instead. It runs only with `EXA_TEST_ENABLE_PAID_LLM=1` and `GOOGLE_API_KEY`.
 
 **CI Safety:** In test or CI mode, the daemon refuses to boot a billable provider unless `EXA_TEST_ENABLE_PAID_LLM=1`. Configured fallback chains are exempt. Test mode is set by `EXA_TEST_MODE` or `EXA_TEST_CLI_MODE=1`. CI mode is set by `EXA_CI_MODE`, or by `CI` when `EXA_CI_MODE` is unset. Never set `EXA_TEST_ENABLE_PAID_LLM=1` in CI jobs unless the run is on a trusted branch with properly stored secrets.
 
@@ -5268,12 +5277,15 @@ The live tests bind their provider and model with `EXA_TEST_BIND`. Three other v
 ```bash
 # Manual OpenAI integration test (opt-in, calls the real API)
 export EXA_TEST_ENABLE_PAID_LLM=1
-export EXA_TEST_OPENAI_API_KEY="sk-..."
+export OPENAI_API_KEY="sk-..."
 deno test --allow-all tests/integration/llm_free_provider_test.ts
 
 # ReAct live test: DeepSeek by default
 export DEEPSEEK_API_KEY="..."
 deno test --allow-all packages/execution/tests/agents/react_loop_strategy_live_test.ts
+
+# Local Ollama live check (a server must run and the model must be pulled)
+EXA_MATRIX_OLLAMA=1 deno test --allow-all tests/integration/ollama_chat_live_test.ts
 
 # The same test bound to an OpenAI model
 export EXA_TEST_BIND='default=service=openai,service_model_id=gpt-5-mini'

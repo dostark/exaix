@@ -25,6 +25,7 @@ import { daemonConfigSections } from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 
@@ -86,7 +87,7 @@ async function runExactl(
 Deno.test({
   name:
     "[live] exactl mcp tool list reaches a real, unauthenticated third-party MCP server (DeepWiki) and lists its real tools",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: liveSkipReason("mcp-deepwiki") !== null,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -118,7 +119,7 @@ Deno.test({
 Deno.test({
   name:
     "[live] exactl mcp tool list reaches GitHub's real, bearer-token-authenticated MCP server and lists its real tools",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: liveSkipReason("mcp-github") !== null,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

@@ -22,8 +22,8 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { resolveToolsRoundPolicy } from "@exaix/schemas/tools_round_policy.ts";
 import { ToolsRoundLoop } from "@exaix/core";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
-import { paidLlmEnabledFor } from "@exaix/testing";
 import { createLlmProvider } from "../helpers/llm_bindings.ts";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 import { runPlanningRound as runNativePlanningRound } from "../helpers/native_tool_round_harness.ts";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
 import {
@@ -35,12 +35,9 @@ import {
 import {
   type ITraceRow,
   LIVE_ANTHROPIC_MODEL,
-  LIVE_KEY_ENV,
   LIVE_OPENAI_THINKING_MODEL,
   LIVE_OPENROUTER_MODEL,
   type LiveProvider,
-  OPENAI_KEY_ENV,
-  OPENROUTER_KEY_ENV,
   payloadOf,
 } from "./helpers/compatible_daemon.ts";
 import {
@@ -57,11 +54,10 @@ import {
 } from "./helpers/parallel_round_daemon.ts";
 import { assertAndRecordParallelOffOverride, type IParallelResponseCounts } from "./helpers/parallel_off_override.ts";
 
-const liveEnabled = paidLlmEnabledFor([LIVE_KEY_ENV]);
-const ANTHROPIC_KEY_ENV = "ANTHROPIC_API_KEY";
-const anthropicEnabled = paidLlmEnabledFor([ANTHROPIC_KEY_ENV]);
-const openaiEnabled = paidLlmEnabledFor([OPENAI_KEY_ENV]);
-const openrouterEnabled = paidLlmEnabledFor([OPENROUTER_KEY_ENV]);
+const liveEnabled = liveSkipReason("deepseek") === null;
+const anthropicEnabled = liveSkipReason("anthropic") === null;
+const openaiEnabled = liveSkipReason("openai") === null;
+const openrouterEnabled = liveSkipReason("openrouter") === null;
 /** A live model must batch at least two calls in one response for the override to be observable. */
 const MINIMUM_BATCH = 2;
 /** The shipped planning cap is three. A live model may list a directory before its three reads, so this case allows eight. */

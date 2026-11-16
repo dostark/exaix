@@ -17,7 +17,6 @@ export { createMockProvider } from "./src/helpers/mock_provider.ts";
 export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
 export { initActivityTableSchema, initTestDbService, REGISTRY_TABLES_SQL } from "./src/helpers/init_db.ts";
 export { withEnv } from "./src/helpers/env.ts";
-export { paidLlmEnabledFor, paidLlmOptedIn } from "./src/helpers/paid_llm.ts";
 export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
 export { installLintPolicyForTest, LINT_POLICY_TASK } from "./src/helpers/lint_policy.ts";
 export { createCapturingLogger, type ICapturedEvent } from "./src/helpers/capturing_logger.ts";

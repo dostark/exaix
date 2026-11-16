@@ -22,12 +22,7 @@ import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrat
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
 import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalog } from "@exaix/testing";
-import {
-  createLlmProvider,
-  liveLlmSpec,
-  OPENCODE_GO_PRESET_ID,
-  paidLlmEnabled,
-} from "../../../tests/helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmEnabled, liveLlmSpec } from "../../../tests/helpers/llm_bindings.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
@@ -50,7 +45,8 @@ import type { IApplicationContext, IMemoryCostRouter, ISkillsService } from "@ex
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
-const liveSpec = liveLlmSpec(OPENCODE_GO_PRESET_ID);
+const OPENCODE_GO_SERVICE = "opencode-go";
+const liveSpec = liveLlmSpec(OPENCODE_GO_SERVICE);
 const testProvider = liveSpec.service ?? "unbound";
 const testModel = liveSpec.service_model_id ?? liveSpec.model ?? "unbound";
 
@@ -62,7 +58,7 @@ async function loadPolicyInstructions(): Promise<string> {
 
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  ignore: !paidLlmEnabled(liveSpec),
+  ignore: !liveLlmEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

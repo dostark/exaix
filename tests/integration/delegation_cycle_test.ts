@@ -24,6 +24,7 @@ import { SessionDelegationResultStore } from "@exaix/session/session_delegation_
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SESSION_GATE_DECISIONS, SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 interface IToolConfig {
   name: string;
@@ -152,8 +153,8 @@ type TestCase = { tool: string; skip: boolean };
 
 const testCases: TestCase[] = [
   { tool: "mock", skip: !hasMock },
-  { tool: "claude-code", skip: Deno.env.get("EXA_TEST_LIVE_DELEGATION") !== "true" },
-  { tool: "opencode", skip: Deno.env.get("EXA_TEST_LIVE_DELEGATION") !== "true" },
+  { tool: "claude-code", skip: liveSkipReason("delegation-claude-code") !== null },
+  { tool: "opencode", skip: liveSkipReason("delegation-opencode") !== null },
 ];
 
 for (const tc of testCases) {

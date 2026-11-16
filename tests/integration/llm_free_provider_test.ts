@@ -17,20 +17,15 @@ import { RequestProcessor } from "@exaix/request";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "@exaix/testing";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
-import { paidLlmOptedIn, readFixtureTextSync } from "@exaix/testing";
+import { readFixtureTextSync } from "@exaix/testing";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
-const optedIn = paidLlmOptedIn();
+const skipReason = liveSkipReason("openai");
 Deno.test(
-  { name: "LLM provider integration (manual) - end-to-end RequestProcessor", ignore: !optedIn },
+  { name: "LLM provider integration (manual) - end-to-end RequestProcessor", ignore: skipReason !== null },
   async (_t) => {
-    // Manual integration test - opt-in only. Requires EXA_TEST_ENABLE_PAID_LLM=1 and
-    // EXA_TEST_OPENAI_API_KEY set.
-    const apiKey = Deno.env.get("EXA_TEST_OPENAI_API_KEY");
-
-    if (!apiKey) {
-      console.warn("Skipping manual integration test: EXA_TEST_OPENAI_API_KEY not set");
-      return;
-    }
+    // Manual integration test - opt-in only. Runs when the `live-openai` preset holds:
+    // EXA_TEST_ENABLE_PAID_LLM=1 and OPENAI_API_KEY set.
 
     const env = await TestEnvironment.create({ initGit: false });
 
@@ -93,7 +88,7 @@ Deno.test(
 
         // Skip on unauthorized (401)
         if (errMsg.includes("401") || errMsg.includes("unauthorized") || errMsg.includes("invalid api key")) {
-          console.warn("Skipping manual integration test: unauthorized (401). Check EXA_TEST_OPENAI_API_KEY");
+          console.warn("Skipping manual integration test: unauthorized (401). Check OPENAI_API_KEY");
           return;
         }
 

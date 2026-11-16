@@ -14,18 +14,14 @@ import { GoogleProvider } from "@exaix/ai-google";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import * as TEST_CONST from "@exaix/testing";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 /**
- * Check if test should run (opt-in required)
+ * Check if the test of one service should run: the predicates of its live preset must hold.
  */
-function shouldSkipTest(): { skip: boolean; reason?: string } {
-  if (!TEST_CONST.paidLlmOptedIn()) {
-    return {
-      skip: true,
-      reason: TEST_CONST.SKIP_MSG_OPT_IN_REQUIRED,
-    };
-  }
-  return { skip: false };
+function shouldSkipTest(service: string): { skip: boolean; reason?: string } {
+  const reason = liveSkipReason(service);
+  return reason === null ? { skip: false } : { skip: true, reason };
 }
 
 /**
@@ -204,9 +200,9 @@ async function testProviderTokenMetrics(
 
 Deno.test({
   name: "Google Gemini - token metrics tracking with real API",
-  ignore: shouldSkipTest().skip,
+  ignore: shouldSkipTest("google").skip,
   async fn() {
-    const skipCheck = shouldSkipTest();
+    const skipCheck = shouldSkipTest("google");
     if (skipCheck.skip) {
       console.warn(`⏭️  Skipping test: ${skipCheck.reason}`);
       return;
@@ -251,9 +247,9 @@ Deno.test({
 
 Deno.test({
   name: "OpenAI GPT - token metrics tracking with real API",
-  ignore: shouldSkipTest().skip,
+  ignore: shouldSkipTest("openai").skip,
   async fn() {
-    const skipCheck = shouldSkipTest();
+    const skipCheck = shouldSkipTest("openai");
     if (skipCheck.skip) {
       console.warn(`⏭️  Skipping test: ${skipCheck.reason}`);
       return;
@@ -298,9 +294,9 @@ Deno.test({
 
 Deno.test({
   name: "Anthropic Claude - token metrics tracking with real API",
-  ignore: shouldSkipTest().skip,
+  ignore: shouldSkipTest("anthropic").skip,
   async fn() {
-    const skipCheck = shouldSkipTest();
+    const skipCheck = shouldSkipTest("anthropic");
     if (skipCheck.skip) {
       console.warn(`⏭️  Skipping test: ${skipCheck.reason}`);
       return;

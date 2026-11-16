@@ -14,9 +14,10 @@ import { PlanSchema } from "@exaix/schemas";
 import { LlamaProvider } from "@exaix/ai-ollama";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { getProviderForModel } from "../helpers/test_config.ts";
+import { liveSkipReason } from "../../../../tests/helpers/live_presets.ts";
 
-// Check if LlamaProvider tests should run
-const shouldRunLlamaTests = Deno.env.get("EXA_TEST_ENABLE_LLAMA") === "true";
+// The LlamaProvider tests run when the `live-llamacpp` preset holds: EXA_MATRIX_LLAMACPP is set.
+const shouldRunLlamaTests = liveSkipReason("llamacpp") === null;
 
 // Helper function to conditionally run tests
 function llamaTest(name: string, fn: () => void | Promise<void>) {

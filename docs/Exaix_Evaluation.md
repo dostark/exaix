@@ -1072,6 +1072,8 @@ scenario `pin:` entry (with a reason) keeps the fields a qualification run depen
 through `judge` or `judge:<step-id>`. See `tests/scenario_framework/SCENARIO_DSL.md` §2.3 for the
 layer order, the pin rule and the trust boundary.
 
+An in-process live test uses the same rows. A `live-<service>` row names the service that a test binds, and `tests/helpers/live_presets.ts` reads its `bindings`, its `catalog` and its `requires_*` predicates, so a test skips for the same named reason as a cell (see the [User Guide](Exaix_User_Guide.md#533-test-environment-variables)).
+
 Each provider-live evidence file records what the run actually used:
 
 | Field      | Content                                                                                               |

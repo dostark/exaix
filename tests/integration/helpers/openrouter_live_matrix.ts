@@ -17,7 +17,8 @@ import { OPENROUTER_PROVIDER_METADATA, OpenRouterProviderFactory, PROVIDER_OPENR
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { type IRequestAnalysis, RequestAnalysisCoreSchema } from "@exaix/schemas/request_analysis.ts";
 import { LlmAnalyzer } from "@exaix/request";
-import { initTestDbService, paidLlmEnabledFor } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing";
+import { liveSkipReason } from "../../helpers/live_presets.ts";
 import { createOutputValidator } from "@exaix/tool-runtime";
 
 export interface IWireObservation {
@@ -73,9 +74,9 @@ const EVIDENCE_DIR = ".cache/phase-211/step-9";
 const ANALYSIS_REQUEST = "Add unit tests for src/user_service.ts. Cover its public methods. Do not add dependencies.";
 const OTHER_KEYS: readonly string[] = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "DEEPSEEK_API_KEY"];
 
-/** Live tests require both the explicit paid opt-in and the OpenRouter key. */
+/** Live tests need the predicates of the `live-openrouter` preset: the paid opt-in and the OpenRouter key. */
 export function liveMatrixEnabled(): boolean {
-  return paidLlmEnabledFor(["OPENROUTER_API_KEY"]);
+  return liveSkipReason("openrouter") === null;
 }
 
 /** Refuses a matrix run that could use an ambient credential for another provider. */

@@ -11,6 +11,10 @@
  * @related-files [exaix-team/packages/model-registry-live/src/modelsdev_ingest.ts]
  */
 import { assert, assertEquals, assertGreater } from "@std/assert";
+import { liveSkipReason } from "../helpers/live_presets.ts";
+
+/** The models.dev tests fetch a real catalog, so they run only when the `live-models-dev` preset holds. */
+const MODELS_DEV_SKIPPED = liveSkipReason("models-dev") !== null;
 
 const MODELSDEV_URL = "https://models.dev/models.json";
 const FETCH_TIMEOUT_MS = 15_000;
@@ -74,7 +78,7 @@ async function fetchModelsDevData(): Promise<Record<string, IModelsDevEntry>> {
 
 Deno.test({
   name: "[modelsdev-live] endpoint returns parseable JSON with 150+ models",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -91,7 +95,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] SWE-Bench Verified exists with top-20 non-empty scores",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -125,7 +129,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] benchmark name normalisation maps SWE-Bench Verified → swe_bench_verified",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -160,7 +164,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] artificialanalysis.ai excluded; benchlm.ai and llm-stats.com sources accepted",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -203,7 +207,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] filtered entries produce valid IBenchmarkEntry shape for every tracked benchmark",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -236,7 +240,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] provider mapping covers known developer slugs",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -260,7 +264,7 @@ Deno.test({
 
 Deno.test({
   name: "[modelsdev-live] top-10 SWE-Bench Verified scores printed for inspection",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: MODELS_DEV_SKIPPED,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

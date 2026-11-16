@@ -14,6 +14,7 @@ import { PlanAdapter } from "@exaix/core/planning";
 import { initTestDbService } from "@exaix/testing";
 import { getWorkspacePlansDir } from "@exaix/testing";
 import { parse as parseYaml } from "@std/yaml";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 interface IPlanFrontmatter {
   trace_id: string;
@@ -26,8 +27,9 @@ interface IPlanFrontmatter {
 const OLLAMA_MODEL = "llama3.2";
 const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL") || "http://localhost:11434";
 
-const EXA_TEST_ENABLE_OLLAMA = Deno.env.get("EXA_TEST_ENABLE_OLLAMA") === "1";
-const OLLAMA_AVAILABLE = EXA_TEST_ENABLE_OLLAMA ? await isOllamaAvailable() : false;
+/** The live test runs when the `live-ollama` preset holds: EXA_MATRIX_OLLAMA is set. */
+const OLLAMA_ENABLED = liveSkipReason("ollama") === null;
+const OLLAMA_AVAILABLE = OLLAMA_ENABLED ? await isOllamaAvailable() : false;
 
 /**
  * Check if Ollama is running and model is available
@@ -87,10 +89,16 @@ function createTestRequest() {
 
 Deno.test({
   name: "Ollama Integration: Generate JSON plan with llama3.2",
-  ignore: !(EXA_TEST_ENABLE_OLLAMA && OLLAMA_AVAILABLE),
+  ignore: !OLLAMA_ENABLED,
   sanitizeResources: false,
   sanitizeOps: false,
 }, async () => {
+  // An opted-in run expects a working server, so a missing server or model fails with the step that fixes it.
+  if (!OLLAMA_AVAILABLE) {
+    throw new Error(
+      `Ollama is not serving ${OLLAMA_MODEL} at ${OLLAMA_BASE_URL}: start it with 'ollama serve' and run 'ollama pull ${OLLAMA_MODEL}'`,
+    );
+  }
   console.log(`\n🦙 Testing Ollama with ${OLLAMA_MODEL} at ${OLLAMA_BASE_URL}\n`);
 
   // Setup test environment
@@ -248,22 +256,3 @@ Deno.test({
 
   console.log("✅ Invalid JSON handling verified");
 });
-
-// Skip Message for CI/Local without Ollama
-
-if (EXA_TEST_ENABLE_OLLAMA && !OLLAMA_AVAILABLE) {
-  console.log(`
-⚠️  Ollama tests skipped - Ollama not available
-
-To run these tests:
-1. Install Ollama: https://ollama.ai
-2. Start Ollama: ollama serve
-3. Pull model: ollama pull ${OLLAMA_MODEL}
-4. Enable: EXA_TEST_ENABLE_OLLAMA=1
-5. Run tests: deno test tests/integration/17_ollama_json_plan_test.ts --allow-all --no-check
-
-Current configuration:
-- Model: ${OLLAMA_MODEL}
-- Base URL: ${OLLAMA_BASE_URL}
-`);
-}

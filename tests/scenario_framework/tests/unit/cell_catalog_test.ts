@@ -23,6 +23,9 @@ import { withTempDir } from "@exaix/testing";
  *  The self-hosted preset test asserts each of those bindings by name. */
 const MIXED_REALM_PRESETS = new Set(["ollama-chat", "split-strong-local", "self-hosted-fixture"]);
 
+/** A `live-<service>` row serves an in-process live test, so no scenario boots its config. */
+const IN_PROCESS_LIVE_PREFIX = "live-";
+
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const CATALOG_PATH = resolve(REPO_ROOT, "configs", "eval-cells.toml");
 
@@ -143,7 +146,7 @@ Deno.test("[CellCatalog] every preset agrees with the provider and model its con
   assert(names.length > 0, "the catalog must expose at least one preset");
 
   for (const [name, preset] of Object.entries(catalog.presets)) {
-    if (MIXED_REALM_PRESETS.has(name)) continue;
+    if (MIXED_REALM_PRESETS.has(name) || name.startsWith(IN_PROCESS_LIVE_PREFIX)) continue;
     const ai = await configAiBlock(preset.config);
     assertEquals(preset.provider, ai.provider, `preset '${name}' provider must match its config's [ai].provider`);
     if (preset.model !== undefined) {
@@ -159,7 +162,7 @@ Deno.test("[CellCatalog] a preset's default binding names the canonical model it
   assert(withBindings.length > 0, "at least one preset must declare a default binding");
 
   for (const [name, preset] of withBindings) {
-    if (MIXED_REALM_PRESETS.has(name)) continue;
+    if (MIXED_REALM_PRESETS.has(name) || name.startsWith(IN_PROCESS_LIVE_PREFIX)) continue;
     const ai = await configAiBlock(preset.config);
     const profile = await configCompatibleProfile(preset.config);
     const canonical = profile === undefined ? `${ai.provider}/${ai.model}` : `${profile}/${ai.model}`;

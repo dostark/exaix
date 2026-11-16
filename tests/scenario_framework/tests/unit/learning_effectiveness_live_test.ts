@@ -26,6 +26,7 @@ import { castAny } from "@exaix/testing";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 import { runLearningEffectiveness } from "../../scripts/run_learning_effectiveness.ts";
 import type { ILearningEffectivenessResult } from "../../scripts/run_learning_effectiveness.ts";
+import { liveSkipReason } from "../../../helpers/live_presets.ts";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
@@ -55,7 +56,7 @@ Deno.test({
   name: "[live][phase-148] learning-effectiveness self-improvement proof via claude-cli",
   // An operator runs this proof on demand, as the sibling live tests do.
   // A developer whose CLI session is signed out must not fail the local suite.
-  ignore: Deno.env.get("CI") === "true" || Deno.env.get("EXA_RUN_LIVE_LEARNING_EFFECTIVENESS") !== "1",
+  ignore: liveSkipReason("learning-effectiveness") !== null,
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

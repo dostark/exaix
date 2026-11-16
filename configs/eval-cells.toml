@@ -307,3 +307,197 @@ config = "configs/planning-live.deepseek.toml"
 provider = "openai-chat"
 model = "deepseek-v4-pro"
 requires_key = "DEEPSEEK_API_KEY"
+
+# In-process live tests. A `live-<service>` row names the service that a live test binds, the key
+# that the service needs and the opt-in that starts the run, so a test is configured and gated by the
+# same predicates as a scenario cell. A billable service opts in with EXA_TEST_ENABLE_PAID_LLM, and a
+# local runtime with its own EXA_MATRIX_<NAME>. `tests/helpers/live_presets.ts` reads these rows. A new
+# live service is a new row here, and the catalog tables of every `live-*` row join the test catalog.
+[tool.live-deepseek]
+tool = "exactl"
+config = "configs/deepseek-chat.toml"
+provider = "openai-chat"
+model = "deepseek-v4-pro"
+requires_bin = "true"
+requires_key = "DEEPSEEK_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-deepseek.bindings.default]
+service = "deepseek"
+service_model_id = "deepseek-v4-pro"
+
+[tool.live-google]
+tool = "exactl"
+config = "configs/google-no-delegate.toml"
+provider = "google"
+model = "gemini-3.8-flash"
+requires_bin = "true"
+requires_key = "GOOGLE_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-google.bindings.default]
+service = "google"
+service_model_id = "gemini-3.8-flash"
+
+[tool.live-anthropic]
+tool = "exactl"
+config = "configs/anthropic-no-delegate.toml"
+provider = "anthropic"
+model = "claude-haiku-5-5"
+requires_bin = "true"
+requires_key = "ANTHROPIC_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-anthropic.bindings.default]
+service = "anthropic"
+service_model_id = "claude-haiku-5-5"
+
+[tool.live-openai]
+tool = "exactl"
+config = "configs/openai-no-delegate.toml"
+provider = "openai"
+model = "gpt-5-mini"
+requires_bin = "true"
+requires_key = "OPENAI_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-openai.bindings.default]
+service = "openai"
+service_model_id = "gpt-5-mini"
+
+[tool.live-openrouter]
+tool = "exactl"
+config = "configs/openrouter-no-delegate.toml"
+provider = "openrouter"
+model = "openai/gpt-4o-mini"
+requires_bin = "true"
+requires_key = "OPENROUTER_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-openrouter.bindings.default]
+service = "openrouter"
+service_model_id = "openai/gpt-4o-mini"
+
+# DeepSeek V4.1 Flash through the OpenCode Go subscription. The service is declared here because the
+# built-in catalog has no `opencode-go` service. Its endpoint path is not /v1/chat/completions, which the
+# self-hosted profile accepts because the path only has to end with /chat/completions.
+[tool.live-opencode-go]
+tool = "exactl"
+config = "configs/opencode-go-chat.toml"
+provider = "openai-chat"
+model = "deepseek-v4.1-flash"
+requires_bin = "true"
+requires_key = "OPENCODE_API_KEY"
+requires_optin = "EXA_TEST_ENABLE_PAID_LLM"
+
+[tool.live-opencode-go.bindings.default]
+service = "opencode-go"
+service_model_id = "deepseek-v4.1-flash"
+
+[tool.live-opencode-go.catalog.models."deepseek/deepseek-v4.1-flash"]
+model_provider = "deepseek"
+
+[tool.live-opencode-go.catalog.services.opencode-go]
+adapter = "openai-chat"
+profile = "self-hosted"
+endpoint = "https://opencode.ai/inference/go/openai/v1/chat/completions"
+transport = "cloud"
+interface = "api"
+key_env = "OPENCODE_API_KEY"
+
+[tool.live-opencode-go.catalog.services.opencode-go.serves]
+"deepseek/deepseek-v4.1-flash" = "deepseek-v4.1-flash"
+
+# Local runtimes. They cost nothing, but a server must run and the model must be pulled, so each row
+# has its own EXA_MATRIX opt-in. A missing server or model fails the test with its named cause.
+[tool.live-ollama-chat]
+tool = "exactl"
+config = "configs/ollama-chat.toml"
+provider = "openai-chat"
+model = "llama3.1:8b"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_OLLAMA"
+
+[tool.live-ollama-chat.bindings.default]
+service = "ollama-chat"
+model = "meta/llama3.1:8b"
+
+[tool.live-ollama-chat.catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+
+# The llama.cpp provider has no catalog service yet, so this row carries predicates only. No scenario selects it.
+[tool.live-llamacpp]
+tool = "exactl"
+config = "configs/ollama-chat.toml"
+provider = "llamacpp"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_LLAMACPP"
+
+# Live calls that are not model providers: remote MCP servers, the models.dev catalog, subscription CLIs
+# and the sessions that drive them. Each row declares only predicates. No scenario selects these rows, so
+# `config` repeats a base config that no daemon boots. A subscription CLI needs its binary on PATH and a
+# logged-in session, and a remote service has its own EXA_MATRIX opt-in.
+[tool.live-mcp-deepwiki]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "mcp"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_MCP_DEEPWIKI"
+
+[tool.live-mcp-github]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "mcp"
+requires_bin = "true"
+requires_key = "GITHUB_TOKEN"
+requires_optin = "EXA_MATRIX_MCP_GITHUB"
+
+[tool.live-models-dev]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "models.dev"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_MODELS_DEV"
+
+[tool.live-calibration-sandbox]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "claude-cli"
+requires_bin = "claude"
+requires_optin = "EXA_MATRIX_CALIBRATION_SANDBOX"
+
+[tool.live-delegation-claude-code]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "claude-cli"
+requires_bin = "claude"
+requires_optin = "EXA_MATRIX_DELEGATION"
+
+[tool.live-delegation-opencode]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "opencode-cli"
+requires_bin = "opencode"
+requires_optin = "EXA_MATRIX_DELEGATION"
+
+[tool.live-session-delegate-cycle]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "opencode-cli"
+requires_bin = "opencode"
+requires_optin = "EXA_MATRIX_SESSION_DELEGATE_CYCLE"
+
+[tool.live-learning-effectiveness]
+tool = "exactl"
+config = "configs/agent-flows-mock-pattern.toml"
+provider = "claude-cli"
+requires_bin = "claude"
+requires_optin = "EXA_MATRIX_LEARNING_EFFECTIVENESS"
+
+# The Ollama provider with its own server, used by the live JSON plan test. It shares the EXA_MATRIX_OLLAMA opt-in with ollama-chat.
+[tool.live-ollama]
+tool = "exactl"
+config = "configs/ollama-chat.toml"
+provider = "ollama"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_OLLAMA"

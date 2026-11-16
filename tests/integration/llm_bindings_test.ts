@@ -13,19 +13,18 @@
  * ]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { ENV_TEST_ENABLE_PAID_LLM, withEnv } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import {
   createLlmProvider,
   EXA_TEST_BIND_ENV,
+  liveLlmSkipReason,
   liveLlmSpec,
   liveReplayLlmSpec,
   LLM_TEST_PRESETS,
   llmKeyEnv,
-  OPENCODE_GO_PRESET_ID,
-  paidLlmEnabled,
   resolveLlmBinding,
 } from "../helpers/llm_bindings.ts";
 
@@ -40,7 +39,6 @@ const EXPECTED_ADAPTER: Record<string, string> = {
   openai: "openai",
   openrouter: "openrouter",
   deepseek: "openai-chat",
-  "opencode-go": "openai-chat",
 };
 
 Deno.test("[llm_bindings] every preset resolves through the catalog to its adapter", async () => {
@@ -125,7 +123,7 @@ Deno.test("[llm_bindings] a CLI service is refused for a test step, because the 
 
 Deno.test("[llm_bindings] the OpenCode Go preset binds DeepSeek V4.1 Flash at the OpenCode Go endpoint with its own key", async () => {
   await withEnv({ [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
-    const spec = liveLlmSpec(OPENCODE_GO_PRESET_ID);
+    const spec = liveLlmSpec("opencode-go");
     assertEquals(spec, { service: "opencode-go", service_model_id: OPENCODE_GO_MODEL });
     const binding = resolveLlmBinding(spec);
     assertEquals(binding.adapter, "openai-chat");
@@ -138,22 +136,20 @@ Deno.test("[llm_bindings] the OpenCode Go preset binds DeepSeek V4.1 Flash at th
 
 Deno.test("[llm_bindings] EXA_TEST_BIND still overrides a requested preset", async () => {
   await withEnv({ [EXA_TEST_BIND_ENV]: "default=service=openai,service_model_id=gpt-5-mini" }, () => {
-    assertEquals(liveLlmSpec(OPENCODE_GO_PRESET_ID), { service: "openai", service_model_id: "gpt-5-mini" });
+    assertEquals(liveLlmSpec("opencode-go"), { service: "openai", service_model_id: "gpt-5-mini" });
   });
 });
 
-Deno.test("[llm_bindings] a live run needs the paid opt-in variable and the key of its service", async () => {
-  const spec = liveLlmSpec(OPENCODE_GO_PRESET_ID);
-  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: null, [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
-    assertEquals(paidLlmEnabled(spec), false, "a key alone must not enable a paid run");
-  });
-  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", [OPENCODE_GO_KEY_ENV]: null }, () => {
-    assertEquals(paidLlmEnabled(spec), false, "the opt-in alone must not enable a run without a key");
-  });
-  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "0", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
-    assertEquals(paidLlmEnabled(spec), false, "only the value 1 opts in");
-  });
-  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", [OPENCODE_GO_KEY_ENV]: "test-key" }, () => {
-    assertEquals(paidLlmEnabled(spec), true);
-  });
+Deno.test("[llm_bindings] the live gate follows the service that EXA_TEST_BIND binds", async () => {
+  await withEnv(
+    {
+      [EXA_TEST_BIND_ENV]: "default=service=openai,service_model_id=gpt-5-mini",
+      [ENV_TEST_ENABLE_PAID_LLM]: "1",
+      OPENAI_API_KEY: null,
+    },
+    () => {
+      const reason = liveLlmSkipReason(liveLlmSpec("opencode-go")) ?? "";
+      assertStringIncludes(reason, "OPENAI_API_KEY");
+    },
+  );
 });

@@ -8,7 +8,7 @@
  *   tests, ignored under CI=true per this repo's convention for that class of test) a
  *   live claude/codex call inside the sandbox must still succeed and return real content.
  *   The live claude legs additionally require an authenticated Claude subscription, so
- *   they are opt-in via `EXA_CALIBRATION_SANDBOX_LIVE=1`.
+ *   they are opt-in via `EXA_MATRIX_CALIBRATION_SANDBOX`.
  * @architectural-layer Tests
  * @related-files [tests/scenario_framework/runner/calibration_sandbox.ts]
  */
@@ -36,14 +36,13 @@ import type {
   ICalibrationSourceSelection,
 } from "../scenario_framework/runner/calibration_sources.ts";
 import { withTempDir } from "@exaix/testing";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 const REPO_ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 const SCRATCH_ROOT = "/tmp";
 
-/** The live claude legs need an authenticated Claude subscription, so they are opt-in. */
-const CALIBRATION_LIVE_OPT_IN_ENV = "EXA_CALIBRATION_SANDBOX_LIVE";
-const LIVE_CLAUDE_IGNORED = Deno.env.get("CI") === "true" ||
-  Deno.env.get(CALIBRATION_LIVE_OPT_IN_ENV) !== "1";
+/** The live claude legs need an authenticated Claude subscription, so they run only when the `live-calibration-sandbox` preset holds. */
+const LIVE_CLAUDE_IGNORED = liveSkipReason("calibration-sandbox") !== null;
 
 Deno.test({
   name: "[CalibrationSandbox] assertSandboxSupported succeeds on this Linux+bwrap environment",

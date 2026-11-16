@@ -33,6 +33,7 @@ import {
 } from "../../../tests/integration/helpers/daemon_config.ts";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
+import { liveSkipReason } from "../../../tests/helpers/live_presets.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 const MOCK_BIN_PATH = join(REPO_ROOT, ".cache", "mock_session_tool_bin");
@@ -503,11 +504,10 @@ function hasRealOpencode(): boolean {
  * A real Anthropic model runs the review gate. It never runs in CI. An operator opts in. */
 Deno.test({
   name: "[live, operator-run] a supported CLI completes a two-step hardened phase plan with real changed paths",
-  // Deliberately requires an explicit opt-in flag, not just credential presence — this
-  // test spends real API budget and runs a real CLI, so it must never fire just because
-  // the environment happens to already have ANTHROPIC_API_KEY exported for other work.
-  ignore: Deno.env.get("EXA_RUN_LIVE_SESSION_DELEGATE_CYCLE_E2E") !== "1" || Deno.env.get("CI") === "true" ||
-    !Deno.env.get("ANTHROPIC_API_KEY") || !Deno.env.get("OPENROUTER_API_KEY") || !hasRealOpencode(),
+  // Deliberately requires explicit opt-ins, not just credential presence: this test spends real API
+  // budget and runs a real CLI. It needs its own preset, and the Anthropic and OpenRouter presets.
+  ignore: liveSkipReason("session-delegate-cycle") !== null || liveSkipReason("anthropic") !== null ||
+    liveSkipReason("openrouter") !== null || !hasRealOpencode(),
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

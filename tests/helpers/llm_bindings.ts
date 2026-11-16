@@ -6,7 +6,7 @@
  *   service and a model. EXA_TEST_BIND overrides the live binding, in the --bind syntax
  *   `selector=field=value,field=value`. The helper never reads EXA_LLM_* routing variables.
  * @architectural-layer Test
- * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/schemas, @exaix/testing]
+ * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/schemas]
  * @related-files [
  *   "packages/ai/src/bindings/binding_resolver.ts",
  *   "packages/model-registry/src/binding_catalog.ts",
@@ -23,9 +23,7 @@ import {
   STEP_KIND_AGENT,
 } from "@exaix/ai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE, ProviderType } from "@exaix/core";
-import { buildBuiltInCatalog } from "@exaix/model-registry";
-import { paidLlmEnabledFor } from "@exaix/testing";
+import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import {
   BindOneOffSchema,
   type Config,
@@ -37,6 +35,7 @@ import {
   type IResolvedBinding,
 } from "@exaix/schemas";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { liveCatalogOverlay, liveSkipReason, liveSpecOf } from "./live_presets.ts";
 
 /** One provider and model a test can bind. */
 export interface ILlmTestPreset {
@@ -51,76 +50,27 @@ export interface ILlmTestPreset {
 /** The operator override for every live-provider test, in the phase-204 --bind syntax. */
 export const EXA_TEST_BIND_ENV = "EXA_TEST_BIND";
 
-/** The OpenCode Go preset: DeepSeek V4.1 Flash through the OpenCode Go subscription. */
-export const OPENCODE_GO_PRESET_ID = "opencode-go";
-const OPENCODE_GO_SERVICE = "opencode-go";
-const OPENCODE_GO_MODEL = "deepseek-v4.1-flash";
-const OPENCODE_GO_CANONICAL_MODEL = `deepseek/${OPENCODE_GO_MODEL}`;
-const OPENCODE_GO_KEY_ENV = "OPENCODE_API_KEY";
-const OPENCODE_GO_ENDPOINT = "https://opencode.ai/inference/go/openai/v1/chat/completions";
-
-export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
-  { id: "google", spec: { service: "google", service_model_id: "gemini-3.8-flash" }, groupedReplay: true },
-  {
-    id: "anthropic",
-    spec: { service: "anthropic", service_model_id: "claude-haiku-5-5" },
-    groupedReplay: true,
-  },
-  { id: "openai", spec: { service: "openai", service_model_id: "gpt-5-mini" }, groupedReplay: true },
-  {
-    id: "openrouter",
-    spec: { service: "openrouter", service_model_id: "openai/gpt-4o-mini" },
-    groupedReplay: true,
-  },
-  {
-    id: "deepseek",
-    spec: { service: "deepseek", service_model_id: "deepseek-v4-pro" },
-    groupedReplay: true,
-    acceptsToolAliases: false,
-  },
-  {
-    id: OPENCODE_GO_PRESET_ID,
-    spec: { service: OPENCODE_GO_SERVICE, service_model_id: OPENCODE_GO_MODEL },
-    groupedReplay: true,
-    acceptsToolAliases: false,
-  },
+/** The providers with wire-conformance fixtures, with the replay facts that no catalog row carries. Each spec comes from its `live-<service>` row of configs/eval-cells.toml. */
+const PRESET_FACTS: ReadonlyArray<Pick<ILlmTestPreset, "id" | "groupedReplay" | "acceptsToolAliases">> = [
+  { id: "google", groupedReplay: true },
+  { id: "anthropic", groupedReplay: true },
+  { id: "openai", groupedReplay: true },
+  { id: "openrouter", groupedReplay: true },
+  { id: "deepseek", groupedReplay: true, acceptsToolAliases: false },
 ];
 
-/** The live tests' default: the DeepSeek API, an openai-chat provider whose boot registration declares grouped replay. */
-const LIVE_PRESET_ID = "deepseek";
+export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = PRESET_FACTS.map((facts) => ({
+  ...facts,
+  spec: liveSpecOf(facts.id),
+}));
 
-/** Catalog models the built-in catalog does not list but the tests need. They join the catalog
- *  the way an operator catalog entry does, so the resolver validates them like any other model. */
-const TEST_CATALOG_MODELS = [
-  // Pinned, not a latest alias: the phase-202 live replay leg names this exact model.
-  { service: "google", canonical: "google/gemini-3.8-flash", serviceModelId: "gemini-3.8-flash" },
-  {
-    service: "anthropic",
-    canonical: "anthropic/claude-haiku-5-5",
-    serviceModelId: "claude-haiku-5-5",
-  },
-  { service: "openai", canonical: "openai/gpt-5-mini", serviceModelId: "gpt-5-mini" },
-] as const;
+/** The live tests' default service: the DeepSeek API, an openai-chat provider whose boot registration declares grouped replay. */
+const LIVE_DEFAULT_SERVICE = "deepseek";
 
-/** The built-in catalog plus the test models. Each call returns a fresh copy. */
+/** The built-in catalog plus the models and services that the `live-*` rows of configs/eval-cells.toml declare.
+ *  Each call returns a fresh copy. */
 export function llmTestCatalog(): IBindingCatalog {
-  const catalog = buildBuiltInCatalog();
-  for (const model of TEST_CATALOG_MODELS) {
-    catalog.models[model.canonical] = { model_provider: model.service };
-    catalog.services[model.service]!.serves[model.canonical] = model.serviceModelId;
-  }
-  // A self-hosted openai-chat service declares its own endpoint and key variable, as an operator catalog does.
-  catalog.models[OPENCODE_GO_CANONICAL_MODEL] = { model_provider: "deepseek" };
-  catalog.services[OPENCODE_GO_SERVICE] = {
-    adapter: ProviderType.OPENAI_CHAT,
-    profile: OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
-    endpoint: OPENCODE_GO_ENDPOINT,
-    transport: "cloud",
-    interface: "api",
-    key_env: OPENCODE_GO_KEY_ENV,
-    serves: { [OPENCODE_GO_CANONICAL_MODEL]: OPENCODE_GO_MODEL },
-  };
-  return catalog;
+  return mergeCatalogs(buildBuiltInCatalog(), liveCatalogOverlay());
 }
 
 const TEST_STEP_REF: IBindingStepRef = {
@@ -152,22 +102,16 @@ export function parseBindOverride(text: string): IBindingSpec {
   return entry!.spec;
 }
 
-function presetSpec(id: string): IBindingSpec {
-  const preset = LLM_TEST_PRESETS.find((candidate) => candidate.id === id);
-  if (!preset) throw new Error(`no LLM test preset named ${id}`);
-  return preset.spec;
-}
-
-/** The binding a live-provider test uses: EXA_TEST_BIND, else the named preset, which is the DeepSeek preset by default. */
-export function liveLlmSpec(presetId: string = LIVE_PRESET_ID): IBindingSpec {
+/** The binding a live-provider test uses: EXA_TEST_BIND, else the preset row of the named service, which is DeepSeek by default. */
+export function liveLlmSpec(service: string = LIVE_DEFAULT_SERVICE): IBindingSpec {
   const override = Deno.env.get(EXA_TEST_BIND_ENV);
-  return override ? parseBindOverride(override) : presetSpec(presetId);
+  return override ? parseBindOverride(override) : liveSpecOf(service);
 }
 
 /** The binding the grouped-replay live harness uses: EXA_TEST_BIND, else the DeepSeek preset. */
 export function liveReplayLlmSpec(): IBindingSpec {
   const override = Deno.env.get(EXA_TEST_BIND_ENV);
-  return override ? parseBindOverride(override) : presetSpec(LIVE_PRESET_ID);
+  return override ? parseBindOverride(override) : liveSpecOf(LIVE_DEFAULT_SERVICE);
 }
 
 /** Resolves a spec through the phase-204 resolver. A spec that does not bind fails with its issue codes. */
@@ -205,8 +149,15 @@ export function llmKeyEnv(spec: IBindingSpec): string | undefined {
   return llmTestCatalog().services[spec.service ?? ""]?.key_env;
 }
 
-/** True when the operator opted in with EXA_TEST_ENABLE_PAID_LLM=1 and the key of the spec's service is set. It gates a live test that spends money. */
-export function paidLlmEnabled(spec: IBindingSpec): boolean {
-  const keyEnv = llmKeyEnv(spec);
-  return paidLlmEnabledFor(keyEnv === undefined ? [] : [keyEnv]);
+/** The first missing predicate of the preset row of the bound service, or null when the live test can run. */
+export function liveLlmSkipReason(spec: IBindingSpec): string | null {
+  if (spec.service === undefined) throw new Error(`a live binding must name its service: ${JSON.stringify(spec)}`);
+  return liveSkipReason(spec.service);
+}
+
+/** True when the live test of the bound service can run. It prints the named reason when it cannot. */
+export function liveLlmEnabled(spec: IBindingSpec): boolean {
+  const reason = liveLlmSkipReason(spec);
+  if (reason !== null) console.warn(`[live] ${spec.service}: skipped, ${reason}`);
+  return reason === null;
 }

@@ -1,0 +1,28 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["opencode.ai"]
+
+# DeepSeek V4.1 Flash through the OpenCode Go subscription, over its OpenAI-compatible chat endpoint.
+# The `live-opencode-go` preset binds the catalog service `opencode-go` that the preset declares, so this
+# config only has to boot the daemon. The key is read from OPENCODE_API_KEY and never stored in this file.
+[ai]
+provider = "openai-chat"
+model = "deepseek-v4.1-flash"
+
+[ai.compatible]
+profile = "self-hosted"
+endpoint = "https://opencode.ai/inference/go/openai/v1/chat/completions"
+model = "deepseek-v4.1-flash"
+key_env = "OPENCODE_API_KEY"
+
+[models.default]
+provider = "openai-chat"
+model = "deepseek-v4.1-flash"
+timeout_ms = 180000
+
+[execution]
+native_tools_enabled = true
+
+[quality_gate]
+enabled = false

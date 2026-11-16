@@ -380,6 +380,16 @@ function cellSkipReason(cell: IMatrixCell, options: IExpandMatrixOptions): strin
   return null;
 }
 
+/** The skip reason of one cell against `env`, or null when the cell can run. In-process live tests
+ *  evaluate the preset that names their service with this, so a test and a scenario skip alike. */
+export function cellPredicateSkipReason(
+  cell: IMatrixCell,
+  env: Record<string, string | undefined>,
+  binOnPath: (bin: string) => boolean = binIsOnPath,
+): string | null {
+  return cellSkipReason(cell, { env, binOnPath });
+}
+
 /** Overlay the per-cell delegate env onto the start-daemon step, leaving all other steps
  *  untouched (returns a fresh array, no mutation). A `harness: bare` cell never boots the
  *  daemon: its bare-delegate step is rewritten per tool instead (see `overlayBareDelegateStep`). */

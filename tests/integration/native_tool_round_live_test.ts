@@ -24,7 +24,7 @@ import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
-import { createLlmProvider, liveReplayLlmSpec, paidLlmEnabled } from "../helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmEnabled, liveReplayLlmSpec } from "../helpers/llm_bindings.ts";
 
 const LIVE_FILES = ["a.txt", "b.txt", "c.txt"] as const;
 const DEEPSEEK_SERVICE = "deepseek";
@@ -35,7 +35,7 @@ const THINKING_PROMPT =
 const PORTAL_ALIAS = "live";
 
 const liveSpec = liveReplayLlmSpec();
-const liveEnabled = paidLlmEnabled(liveSpec);
+const liveEnabled = liveLlmEnabled(liveSpec);
 const liveName = liveSpec.service ?? "unbound";
 
 const READ_FILE_TOOL: ITool = {

@@ -17,7 +17,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 
-import { createLlmProvider, liveLlmSpec, paidLlmEnabled } from "../../../../tests/helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmEnabled, liveLlmSpec } from "../../../../tests/helpers/llm_bindings.ts";
 import {
   CliDelegateModelProvider,
   DEFAULT_CLAUDE_CLI_BIN,
@@ -145,7 +145,7 @@ function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, trace
 
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  ignore: !paidLlmEnabled(liveSpec),
+  ignore: !liveLlmEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

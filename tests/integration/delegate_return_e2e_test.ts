@@ -4,7 +4,7 @@
  * @description Phase 123 Step 6 — end-to-end delegate return test verifying that
  *   HeadlessSessionLauncher → parser → return.json produces a trustworthy return
  *   with real paths_touched, populated token_stats, and cost_usd for one OpenCode
- *   config. Tagged @provider_live: skipped in CI unless EXA_TEST_LIVE_DELEGATION=true.
+ *   config. Tagged @provider_live: runs when the `live-delegation-<tool>` preset holds (EXA_MATRIX_DELEGATION is set and the CLI is on PATH).
  *   A real git worktree is used so the git-diff fallback can compute paths_touched.
  */
 
@@ -14,8 +14,7 @@ import { ensureDir } from "@std/fs";
 import { HeadlessSessionLauncher } from "../../apps/daemon/src/headless_session_launcher.ts";
 import { checkScope } from "@exaix/session/scope_checker.ts";
 import type { SessionReturn } from "@exaix/schemas/session_delegate.ts";
-
-const IS_LIVE = Deno.env.get("EXA_TEST_LIVE_DELEGATION") === "true";
+import { liveSkipReason } from "../helpers/live_presets.ts";
 
 function createBrief(traceId: string, tool: "opencode" | "claude-code", worktreePath: string) {
   return {
@@ -112,7 +111,7 @@ async function runDelegateTest(
 
 Deno.test({
   name: "[provider_live][opencode] real run produces scope-checked return with paths + cost",
-  ignore: !IS_LIVE,
+  ignore: liveSkipReason("delegation-opencode") !== null,
   async fn() {
     await runDelegateTest("opencode", [
       "run",
@@ -127,7 +126,7 @@ Deno.test({
 
 Deno.test({
   name: "[provider_live][claude-code] real run produces scope-checked return with paths + cost",
-  ignore: !IS_LIVE,
+  ignore: liveSkipReason("delegation-claude-code") !== null,
   async fn() {
     await runDelegateTest("claude-code", [
       "-p",
