@@ -623,6 +623,8 @@ export function resolveBinding(
     endpoint: service.endpoint,
     allow_insecure_loopback: service.allow_insecure_loopback,
     supports_tool_choice: service.supports_tool_choice,
+    // Only a self-hosted service sends its own headers. Others stay unset, so their fingerprints are unchanged.
+    headers: service.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE ? service.headers : undefined,
     // Only a self-hosted service reads its own key variable. Others stay unset, so their fingerprints are unchanged.
     key_env: service.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE ? service.key_env : undefined,
     tool: service.tool,

@@ -241,7 +241,7 @@ package-level configuration and restart/failure semantics:
 - Cloud options: Claude, GPT, Gemini (🟢 all editions)
 - Vertex AI: Google service-account auth for project-based quotas and regional endpoints (🔵 Team+; `@exaix-team/ai-vertex`)
 - OpenRouter: unified gateway to many models (ships in the Solo build; positioned as a 🔵 Team+ differentiator; `@exaix/ai-openrouter`)
-- Self-hosted OpenAI-compatible servers (vLLM, LiteLLM, Ollama's compatible endpoint): the `self-hosted` profile of the `openai-chat` provider, declared per catalog service with its own endpoint, model, optional `EXA_COMPAT_SELF_HOSTED_API_KEY` and `supports_tool_choice`; always unpriced
+- Self-hosted OpenAI-compatible servers (vLLM, LiteLLM, Ollama's compatible endpoint): the `self-hosted` profile of the `openai-chat` provider, declared per catalog service with its own endpoint, model, optional `EXA_COMPAT_SELF_HOSTED_API_KEY`, `supports_tool_choice` and `headers` (custom `x-` headers and a user agent, never a credential; `{session_id}` becomes one id for each provider); always unpriced
 - Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
 - Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `exaix-team/packages/team-composer/src/team_bootstrap.ts` (Team)
 - Cost management with edition-tiered capabilities

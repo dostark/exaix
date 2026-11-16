@@ -479,6 +479,7 @@ function selfHostedOptions(
   endpoint: string,
   allowInsecureLoopback = false,
   model = SELF_HOSTED_MODEL,
+  headers: Record<string, string> | undefined = undefined,
 ): IResolvedProviderOptions {
   return {
     provider: ProviderType.OPENAI_CHAT,
@@ -489,6 +490,7 @@ function selfHostedOptions(
       endpoint,
       model,
       allow_insecure_loopback: allowInsecureLoopback,
+      ...(headers !== undefined ? { headers } : {}),
       max_response_bytes: 1024,
       max_tool_argument_bytes: 512,
       max_history_bytes: 1024,
@@ -675,4 +677,28 @@ Deno.test("[security] a catalog key_env is read for a self-hosted service", asyn
     const provider = await factory.create(keyedSelfHostedOptions("SVC_A_KEY"));
     assertEquals((await captureRequestHeaders(provider)).get("Authorization"), "Bearer declared-key");
   });
+});
+
+Deno.test("[phase203.factory] a self-hosted service sends its declared headers with one stable session id for each provider", async () => {
+  const declared = { "x-opencode-session": "{session_id}", "user-agent": "exaix-live-tests/1.0" };
+  const first = await factory.create(
+    selfHostedOptions("https://opencode.example/v1/chat/completions", false, SELF_HOSTED_MODEL, declared),
+  );
+  const second = await factory.create(
+    selfHostedOptions("https://opencode.example/v1/chat/completions", false, SELF_HOSTED_MODEL, declared),
+  );
+  const call1 = await captureRequestHeaders(first);
+  const call2 = await captureRequestHeaders(first);
+  const other = await captureRequestHeaders(second);
+  const session = call1.get("x-opencode-session") ?? "";
+  assertEquals(/^[0-9a-f-]{36}$/.test(session), true, session);
+  assertEquals(call2.get("x-opencode-session"), session, "one provider keeps one session id");
+  assertEquals(other.get("x-opencode-session") === session, false, "another provider gets another id");
+  assertEquals(call1.get("user-agent"), "exaix-live-tests/1.0");
+  assertEquals(call1.get("Content-Type"), "application/json");
+});
+
+Deno.test("[phase203.factory] a self-hosted service without declared headers sends none of them", async () => {
+  const provider = await factory.create(selfHostedOptions("https://gpu.internal/v1/chat/completions"));
+  assertEquals((await captureRequestHeaders(provider)).get("x-opencode-session"), null);
 });

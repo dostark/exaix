@@ -127,6 +127,7 @@ export class ProviderFactory {
       model: binding.service_model_id,
       allow_insecure_loopback: binding.allow_insecure_loopback ?? false,
       ...(binding.supports_tool_choice !== undefined ? { supports_tool_choice: binding.supports_tool_choice } : {}),
+      ...(binding.headers !== undefined ? { headers: binding.headers } : {}),
       ...(binding.key_env !== undefined ? { key_env: binding.key_env } : {}),
     });
     const options: IResolvedProviderOptions = {

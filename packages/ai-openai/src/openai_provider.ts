@@ -29,7 +29,12 @@ import type { IModelOptions } from "@exaix/ai/types.ts";
 import { assertSupportedCallOptions, type IProviderCallCapabilities } from "@exaix/ai";
 import type { CompatibleChatConfig } from "@exaix/schemas";
 import type { IModelPricing, IModelPricingLookup, Opt, Reason } from "@exaix/core/types";
-import { createCompatibleChatRequestInit, mapCompatibleUsage, validateCompatibleResponse } from "./compatible_chat.ts";
+import {
+  createCompatibleChatRequestInit,
+  mapCompatibleUsage,
+  validateCompatibleResponse,
+  withServiceHeaders,
+} from "./compatible_chat.ts";
 import {
   type INativeInputMeasurement,
   measureOpenAiChatProjection,
@@ -86,6 +91,8 @@ export class OpenAIProvider extends BaseProvider {
   readonly callCapabilities?: IProviderCallCapabilities;
   private readonly compatible: boolean;
   private readonly compatibleConfig?: CompatibleChatConfig;
+  /** One stable id for this provider, sent where a service header carries {session_id}. */
+  private readonly sessionId = crypto.randomUUID();
   private readonly tokenizer: ITokenizer;
   private readonly pricingLookup?: IModelPricingLookup;
 
@@ -205,7 +212,7 @@ export class OpenAIProvider extends BaseProvider {
     const compatibleRequest = createCompatibleChatRequestInit(this.apiKey, this.model, prompt, options, config.profile);
     const result = await performProviderCall<OpenAIResponse>(
       this.baseUrl,
-      compatibleRequest.init,
+      withServiceHeaders(compatibleRequest.init, config.headers, this.sessionId),
       {
         id: this.id,
         traceId: options?.traceId,

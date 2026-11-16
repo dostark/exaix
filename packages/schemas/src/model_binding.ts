@@ -91,6 +91,8 @@ export interface IResolvedBinding {
   allow_insecure_loopback?: boolean;
   /** A self-hosted service states whether it honors an explicit tool_choice. */
   supports_tool_choice?: boolean;
+  /** Extra request headers of a self-hosted service. The token {session_id} becomes one id for each provider. */
+  headers?: Record<string, string>;
   /** A self-hosted service's own key variable. Other profiles read their fixed variable, so it stays unset. */
   key_env?: string;
   tool?: SessionTool;
@@ -136,6 +138,7 @@ export interface ICatalogService {
   endpoint?: string;
   allow_insecure_loopback?: boolean;
   supports_tool_choice?: boolean;
+  headers?: Record<string, string>;
   transport: BindingTransport;
   interface: BindingInterface;
   key_env?: string;
@@ -189,6 +192,33 @@ export const ENV_VAR_NAME_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 const BINDING_SELECTOR_PATTERN =
   /^(default|judge|judge:[A-Za-z0-9._-]+|role:[a-z0-9-]+|flow:[A-Za-z0-9._*-]+(\/step:[A-Za-z0-9._*-]+)?)$/;
 
+/** The names a service may send: custom x- headers and a user agent, in lowercase. */
+const SERVICE_HEADER_NAME_PATTERN = /^(?:x-[a-z0-9-]{1,64}|user-agent)$/;
+/** A name that carries a credential or a session secret. Keys travel through key_env only. */
+const SERVICE_HEADER_CREDENTIAL_PATTERN = /key|token|auth|secret|password|cookie|credential/;
+/** Printable ASCII only, so a value cannot hold a line break or any other control character. */
+const SERVICE_HEADER_VALUE_PATTERN = /^[\x20-\x7e]{1,256}$/;
+const SERVICE_HEADER_MAX_COUNT = 8;
+/** The token that a provider replaces with one stable session id for each provider instance. */
+export const SERVICE_HEADER_SESSION_TOKEN = "{session_id}";
+
+/** The extra request headers of a self-hosted service. They never carry a credential, a framing field or a split value. */
+export const ServiceHeadersSchema = z.record(
+  z.string().regex(SERVICE_HEADER_NAME_PATTERN).refine((name) => !SERVICE_HEADER_CREDENTIAL_PATTERN.test(name), {
+    message: "a header name must not carry a credential",
+  }),
+  z.string().regex(SERVICE_HEADER_VALUE_PATTERN),
+).refine((headers) => Object.keys(headers).length <= SERVICE_HEADER_MAX_COUNT, {
+  message: `at most ${SERVICE_HEADER_MAX_COUNT} headers`,
+});
+
+/** The fields that a self-hosted catalog service, its resolved binding and its compatible config share. */
+export const SELF_HOSTED_SERVICE_FIELDS = {
+  allow_insecure_loopback: z.boolean().optional(),
+  supports_tool_choice: z.boolean().optional(),
+  headers: ServiceHeadersSchema.optional(),
+};
+
 export const BindingTransportSchema = z.enum(["cloud", "local"]);
 const BindingInterfaceSchema = z.enum(["api", "cli"]);
 export const BindingFieldSchema = z.enum([
@@ -222,8 +252,7 @@ export const CatalogServiceSchema = z.object({
   adapter: z.string().min(1),
   profile: z.string().min(1).optional(),
   endpoint: z.string().url().optional(),
-  allow_insecure_loopback: z.boolean().optional(),
-  supports_tool_choice: z.boolean().optional(),
+  ...SELF_HOSTED_SERVICE_FIELDS,
   transport: BindingTransportSchema,
   interface: BindingInterfaceSchema,
   key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
@@ -288,8 +317,7 @@ const ResolvedBindingSchema = z.object({
   adapter: z.string().min(1),
   profile: z.string().optional(),
   endpoint: z.string().url().optional(),
-  allow_insecure_loopback: z.boolean().optional(),
-  supports_tool_choice: z.boolean().optional(),
+  ...SELF_HOSTED_SERVICE_FIELDS,
   key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
   tool: SessionToolSchema.optional(),
   effort: EffortDeclarationSchema.optional(),

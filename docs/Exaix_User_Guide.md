@@ -5549,6 +5549,7 @@ fields inherit from the global block only for the same profile):
 | `allow_insecure_loopback` | `false`          | `local-test` and `self-hosted` may use a loopback HTTP endpoint |
 | `supports_tool_choice`    | `false`          | `self-hosted` only: the server honors an explicit `tool_choice` |
 | `key_env`                 | none             | `self-hosted` only: the service's own required key variable     |
+| `headers`                 | none             | `self-hosted` only: up to 8 extra request headers (see below)   |
 | `max_response_bytes`      | 8 MiB            | Largest accepted response body                                  |
 | `max_tool_argument_bytes` | 64 KiB           | Largest accepted tool-call argument object                      |
 | `max_history_bytes`       | 8 MiB            | Largest accepted replayed conversation                          |
@@ -5584,7 +5585,15 @@ max_cost_per_day = 5.0
 
 **Self-hosted services (vLLM, LiteLLM, Ollama).** A `self-hosted` service declares its own endpoint
 and model, so it pins neither. `CompatibleChatFieldsSchema.profile` admits it, and the schema requires
-both `endpoint` and `model` for it and rejects `supports_tool_choice` on any other profile. Declare it
+both `endpoint` and `model` for it and rejects `supports_tool_choice` and `headers` on any other profile.
+The endpoint must use HTTPS (plain HTTP only on loopback with `allow_insecure_loopback`), carry no user
+info, query or fragment, and its path must end with `/chat/completions`.
+
+A service that needs extra request headers declares them in `headers`, for example
+`headers = { x-opencode-session = "{session_id}" }` for OpenCode Go, which rejects a request without a session
+header. A name is lowercase `x-…` or `user-agent`, and never carries a credential (keys go through `key_env`).
+A value is printable ASCII of at most 256 characters, and the token `{session_id}` becomes one stable id for
+each provider instance. Declare it
 as a catalog service in a per-run overlay, for example for a vLLM server:
 
 ```json

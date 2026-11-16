@@ -131,6 +131,7 @@ Deno.test("[llm_bindings] the OpenCode Go preset binds DeepSeek V4.1 Flash at th
     assertEquals(binding.endpoint, OPENCODE_GO_ENDPOINT);
     assertEquals(binding.service_model_id, OPENCODE_GO_MODEL);
     assertEquals(binding.key_env, OPENCODE_GO_KEY_ENV);
+    assertEquals(binding.headers, { "x-opencode-session": "{session_id}", "user-agent": "exaix-live-tests/1.0" });
   });
 });
 

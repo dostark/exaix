@@ -7,7 +7,7 @@
  * @related-files [packages/core/src/config/service.ts, packages/ai/src/provider_factory.ts]
  */
 import { z } from "zod";
-import { ENV_VAR_NAME_PATTERN } from "./model_binding.ts";
+import { ENV_VAR_NAME_PATTERN, SELF_HOSTED_SERVICE_FIELDS } from "./model_binding.ts";
 import {
   BYTES_PER_KB,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
@@ -20,12 +20,15 @@ import {
   OPENAI_COMPATIBLE_MAX_HISTORY_BYTES,
   OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES,
   OPENAI_COMPATIBLE_MAX_TOOL_ARGUMENT_BYTES,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
   ProviderDefaultsRegistry,
   ProviderType,
 } from "@exaix/core";
 
 const COMPATIBLE_BYTE_LIMIT_CEILING = 64 * BYTES_PER_KB ** 2;
 export const MODEL_CONFIG_FIELD = "model";
+/** The compatible fields that no other profile accepts. */
+const SELF_HOSTED_ONLY_FIELDS = ["supports_tool_choice", "headers", "key_env"] as const;
 
 // The base stays unrefined, because CompatibleChatOverrideSchema is its .partial()
 // and zod 4 throws on .partial() of a refined object.
@@ -33,8 +36,8 @@ const CompatibleChatFieldsSchema = z.object({
   profile: z.enum(["openai", "deepseek", "local-test", "self-hosted"]),
   endpoint: z.string().optional(),
   model: z.string().optional(),
-  allow_insecure_loopback: z.boolean().optional(),
-  supports_tool_choice: z.boolean().optional(),
+  /** Loopback opt-in, tool_choice support and extra request headers, which only a self-hosted service sets. */
+  ...SELF_HOSTED_SERVICE_FIELDS,
   /** A self-hosted service's own key variable. Absent means the shared self-hosted variable. */
   key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
   max_response_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
@@ -58,14 +61,15 @@ export const CompatibleChatConfigSchema = CompatibleChatFieldsSchema.extend({
     OPENAI_COMPATIBLE_MAX_HISTORY_BYTES,
   ),
 }).strict().superRefine((config, ctx) => {
-  if (config.profile === "self-hosted" && (!config.endpoint || !config.model)) {
+  const selfHosted = config.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE;
+  if (selfHosted && (!config.endpoint || !config.model)) {
     ctx.addIssue({ code: "custom", message: "self-hosted profile requires both endpoint and model" });
   }
-  if (config.profile !== "self-hosted" && config.supports_tool_choice !== undefined) {
-    ctx.addIssue({ code: "custom", message: "supports_tool_choice applies to the self-hosted profile only" });
-  }
-  if (config.profile !== "self-hosted" && config.key_env !== undefined) {
-    ctx.addIssue({ code: "custom", message: "key_env applies to the self-hosted profile only" });
+  if (selfHosted) return;
+  for (const field of SELF_HOSTED_ONLY_FIELDS) {
+    if (config[field] !== undefined) {
+      ctx.addIssue({ code: "custom", message: `${field} applies to the self-hosted profile only` });
+    }
   }
 });
 export type CompatibleChatConfig = z.infer<typeof CompatibleChatConfigSchema>;

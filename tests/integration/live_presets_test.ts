@@ -51,6 +51,7 @@ Deno.test("[live_presets] the OpenCode Go service reaches the catalog from its p
   assertEquals(service?.endpoint, "https://opencode.ai/inference/go/openai/v1/chat/completions");
   assertEquals(service?.key_env, "OPENCODE_API_KEY");
   assertEquals(service?.profile, "self-hosted");
+  assertEquals(service?.headers, { "x-opencode-session": "{session_id}", "user-agent": "exaix-live-tests/1.0" });
 });
 
 Deno.test("[live_presets] a service without a live preset fails closed with the row to add", () => {

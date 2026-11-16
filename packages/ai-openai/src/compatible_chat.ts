@@ -26,6 +26,7 @@ import {
   type TokenMap,
 } from "@exaix/ai/provider_common_utils.ts";
 import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
+import { SERVICE_HEADER_SESSION_TOKEN } from "@exaix/schemas";
 import { planStructuredOutput, validateStructuredOutput } from "@exaix/ai/structured_output.ts";
 import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
 
@@ -64,6 +65,20 @@ const CompatibleResponseSchema = z.object({
     completion_tokens_details: z.object({ reasoning_tokens: tokenCount.optional() }).optional(),
   }),
 });
+
+/** Adds the extra headers of a self-hosted service to a request. The token {session_id} becomes the session id of the provider. */
+export function withServiceHeaders(
+  init: RequestInit,
+  headers: Opt<Readonly<Record<string, string>>, Reason.OptionalInput>,
+  sessionId: string,
+): RequestInit {
+  if (headers === undefined) return init;
+  const merged = new Headers(init.headers);
+  for (const [name, value] of Object.entries(headers)) {
+    merged.set(name, value.replaceAll(SERVICE_HEADER_SESSION_TOKEN, sessionId));
+  }
+  return { ...init, headers: Object.fromEntries(merged.entries()) };
+}
 
 /** The wire RequestInit plus its structured-output mode, for the caller to attach to IGenerateResult. */
 interface ICompatibleChatRequestInit {

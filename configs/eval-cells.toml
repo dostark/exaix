@@ -408,6 +408,12 @@ key_env = "OPENCODE_API_KEY"
 [tool.live-opencode-go.catalog.services.opencode-go.serves]
 "deepseek/deepseek-v4.1-flash" = "deepseek-v4.1-flash"
 
+# OpenCode Go rejects a request without x-opencode-session (400 MissingSessionID). The provider replaces
+# {session_id} with one stable id for each provider instance, and sends the user agent the service asks for.
+[tool.live-opencode-go.catalog.services.opencode-go.headers]
+x-opencode-session = "{session_id}"
+user-agent = "exaix-live-tests/1.0"
+
 # Local runtimes. They cost nothing, but a server must run and the model must be pulled, so each row
 # has its own EXA_MATRIX opt-in. A missing server or model fails the test with its named cause.
 [tool.live-ollama-chat]
