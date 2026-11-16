@@ -21,6 +21,7 @@ import {
   resolveBinding,
   SELECTOR_DEFAULT,
   STEP_KIND_AGENT,
+  STEP_KIND_JUDGE,
 } from "@exaix/ai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
@@ -81,6 +82,11 @@ const TEST_STEP_REF: IBindingStepRef = {
   nativeTools: false,
 };
 
+/** A CLI provider binds as a judge, because the resolver admits a CLI interface for judges and gates only. */
+const CLI_TEST_JUDGE_ID = "llm-test-judge";
+const CLI_TEST_SELECTOR = `judge:${CLI_TEST_JUDGE_ID}`;
+const CLI_TEST_STEP_REF: IBindingStepRef = { ...TEST_STEP_REF, kind: STEP_KIND_JUDGE, judgeId: CLI_TEST_JUDGE_ID };
+
 function envProbe(): IBindingEnvProbe {
   return {
     hasKey: (name) => (Deno.env.get(name) ?? "").length > 0,
@@ -116,13 +122,15 @@ export function liveReplayLlmSpec(): IBindingSpec {
 
 /** Resolves a spec through the phase-204 resolver. A spec that does not bind fails with its issue codes. */
 export function resolveLlmBinding(spec: IBindingSpec): IResolvedBinding {
+  const catalog = llmTestCatalog();
+  const isCli = catalog.services[spec.service ?? ""]?.interface === "cli";
   const layers: IBindingLayers = {
-    entries: [{ layer: LAYER_RUN, selector: SELECTOR_DEFAULT, spec }],
-    catalog: llmTestCatalog(),
+    entries: [{ layer: LAYER_RUN, selector: isCli ? CLI_TEST_SELECTOR : SELECTOR_DEFAULT, spec }],
+    catalog,
     overlaySha256: [],
     operatorLayersPresent: false,
   };
-  const outcome = resolveBinding(TEST_STEP_REF, {}, layers, envProbe());
+  const outcome = resolveBinding(isCli ? CLI_TEST_STEP_REF : TEST_STEP_REF, {}, layers, envProbe());
   if (outcome.kind === "bound") return outcome.binding;
   const reason = outcome.kind === "invalid"
     ? outcome.issues.map((issue) => `${issue.code}: ${issue.detail}`).join("; ")
@@ -130,8 +138,15 @@ export function resolveLlmBinding(spec: IBindingSpec): IResolvedBinding {
   throw new Error(`LLM test binding ${JSON.stringify(spec)} did not bind: ${reason}`);
 }
 
+/** The request budget of a live provider. A subscription CLI starts a process for each call, so it needs 300000 ms. */
+const LIVE_PROVIDER_TIMEOUT_MS = 300_000;
+
 function testConfig(): Config {
-  return ConfigSchema.parse({ system: {}, paths: {}, ai: { provider: "mock", model: "boot-model" } });
+  return ConfigSchema.parse({
+    system: {},
+    paths: {},
+    ai: { provider: "mock", model: "boot-model", timeout_ms: LIVE_PROVIDER_TIMEOUT_MS },
+  });
 }
 
 /** Resolves a spec and builds its provider with ProviderFactory.createFromBinding, as the daemon does. */

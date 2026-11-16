@@ -439,6 +439,19 @@ provider = "llamacpp"
 requires_bin = "true"
 requires_optin = "EXA_MATRIX_LLAMACPP"
 
+# The Codex CLI is a subscription provider: it needs the binary on PATH and a logged-in session, and it bills no key.
+[tool.live-codex-cli]
+tool = "exactl"
+config = "configs/codex-cli-react.toml"
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+requires_bin = "codex"
+requires_optin = "EXA_MATRIX_CODEX_CLI"
+
+[tool.live-codex-cli.bindings.default]
+service = "codex-cli"
+service_model_id = "gpt-5.6-terra"
+
 # Live calls that are not model providers: remote MCP servers, the models.dev catalog, subscription CLIs
 # and the sessions that drive them. Each row declares only predicates. No scenario selects these rows, so
 # `config` repeats a base config that no daemon boots. A subscription CLI needs its binary on PATH and a

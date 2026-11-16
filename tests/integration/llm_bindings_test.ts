@@ -113,12 +113,26 @@ Deno.test("[llm_bindings] each preset's grouped-replay flag matches its boot reg
   }
 });
 
-Deno.test("[llm_bindings] a CLI service is refused for a test step, because the resolver binds CLI only to judges and delegates", () => {
+Deno.test("[llm_bindings] a CLI service binds as a generate provider with its cli interface", () => {
+  const binding = resolveLlmBinding({ service: "codex-cli", service_model_id: "gpt-5.6-terra" });
+  assertEquals(binding.adapter, "codex-cli");
+  assertEquals(binding.interface, "cli");
+  assertEquals(binding.service_model_id, "gpt-5.6-terra");
+});
+
+Deno.test("[llm_bindings] a cli-delegate service is still refused, because it is a session tool and no provider", () => {
   assertThrows(
-    () => resolveLlmBinding({ service: "claude-cli", service_model_id: "claude-sonnet-5" }),
+    () => resolveLlmBinding({ service: "codex", service_model_id: "gpt-5.6-terra" }),
     Error,
-    "interface_unsupported",
+    "a judge uses provider.generate",
   );
+});
+
+Deno.test("[llm_bindings] the Codex CLI live gate needs its opt-in and the binary, and no key", async () => {
+  await withEnv({ EXA_MATRIX_CODEX_CLI: null }, () => {
+    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }) ?? "", "EXA_MATRIX_CODEX_CLI");
+  });
+  assertEquals(llmKeyEnv({ service: "codex-cli" }), undefined);
 });
 
 Deno.test("[llm_bindings] the OpenCode Go preset binds DeepSeek V4.1 Flash at the OpenCode Go endpoint with its own key", async () => {
