@@ -5197,9 +5197,11 @@ proceed = 70    # at or above → proceed immediately
 
 Exaix supports environment variables for runtime configuration overrides and API authentication.
 
+**One reference.** [Provider, service, transport and model settings](Exaix_Provider_Settings.md) lists every key, opt-in and override variable with the services, preset rows and scenarios that use it. It is generated from the code, so it is complete. The tables below explain the main variables in prose.
+
 #### 5.3.1 Provider API Keys
 
-Cloud providers require API keys set as environment variables:
+Cloud providers require API keys set as environment variables. This table lists the three main providers. The [full list of keys](Exaix_Provider_Settings.md#keys-and-opt-ins) also covers DeepSeek, OpenRouter and OpenCode Go.
 
 | Variable            | Provider           | Required When            |
 | ------------------- | ------------------ | ------------------------ |
@@ -5266,7 +5268,7 @@ The live tests bind their provider and model with `EXA_TEST_BIND`. The other var
 | Remote service (`live-mcp-deepwiki`, `-mcp-github`, `-models-dev`)                                                                                 | `EXA_MATRIX_MCP_DEEPWIKI`, `EXA_MATRIX_MCP_GITHUB` with `GITHUB_TOKEN`, or `EXA_MATRIX_MODELS_DEV`                                                                                                                                                                      |
 | Subscription CLI (`live-codex-cli`, `live-delegation-*`, `live-calibration-sandbox`, `live-learning-effectiveness`, `live-session-delegate-cycle`) | The CLI on `PATH` and logged in, and `EXA_MATRIX_CODEX`, `EXA_MATRIX_DELEGATION`, `EXA_MATRIX_CALIBRATION_SANDBOX`, `EXA_MATRIX_LEARNING_EFFECTIVENESS` or `EXA_MATRIX_SESSION_DELEGATE_CYCLE`. The session cycle also needs the Anthropic and OpenRouter rows to hold. |
 
-A key in the environment never starts a run. An opt-in variable counts when it is non-empty, and CI jobs never set it. An opted-in local run expects a working server, so a missing server or model fails the test and names the step that fixes it. Choose the provider with `EXA_TEST_BIND` (the `--bind` layer), which also changes which preset gates the run: the preset of the bound service decides. A scenario run selects a row with `--cell` and adds layers with `--overlay` and `--bind`, as in [Evaluation](Exaix_Evaluation.md). `tests/integration/live_gating_guard_test.ts` fails when a test reads an opt-in variable or a provider key by its own code.
+A key in the environment never starts a run. An opt-in variable counts when it is non-empty, and CI jobs never set it. An opted-in local run expects a working server, so a missing server or model fails the test and names the step that fixes it. Choose the provider with `EXA_TEST_BIND` (the `--bind` layer), which also changes which preset gates the run: the preset of the bound service decides. `exactl eval run --cell <tool or provider>` selects a scenario row. The runner `tests/scenario_framework/runner/main.ts` adds `--overlay` and `--bind` layers, as in [Evaluation](Exaix_Evaluation.md). `tests/integration/live_gating_guard_test.ts` fails when a test reads an opt-in variable or a provider key by its own code.
 
 **Live runs on the Codex CLI.** Run `EXA_MATRIX_CODEX=1 EXA_TEST_BIND='default=service=codex-cli,service_model_id=gpt-5.6-terra' deno test --allow-all <test file>` with `codex` on `PATH` and logged in. A CLI service binds as a generate provider, in the way a judge does, and it needs no key. Each call starts a `codex exec` process, so the provider budget is 300000 ms. Codex is an agent that uses its own tools, so a test that asserts which Exaix tool the model chooses, or that needs native tool calls, does not apply to it. The ReAct loop test and the extraction quality test do.
 

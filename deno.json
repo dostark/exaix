@@ -182,6 +182,7 @@
     "docs-agent-validate": "deno fmt --check *.md && deno run --allow-read --allow-run=git scripts/check_md_paths.ts . && grep -q 'copilot_knowledge_base: true' *.md && deno run --allow-read scripts/validate_agents_docs.ts && deno run scripts/validate_aci_docs.ts --strict",
     "docs:cli": "deno run -A scripts/generate_cli_reference.ts --edition solo",
     "docs:cli:team": "deno run -A scripts/generate_cli_reference.ts --edition team",
+    "docs:providers": "deno run -A scripts/generate_provider_settings.ts",
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
     "workspace:check": "deno check --unstable ./packages/** ./exaix-team/**",
     "workspace:test": "deno test --allow-all ./packages/** ./exaix-team/**",

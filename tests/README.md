@@ -413,7 +413,7 @@ Tests run automatically on:
 ### Common Pitfalls
 
 1. **CI mode detection**: Use `isCIMode()` helper, not raw `CI` env var
-1. **Live tests**: A live test is configured and gated by its `live-<service>` row of `tests/configs/model_presets.toml`, read with `liveSkipReason` or `liveLlmEnabled` from `tests/helpers/`. Never read an opt-in variable or a key yourself (`tests/integration/live_gating_guard_test.ts` enforces this). Billable services need `EXA_TEST_ENABLE_PAID_LLM=1` and their key, and local runtimes need their `EXA_MATRIX_*` opt-in
+1. **Live tests** (every variable and row: [provider settings](../docs/Exaix_Provider_Settings.md)): A live test is configured and gated by its `live-<service>` row of `tests/configs/model_presets.toml`, read with `liveSkipReason` or `liveLlmEnabled` from `tests/helpers/`. Never read an opt-in variable or a key yourself (`tests/integration/live_gating_guard_test.ts` enforces this). Billable services need `EXA_TEST_ENABLE_PAID_LLM=1` and their key, and local runtimes need their `EXA_MATRIX_*` opt-in
 1. **Binary dependencies**: Don't require compiled binaries in tests
 
 ### Running Locally Like CI
