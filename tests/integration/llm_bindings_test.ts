@@ -22,6 +22,7 @@ import {
   EXA_TEST_BIND_ENV,
   liveLlmSkipReason,
   liveLlmSpec,
+  liveLlmToolControlSkipReason,
   liveReplayLlmSpec,
   LLM_TEST_PRESETS,
   llmKeyEnv,
@@ -167,4 +168,23 @@ Deno.test("[llm_bindings] the live gate follows the service that EXA_TEST_BIND b
       assertStringIncludes(reason, "OPENAI_API_KEY");
     },
   );
+});
+
+Deno.test("[llm_bindings] a CLI service cannot run a test that asserts which Exaix tool the model picks", async () => {
+  await withEnv({ EXA_MATRIX_CODEX: "1" }, () => {
+    const reason = liveLlmToolControlSkipReason({ service: "codex-cli", service_model_id: "gpt-5.6-terra" });
+    assertStringIncludes(reason ?? "", "runs its own tools");
+  });
+});
+
+Deno.test("[llm_bindings] an API service passes the tool control check, and the gate of its own row still applies", async () => {
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", DEEPSEEK_API_KEY: "k" }, () => {
+    assertEquals(liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }), null);
+  });
+  await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: null, DEEPSEEK_API_KEY: "k" }, () => {
+    assertStringIncludes(
+      liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }) ?? "",
+      ENV_TEST_ENABLE_PAID_LLM,
+    );
+  });
 });

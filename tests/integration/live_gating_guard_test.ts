@@ -20,7 +20,8 @@ const OPT_IN_READ =
 const KEY_PRESENT_CALL = /\bllmKeyPresent\(/;
 const PROVIDER_KEY = /["'](?:DEEPSEEK|ANTHROPIC|OPENAI|GOOGLE|OPENROUTER|OPENCODE)_API_KEY["']/;
 /** The ways a live test asks its preset whether it may run. */
-const PRESET_GATE = /\b(?:liveSkipReason|liveLlmEnabled|liveLlmSkipReason|liveMatrixEnabled)\b/;
+const PRESET_GATE =
+  /\b(?:liveSkipReason|liveLlmEnabled|liveLlmSkipReason|liveLlmToolControlEnabled|liveMatrixEnabled)\b/;
 const GATES_ITSELF = /\bignore\s*:/;
 const LIVE_TEST_FILE = /live.*_test\.ts$/;
 /** The code that owns the rule: the preset reader, the scenario runner that evaluates the same predicates, and this guard. */

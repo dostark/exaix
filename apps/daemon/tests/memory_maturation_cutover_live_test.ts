@@ -22,7 +22,7 @@ import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrat
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
 import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalog } from "@exaix/testing";
-import { createLlmProvider, liveLlmEnabled, liveLlmSpec } from "../../../tests/helpers/llm_bindings.ts";
+import { createLlmProvider, liveLlmSpec, liveLlmToolControlEnabled } from "../../../tests/helpers/llm_bindings.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
@@ -58,7 +58,7 @@ async function loadPolicyInstructions(): Promise<string> {
 
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  ignore: !liveLlmEnabled(liveSpec),
+  ignore: !liveLlmToolControlEnabled(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

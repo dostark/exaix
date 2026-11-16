@@ -170,6 +170,25 @@ export function liveLlmSkipReason(spec: IBindingSpec): string | null {
   return liveSkipReason(spec.service);
 }
 
+const CLI_INTERFACE = "cli";
+
+/** The first reason that the bound service cannot run a test of the Exaix tool choice, or null. A CLI service runs its own tools. */
+export function liveLlmToolControlSkipReason(spec: IBindingSpec): string | null {
+  const gate = liveLlmSkipReason(spec);
+  if (gate !== null) return gate;
+  const isCli = llmTestCatalog().services[spec.service ?? ""]?.interface === CLI_INTERFACE;
+  return isCli
+    ? `${spec.service} is a CLI agent that runs its own tools, so it cannot be judged on the Exaix tool it picks`
+    : null;
+}
+
+/** True when a test that asserts the Exaix tool choice can run on the bound service. It prints the named reason when it cannot. */
+export function liveLlmToolControlEnabled(spec: IBindingSpec): boolean {
+  const reason = liveLlmToolControlSkipReason(spec);
+  if (reason !== null) console.warn(`[live] ${spec.service}: skipped, ${reason}`);
+  return reason === null;
+}
+
 /** True when the live test of the bound service can run. It prints the named reason when it cannot. */
 export function liveLlmEnabled(spec: IBindingSpec): boolean {
   const reason = liveLlmSkipReason(spec);
