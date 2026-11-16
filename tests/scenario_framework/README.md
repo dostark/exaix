@@ -415,6 +415,8 @@ exactl daemon start
 
 ### 2.2 Manual Sandbox Setup
 
+**Which `exactl` a step runs.** The synthetic runner runs the first of these that is a file: the `exactlExecutable` option, then the file that `EXA_BIN_PATH` names, then `tests/scenario_framework/bin/exactl` of the checkout that holds the runner. Only when none exists does it use the `exactl` on `PATH`. A scenario therefore tests the code of its own checkout, and not an `exactl` that another checkout installed with `deno install`.
+
 For fine-grained control over each step:
 
 ```bash

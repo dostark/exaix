@@ -352,16 +352,25 @@ async function buildJudgeBindingScopes(input: {
   return { byStep, fallback: await buildRunFile(undefined) };
 }
 
+/** The exactl wrapper of this checkout. It finds its own repository root, so it runs the code under test. */
+export const CHECKOUT_EXACTL = join(REPO_ROOT, "tests", "scenario_framework", "bin", "exactl");
+
+/** The first candidate that is a file, or undefined, which leaves the exactl on PATH as the last fallback. */
+export function resolveExactlExecutable(candidates: readonly string[]): string | undefined {
+  return candidates.find((candidate) => {
+    try {
+      return candidate !== "" && Deno.statSync(candidate).isFile;
+    } catch {
+      return false;
+    }
+  });
+}
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
-  const configuredExactl = Deno.env.get("EXA_BIN_PATH");
-  if (options.exactlExecutable === undefined && configuredExactl !== undefined) {
-    try {
-      if (Deno.statSync(configuredExactl).isFile) options.exactlExecutable = configuredExactl;
-    } catch {
-      // Fall back to the PATH executable when the override is absent (for example in a container).
-    }
+  if (options.exactlExecutable === undefined) {
+    options.exactlExecutable = resolveExactlExecutable([Deno.env.get("EXA_BIN_PATH") ?? "", CHECKOUT_EXACTL]);
   }
   // Sandbox workspace may not exist yet (sibling-of-repo default), and the step executor
   // spawns commands with it as cwd — create it unconditionally so every run mode is covered.
