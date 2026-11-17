@@ -46,54 +46,20 @@ Memory/
     └── embeddings/     # Semantic search vectors
 ```
 
-#### CLI Access
+#### Working with memory
 
-Use the `exactl memory` commands to interact with Memory Banks:
+The `exactl memory` commands read the banks and decide pending updates. Every option is in the generated [memory reference](../cli/memory.md).
 
-```bash
-# List all global learnings
-exactl memory list
+- **Browse:** `exactl memory list` shows the global learnings. `exactl memory project list` and `exactl memory project show <portal>` show project knowledge. `exactl memory execution list` and `exactl memory execution show <trace-id>` show the history of agent runs.
+- **Search:** `exactl memory search "<query>"` searches all banks by keyword. Narrow it with `--tags` or `--portal <alias>`, or add `--use-embeddings` for semantic search.
+- **Review:** `exactl memory proposal list` shows the pending updates. `exactl memory proposal approve <proposal-id>` moves one into its bank. `exactl memory proposal reject <proposal-id> --reason "<text>"` drops it.
+- **Repair:** `exactl memory index rebuild` regenerates the search indices under `Memory/Index/`.
 
-# List project memory banks
-exactl memory project list
+If `memory.auto_approve.enabled` is on, the daemon can promote eligible pending proposals by itself. It may also emit a daily digest notification while proposals wait for review.
 
-# Show project details
-exactl memory project show MyProject
+#### What memory gives you
 
-# Search across all memory (keyword)
-exactl memory search "database migration"
-
-# Search by tags
-exactl memory search "error handling" --tags "error-handling,async"
-
-# List execution history
-exactl memory execution list --limit 10
-
-# View pending memory updates
-exactl memory proposal list
-
-# Approve a pending update
-exactl memory proposal approve <proposal-id>
-
-# Reject with reason
-exactl memory proposal reject <proposal-id> --reason "Duplicate"
-
-> Note: If `memory.auto_approve.enabled` is enabled in configuration, the daemon can automatically promote eligible pending proposals, and it may emit a daily pending digest notification when proposals are waiting for review.
-
-# Rebuild search indices
-exactl memory index rebuild
-```
-
-#### Features
-
-- **Automatic Learning Extraction**: Insights are extracted from agent executions
-- **Pending Workflow**: Review and approve/reject proposed learnings
-- **Global + Project Scope**: Learnings can be global or project-specific
-- **Tag-Based Search**: Filter by tags for precise results
-- **Keyword Search**: Full-text search with frequency ranking
-- **Embedding Search**: Semantic similarity search via embedding service
-- **Structured Data**: JSON metadata alongside human-readable markdown
-- **CLI Integration**: Direct access without external dependencies
+Every agent run stores its history with full context, and insights from the run become proposed learnings. A learning is global or project-specific. Each one keeps JSON metadata beside a human-readable markdown file. Keyword search ranks by frequency. `--use-embeddings` adds semantic similarity through the embedding service.
 
 #### Pending Workflow
 
@@ -138,40 +104,6 @@ temporally ranked), consolidated (dedup, supersession, reflection), and retired
 (superseded with audit trail). The closed self-learning loop, the local-first/cost-gated
 posture, deterministic fallbacks, and the full configuration reference are covered in
 the dedicated guide: [Exaix_Memory.md](../Exaix_Memory.md).
-
-## **Memory Banks CLI** - Access Execution History and Project Knowledge
-
-Exaix provides comprehensive CLI commands to access your workspace's memory banks.
-
-**Memory Commands:**
-
-```bash
-# List all projects
-exactl memory project list
-
-# Get project details
-exactl memory project show MyProject
-
-# List execution history
-exactl memory execution list
-
-# Get specific execution details
-exactl memory execution show trace-abc123
-
-# Search across all memory banks
-exactl memory search "database migration"
-
-# Search within specific project
-exactl memory search "API changes" --portal MyProject
-```
-
-**Features:**
-
-- **Execution History:** Every agent run automatically stored with full context
-- **Project Knowledge:** Persistent context for ongoing projects
-- **Full-text Search:** Find patterns across all memory banks
-- **Structured Data:** JSON metadata alongside human-readable summaries
-- **No Dependencies:** Direct CLI access without external tools
 
 ## File Format Reference
 
