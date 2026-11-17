@@ -321,85 +321,20 @@ If these mismatch, run `exactl doctor --schema` for details.
 
 ---
 
-## Quick Reference
+## Finding a command
 
-**Most Common Operations:**
+The [command summary](#command-summary) lists every command, and each topic file of the guide explains the commands of its subject.
 
-```bash
-# Create requests quickly (instead of manual file creation)
-exactl request create "Add user authentication"    # Quick request
-exactl request create "Fix bug" --priority high    # With priority
+| You want to                                                                                   | Read                                                                    |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Create a request, answer clarification questions, approve a plan, review and merge the result | [Requests, Plans and Reviews](requests-plans-reviews.md)                |
+| Add a project as a portal and work on it                                                      | [Portals](portals.md)                                                   |
+| Change the configuration or a single setting                                                  | [Configuration](configuration.md)                                       |
+| Start, stop and check the daemon, back up and upgrade                                         | [Operations](operations.md)                                             |
+| Query the activity journal, watch a run, export a trace                                       | [Monitoring and Logs](monitoring.md)                                    |
+| Browse memory banks, manage skills                                                            | [Workspace and Memory](workspace-and-memory.md) and [Skills](skills.md) |
+| Run the MCP server or call an MCP tool                                                        | [MCP Server](mcp.md)                                                    |
+| Decide pending approvals and plan amendments                                                  | [Security and Safety](security-and-safety.md)                           |
+| Run evaluation scenarios                                                                      | [Evaluation](evaluation.md)                                             |
 
-# Human review workflow
-exactl plan list                           # See pending plans
-exactl plan show <id>                      # Review plan details
-exactl plan approve <id>                   # Approve for execution
-exactl plan approve --all                  # Approve every plan in review
-exactl plan reject <id> --reason "..."     # Reject with feedback
-
-# Configuration management
-exactl config get ai.provider           # Show effective config value
-exactl config set ai.timeout_ms 45000   # Set override (validated)
-exactl config history ai.provider       # View audit trail
-exactl config rollback ai.provider 3    # Revert to historical value
-exactl config lock add ai.provider          # Protect a key from writes
-exactl config edit                      # Bulk edit in $EDITOR
-
-# Code review workflow
-exactl review list                      # See agent-created branches
-exactl review show <id>                 # Review code changes
-exactl review approve <id>              # Merge to main
-exactl review reject <id> --reason "..." # Delete branch
-
-# Portal management
-exactl portal add ~/Dev/MyProject MyProject  # Mount external project
-exactl portal list                           # Show all portals
-exactl portal show MyProject                 # Portal details
-exactl portal remove MyProject               # Unmount portal
-exactl portal verify                         # Check portal integrity
-exactl portal refresh MyProject              # Update context card
-exactl portal knowledge analyze MyProject              # Analyze codebase knowledge
-exactl portal knowledge show MyProject            # Show gathered knowledge
-
-# Daemon management
-exactl daemon start                        # Start background process
-exactl daemon stop                         # Stop gracefully
-exactl daemon status                       # Check health
-exactl daemon logs --follow                # Watch logs
-
-# Git operations
-exactl git branch list                        # List all branches
-exactl git status                          # Working tree status
-exactl git log --trace <id>                # Find commits by trace
-
-# Memory and skills
-exactl memory search "authentication"      # Search execution history
-exactl skill match "API design"           # Find relevant skills
-exactl skill list                          # List all skills
-
-# MCP server
-exactl mcp serve                          # Start MCP server for external clients
-
-# Activity Journal
-exactl log list --limit 20                  # View recent activity
-exactl log list --filter action_type=error # Find errors
-exactl log list --count                    # Count activities by type
-
-# System info and evaluation
-exactl version                            # Show binary and schema version
-exactl doctor --schema                      # Check schema compatibility
-exactl approval list                      # List every pending human decision
-exactl eval run --pack smoke              # Run an evaluation scenario
-```
-
-## Output Formatting
-
-All CLI commands output human-readable text by default. JSON output is supported for scripting:
-
-```bash
-# Human-readable (default)
-exactl plan list
-
-# Machine-readable JSON output
-exactl plan list -o json
-```
+**Output format.** Every command prints human-readable text by default, and `-o json` prints machine-readable output for scripts. See [Global Options and the Output Contract](#global-options-and-the-output-contract).
