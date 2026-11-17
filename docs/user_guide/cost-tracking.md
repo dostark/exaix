@@ -4,25 +4,11 @@ Cost tracking, budgets and supported providers. Part of the [Exaix User Guide](R
 
 ## Cost Tracking (Beta)
 
-Exaix provides comprehensive cost tracking and budget management for AI provider usage. This feature helps you monitor spending, set limits, and optimize your AI usage costs.
+Exaix tracks the cost of AI provider calls, applies a daily spending limit and helps you find expensive operations.
 
-## exactl log cost
+## Reading the cost report
 
-Use `exactl log cost` to inspect persisted provider calls. Add `--group-by model` or
-`--group-by portal` for per-group call counts, prompt/completion tokens,
-cache-read/cache-creation tokens, and total USD cost. The same view is available
-as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace`, and
-`--since` apply before grouping. Without `--group-by`, the command shows the
-existing per-call table and totals.
-
-```bash
-exactl log cost --group-by model
-exactl log cost --group-by portal --since 2026-09-01
-```
-
-`--group-by role` reports that role attribution is not available in this build.
-The database has a nullable `agent_role` column for future attribution, but
-generation calls do not yet populate it.
+`exactl log cost` lists the persisted provider calls with their cost and the source of each price. `--group-by model`, `--group-by portal` or `--group-by service` gives per-group call counts, prompt and completion tokens, cache-read and cache-creation tokens, and total USD cost. A group also shows the share of its cost per price source. Filters such as `--portal`, `--model`, `--trace` and `--since` apply before grouping. Every option is in the generated [log reference](../cli/log.md#exactl-log-cost).
 
 ### How Cost Tracking Works
 
@@ -35,17 +21,19 @@ Cost tracking operates at multiple levels:
 
 ### Configuration
 
-Configure cost tracking in your `exa.config.toml`:
+The daily spending limit is `max_daily_cost_usd` in `[provider_strategy]`. It defaults to 5.00 USD and is described with the provider strategy in [Model Settings](../Model_Settings.md). The `[cost_tracking]` block tunes how costs are recorded:
 
 ```toml
+[provider_strategy]
+max_daily_cost_usd = 50.0  # Daily spending limit across all providers
+
 [cost_tracking]
-enabled = true
-max_daily_cost_usd = 50.0  # Daily spending limit
+batch_delay_ms = 5000      # Delay between cost batch flushes (default)
+max_batch_size = 50        # Cost entries per flush (default)
 
 [cost_tracking.rates]
-# Override default rates if needed
-anthropic_claude_sonnet = 0.000015  # $15 per million tokens
-openai_gpt4 = 0.00003               # $30 per million tokens
+# Flat estimate per provider, used only when no better price is available
+anthropic = 0.000015       # $15 per million tokens
 ```
 
 Each cost record carries a `cost_source`: `provider_reported` (the provider returned the cost),
@@ -63,9 +51,7 @@ cloud = true   # Enforce strict section budgets for hosted providers
 local = false  # Leave local/self-hosted models in relaxed mode by default
 ```
 
-When enabled, Exaix derives section budgets for `system`, `plan`,
-`portalKnowledge`, `memory`, `skills`, and `loopHistory` before assembling the
-final prompt.
+When enabled, Exaix derives section budgets for `system`, `plan`, `portalKnowledge`, `memory`, `skills`, and `loopHistory` before assembling the final prompt.
 
 ### Budget Enforcement
 
@@ -98,31 +84,11 @@ alone exceeds it, the planning call fails closed before any provider call, emitt
 `context.budget.exceeded` and surfacing the configured ceiling and protected-token total —
 protected content is never silently dropped to fit a cap.
 
-The ceiling is validated at configuration time against the allocator's minimum feasible
-total (`MIN_COST_TARGET_TOKENS_PER_REQUEST`) — a value below it is rejected when the config
-is loaded rather than deferred to failure on every request. The effective ceiling is
-resolved at config load as Config-DB override (set via
-`exactl config set budget.cost_target_tokens_per_request <n>`)
-
-> TOML > the legacy `budget_enforcement.costTargetTokens` field, and takes effect on the
-> next daemon restart (its swap class is RESTART); `budget.cloud_enforcement_enabled` /
-> `budget.local_enforcement_enabled` gate enforcement for hosted vs local models. See
-> `exactl config` for the full `budget` key surface.
+The ceiling is validated at configuration time against the allocator's minimum feasible total (`MIN_COST_TARGET_TOKENS_PER_REQUEST`). A value below it is rejected when the config loads, not on every request. The effective ceiling resolves in this order: a Config DB override (`exactl config set budget.cost_target_tokens_per_request <n>`), then the TOML value, then the legacy `budget_enforcement.costTargetTokens` field. A change takes effect on the next daemon restart. `budget.cloud_enforcement_enabled` and `budget.local_enforcement_enabled` gate enforcement for hosted and local models. `exactl config show --sources` lists the whole `budget` key surface.
 
 ### Monitoring Usage
 
-Query cost information through the Activity Journal:
-
-```bash
-# View recent cost-related activities
-exactl log list --payload %cost% --limit 10
-
-# Find high-cost operations
-exactl log list --payload %tokens% --limit 20 -o json | jq '.[] | select(.payload.cost > 1.0)'
-
-# Daily cost summary (requires external processing)
-exactl log list --filter since=$(date +%Y-%m-%d) --payload %cost% -o json > daily_costs.json
-```
+Start with `exactl log cost --group-by model`, which shows where the money goes. For individual events, query the Activity Journal: `exactl log list --payload %cost% --limit 10` lists recent cost-related rows, and `--filter since=<date>` limits them to a day. Add `-o json` to process the rows with other tools.
 
 ### Cost Optimization Tips
 
