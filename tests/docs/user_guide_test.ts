@@ -133,7 +133,7 @@ Deno.test("User Guide documents request commands", async () => {
 
 Deno.test("User Guide documents deploy script", async () => {
   const guide = await readUserGuide();
-  assertStringIncludes(guide, "deploy_workspace.sh");
+  assertStringIncludes(guide, "scripts/deploy_workspace.ts");
 });
 
 Deno.test("User Guide documents workspace structure", async () => {

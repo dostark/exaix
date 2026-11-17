@@ -34,7 +34,7 @@ When you upgrade Exaix, the workspace schema version may change. `exactl doctor 
 
 ```bash
 # 1. Clone or deploy workspace
-./scripts/deploy_workspace.sh ~/Exaix
+deno run -A scripts/deploy_workspace.ts --destination ~/Exaix
 
 # 2. Navigate to workspace
 cd ~/Exaix

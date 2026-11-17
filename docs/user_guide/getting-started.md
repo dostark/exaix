@@ -34,7 +34,7 @@ Exaix is **not** a replacement for IDE-integrated AI assistants (Copilot, Cursor
 - **Request:** What you want the agent to do (markdown file or CLI command).
 - **Request Analysis:** A pre-processing step that extracts structured goals, requirements, and constraints from your request. This helps ensure the agent's plan is grounded in your actual intent.
 - **Actionability Score:** A 0–100 score indicating if your request is ready for execution. A low score (typically <60) means the request is underspecified or ambiguous.
-- **Quality Gate:** An automatic quality check that runs before agent execution. It scores your request and either lets it proceed, auto-enriches it, asks clarifying questions, or rejects it outright if it is too vague to be actionable. See the "Request Quality Gate — How Scoring Works" section for full details.
+- **Quality Gate:** An automatic quality check that runs before agent execution. It scores your request and either lets it proceed, auto-enriches it, asks clarifying questions, or rejects it outright if it is too vague to be actionable. See [Request Quality Gate — How Scoring Works](requests-plans-reviews.md#request-quality-gate--how-scoring-works) for full details.
 - **Clarification Round:** One turn of the Q&A loop driven by the quality gate. The system asks 3–5 targeted questions; your answers are folded into a refined `IRequestSpecification` that guides the agent.
 - **Request Specification (`IRequestSpecification`):** A structured contract produced by the clarification loop. Contains `summary`, `goals`, `successCriteria`, `scope`, `constraints`, and `context` fields. Used as ground truth for evaluation downstream.
 - **Complexity:** The system classifies a request as `Simple`, `Medium`, `Complex`, or `Epic` to select the most cost-effective and powerful engine for the task.
@@ -52,7 +52,7 @@ The **Actionability Score** is a measure of how "grounded" and "specified" your 
 1. **Reference Specific Files:** Use absolute paths or workspace-relative paths (e.g., `packages/storage-sqlite/src/database_service.ts`). This allows the analyzer to verify the context exists.
 1. **Provide Acceptance Criteria:** Use phrases like "The task is complete when..." or "Must pass all unit tests in `tests/`."
 1. **Specify Constraints:** Mention any library versions, style guides, or performance requirements (e.g., "Must use Deno.test and maintain < 100ms latency").
-1. **Use Markdown Requests:** For complex tasks, create a `.md` file in `Workspace/Active/` with headers for "Goal," "Context," and "Constraints" instead of a one-line CLI string.
+1. **Use Markdown Requests:** For complex tasks, create a `.md` file in `Workspace/Requests/` with headers for "Goal," "Context," and "Constraints" instead of a one-line CLI string.
 
 #### Resolving Ambiguity
 
@@ -87,14 +87,10 @@ exactl request analyze <request-id> --engine hybrid
 
 ### Standard Deployment
 
-From the repository root run the included script to create a user workspace (default: `~/Exaix`):
+From the repository root, run the deploy script to create a user workspace (default: `~/Exaix`):
 
 ```bash
-# From repo root
-./scripts/deploy_workspace.sh /path/to/target-workspace
-
-# Example (create a workspace in your home dir)
-./scripts/deploy_workspace.sh ~/Exaix
+deno run -A scripts/deploy_workspace.ts --destination ~/Exaix
 ```
 
 **What the deploy script does:**
@@ -102,7 +98,7 @@ From the repository root run the included script to create a user workspace (def
 - Creates the standard runtime folders (`System`, `Memory`, `Workspace`, `Portals`).
 - Copies runtime artifacts (`deno.json`, `import_map.json`, `scripts/`, `migrations/`, `packages/`, `apps/`) into the target workspace.
 - Runs `deno task cache` and `deno task setup` to initialize the database.
-- Installs `exactl` CLI globally to `~/.deno/bin/`.
+- Installs the `exactl` CLI globally to `~/.deno/bin/`. If `EXA_BIN_PATH` is set, it writes an `exactl` shim into that directory instead.
 
 ### Post-Deployment Setup
 
@@ -114,9 +110,9 @@ echo 'export PATH="$HOME/.deno/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-Then optionally customize your configuration:
+Then optionally customize your configuration. The scaffold copies `templates/exa.config.sample.toml` into the workspace as `exa.config.sample.toml`:
 
-````bash
+```bash
 cd /path/to/target-workspace
 
 # Review and customize config (optional)
@@ -124,12 +120,10 @@ cp exa.config.sample.toml exa.config.toml
 nano exa.config.toml
 
 # Start the daemon
-deno task start
-# or: exactl daemon start
+exactl daemon start
+```
 
-```bash
-deno task start
-````
+`deno task start` starts the daemon in the same way.
 
 ### Ollama Setup (Local LLM)
 
@@ -173,21 +167,7 @@ ollama run llama3.2 "Explain what Exaix does in one sentence."
 
 **Configure Exaix to use Ollama:**
 
-```bash
-# Option 1: Environment variable (temporary)
-EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl daemon start
-
-# Option 2: Config file (permanent)
-# Add to [models.local] or set as default
-cat >> ~/Exaix/exa.config.toml << 'EOF'
-[agents]
-default_model = "local"
-
-[models.local]
-provider = "ollama"
-model = "llama3.2"
-EOF
-```
+For one run, set the provider and model in the environment: `EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl daemon start`. For a permanent setup, add a `[models.local]` entry with `provider = "ollama"` and `model = "llama3.2"` to `exa.config.toml`, and name it in `[agents] default_model`. [Model Settings](../Model_Settings.md) lists the model entries, the variables and the troubleshooting steps for every provider.
 
 **Troubleshooting:**
 
@@ -204,18 +184,10 @@ Setting up cloud providers (API keys, model configuration, provider comparison),
 
 ### Advanced Deployment Options
 
+Add `--no-run` to `deploy_workspace.ts` to skip the automatic `deno task cache` and `deno task setup`. This is safer in constrained environments. To scaffold only the target layout and copy the templates, run `deno run -A scripts/scaffold.ts <target-dir>`. Then initialize the runtime in the target directory yourself:
+
 ```bash
-# fast deploy (runs deno tasks automatically)
-./scripts/deploy_workspace.sh /home/alice/Exaix
-
-# deploy but skip automatic execution of deno tasks (safer in constrained envs)
-./scripts/deploy_workspace.sh --no-run /home/alice/Exaix
-
-# alternative: only scaffold the target layout and copy templates
-./scripts/scaffold.sh /home/alice/Exaix
-
-# once scaffolded, initialize runtime manually
-cd /home/alice/Exaix
+cd <target-dir>
 deno task cache
 deno task setup
 deno task start
