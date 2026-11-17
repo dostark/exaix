@@ -2,60 +2,18 @@
 
 Run and compare evaluation scenarios. Part of the [Exaix User Guide](README.md).
 
-## **Eval Commands** - Run and compare evaluation scenarios
+## Evaluation and scoring
 
-Run predefined scenario packs, score results, and compare runs. Full documentation
-in `docs/Exaix_Evaluation.md`.
+Exaix includes a built-in evaluation framework for measuring agent behaviour quantitatively. It runs predefined scenarios against your workspace, scores the results with weighted scoring, tracks the history of runs, and gates CI on quality thresholds. For the complete CLI reference, the scoring model, the scenario authoring guide and the CI integration, see **[`docs/Exaix_Evaluation.md`](../Exaix_Evaluation.md)**.
 
-```bash
-exactl eval run --pack smoke --trials 5
-exactl eval history --limit 10
-exactl eval compare --run-a <id> --run-b <id>
-exactl eval report --pack swe-tasks -o table
-```
+### Running and comparing
 
-## **Eval Commands** - Run and compare evaluation scenarios
-
-The evaluation framework runs predefined scenarios against your workspace, scores
-results, and compares runs over time. Full documentation is in `docs/Exaix_Evaluation.md`.
-
-```bash
-# Run an evaluation scenario pack
-exactl eval run --pack smoke
-exactl eval run --tag smoke --trials 5 --score-threshold 0.7
-
-# Run in eval mode (writes history, produces eval-report.json)
-exactl eval run --pack smoke --score-threshold 0.6
-
-# Query evaluation history (SQLite default, --source jsonl to fall back)
-exactl eval history --limit 10
-exactl eval history --pack smoke --since 2026-06-01 -o json
-exactl eval history --limit 10
-
-# Compare two evaluation runs side-by-side
-exactl eval compare --run-a <run-id> --run-b <run-id>
-
-# Bound a run's spend and read the accuracy-vs-cost / harness-lift readouts
-exactl eval run --pack swe_tasks --max-cost-usd 0.5
-exactl eval report --view frontier
-exactl eval report --view lift
-exactl eval report --view failures
-
-# View family-level report (swe-tasks pack)
-exactl eval report --pack swe-tasks -o table
-
-# External-benchmark comparability (Terminal-Bench, Docker required to run tasks live)
-exactl eval report --view external
-
-# Adversarial-robustness and interactive-evaluation packs
-exactl eval report --view robustness
-exactl eval report --view interactive
-exactl eval report --view robustness --run-ids <id,id,...>   # scope to an exact run set
-
-# Memory evaluation: per-ability retrieval quality plus consolidation/learning-effectiveness
-exactl eval report --view memory
-exactl eval report --view memory -o json
-```
+- `exactl eval run --pack <pack>` runs a scenario pack. Self-contained packs such as `blueprint-eval` need no sandbox. `--tag` selects scenarios by tag, `--trials <n>` repeats each scenario, and `--score-threshold <t>` sets the minimum score that passes.
+- Each run writes the eval history and an `eval-report.json` in the output directory. The exit code is `0` when all scenarios passed, `1` when one or more fell below the threshold, and `2` for an infrastructure error.
+- `exactl eval history` queries the history. `--limit`, `--pack`, `--scenario` and `--since` narrow the result, and `-o json` prints machine-readable rows.
+- `exactl eval compare --run-a <run-id> --run-b <run-id>` compares two runs side by side.
+- `--max-cost-usd <usd>` bounds the spend of a run. The run stops scheduling once the accumulated tracked cost reaches the cap, and it skips the remaining scenarios, and it never truncates a task in the middle.
+- `exactl eval report --view <view>` reads the history in a view.
 
 `eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
 task), `ablation` (per-subsystem contribution), `frontier` (accuracy vs cost with Pareto
@@ -70,34 +28,8 @@ both views' methodology, safety model, and the `--run-ids` reproducibility optio
 for the cross-cutting consolidation-quality/staleness/learning-effectiveness metrics; see
 `docs/Exaix_Evaluation.md` §19 for the ability taxonomy, metric definitions, and the
 per-corpus/per-provider/per-date positioning caveat); `-o json` gives machine-readable rows.
-`--max-cost-usd` stops scheduling once
-accumulated tracked cost reaches the cap (remaining scenarios skipped, never a task truncated
-mid-run). Full documentation in `docs/Exaix_Evaluation.md`.
 
-Exit codes: `0` all passed, `1` one or more below threshold, `2` infrastructure
-error. Eval reports are written to the output directory as `eval-report.json`.
-
----
-
-## Evaluation & Scoring
-
-Exaix includes a built-in evaluation framework for measuring agent behaviour
-quantitatively. It provides weighted scoring, history tracking, and CI-gated
-quality thresholds.
-
-```bash
-# Run self-contained evaluation packs (no sandbox needed)
-exactl eval run --pack blueprint-eval
-
-# Run with a score threshold
-exactl eval run --pack blueprint-eval --score-threshold 0.7
-
-# View run history
-exactl eval history --limit 10
-```
-
-For the complete CLI reference, scoring model, scenario authoring guide, and
-CI integration, see **[`docs/Exaix_Evaluation.md`](../Exaix_Evaluation.md)**.
+Every option is in the [eval command reference](../cli/eval.md).
 
 ### Subsystem evaluation
 
@@ -183,45 +115,3 @@ Scenario sandboxes are reclaimed on success and kept on failure; reclaim the bac
 [`tests/scenario_framework/README.md`](../../tests/scenario_framework/README.md) §2.5 and §4b.
 
 ---
-
-## Concurrent Guardrail Runner
-
-The concurrent guardrail runner screens each ReAct iteration's generated output
-against configurable policies using a fast-slot LLM. It runs **in parallel** with
-the primary agent loop and never blocks execution.
-
-### Configuration
-
-The guardrail is configured via an optional `[guardrail]` block in
-`exa.config.toml`:
-
-```toml
-[guardrail]
-enabled = false                         # opt-in, disabled by default
-check_interval_iterations = 1           # screen every Nth iteration (1 = every)
-screen_final_output = true              # also screen output before Review gate
-
-[[guardrail.policies]]
-policy_id = "safety-policy"
-description = "Detect harmful content in agent output"
-blueprint = "guardrail/safety"
-severity = "block"                      # "warn" (logs only) or "block" (halts)
-```
-
-### Behaviour
-
-- **Fire-and-forget**: `screen()` is called after each iteration but never
-  awaited on the critical path.
-- **Fail-open**: If the screening model errors or times out, the error is
-  journaled as `guardrail.screen.error` and execution continues.
-- **Blocking violations**: A `block`-severity violation halts the loop via the
-  Plan Amendment gate (`guardrail_violation` trigger). The pre-execution
-  Quality Gate remains the hard gate.
-- **Zero overhead when disabled**: With `enabled = false`, no runner is
-  constructed and no code path changes.
-
-### Edition
-
-**Team/Enterprise only.** In Solo builds, the guardrail runner is never
-constructed even if `enabled = true`. See `ARCHITECTURE.md` for the
-architecture overview.
