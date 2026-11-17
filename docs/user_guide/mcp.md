@@ -2,85 +2,13 @@
 
 The MCP server, its tools, client integration and outbound tool calls. Part of the [Exaix User Guide](README.md).
 
-## **MCP Commands** - Model Context Protocol Server
-
-The Model Context Protocol (MCP) allows external AI clients to interact with your Exaix workspace using standardized tools.
-
-```bash
-# Start the MCP server
-exactl mcp serve
-
-# Start with debug logging
-exactl mcp serve
-```
-
-**Available MCP Tools:**
-
-- `exaix_request_create`: Create new requests in your workspace
-- `exaix_plan_list`: View pending plans for approval
-- `exaix_plan_approve`: Approve plans for execution
-- `exaix_log_list`: Search the Activity Journal
-- File system tools: `read_file`, `write_file`, `list_dir`, etc. (scoped to workspace)
-
-**Client Integration:**
-
-**Claude Desktop:**
-
-```json
-{
-  "mcpServers": {
-    "exaix": {
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-read",
-        "--allow-write",
-        "--allow-net",
-        "--allow-env",
-        "--allow-ffi",
-        "--allow-import",
-        "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias",
-        "/path/to/Exaix/apps/exactl/main.ts",
-        "mcp",
-        "start"
-      ],
-      "env": {
-        "EXAIX_ROOT": "/path/to/your/workspace"
-      }
-    }
-  }
-}
-```
-
-**Example workflow:**
-
-```bash
-# Start MCP server
-$ exactl mcp serve
-🚀 MCP Server started on stdio
-  Tools: exaix_request_create, exaix_plan_list, exaix_plan_approve, exaix_log_list
-  File system access: scoped to workspace
-
-# External client can now use Exaix tools
-# Client: "Create a request to refactor the authentication module"
-# Exaix: ✓ Request created: request-abc123.md
-```
-
 ## Model Context Protocol (MCP) Server
 
 Exaix includes a built-in MCP server, allowing generic AI clients (like Claude Desktop or IDE extensions) to interact with your workspace using standardized tools.
 
 ### Starting the Server
 
-The standard way to run the MCP server is via the `exactl` CLI:
-
-```bash
-# Start in stdio mode (default, for local clients)
-exactl mcp serve
-
-# Start over Streamable HTTP on a local port (for remote/HTTP clients)
-exactl mcp serve --sse --port 3000
-```
+`exactl mcp serve` runs the MCP server. It serves **stdio** by default, which suits local clients. `exactl mcp serve --sse --port <N>` serves **Streamable HTTP** for remote clients. The port defaults to 3000. The command was called `exactl mcp start` in earlier releases, and that name now exits with an error that points to `serve`. See the generated [mcp reference](../cli/mcp.md) for every option.
 
 The server is built on the official `@modelcontextprotocol/server` SDK and negotiates the current spec protocol version (2025-11-25) — not the legacy `2024-11-05` revision. The default `exactl mcp serve` serves **stdio**; `--sse --port <N>` serves **Streamable HTTP** (the current spec's primary HTTP transport).
 
@@ -93,22 +21,13 @@ require_auth = true
 # auth_token_env defaults to "MCP_AUTH_TOKEN" — the env var holding the bearer secret
 ```
 
-```bash
-export MCP_AUTH_TOKEN="your-secret-token"
-exactl mcp serve --sse --port 3000
-```
+Export the token before you start the server: `MCP_AUTH_TOKEN="<secret>" exactl mcp serve --sse --port 3000`.
 
 A client without (or with the wrong) bearer token is rejected with `401`; a client supplying `Authorization: Bearer $MCP_AUTH_TOKEN` is accepted. When `require_auth` is enabled but the token env var is unset, the server fails fast at startup rather than silently rejecting every request.
 
 ### Available Tools
 
-When connected, AI agents have access to high-level domain tools:
-
-- **`exaix_request_create`**: Create a new request in your workspace.
-- **`exaix_plan_list`**: List pending plans.
-- **`exaix_plan_approve`**: Approve a plan for execution.
-- **`exaix_log_list`**: Search the Activity Journal for past events.
-- **FileSystem & Git**: Standard tools (`read_file`, `write_file`, `git_status`, etc.) are also available, scoped to your workspace.
+A connected client gets the high-level domain tools `exaix_request_create`, `exaix_plan_list`, `exaix_plan_approve` and `exaix_log_list`. It also gets the file system and git tools, such as `read_file`, `write_file` and `git_status`, scoped to your workspace. [TOOLS.md](../../.copilot/docs/TOOLS.md#agent-tools) lists every tool with its schema.
 
 ### Tool names and aliases
 
@@ -199,61 +118,18 @@ ORDER BY provider, model;
 
 ### Client Integration
 
-**Claude Desktop:**
-Add the following to your `claude_desktop_config.json` (the command mirrors the repo's own fine-grained `deno task cli` permission model — no `--allow-all`):
-
-```json
-{
-  "mcpServers": {
-    "exaix": {
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-read",
-        "--allow-write",
-        "--allow-net",
-        "--allow-env",
-        "--allow-ffi",
-        "--allow-import",
-        "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias",
-        "/path/to/Exaix/apps/exactl/main.ts",
-        "mcp",
-        "start"
-      ],
-      "env": {
-        "EXAIX_ROOT": "/path/to/Exaix"
-      }
-    }
-  }
-}
-```
-
-See `templates/mcp/` for more client configuration examples.
+Add the server to the config of your client, for example `claude_desktop_config.json` for Claude Desktop. Start from `templates/mcp/claude_desktop_config.json` or `templates/mcp/cline_settings.json`. Both launch `exactl mcp serve` through `deno run` with a fine-grained permission list and no `--allow-all`. Set `EXAIX_ROOT` in the `env` block to your workspace path and the script path to your checkout of `apps/exactl/main.ts`.
 
 ### Connecting Outbound (`exactl mcp tool`)
 
-Section 8.1–8.3 cover Exaix acting as an MCP _server_. `exactl mcp tool` is the reverse direction: Exaix acting as an MCP _client_, reaching out to a real external MCP server (a documentation server, a code-hosting platform's MCP endpoint, or any spec-compliant server you point it at).
-
-```bash
-# List every tool a server exposes
-exactl mcp tool list --server <url>
-
-# Call a named tool with JSON arguments
-exactl mcp tool call <name> --server <url> --args '{"key":"value"}'
-```
+`exactl mcp tool` is the reverse direction: Exaix acts as an MCP _client_ and reaches out to an external MCP server. The server can be a documentation server, a code-hosting platform endpoint or any spec-compliant server. `exactl mcp tool list --server <url>` lists the tools a server exposes. `exactl mcp tool call <name> --server <url> --args '<json>'` calls one tool. See the [mcp reference](../cli/mcp.md#exactl-mcp-tool-list) for every option.
 
 Connection is automatic dual-transport: Streamable HTTP is tried first (the current MCP spec's primary transport), falling back to legacy SSE if the server only supports the older protocol — no flag needed either way.
 
 **Authentication.** Some servers require a bearer token (a Personal Access Token or similar). Set it via an environment variable — never a CLI flag, so it never appears in `ps`-visible process arguments:
 
-```bash
-EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp tool list --server <url>
-```
+For example: `EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp tool list --server <url>`.
 
 `EXA_MCP_BEARER_TOKEN` is forwarded as an `Authorization: Bearer <token>` header on every request to the target server. Only this bearer-token mode is supported — interactive OAuth login flows and `client_credentials`/JWT-assertion grants are not.
 
-**Example — GitHub's official remote MCP server:**
-
-```bash
-EXA_MCP_BEARER_TOKEN=$(gh auth token) exactl mcp tool list --server https://api.githubcopilot.com/mcp/
-```
+For the GitHub remote MCP server, use `EXA_MCP_BEARER_TOKEN=$(gh auth token)` with `--server https://api.githubcopilot.com/mcp/`.
