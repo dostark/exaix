@@ -2,52 +2,33 @@
 
 Add external projects as portals and work on them with agents. Part of the [Exaix User Guide](README.md).
 
-## **Portal Commands** - Manage external project access
+## What a portal is
 
-Portals are symlinked directories that give agents controlled access to external projects:
+A portal is a symlink under `Portals/<alias>` that points to a directory outside your workspace, usually the checkout of one of your projects. It gives agents controlled access to that project. Exaix also keeps a short description of the project, the **context card**, at `Memory/Projects/<alias>/portal.md`.
 
-```bash
-# Add a new portal
-exactl portal add <target-path> <alias> [--default-branch <branch>] [--execution-strategy <branch|worktree>]
-exactl portal add ~/Dev/MyWebsite MyWebsite
-exactl portal add ~/Dev/MyWebsite MyWebsite --default-branch main --execution-strategy worktree
+A request that names a portal runs against the project and not against the workspace. The agent reads and writes the project files, and Exaix creates the branches, commits and reviews in the project repository. [Portal Workflows](#portal-workflows) shows what that looks like for analysis and for feature work.
 
-# List all configured portals
-exactl portal list
+## Lifecycle of a portal
 
-# Portal listing output:
-# 🔗 Configured Portals (2):
-#
-# MyWebsite
-#   Status: Active ✓
-#   Target: /home/user/Dev/MyWebsite
-#   Symlink: ~/Exaix/Portals/MyWebsite
-#   Context: ~/Exaix/Memory/Projects/MyWebsite.md
-#
-# MyAPI
-#   Status: Broken ⚠
-#   Target: /home/user/Dev/MyAPI (not found)
-#   Symlink: ~/Exaix/Portals/MyAPI
+1. **Add** the project with `exactl portal add <target-path> <alias>`. You can set a default branch and an execution strategy at the same time, for example `--default-branch main --execution-strategy worktree`.
+1. **Look** at your portals with `exactl portal list` and `exactl portal show <alias>`. A portal whose target moved or was deleted is flagged as broken.
+1. **Use** it by naming the portal in a request: `exactl request create ... --portal <alias>`. Add `--target-branch <branch>` to choose the branch the review merges into.
+1. **Refresh** the context card with `exactl portal refresh <alias>` after the project changes, so the description that agents read stays current.
+1. **Verify** with `exactl portal verify`, for all portals or for one, when something looks wrong.
+1. **Remove** the portal with `exactl portal remove <alias>` when you no longer need it. Use `--keep-card` to leave the context card in place.
 
-# Show detailed information about a portal
-exactl portal show <alias>
-exactl portal show MyWebsite
+Every option of every portal command is in the [portal command reference](../cli/portal.md).
 
-# Remove a portal (deletes symlink, archives context card)
-exactl portal remove <alias>
-exactl portal remove MyWebsite
-exactl portal remove MyWebsite --keep-card  # Keep context card
+### What happens when you add a portal
 
-# Verify portal integrity
-exactl portal verify                        # Check all portals
-exactl portal verify MyWebsite              # Check specific portal
+1. Creates the symlink `Portals/<alias>` that points to `<target-path>`.
+1. Generates the context card `Memory/Projects/<alias>/portal.md`.
+1. Updates `exa.config.toml` with the portal configuration (optional per-portal keys: `default_branch` and `execution_strategy`).
+1. Validates Deno permissions for the new path.
+1. Restarts the daemon if it runs, or prompts for a manual restart.
+1. Logs the action to the Activity Journal.
 
-# Refresh context card (re-scan project)
-exactl portal refresh <alias>
-exactl portal refresh MyWebsite
-```
-
-**Portal base branch and execution strategy:**
+### Base branch and execution strategy
 
 - `exactl request create --portal <alias> --target-branch <branch>` stores `target_branch` in request/plan frontmatter and uses it as the review's merge target (`base_branch`) for portal code reviews.
 - If `target_branch` is not provided, Exaix falls back to the portal's configured `default_branch` (if set), and otherwise auto-detects the repository's default branch.
@@ -57,21 +38,14 @@ exactl portal refresh MyWebsite
 
 For worktree executions, Exaix also writes a discoverability pointer at `Memory/Execution/{trace-id}/worktree` (symlink when possible; `PATH.txt` fallback).
 
-**Worktree maintenance:**
+### Worktree maintenance
 
 - `exactl git worktree list [--portal <alias>] [--repo <path>]` shows all Git worktrees for a repository (useful to locate the active execution worktree).
 - `exactl git worktree prune [--portal <alias>] [--repo <path>]` prunes stale worktree metadata (useful after manual deletion or crashes).
 
-**What happens when adding a portal:**
+### Verification checks
 
-1. Creates symlink: `~/Exaix/Portals/<alias>` → `<target-path>`
-1. Generates context card: `~/Exaix/Portals/<alias>.md`
-1. Updates `exa.config.toml` with portal configuration (optional per-portal keys: `default_branch` and `execution_strategy`)
-1. Validates Deno permissions for new path
-1. Restarts daemon if running (or prompts for manual restart)
-1. Logs action to Activity Journal
-
-**Portal verification checks:**
+`exactl portal verify` checks that:
 
 - Symlink exists and is valid
 - Target directory exists and is readable
@@ -79,7 +53,24 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 - Deno has necessary permissions
 - Context card exists
 
-**Post-execution verification (`portals[].verification`):**
+### Safety features
+
+- Portal removal moves context cards to `_archived/` instead of deleting
+- Broken portals are detected and flagged (target moved/deleted)
+- OS-specific handling:
+  - **Windows:** Creates junction points if symlinks unavailable
+  - **macOS:** Prompts for Full Disk Access on first portal
+  - **Linux:** Checks inotify limits for filesystem watching
+
+## Tips
+
+- Use the `worktree` execution strategy when several requests run against one portal at the same time. Each execution gets its own checkout, so the runs do not disturb each other.
+- Run `exactl git worktree prune` after you delete a worktree directory by hand or after a crash, to remove the stale metadata.
+- When you move or delete a project, `exactl portal list` shows its portal as broken. Run `exactl portal verify <alias>` for the details, then fix the target or remove the portal.
+- Removing a portal archives its context card in `_archived/`, so you can recover the description later.
+- The first portal on macOS prompts for Full Disk Access. On Linux, Exaix checks the inotify limits for filesystem watching, and on Windows it creates a junction point if symlinks are not available.
+
+## Post-execution verification (`portals[].verification`)
 
 A portal may declare a `verification` block. After a plan's work is committed, Exaix runs the
 configured checks in the execution worktree. When a check fails and repair attempts remain, the
@@ -219,110 +210,6 @@ prints `lint: lint details unavailable`.
 
 The agent `run_deno_task` tool also stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s) where it
 previously had no timeout.
-
-**Safety features:**
-
-- Portal removal moves context cards to `_archived/` instead of deleting
-- Broken portals are detected and flagged (target moved/deleted)
-- OS-specific handling:
-  - **Windows:** Creates junction points if symlinks unavailable
-  - **macOS:** Prompts for Full Disk Access on first portal
-  - **Linux:** Checks inotify limits for filesystem watching
-
-**Example workflows:**
-
-```bash
-# 1. Add a new portal
-$ exactl portal add ~/Dev/MyWebsite MyWebsite
-✓ Validated target: /home/user/Dev/MyWebsite
-✓ Created symlink: ~/Exaix/Portals/MyWebsite
-✓ Generated context card: ~/Exaix/Memory/Portals/MyWebsite.md
-✓ Updated configuration: exa.config.toml
-✓ Validated permissions
-✓ Logged to Activity Journal
-⚠️  Daemon restart required: exactl daemon restart
-
-# 2. List all portals and check status
-$ exactl portal list
-🔗 Configured Portals (3):
-
-MyWebsite
-  Status: Active ✓
-  Target: /home/user/Dev/MyWebsite
-  Symlink: ~/Exaix/Portals/MyWebsite
-  Context: ~/ExaixMemory/Portals/MyWebsite.md
-
-MyAPI
-  Status: Active ✓
-  Target: /home/user/Dev/MyAPI
-  Symlink: ~/Exaix/Portals/MyAPI
-  Context: ~/ExaixMemory/Portals/MyAPI.md
-
-OldProject
-  Status: Broken ⚠
-  Target: /home/user/Dev/OldProject (not found)
-  Symlink: ~/Exaix/Portals/OldProject
-
-# 3. View detailed portal information
-$ exactl portal show MyWebsite
-📁 Portal: MyWebsite
-
-Target Path:    /home/user/Dev/MyWebsite
-Symlink:        ~/Exaix/Portals/MyWebsite
-Status:         Active ✓
-Context Card:   ~/ExaixMemory/Portals/MyWebsite.md
-Permissions:    Read/Write ✓
-Created:        2025-11-26 10:30:15
-Last Verified:  2025-11-26 14:22:33
-
-# 4. Verify portal integrity
-$ exactl portal verify
-🔍 Verifying Portals...
-
-MyWebsite: OK ✓
-  ✓ Target accessible
-  ✓ Symlink valid
-  ✓ Permissions correct
-  ✓ Context card exists
-
-MyAPI: OK ✓
-  ✓ Target accessible
-  ✓ Symlink valid
-  ✓ Permissions correct
-  ✓ Context card exists
-
-OldProject: FAILED ✗
-  ✗ Target not found: /home/user/Dev/OldProject
-  ✓ Symlink exists
-  ✓ Context card exists
-  ⚠️  Portal is broken - target directory missing
-
-Summary: 1 broken, 2 healthy
-
-# 5. Refresh context card after project changes
-$ exactl portal refresh MyWebsite
-🔄 Refreshing context card for 'MyWebsite'...
-✓ Scanned target directory
-✓ Detected changes: 3 new files
-✓ Updated context card
-✓ Preserved user notes
-✓ Logged to Activity Journal
-
-# 6. Remove a portal safely
-$ exactl portal remove OldProject
-⚠️  Remove portal 'OldProject'?
-This will:
-  - Delete symlink: ~/Exaix/Portals/OldProject
-  - Archive context card: ~/ExaixMemory/Portals/_archived/OldProject_20251126.md
-  - Update configuration
-Continue? (y/N): y
-
-✓ Removed symlink
-✓ Archived context card
-✓ Updated configuration
-✓ Logged to Activity Journal
-⚠️  Daemon restart recommended: exactl daemon restart
-```
 
 ## Portal Workflows
 

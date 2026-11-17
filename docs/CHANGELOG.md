@@ -176,7 +176,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 - A portal can run its post-execution lint verification with the generic `deno_lint` check, which
   runs `deno lint` under a daemon-owned installed policy and lists the remaining findings in the
-  review (see [Portal Commands](user_guide/portals.md#portal-commands---manage-external-project-access)).
+  review (see [Portal Commands](user_guide/portals.md#lifecycle-of-a-portal)).
 - `deno task unslop-ts:policy --out <workspace>/lint` installs a complete portal lint policy
   directory — engine bundle, catalog, plugin, config and manifest — for deployment.
 
