@@ -43,7 +43,7 @@ confidence_required: 80
 | -------------------------- | ------- | ------------------------------------ |
 | `reflexive`                | `false` | Enable self-critique loop            |
 | `max_reflexion_iterations` | `3`     | Maximum refinement passes            |
-| `confidence_required`      | `80`    | Minimum confidence (0-100) to accept |
+| `confidence_required`      | unset   | Minimum confidence (0-100) to accept |
 
 #### When to Use Reflexion
 
@@ -100,65 +100,21 @@ only scored higher or lower:
 | `cheapest` | Higher score for lower `costPerMtok`. Best for batch/non-urgent work        |
 | `fastest`  | Scores all candidates equally. Typically selects the first healthy provider |
 
-#### Preset Configuration
+#### How a model is chosen
 
-Size tiers map to capability profiles in `exa.config.toml`:
+Size tiers map to capability profiles in the `[model_sizes]` table of `exa.config.toml`. Each tier can narrow its eligible providers with `candidates`. [Model Resolution](../Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the resolver, and [Model Settings](../Model_Settings.md) lists every setting. In short:
 
-```toml
-[model_sizes]
-S = { max_cost_per_mtok = 0.5,  min_context_window = 8192,   supports_thinking = false }
-M = { max_cost_per_mtok = 3,    min_context_window = 32000,  supports_thinking = true  }
-L = { max_cost_per_mtok = 15,   min_context_window = 128000, supports_thinking = true  }
-XL = { max_cost_per_mtok = 75,  min_context_window = 200000, supports_thinking = true  }
-```
+- An explicit `model: "provider:model"` bypasses the resolver.
+- Otherwise the resolver uses the curated candidates of the size tier, then ranks providers with your `characteristics`.
+- If the prompt does not fit the context window, the resolver bumps the request to the next size tier.
 
-Override individual fields per tier:
+During plan execution, **request-level intent overrides the blueprint**. `--model-size`, `--thinking`, `--effort`, `--characteristic` and `--preferred-provider` of `exactl request create` write into the request frontmatter. They take precedence over the `model_size:` and `thinking:` fields of the agent role blueprint for every field you set. Unset fields fall through to the blueprint. See the [request reference](../cli/request.md#exactl-request-create) for the flags.
 
-```toml
-[model_sizes.M]
-max_cost_per_mtok = 5
-```
+Every resolution emits a `model_resolved` trace event. Read it with `exactl log list --filter model_resolved`.
 
-Restrict eligible providers for a tier with `candidates`:
+#### Migration: agent role blueprints
 
-```toml
-[model_sizes.L]
-candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
-```
-
-#### Resolution Precedence
-
-1. `model: "provider:model"` — explicit override (bypasses resolver)
-1. `model_size` + `characteristics` — preset lookup with soft ranking
-1. `model_size` only — preset default
-1. `fallbacks[]` — fallback chain iteration
-1. Context-window overflow — auto-bump to next size tier
-
-During plan execution, **request-level intent overrides the blueprint**: CLI flags such as
-`--model-size M` or `--thinking` (written to the request frontmatter) take precedence over
-the agent role blueprint's `model_size:`/`thinking:` for any field that is explicitly set;
-unset fields fall through to the blueprint default. `--preferred-provider` narrows the
-candidate pool and skips cross-provider scoring.
-
-Every resolution emits a `model_resolved` trace event visible via
-`exactl log list --filter model_resolved`.
-
-#### CLI Flags
-
-Available on `exactl request create`:
-
-| Flag                   | Values                  | Description                    |
-| ---------------------- | ----------------------- | ------------------------------ |
-| `--model-size`         | `S`, `M`, `L`, `XL`     | Capability tier                |
-| `--thinking`           | (flag)                  | Require extended reasoning     |
-| `--effort`             | `low`, `medium`, `high` | Reasoning token budget         |
-| `--characteristic`     | `cheapest`, `fastest`   | Soft ranking hint (repeatable) |
-| `--preferred-provider` | provider name           | Narrow to one provider         |
-
-#### Migration: Agent Role Blueprints
-
-**Hardcoded `model:` in agent role blueprints is deprecated.** Replace with
-declarative fields:
+**A hardcoded `model:` in an agent role blueprint is deprecated.** It still works, but it short-circuits the resolver and ties the role to one provider and model, which defeats portability. Replace it with the declarative fields:
 
 ```diff
   ---
@@ -168,30 +124,6 @@ declarative fields:
 + characteristics: ["fastest"]
   ---
 ```
-
-Supported frontmatter fields:
-
-| Field                | Type    | Values                            |
-| -------------------- | ------- | --------------------------------- |
-| `model_size`         | string  | `S`, `M`, `L`, `XL`               |
-| `preferred_provider` | string  | Provider name (e.g. `anthropic`)  |
-| `thinking`           | boolean | `true`, `false`                   |
-| `effort`             | string  | `low`, `medium`, `high`           |
-| `characteristics`    | array   | `["cheapest"]`, `["fastest"]`     |
-| `model`              | string  | **Deprecated** — `provider:model` |
-
-The `model` field continues to work, but it short-circuits the resolver and
-ties the agent role to a specific provider+model, defeating portability.
-
-#### Future: the curated model registry Model Registry
-
-the curated model registry will introduce the `IModelRegistry` plugin system, enabling:
-
-- Registration of custom model sizes beyond `S`/`M`/`L`/`XL`
-- A `fastest` simplification — `--model-size fastest` resolves to the cheapest
-  model meeting minimal quality thresholds, removing the need to choose a tier
-- Dynamic provider capability discovery at startup
-- End-user model aliases in config
 
 ### Confidence Scoring
 
@@ -207,21 +139,9 @@ Every agent output includes a confidence score indicating how certain the agent 
 | 30-49  | Low       | Significant uncertainty, human verification required   |
 | 0-29   | Very Low  | Agent uncertain, consider alternate approach           |
 
-#### Human Review Triggers
+#### What a low score does
 
-Outputs with confidence below threshold are flagged for human review:
-
-```toml
-[agents]
-confidence_threshold = 70  # Flag outputs below this score
-```
-
-When flagged, you'll see warnings in the plan output:
-
-```bash
-⚠️ Low confidence (55%): Agent uncertain about database migration strategy.
-   Reasoning: Multiple valid approaches exist; recommend architectural review.
-```
+When plan amendments are enabled, a step whose confidence falls below `amendment.threshold` (default 60) pauses the plan with a low-confidence amendment. You then review and decide it with `exactl plan amendment`. See [Plan amendments](security-and-safety.md#plan-amendments).
 
 ### Session Memory
 
@@ -235,18 +155,9 @@ Session Memory automatically provides relevant context from past interactions to
 1. **Execution**: Agent has historical context
 1. **Learning capture**: New insights saved post-execution
 
-#### Configuration
+#### Settings
 
-```toml
-[agents.memory]
-enabled = true           # Enable session memory
-topK = 5                # Number of memories to inject
-threshold = 0.3         # Minimum relevance score (0-1)
-maxContextLength = 4000  # Maximum characters for memory context
-includeExecutions = true # Include past execution history
-includeLearnings = true  # Include approved learnings
-includePatterns = true   # Include project patterns
-```
+Session memory is on by default. It injects the top 5 memories with a relevance score of at least 0.3. These values are defaults of the service, not keys of `exa.config.toml`. The one related config key is `memory.session.expand_links`, which makes retrieval follow one hop of memory links. See [Exaix_Memory.md](../Exaix_Memory.md) for the memory settings.
 
 #### Memory Types
 
@@ -257,13 +168,9 @@ includePatterns = true   # Include project patterns
 | **Decisions**  | Architectural decisions and rationale  |
 | **Executions** | Past agent execution summaries         |
 
-#### Viewing Memory Context
+#### Viewing memory context
 
-To see what memories were injected for a request:
-
-```bash
-exactl request inspect <request-id>
-```
+`exactl request inspect <request-id>` shows which memories were injected for a request.
 
 ### Retry & Recovery
 
@@ -347,16 +254,9 @@ Agent outputs are validated against JSON schemas with automatic repair.
 | Comments in JSON   | Stripped                |
 | Truncated output   | Detected (not repaired) |
 
-#### Validation Errors
+#### Validation errors
 
-When validation fails, you'll see detailed errors:
-
-```bash
-❌ Plan validation failed:
-  - steps[2].dependencies: Expected array, got string
-  - estimatedDuration: Missing required field
-  - steps[0].tools[1]: Unknown tool "invalid_tool"
-```
+When validation fails, the error names each failing field, such as a missing required field or an unknown tool, so you can fix the output or the blueprint.
 
 ## Troubleshooting
 
@@ -365,7 +265,7 @@ When validation fails, you'll see detailed errors:
 If agent responses are slow:
 
 1. **Check reflexion settings**: Reduce `max_reflexion_iterations`
-1. **Reduce memory context**: Lower `topK` or `maxContextLength`
+1. **Reduce memory context**: Turn off `memory.session.expand_links`
 1. **Use faster model**: Switch to smaller/faster model variant
 1. **Disable optional features**: Turn off reflexion or memory for speed
 
@@ -385,13 +285,12 @@ If agents fail after max retries:
 1. **Check service status**: Provider may be down
 1. **Verify credentials**: API keys may be expired
 1. **Check rate limits**: You may be hitting quotas
-1. **Increase delays**: Raise `initialDelay` or `maxDelay`
+1. **Tune retries**: Raise `ai_retry.max_attempts` or `ai_retry.backoff_base_ms`
 
 ### Memory Not Found
 
 If relevant memories aren't being injected:
 
-1. **Check threshold**: Lower `threshold` value (e.g., 0.1)
 1. **Rebuild index**: `exactl memory index rebuild`
 1. **Add learnings**: Approve pending learnings
 1. **Check scope**: Ensure learnings are in correct project/global scope
