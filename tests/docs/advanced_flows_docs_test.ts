@@ -145,9 +145,9 @@ Deno.test("[docs] the guide and Model Settings say --overlay reads TOML directly
   assertFalse(text.includes("even if a filename ends in `.toml`"));
 });
 
-Deno.test("[docs] Flow Commands documents availability in exactl flow list", async () => {
+Deno.test("[docs] Flows documents availability in exactl flow list", async () => {
   const guide = await readUserGuide();
-  const commands = flat(sectionOf(guide, "## **Flow Commands** - Manage multi-agent workflows", 2));
+  const commands = flat(sectionOf(guide, "## Flows", 2));
   assertStringIncludes(commands, "exactl flow list");
   assertStringIncludes(commands, "unavailable (needs voting)");
   assertStringIncludes(commands, "tierEligible");
@@ -228,7 +228,7 @@ Deno.test("[docs] built-in evaluation criteria in the guide are library criteria
 });
 
 Deno.test("[docs] the guide shows the exact None label for flows without capabilities", async () => {
-  const commands = flat(sectionOf(await readUserGuide(), "## **Flow Commands** - Manage multi-agent workflows", 2));
+  const commands = flat(sectionOf(await readUserGuide(), "## Flows", 2));
   assertStringIncludes(commands, "shows `None`");
 });
 

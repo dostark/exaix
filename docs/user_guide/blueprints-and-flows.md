@@ -2,46 +2,17 @@
 
 Agent role blueprints, flows, step execution and scaffolding. Part of the [Exaix User Guide](README.md).
 
-## **Blueprint Commands** - Manage agent definitions
+## Blueprints
 
-Blueprints define agent personas, capabilities, and system prompts. They are **required** for request processing - missing blueprints cause requests to fail.
+A blueprint defines an agent role: its persona, its capabilities and its system prompt. Blueprints are **required** for request processing. A request that names a role without a blueprint fails.
 
-```bash
-# Create a new agent role blueprint
-exactl blueprint create <agent-id> --name "Agent Name" --model <provider:model>
-exactl blueprint create senior-coder --name "Senior Coder" --model anthropic:claude-sonnet
+The `exactl blueprint` commands create, list, show, validate, edit and remove roles. Every option is in the generated [blueprint reference](../cli/blueprint.md).
 
-# Create with full options
-exactl blueprint create security-auditor \
-  --name "Security Auditor" \
-  --model openai:gpt-4o-mini \
-  --description "Specialized agent for security analysis" \
-  --capabilities code_review,vulnerability_scanning \
-  --system-prompt-file ~/prompts/security.txt
+Tips:
 
-# Clone an existing agent role as a prototype (faster setup)
-exactl blueprint create my-coder --name "My Coder" --from senior-coder
-exactl blueprint create my-reviewer --name "My Reviewer" --from code-analyst
-exactl blueprint create test-agent --name "Test Agent" --from mock-agent
-
-# List all available blueprints
-exactl blueprint list
-
-# Show blueprint details
-exactl blueprint show <agent-id>
-exactl blueprint show senior-coder
-
-# Validate blueprint format
-exactl blueprint validate <agent-id>
-exactl blueprint validate senior-coder
-
-# Edit blueprint in $EDITOR
-exactl blueprint edit <agent-id>
-
-# Remove a blueprint
-exactl blueprint remove <agent-id>
-exactl blueprint remove security-auditor --yes # Skip the confirmation
-```
+- Start from an existing role. `exactl blueprint create <agent-id> --name "<Name>" --from <existing-role>` seeds the model, the capabilities and the prompt body of the new role from the prototype.
+- Run `exactl blueprint validate <agent-id>` after each hand edit. `exactl blueprint edit <agent-id>` opens the file in `$EDITOR`.
+- `exactl blueprint remove` asks for confirmation. Pass `--yes` in scripts.
 
 ## Blueprint file structure
 
@@ -66,37 +37,13 @@ version: "1.0.0"
 System prompt with <thought> and <content> tags...
 ```
 
-## **Flow Commands** - Manage multi-agent workflows
+## Flows
 
-Flows allow you to coordinate multiple agents to perform complex tasks.
+A flow coordinates several agents to do a complex task. The `exactl flow` commands list flows, show a flow with its dependency graph, validate a definition and run a flow. `exactl flow run <flow-id> "<goal>"` creates a request for the flow. It does the same as `exactl request create "<goal>" --flow <flow-id>`. Every option is in the generated [flow reference](../cli/flow.md).
 
-```bash
-# List all available flows
-exactl flow list
-exactl flow list --json
+`exactl flow bindings <flow-id>` previews the effective model binding of each step and the source of each field. Use it with `--overlay` or `--bind` to check a binding change before a run. See [Model Settings](../Model_Settings.md) for the binding layers.
 
-# Show flow details and dependency graph
-exactl flow show <flow-id>
-exactl flow show research-pipeline
-
-# Run a flow: create a request for it (same as `exactl request create "..." --flow <flow-id>`)
-exactl flow run <flow-id> "Review the auth module"
-
-# Validate a flow definition
-exactl flow validate <flow-id>
-exactl flow validate research-pipeline
-
-# Preview each step's effective model binding and its field sources
-exactl flow bindings research-pipeline
-exactl flow bindings research-pipeline --overlay ./run-cheap.json --bind 'flow:research-pipeline/step:explore-1=model=deepseek/deepseek-v4-pro' --json
-```
-
-`exactl flow list` shows a Capabilities column. A flow without `requires_capabilities` shows `None`.
-A flow whose capabilities your edition includes shows `eligible (runtime unverified)`.
-A flow that needs a capability your edition lacks shows `unavailable (needs voting)`.
-The list checks the edition only. The daemon confirms the installed capability when the run starts and
-fails with `capability_unavailable` if it is missing. `exactl flow list --json` reports
-`requiresCapabilities`, `tierEligible` and `runtimeAvailability: "unknown"` for each flow.
+`exactl flow list` shows a Capabilities column. A flow without `requires_capabilities` shows `None`. A flow whose capabilities your edition includes shows `eligible (runtime unverified)`. A flow that needs a capability your edition lacks shows `unavailable (needs voting)`. The list checks the edition only. The daemon confirms the installed capability when the run starts and fails with `capability_unavailable` if it is missing. `exactl flow list --json` reports `requiresCapabilities`, `tierEligible` and `runtimeAvailability: "unknown"` for each flow.
 
 ## Flow Step Execution Strategy
 
@@ -246,16 +193,7 @@ steps whose work is already fully specified.
 
 ## Scaffolding Agent Roles and Behavioural Patterns
 
-The catalog is a flat set of concrete agent roles (no separate template
-directory). To create a new agent role, clone an existing one as a prototype with
-`--from`, then attach the skills that give it the behaviour you want:
-
-```bash
-# Clone a prototype, then validate and use
-exactl blueprint create my-agent --name "My Agent" --from senior-coder
-exactl blueprint validate my-agent
-exactl request create "Task" --agent my-agent
-```
+The catalog is a flat set of concrete agent roles with no separate template directory. To create a role, clone an existing one with `exactl blueprint create <agent-id> --name "<Name>" --from <prototype>`. Run `exactl blueprint validate <agent-id>`. Then attach the skills that give the role the behaviour you want and start a request with `exactl request create "<task>" --agent <agent-id>`.
 
 The behavioural patterns that used to be templates are now **skills** in
 `Blueprints/Skills/` — add them to your agent role's `default_skills`:
