@@ -700,7 +700,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 - `exactl journal` can now distinguish direct, non-flow agent executions (routed through
   the request pipeline) with `runner_kind: agent-runner` — previously these executions
   left no execution-attribution record in the Activity Journal at all (see
-  [Exaix_User_Guide.md §10.3](user_guide/monitoring.md#activity-journal)).
+  [Exaix_User_Guide.md §10.3](user_guide/monitoring.md#the-activity-journal)).
 
 ### Changed
 
@@ -897,7 +897,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Fixed
 
-- Activity Journal lifecycle events now preserve canonical request and execution trace correlation across request analysis, context budgeting, cost tracking, and plan-amendment decisions, so trace-scoped audit queries return complete records (see [Activity Journal](user_guide/monitoring.md#log--journal-commands---query-the-activity-journal)).
+- Activity Journal lifecycle events now preserve canonical request and execution trace correlation across request analysis, context budgeting, cost tracking, and plan-amendment decisions, so trace-scoped audit queries return complete records (see [Activity Journal](user_guide/monitoring.md#querying-the-journal)).
 
 ## Unreleased — Phase 163 (MCP Server Spec Compliance)
 

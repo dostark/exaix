@@ -2,361 +2,48 @@
 
 The activity journal, log queries, live watch and OpenTelemetry export. Part of the [Exaix User Guide](README.md).
 
-## **Log & Journal Commands** - Inspect the Activity Journal and cost reports
+## The Activity Journal
 
-```bash
-exactl log list                    # Show last 20 events
-exactl log list --filter config.updated
-exactl log cost                   # Aggregated cost report
-```
+The Activity Journal is a permanent, searchable audit trail of all agent actions, system events, and errors. It is append-only and stored locally in `journal.db`, and it is essential for debugging, compliance, and understanding system behavior. Every `config.set`, `plan.approved`, `tool.confirmed` and integrity check produces a typed event that you can query.
 
-## **Watch Command** - Live Execution Streaming
-
-The `exactl request watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types.
-
-```bash
-# Watch a live execution by request id
-exactl request watch <request-id>
-
-# Watch a live execution by trace ID
-exactl request watch --trace a1b2c3d4-e5f6-7890-abcd-ef1234567890
-
-# Watch with a custom SSE port (if not using default 8765)
-EXA_SSE_PORT=9000 exactl request watch --trace a1b2c3d4-e5f6-7890-abcd-ef1234567890
-```
-
-**Output format (color-coded):**
-
-- Heartbeat (dim gray): `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms`
-- Tool start (cyan): `[14:30:16] ▶ tool.start tool="read_file"`
-- Tool end (cyan): `[14:30:17] ◀ tool.end tool="read_file"`
-- LLM stream (white): `[14:30:18] ◈ llm.stream Thinking about...`
-- Flow status (green): `[14:30:19] ◆ flow.status status="running"`
-
-**How it works:**
-
-1. **Live mode:** If the daemon's SSE server is running, `watch` connects to `http://127.0.0.1:8765/api/v1/traces/:id/stream` and streams events in real time.
-1. **Fallback mode:** If the SSE server is unavailable (daemon stopped, execution finished), `watch` queries the Activity Journal database and displays historical events for that trace, then exits.
-
-**Behavior:**
-
-- Heartbeats fire every 5 seconds during long-running LLM calls, confirming the agent is still active.
-- Press `Ctrl+C` to stop watching at any time.
-- The command validates the trace ID (must be a valid UUID) before connecting.
-
----
-
-**Example workflow:**
-
-```bash
-# Check if daemon is running
-$ exactl daemon status
-🔧 Daemon Status
-
-Version: 1.0.0
-Status: Running ✓
-PID: 12345
-Uptime: 2:15:30
-
-# View recent logs
-$ exactl daemon logs --limit 20
-
-# Follow logs in real-time
-$ exactl daemon logs --follow
-[2025-11-25 14:30:15] INFO: Daemon started
-[2025-11-25 14:30:16] INFO: Watching /Workspace/Requests
-[2025-11-25 14:32:45] INFO: New request detected: implement-auth
-...
-```
-
-## **Log & Journal Commands** - Query the Activity Journal
-
-Every action in Exaix is recorded in the append-only Activity Journal. The `journal`
-and `log list` commands let you inspect this audit trail. The `log cost` command
-aggregates cost data across runs.
-
-```bash
-# Query the journal (default: last 20 events, newest first)
-exactl log list
-exactl log list
-
-# Filter by action type
-exactl log list --filter config.updated
-exactl log list --filter config.integrity_mismatch
-
-# Filter by trace id
-exactl log list --filter trace_id=<uuid>
-
-# Filter by agent
-exactl log list --filter agent_role=my-agent
-
-# Time range queries
-exactl log list --filter since=2026-06-01
-
-# Aggregation
-exactl log list --filter plan.approved --count
-
-# Display cost reports
-exactl log cost
-exactl log cost --since 2026-06-01
-```
-
-To **wait** for an event instead of querying — a readiness barrier — use the `wait`
-subcommand. It polls the journal until the matching event is journalled after a baseline
-(or the timeout elapses), printing the matched event and exiting `0` on a match
-and `1` on timeout. This is useful in scripts and test harnesses that must block until
-the daemon is ready, a flow completes, a plan is approved, and so on.
-
-```bash
-# Block until the daemon is ready (default timeout 30s), then exit 0
-exactl log wait --event daemon.ready
-
-# Raise the timeout
-exactl log wait --event flow.completed --timeout 120
-
-# Only count events timestamped after a given time (ISO datetime) — ignore earlier events
-exactl log wait --event plan.approved --since "2026-06-01T12:00:00Z" --timeout 120
-
-# Match only events whose payload contains a substring (SQL LIKE pattern)
-exactl log wait --event model.resolved --payload "%preferred_list%"
-```
-
-The journal is the primary audit surface — every `config.set`, `plan.approved`,
-`tool.confirmed`, and integrity check produces a typed event entry visible here.
-
----
-
-## Activity Logging
-
-All human actions via CLI are automatically logged to the Activity Journal:
+Human actions through the CLI are logged automatically:
 
 - Plan approvals/rejections → `plan.approved`, `plan.rejected`
 - Review approvals/rejections → `review.approved`, `review.rejected`
 - All actions tagged with `actor='human'`, `via='cli'`
 - User identity captured from git config or OS username
 
-Query activity history:
+Every other action carries the trace ID of its request, so you can follow one request from creation to review.
 
-```bash
-# View recent activity history
-exactl log list --limit 10
+## Querying the journal
 
-# Filter by trace ID to see complete request lifecycle
-TRACE_ID=$(exactl log list --limit 1 -o json | jq -r '.[0].trace_id')
-exactl log list --filter trace_id=$TRACE_ID
+`exactl log list` lists the journal rows, newest first. It shows 50 rows by default, and `--limit` changes that. Narrow the result with these options:
 
-# Audit all errors across the system
-exactl log list --filter action_type=error
-```
+- `--filter trace_id=<uuid>` shows one operation, for example the complete lifecycle of a request.
+- `--filter action_type=<type>` shows one event type. It supports wildcards, for example `action_type=plan.%`. A bare event name such as `--filter plan.approved` does the same.
+- `--filter agent_role=<name>` shows the activity of one agent role.
+- `--filter since=<date>` shows rows from a date or an ISO datetime onward.
+- `--payload <pattern>` matches a SQL LIKE pattern against the payload, and `--actor` and `--target` filter by those fields.
+- `--count` counts the rows by action type, and `--distinct <field>` lists the distinct values of a field.
+- `-o json` prints machine-readable output for scripts.
 
-## Activity Journal
+Every option is in the [log command reference](../cli/log.md).
 
-The Activity Journal provides a permanent, searchable audit trail of all agent actions, system events, and errors. It is stored locally in `journal.db` and is essential for debugging, compliance, and understanding system behavior.
+### Recipes
 
-**Usage:**
+- **Debug a failed request.** Find the trace ID of the failure with `exactl log list --filter action_type=request.failed --limit 1 -o json`, then list the whole trace with `--filter trace_id=<trace-id>` to see the failure chain.
+- **Audit portal access.** `exactl log list --filter action_type=portal.% --limit 100` lists every portal event. Payload patterns such as `--payload %permission%denied%` find denied accesses.
+- **See who does the work.** `exactl log list --filter action_type=request.created --distinct agent_role` lists the agent roles that received requests, and `--count` counts the events by type.
+- **Export for a report.** Add `-o json` and redirect the output to a file to keep a filtered slice of the journal, for example the activity of one agent role.
+- **Read the cost of the runs.** `exactl log cost` aggregates cost data across runs. [Cost Tracking](cost-tracking.md) explains the report.
 
-```bash
-exactl log list [options]
-```
+For provider request diagnostics, set `log_level = "debug"` in your existing `[system]` configuration table and restart the daemon. The journal then records parsed request bodies under `provider.request_debug_dump`. The default info level filters these events. Request headers are excluded, and request bodies can contain prompts and tool results. Providers that use the compatible profile suppress both request and response body dumps.
 
-**Core Options:**
+### Waiting for an event
 
-| Option                                   | Description                                     | Default |
-| ---------------------------------------- | ----------------------------------------------- | ------- |
-| `--limit <n>`, `-n <n>`                  | Show the last N entries                         | 50      |
-| `--filter <key=value>`, `-f <key=value>` | Filter by criteria (can be used multiple times) | None    |
-| `-o, --output <format>`                  | Output format: `text`, `table`, `json`          | `text`  |
-| `--distinct <field>`                     | Return distinct values for specified field      | None    |
-| `--count`                                | Return count aggregation by action_type         | false   |
-| `--payload <pattern>`                    | Filter by payload LIKE pattern                  | None    |
-| `--actor <actor>`                        | Filter by actor                                 | None    |
-| `--target <target>`                      | Filter by target                                | None    |
+To **wait** for an event instead of querying, a readiness barrier, use `exactl log wait --event <type>`. It polls the journal until the matching event is journalled after a baseline, or until the timeout elapses. It prints the matched event and exits `0` on a match and `1` on timeout. This is useful in scripts and test harnesses that must block until the daemon is ready, a flow completes, a plan is approved, and so on. For example, `exactl log wait --event daemon.ready` blocks until the daemon is ready, with a default timeout of 30 seconds. `--timeout` raises the timeout, `--since` ignores earlier events, and `--payload` matches a substring of the payload.
 
-**Filter Keys:**
-
-- `trace_id`: Filter by specific operation UUID (e.g., `trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
-- `action_type`: Filter by event type (e.g., `action_type=request.created`, supports wildcards like `action_type=plan.%`)
-- `agent_role`: Filter by agent name (e.g., `agent_role=security-auditor`)
-- `since`: Filter by time (e.g., `since=2024-01-01`, `since=2024-01-01T10:00:00`)
-
-### Basic Usage Examples
-
-```bash
-# View recent system activity (last 50 entries)
-exactl log list
-
-# Show only the last 10 entries
-exactl log list --limit 10
-
-# Output in JSON format for scripting
-exactl log list -o json
-
-# Display in table format for better readability
-exactl log list -o table
-```
-
-### Filtering by Trace ID
-
-```bash
-# Investigate a specific request's complete lifecycle
-exactl log list --filter trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890
-
-# Get the trace ID from a recent request and investigate
-TRACE_ID=$(exactl log list --limit 1 -o json | jq -r '.[0].trace_id')
-exactl log list --filter trace_id=$TRACE_ID
-```
-
-### Filtering by Action Type
-
-```bash
-# Show only request creation events
-exactl log list --filter action_type=request.created
-
-# Show all plan-related events (using wildcard)
-exactl log list --filter action_type=plan.%
-
-# Show all errors
-exactl log list --filter action_type=error
-
-# Show blueprint operations
-exactl log list --filter action_type=blueprint.%
-```
-
-### Filtering by Agent
-
-```bash
-# Show activity for a specific agent
-exactl log list --filter agent_role=security-auditor
-
-# Show activity for mock agents (using wildcard)
-exactl log list --filter agent_role=mock-%
-```
-
-### Time-Based Filtering
-
-```bash
-# Show activity since a specific date
-exactl log list --filter since=2024-01-01
-
-# Show activity since a specific datetime
-exactl log list --filter since=2024-01-01T10:00:00
-
-# Show recent activity (last hour)
-exactl log list --filter since=$(date -d '1 hour ago' +%Y-%m-%dT%H:%M:%S)
-```
-
-### Payload Pattern Matching
-
-```bash
-# Search for activities containing specific text in payload
-exactl log list --payload %security%
-
-# Check for potential credential leaks
-exactl log list --payload %password%
-exactl log list --payload %api_key%
-exactl log list --payload %secret%
-
-# Find token usage information
-exactl log list --payload %tokens%
-
-# Search for cost-related activities
-exactl log list --payload %cost%
-```
-
-### Aggregation and Analysis
-
-```bash
-# Count total activities by action type
-exactl log list --count
-
-# Get distinct list of all agents that have performed actions
-exactl log list --distinct agent_role
-
-# Get distinct list of all action types
-exactl log list --distinct action_type
-
-# Get distinct actors (users who performed actions)
-exactl log list --distinct actor
-```
-
-### Advanced Multi-Filter Queries
-
-```bash
-# Combine multiple filters: errors from specific agent since date
-exactl log list --filter action_type=error --filter agent_role=security-auditor --filter since=2024-01-01
-
-# Find all failed actions for a specific trace
-exactl log list --filter trace_id=$TRACE_ID --filter action_type=action.failed
-
-# Security audit: check for dangerous commands executed
-exactl log list --filter action_type=action.executing --payload %rm% --payload %sudo%
-
-# Performance analysis: find slow operations
-exactl log list --payload %timeout% --payload %error%
-```
-
-### Real-World Use Cases
-
-**Debugging Failed Requests:**
-
-```bash
-# Find the trace ID of a failed request
-FAILED_TRACE=$(exactl log list --filter action_type=request.failed --limit 1 -o json | jq -r '.[0].trace_id')
-
-# Investigate the complete failure chain
-exactl log list --filter trace_id=$FAILED_TRACE
-```
-
-For provider request diagnostics, set `log_level = "debug"` in your existing `[system]`
-configuration table and restart the daemon. The journal then records parsed request bodies
-under `provider.request_debug_dump`. The default info level filters these events. Request
-headers are excluded; request bodies can contain prompts and tool results. Providers using
-the compatible profile suppress both request and response body dumps.
-
-```bash
-exactl log list --filter action_type=provider.request_debug_dump --limit 10 -o json
-```
-
-**Security Auditing:**
-
-```bash
-# Check for unauthorized file access attempts
-exactl log list --payload %permission%denied% --payload %access%denied%
-
-# Audit all portal access
-exactl log list --filter action_type=portal.% --limit 100
-
-# Check for sensitive data in logs
-exactl log list --payload %password% --payload %key% --payload %secret% | wc -l
-```
-
-**Performance Monitoring:**
-
-```bash
-# Count requests by agent over time
-exactl log list --filter action_type=request.created --distinct agent_role
-
-# Find most active time periods
-exactl log list --count --filter since=$(date -d '7 days ago' +%Y-%m-%d)
-
-# Monitor token usage trends
-exactl log list --payload %tokens% --limit 100 -o json | jq '.[] | .payload.tokens.total // 0' | paste -sd+ | bc
-```
-
-**Compliance and Reporting:**
-
-```bash
-# Export all activities for a specific month to JSON
-exactl log list --filter since=2024-01-01 --filter since=2024-02-01 -o json > january_activities.json
-
-# Generate audit report for specific agent
-exactl log list --filter agent_role=production-agent -o json > production_audit.json
-
-# Count human approvals vs automated actions
-exactl log list --filter action_type=plan.approved --count
-```
-
-### Power User: Direct SQL Access
+### Direct database access
 
 For advanced analysis, you can query the SQLite database directly:
 
@@ -398,6 +85,31 @@ sqlite3 ~/Exaix/.exa/journal.db "VACUUM;"
 # Backup journal before maintenance
 cp ~/Exaix/.exa/journal.db ~/backups/journal_$(date +%Y%m%d).db
 ```
+
+## Watching an execution live
+
+The `exactl request watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types. Start it with `exactl request watch <request-id>`, or with `--trace <trace-id>`.
+
+**Output format (color-coded):**
+
+- Heartbeat (dim gray): `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms`
+- Tool start (cyan): `[14:30:16] ▶ tool.start tool="read_file"`
+- Tool end (cyan): `[14:30:17] ◀ tool.end tool="read_file"`
+- LLM stream (white): `[14:30:18] ◈ llm.stream Thinking about...`
+- Flow status (green): `[14:30:19] ◆ flow.status status="running"`
+
+**How it works:**
+
+1. **Live mode:** If the daemon's SSE server is running, `watch` connects to `http://127.0.0.1:8765/api/v1/traces/:id/stream` and streams events in real time.
+1. **Fallback mode:** If the SSE server is unavailable (daemon stopped, execution finished), `watch` queries the Activity Journal database and displays historical events for that trace, then exits.
+
+**Behavior:**
+
+- Heartbeats fire every 5 seconds during long-running LLM calls, confirming the agent is still active.
+- Press `Ctrl+C` to stop watching at any time.
+- The command validates the trace ID (must be a valid UUID) before connecting.
+
+To use a custom SSE port when the daemon does not use the default 8765, set `EXA_SSE_PORT`, for example `EXA_SSE_PORT=9000 exactl request watch --trace <trace-id>`.
 
 ## OpenTelemetry Export
 
