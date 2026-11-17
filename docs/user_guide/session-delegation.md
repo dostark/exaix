@@ -29,21 +29,21 @@ The delegate tools must be installed separately:
 | **OpenCode**    | [opencode.ai](https://opencode.ai) — CLI installer and setup guide                                                                                  |
 | **Claude Code** | [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code/overview) — requires Claude Pro/Max subscription            |
 | **Codex**       | [developers.openai.com/codex](https://developers.openai.com/codex/noninteractive) — requires `codex login` (ChatGPT Codex subscription; no API key) |
-| **OpenRouter**  | See [§2.4.4](../Model_Settings.md#enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)                  |
+| **OpenRouter**  | See [Enterprise providers](../Model_Settings.md#enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)    |
 
 ### Launch Modes
 
 | Mode       | Value        | Description                                                                |
 | ---------- | ------------ | -------------------------------------------------------------------------- |
 | **Mode 1** | `advisory`   | Prints the command; human runs the tool out-of-band                        |
-| **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`                     |
+| **Mode 2** | `supervised` | Interactive TTY spawn                                                      |
 | **Mode 3** | `headless`   | Non-interactive spawn; daemon captures stdout and reconciles automatically |
 
 Mode 3 (headless) supports `claude-code`, `opencode`, and `codex`. For tools that don't
 write `return.json` natively (`opencode run --format json`, `codex exec --json`), the
 daemon captures their JSON event stream from stdout and synthesizes a valid `return.json`.
 **Codex's tested, intended mode is headless (Mode 3)** — Mode 2 (`supervised`) launch
-throws (`resolveLaunch()` rejects it); see [§2.5.7](#codex-sandbox-and-permitted-path-security).
+throws (`resolveLaunch()` rejects it); see [Codex sandbox and permitted-path security](#codex-sandbox-and-permitted-path-security).
 
 ### Per-Request Override via Environment Variables
 
@@ -87,7 +87,7 @@ bin_overrides = ["/path/to/.cache/mock_session_tool_bin"]
 registers it without Mode 2 (`supervised`) support (`resolveLaunch()` throws), unlike
 `claude-code`/`opencode`. It
 reuses the same `codex login` subscription credential as
-[§2.4.6](../Model_Settings.md#subscription-billed-cli-providers-codex-cli); there is no separate auth step
+[Subscription-billed CLI providers](../Model_Settings.md#subscription-billed-cli-providers-codex-cli); there is no separate auth step
 for session delegation.
 
 Codex enforces scope through two independent, layered mechanisms:
@@ -223,19 +223,13 @@ login's warning-then-lockout cycle does.
 
 ### Prerequisites and multi-turn behavior
 
-Same tool installs as [§2.5.2](#prerequisites) (`claude` or `opencode` on `PATH`). Each
+Same tool installs as in [Prerequisites](#prerequisites) (`claude` or `opencode` on `PATH`). Each
 plan step is a fresh, cold-spawned CLI call that resumes the prior step's conversation via a
 captured session id (`claude -p <objective> --resume <session_id>` /
 `opencode run --session <session_id>`) — so a multi-step plan reads as one continuous
 session to the CLI, not N unrelated calls. The first turn of each plan includes the whole
 plan's text so the CLI orients on the complete task; later turns send only the current step.
 
-### Known limitation
+### Reviewing the changes of a worktree run
 
-A plan that executes inside a git worktree (`PortalExecutionStrategy.WORKTREE`, forced
-whenever the plan targets a real `portal`) commits `CliDelegateStrategy`'s changes inside
-that worktree checkout. Merging the worktree branch back into the portal's own working tree
-is not yet automatic — verify a `cli_delegate` run's actual file changes against the worktree
-under `.exa/worktrees/<portal>/<trace_id>/` if the mounted portal doesn't show them. Track
-status in `exaix-dev-docs/planning/phase-140-evaluation-framework-maturation.md`
-(`Ledger:CLI_DELEGATE_WORKTREE_MERGE`).
+A plan that executes inside a git worktree (`PortalExecutionStrategy.WORKTREE`, forced whenever the plan targets a real `portal`) commits the changes of `CliDelegateStrategy` inside that worktree checkout. The daemon never writes into your live checkout before a human review. The changes reach the portal when you approve the review: `exactl review approve <branch>` merges the branch into the base branch and removes the worktree. Until then the mounted portal does not show them. Look for the files under `.exa/worktrees/<portal>/<trace_id>/` or read the diff with `exactl review show <branch>`. See [Requests, Plans and Reviews](requests-plans-reviews.md) for the review workflow.
