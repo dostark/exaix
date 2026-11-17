@@ -31,7 +31,7 @@ steps:
       note: "Contracted vendor for final output"
 ```
 
-See [Model bindings for flow steps](../Model_Settings.md#model-bindings-for-flow-steps) for catalog and override setup.
+See [Model bindings for flow steps](model-settings.md#model-bindings-for-flow-steps) for catalog and override setup.
 
 ## Advanced Flow Controls
 
@@ -285,7 +285,7 @@ and the governed worktree stays available for inspection. The flow promises no c
 - `configs/bindings/flows/architecture-decision.example.toml`
 
 Overlay entries name services from the operator's catalog. See
-[Model bindings for flow steps](../Model_Settings.md#model-bindings-for-flow-steps) for catalog setup.
+[Model bindings for flow steps](model-settings.md#model-bindings-for-flow-steps) for catalog setup.
 
 ## Condition Expressions
 

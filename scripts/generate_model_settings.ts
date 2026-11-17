@@ -2,7 +2,7 @@
 /**
  * @module GenerateModelSettings
  * @path scripts/generate_model_settings.ts
- * @description Rewrites the generated table blocks of docs/Model_Settings.md. The tables come from the binding catalog, the rows of tests/configs/model_presets.toml and the scenario files, so they cannot drift from the code. The text around the blocks is written by hand.
+ * @description Rewrites the generated table blocks of docs/user_guide/model-settings.md. The tables come from the binding catalog, the rows of tests/configs/model_presets.toml and the scenario files, so they cannot drift from the code. The text around the blocks is written by hand.
  *
  * Usage:
  *   deno task docs:models
@@ -27,7 +27,7 @@ export interface IOtherVariable {
 }
 
 const REPO_ROOT = join(import.meta.dirname ?? ".", "..");
-export const MODEL_SETTINGS_DOC = join(REPO_ROOT, "docs", "Model_Settings.md");
+export const MODEL_SETTINGS_DOC = join(REPO_ROOT, "docs", "user_guide", "model-settings.md");
 const PRESETS_PATH = join(REPO_ROOT, "tests", "configs", "model_presets.toml");
 const SCENARIOS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "scenarios");
 const LIVE_PREFIX = "live-";

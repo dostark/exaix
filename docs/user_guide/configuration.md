@@ -59,7 +59,7 @@ After a change, run `exactl daemon restart` so the daemon reads the new file and
 
 ### Environment Variable Reference
 
-Every environment variable that sets a provider, service, transport or model is in [Model Settings](../Model_Settings.md#environment-variables): the provider keys, the `EXA_LLM_*` overrides, the test and live-run variables and the troubleshooting steps.
+Every environment variable that sets a provider, service, transport or model is in [Model Settings](model-settings.md#environment-variables): the provider keys, the `EXA_LLM_*` overrides, the test and live-run variables and the troubleshooting steps.
 
 ### Execution Configuration
 
@@ -89,12 +89,12 @@ does not need to call a tool.
 
 #### Model bindings for flow steps
 
-Flow-step bindings, catalog entries and overlays moved to [Model Settings](../Model_Settings.md#model-bindings-for-flow-steps).
+Flow-step bindings, catalog entries and overlays moved to [Model Settings](model-settings.md#model-bindings-for-flow-steps).
 
 #### OpenAI-compatible Chat Completions (`openai-chat`)
 
-The `openai-chat` provider moved to [Model Settings](../Model_Settings.md#openai-compatible-chat-completions-openai-chat).
+The `openai-chat` provider moved to [Model Settings](model-settings.md#openai-compatible-chat-completions-openai-chat).
 
 ### Testing & CI Model Aliases
 
-The `models` table aliases moved to [Model Settings](../Model_Settings.md#testing-and-ci-model-aliases).
+The `models` table aliases moved to [Model Settings](model-settings.md#testing-and-ci-model-aliases).

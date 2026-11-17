@@ -20,7 +20,7 @@ The dashboard has seven views. Open one with the view picker (`p`), with `Tab`, 
 | 📥   | **Request Manager** | Track and manage requests                |
 | 💾   | **Memory View**     | Browse and manage Memory Banks           |
 
-Press `?` or `F1` in any view for the help overlay. Press `q` or `Esc` to quit. Every key of every view is in the [TUI Keyboard Reference](../TUI_Keyboard_Reference.md), which is the one list of keys. Vim-style movement keys work in lists.
+Press `?` or `F1` in any view for the help overlay. Press `q` or `Esc` to quit. Every key of every view is in the [TUI Keyboard Reference](tui-keyboard-reference.md), which is the one list of keys. Vim-style movement keys work in lists.
 
 ## Typical workflow
 

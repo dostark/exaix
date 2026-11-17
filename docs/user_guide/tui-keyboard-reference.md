@@ -288,7 +288,7 @@ theme = "dark"  # "dark", "light", or "system"
 
 ## See Also
 
-- [Exaix User Guide](./Exaix_User_Guide.md) - Complete user documentation
+- [Exaix User Guide](README.md) - Complete user documentation
 - [Exaix Architecture](./Exaix_Architecture.md) - Technical architecture details
-- [Implementation Plan](../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md) - Development roadmap
+- [Implementation Plan](../../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md) - Development roadmap
 ````

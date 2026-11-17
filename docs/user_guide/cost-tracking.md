@@ -21,7 +21,7 @@ Cost tracking operates at multiple levels:
 
 ### Configuration
 
-The daily spending limit is `max_daily_cost_usd` in `[provider_strategy]`. It defaults to 5.00 USD and is described with the provider strategy in [Model Settings](../Model_Settings.md). The `[cost_tracking]` block tunes how costs are recorded:
+The daily spending limit is `max_daily_cost_usd` in `[provider_strategy]`. It defaults to 5.00 USD and is described with the provider strategy in [Model Settings](model-settings.md). The `[cost_tracking]` block tunes how costs are recorded:
 
 ```toml
 [provider_strategy]

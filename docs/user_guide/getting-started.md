@@ -167,7 +167,7 @@ ollama run llama3.2 "Explain what Exaix does in one sentence."
 
 **Configure Exaix to use Ollama:**
 
-For one run, set the provider and model in the environment: `EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl daemon start`. For a permanent setup, add a `[models.local]` entry with `provider = "ollama"` and `model = "llama3.2"` to `exa.config.toml`, and name it in `[agents] default_model`. [Model Settings](../Model_Settings.md) lists the model entries, the variables and the troubleshooting steps for every provider.
+For one run, set the provider and model in the environment: `EXA_LLM_PROVIDER=ollama EXA_LLM_MODEL=llama3.2 exactl daemon start`. For a permanent setup, add a `[models.local]` entry with `provider = "ollama"` and `model = "llama3.2"` to `exa.config.toml`, and name it in `[agents] default_model`. [Model Settings](model-settings.md) lists the model entries, the variables and the troubleshooting steps for every provider.
 
 **Troubleshooting:**
 
@@ -180,7 +180,7 @@ For one run, set the provider and model in the environment: `EXA_LLM_PROVIDER=ol
 
 ### Cloud LLM Setup (Anthropic, OpenAI, Google)
 
-Setting up cloud providers (API keys, model configuration, provider comparison), enterprise providers, the provider strategy and subscription-billed CLI providers moved to [Model Settings](../Model_Settings.md#cloud-providers-anthropic-openai-google).
+Setting up cloud providers (API keys, model configuration, provider comparison), enterprise providers, the provider strategy and subscription-billed CLI providers moved to [Model Settings](model-settings.md#cloud-providers-anthropic-openai-google).
 
 ### Advanced Deployment Options
 

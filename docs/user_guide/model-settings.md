@@ -1,11 +1,6 @@
----
-title: "Model settings"
-description: "How to choose and configure a provider, service, transport and model: setup, environment variables, bindings, presets and the generated reference tables"
----
-
 # Model Settings
 
-The one place for every way to configure a provider, a service, a transport and a model, in production, in tests and in scenarios. The [reference tables](#reference-tables) at the end are generated from the code, and the rest is written by hand. The [User Guide](Exaix_User_Guide.md) points here. [Model Resolution](Model_Resolution.md) explains how Exaix picks a model for a request.
+The one place for every way to configure a provider, a service, a transport and a model, in production, in tests and in scenarios. The [reference tables](#reference-tables) at the end are generated from the code, and the rest is written by hand. [Model Resolution](model-resolution.md) explains how Exaix picks a model for a request.
 
 ## Contents
 
@@ -91,8 +86,8 @@ cheapest = ["ollama"]
   **exempt from cost filtering**, so it can win even under a tight budget. An unknown-priced
   model is never treated as "cheapest" — only a genuinely known price qualifies.
 - Curate these lists from the CLI instead of editing TOML by hand — see
-  [`exactl model candidates` and `exactl model list`](Model_Resolution.md#3-curating-your-preferred-providers).
-- **Editions:** the Solo floor is a static, offline catalog. A live catalog and stricter routing arrive with the Team edition, see [Team model registry](#team-model-registry-live-catalog). [Model Resolution](Model_Resolution.md) explains the precedence chain, characteristic scoring, multi-route pricing and cost accuracy.
+  [`exactl model candidates` and `exactl model list`](model-resolution.md#3-curating-your-preferred-providers).
+- **Editions:** the Solo floor is a static, offline catalog. A live catalog and stricter routing arrive with the Team edition, see [Team model registry](#team-model-registry-live-catalog). [Model Resolution](model-resolution.md) explains the precedence chain, characteristic scoring, multi-route pricing and cost accuracy.
 
 ### Provider comparison
 
@@ -162,7 +157,7 @@ How Exaix uses OpenRouter:
 - **Selection.** Price ranking, size presets, thinking and effort use the selected model's catalog data before provider-level values. An unknown price cannot win "cheapest" over a known price. For OpenRouter, an unavailable catalog leaves the price, window and reasoning capability unknown; no global model guesses are supplied. An unknown cost passes the size-preset cost filter, and an unknown window passes only for a provider with a catalog lookup, while unknown prices rank behind known prices for "cheapest".
 - **Cost.** `usage.cost` is retained as reported USD, including a reported zero. When it is absent, ReAct can estimate the cost from measured tokens and the model's catalog prices. The estimate stays labeled `predicted`. Prompt previews use the catalog input price without inventing output tokens.
 
-The adapter's modules are listed in [packages/ai-openrouter/README.md](../packages/ai-openrouter/README.md).
+The adapter's modules are listed in [packages/ai-openrouter/README.md](../../packages/ai-openrouter/README.md).
 
 Per-model caveats:
 
@@ -252,12 +247,12 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 
 `[session_delegate] tool = "codex"` (Mode 3 headless session delegation) is a **separate**
 Codex integration path with its own sandbox model — see
-[§2.5.7](user_guide/session-delegation.md#codex-sandbox-and-permitted-path-security). This subsection covers only the
+[§2.5.7](session-delegation.md#codex-sandbox-and-permitted-path-security). This subsection covers only the
 ReAct-loop analysis/planning provider above.
 
 ## Team model registry (live catalog)
 
-The Team edition can keep its model catalog current. It is off by default, and with it off Team behaves exactly like Solo. [Model Resolution](Model_Resolution.md#5-the-team-live-catalog) explains what each setting does. The `[model_registry]` block sets it up:
+The Team edition can keep its model catalog current. It is off by default, and with it off Team behaves exactly like Solo. [Model Resolution](model-resolution.md#5-the-team-live-catalog) explains what each setting does. The `[model_registry]` block sets it up:
 
 Top-level keys must come before any `[model_registry.*]` sub-table (standard TOML ordering):
 
@@ -339,7 +334,7 @@ The live tests bind their provider and model with `EXA_TEST_BIND`. `EXA_TEST_ENA
 
 **Live runs are configured and gated by cell presets.** A live test reads the `live-<service>` row of `tests/configs/model_presets.toml` that names its service, through `tests/helpers/live_presets.ts`. The row gives the binding, the `catalog` entries (service, transport, endpoint, models) and the `requires_bin`, `requires_key` and `requires_optin` predicates, so a test and a scenario cell skip for the same named reason. A test that cannot run prints that reason, for example `opt-in env 'EXA_TEST_ENABLE_PAID_LLM' is unset`, and is reported as ignored. A new live service is a new row.
 
-A key in the environment never starts a run. An opt-in variable counts when it is non-empty, and CI jobs never set it. An opted-in local run expects a working server, so a missing server or model fails the test and names the step that fixes it. Choose the provider with `EXA_TEST_BIND` (the `--bind` layer), which also changes which preset gates the run: the preset of the bound service decides. `exactl eval run --cell <tool or provider>` selects a scenario row. The runner `tests/scenario_framework/runner/main.ts` adds `--overlay` and `--bind` layers, as in [Evaluation](Exaix_Evaluation.md). `tests/integration/live_gating_guard_test.ts` fails when a test reads an opt-in variable or a provider key by its own code.
+A key in the environment never starts a run. An opt-in variable counts when it is non-empty, and CI jobs never set it. An opted-in local run expects a working server, so a missing server or model fails the test and names the step that fixes it. Choose the provider with `EXA_TEST_BIND` (the `--bind` layer), which also changes which preset gates the run: the preset of the bound service decides. `exactl eval run --cell <tool or provider>` selects a scenario row. The runner `tests/scenario_framework/runner/main.ts` adds `--overlay` and `--bind` layers, as in [Evaluation](../Exaix_Evaluation.md). `tests/integration/live_gating_guard_test.ts` fails when a test reads an opt-in variable or a provider key by its own code.
 
 **Live runs on the Codex CLI.** Run `EXA_MATRIX_CODEX=1 EXA_TEST_BIND='default=service=codex-cli,service_model_id=gpt-5.6-terra' deno test --allow-all <test file>` with `codex` on `PATH` and logged in. A CLI service binds as a generate provider, in the way a judge does, and it needs no key. Each call starts a `codex exec` process, so the provider budget is 300000 ms. Codex is an agent that uses its own tools, so a test that asserts which Exaix tool the model chooses, or that needs native tool calls, does not apply to it. Those tests (symbol query, native tool rounds and memory maturation) skip with the reason `codex-cli is a CLI agent that runs its own tools`. The ReAct loop test and the extraction quality test run.
 
@@ -383,7 +378,7 @@ deno test --allow-all packages/execution/tests/agents/react_loop_strategy_live_t
 1. **Check the daemon logs** to see which values were loaded: `exactl daemon logs`
 1. **Verify the variable is set** in the daemon's environment: `env | grep EXA_LLM`
 
-For more details, see `templates/exa.config.sample.toml` and [Technical Specification](../exaix-dev-docs/dev/Exaix_Technical_Spec.md).
+For more details, see `templates/exa.config.sample.toml` and [Technical Specification](../../exaix-dev-docs/dev/Exaix_Technical_Spec.md).
 
 ## Model bindings for flow steps
 
@@ -541,7 +536,7 @@ Binding issues are reported by `exactl flow bindings` and fail the flow prefligh
 | `pinned`                       | Exact override conflicts with a pinned flow value.            |
 | `lock_mismatch`                | Replay inputs differ from the saved lock.                     |
 
-The implementation contract is tracked in the [flow-step model bindings plan](../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
+The implementation contract is tracked in the [flow-step model bindings plan](../../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
 
 ## OpenAI-compatible Chat Completions (`openai-chat`)
 

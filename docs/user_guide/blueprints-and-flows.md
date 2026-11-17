@@ -41,7 +41,7 @@ System prompt with <thought> and <content> tags...
 
 A flow coordinates several agents to do a complex task. The `exactl flow` commands list flows, show a flow with its dependency graph, validate a definition and run a flow. `exactl flow run <flow-id> "<goal>"` creates a request for the flow. It does the same as `exactl request create "<goal>" --flow <flow-id>`. Every option is in the generated [flow reference](../cli/flow.md).
 
-`exactl flow bindings <flow-id>` previews the effective model binding of each step and the source of each field. Use it with `--overlay` or `--bind` to check a binding change before a run. See [Model Settings](../Model_Settings.md) for the binding layers.
+`exactl flow bindings <flow-id>` previews the effective model binding of each step and the source of each field. Use it with `--overlay` or `--bind` to check a binding change before a run. See [Model Settings](model-settings.md) for the binding layers.
 
 `exactl flow list` shows a Capabilities column. A flow without `requires_capabilities` shows `None`. A flow whose capabilities your edition includes shows `eligible (runtime unverified)`. A flow that needs a capability your edition lacks shows `unavailable (needs voting)`. The list checks the edition only. The daemon confirms the installed capability when the run starts and fails with `capability_unavailable` if it is missing. `exactl flow list --json` reports `requiresCapabilities`, `tierEligible` and `runtimeAvailability: "unknown"` for each flow.
 

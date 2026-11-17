@@ -19,7 +19,7 @@ The TUI provides an interactive dashboard for monitoring and managing Exaix — 
 | Agents        | Active sessions   |
 | Notifications | Bell icon + count |
 
-For the complete keyboard shortcut reference (global keys, navigation, split views, view-specific keys, layout presets, and accessibility), see [`docs/TUI_Keyboard_Reference.md`](../../docs/TUI_Keyboard_Reference.md).
+For the complete keyboard shortcut reference (global keys, navigation, split views, view-specific keys, layout presets, and accessibility), see [`docs/user_guide/tui-keyboard-reference.md`](../../docs/user_guide/tui-keyboard-reference.md).
 
 ## Architecture
 
@@ -52,5 +52,5 @@ theme = "dark"  # "dark", "light", or "system"
 
 ## See Also
 
-- [`docs/TUI_Keyboard_Reference.md`](../../docs/TUI_Keyboard_Reference.md) — Complete keyboard shortcut reference
+- [`docs/user_guide/tui-keyboard-reference.md`](../../docs/user_guide/tui-keyboard-reference.md) — Complete keyboard shortcut reference
 - [@exaix/tui](../../packages/tui/) — Base TUI components and layout primitives

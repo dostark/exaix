@@ -38,7 +38,7 @@ exactl request create "Design authentication architecture" --model-size L --thin
 exactl request create "Format all files" --model-size S --characteristic cheapest
 ```
 
-The resolver turns these flags into one provider and model, records the reason, and journals a `model.resolved` event. [Model Resolution](../Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the rules, the reasons and the fixed client of daemon execution, and [section 3](../Model_Resolution.md#3-curating-your-preferred-providers) shows how to curate the preferred providers.
+The resolver turns these flags into one provider and model, records the reason, and journals a `model.resolved` event. [Model Resolution](model-resolution.md#2-how-the-choice-gets-made) explains the order of the rules, the reasons and the fixed client of daemon execution, and [section 3](model-resolution.md#3-curating-your-preferred-providers) shows how to curate the preferred providers.
 
 ### Previewing and scripting
 

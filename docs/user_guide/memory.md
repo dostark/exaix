@@ -3,7 +3,7 @@
 - **Version:** 1.4.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system including automatic proposal approval
-- **Companion:** operational commands live in [Workspace and Memory](user_guide/workspace-and-memory.md#memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
+- **Companion:** operational commands live in [Workspace and Memory](workspace-and-memory.md#memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../../ARCHITECTURE.md#memory-banks-architecture)
 
 ## 1. Why Exaix Remembers
 
@@ -150,7 +150,7 @@ Retrieval can also be **scoped to one portal**: a caller-bound scope restricts r
 that portal's own patterns/decisions/overview/executions plus APPROVED global learnings,
 denying another portal's content even when it would otherwise rank higher. Unscoped
 callers are unaffected. The dogfood context supplement (see the
-[Dogfooding Guide](Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext)) is
+[Dogfooding Guide](../Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext)) is
 the first consumer of this scope.
 
 You can also inspect what memory holds at any time:

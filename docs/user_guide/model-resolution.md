@@ -13,12 +13,12 @@ quality/cost-aware routing and more accurate cost tracking. Everything Solo does
 unchanged in Team. Team only adds capability, it never removes or silently changes Solo
 behaviour.
 
-| You want to know                                                                          | Read                                                                  |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| The request flags (`--model-size`, `--characteristic`, `--thinking`)                      | [User Guide, Requests](user_guide/requests-plans-reviews.md#requests) |
-| The commands that curate and list models (`exactl model candidates`, `exactl model list`) | [Section 3](#3-curating-your-preferred-providers) of this page        |
-| The config keys, environment variables, bindings and presets that set a provider or model | [Model Settings](Model_Settings.md)                                   |
-| How Exaix turns those inputs into one model, and how to read the result                   | This page                                                             |
+| You want to know                                                                          | Read                                                           |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| The request flags (`--model-size`, `--characteristic`, `--thinking`)                      | [User Guide, Requests](requests-plans-reviews.md#requests)     |
+| The commands that curate and list models (`exactl model candidates`, `exactl model list`) | [Section 3](#3-curating-your-preferred-providers) of this page |
+| The config keys, environment variables, bindings and presets that set a provider or model | [Model Settings](model-settings.md)                            |
+| How Exaix turns those inputs into one model, and how to read the result                   | This page                                                      |
 
 ---
 
@@ -119,9 +119,9 @@ tries the list before any scoring, and the first healthy, registered provider wi
 - Curated lists work the same in Solo and Team. They are always checked before scoring.
 
 The list lives under `model_sizes.<SIZE>.candidates` in `exa.config.toml`, described in
-[Model Settings](Model_Settings.md#model-configuration). You do not edit the file by hand: the
+[Model Settings](model-settings.md#model-configuration). You do not edit the file by hand: the
 commands below write the same setting that the resolver reads, so there is no separate database.
-Every option is in the [model command reference](cli/model.md).
+Every option is in the [model command reference](../cli/model.md).
 
 ```bash
 # Inspect the Solo model floor: one row per service that serves a model, with its author, route,
@@ -202,7 +202,7 @@ installed Exaix.
 Turning this on is one config flag, `model_registry.enabled = true`. It is off by default.
 Everything below only applies once it's on. With it off, Team behaves exactly like Solo and
 makes no extra network calls at all. By default the catalog refreshes every six hours and
-prices refresh daily. [Team model registry](Model_Settings.md#team-model-registry-live-catalog)
+prices refresh daily. [Team model registry](model-settings.md#team-model-registry-live-catalog)
 lists every key.
 
 With the catalog on, `exactl model candidates` validates an explicit entry against the live catalog and
@@ -217,7 +217,7 @@ exactl model refresh
 exactl model list --benchmark swe_bench_verified
 ```
 
-The **Model Registry** row of the edition table in [Reference Data](Reference_Data.md#edition-model--component-availability)
+The **Model Registry** row of the edition table in [Reference Data](../Reference_Data.md#edition-model--component-availability)
 shows how this fits the Solo, Team and Enterprise split.
 
 ### What gets added to your catalog automatically
@@ -304,5 +304,5 @@ An unbound flow step runs on the boot provider and reports it the same way. A
 `cli_delegate` step runs its session tool, so it carries no fixed client. Plan
 generation, plan execution and other non-flow requests do not use flow-step bindings;
 plan execution reports the boot provider as its fixed client. See
-[Model bindings for flow steps](Model_Settings.md#model-bindings-for-flow-steps) for
+[Model bindings for flow steps](model-settings.md#model-bindings-for-flow-steps) for
 selectors, overlay precedence, pins, diagnostics and replay locks.

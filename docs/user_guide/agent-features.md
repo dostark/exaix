@@ -102,7 +102,7 @@ only scored higher or lower:
 
 #### How a model is chosen
 
-Size tiers map to capability profiles in the `[model_sizes]` table of `exa.config.toml`. Each tier can narrow its eligible providers with `candidates`. [Model Resolution](../Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the resolver, and [Model Settings](../Model_Settings.md) lists every setting. In short:
+Size tiers map to capability profiles in the `[model_sizes]` table of `exa.config.toml`. Each tier can narrow its eligible providers with `candidates`. [Model Resolution](model-resolution.md#2-how-the-choice-gets-made) explains the order of the resolver, and [Model Settings](model-settings.md) lists every setting. In short:
 
 - An explicit `model: "provider:model"` bypasses the resolver.
 - Otherwise the resolver uses the curated candidates of the size tier, then ranks providers with your `characteristics`.
@@ -157,7 +157,7 @@ Session Memory automatically provides relevant context from past interactions to
 
 #### Settings
 
-Session memory is on by default. It injects the top 5 memories with a relevance score of at least 0.3. These values are defaults of the service, not keys of `exa.config.toml`. The one related config key is `memory.session.expand_links`, which makes retrieval follow one hop of memory links. See [Exaix_Memory.md](../Exaix_Memory.md) for the memory settings.
+Session memory is on by default. It injects the top 5 memories with a relevance score of at least 0.3. These values are defaults of the service, not keys of `exa.config.toml`. The one related config key is `memory.session.expand_links`, which makes retrieval follow one hop of memory links. See [Memory](memory.md) for the memory settings.
 
 #### Memory Types
 

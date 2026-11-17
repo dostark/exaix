@@ -1132,7 +1132,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
 
 **Testing determinism:** `EXA_MODEL_PRESET_OVERRIDE` env var pins all model sizes to `mock:mock-model` for any registered preset name (e.g., `test`), enabling hermetic CI tests. `model_registry.adapter_base_urls` (Team, test-only) lets a real daemon subprocess point its catalog adapters at local stub HTTP servers instead of vendor hosts.
 
-**CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`. `exactl model list` / `exactl model candidates` (Solo and Team) and `exactl model refresh` / `exactl model list --benchmark` (Team-only) are implemented in `apps/exactl/src/commands/model_commands.ts`. See `docs/Model_Resolution.md` for the user-facing guide.
+**CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`. `exactl model list` / `exactl model candidates` (Solo and Team) and `exactl model refresh` / `exactl model list --benchmark` (Team-only) are implemented in `apps/exactl/src/commands/model_commands.ts`. See `docs/user_guide/model-resolution.md` for the user-facing guide.
 
 #### 8. Native Tool-Calling (`IModelProvider` + `IToolDefinition`)
 
@@ -1545,7 +1545,7 @@ on-disk memory state:
 Every LLM-driven step degrades to a deterministic, offline-safe fallback (heuristic
 extraction, similarity-only dedup, hash-based local vectors), and remote calls are
 cost-gated. The end-user view of this lifecycle — including the CLI inspection and
-approval flow — lives in `docs/Exaix_Memory.md`.
+approval flow — lives in `docs/user_guide/memory.md`.
 
 ### Per-Execution Memory Store
 

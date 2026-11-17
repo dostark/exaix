@@ -24,7 +24,7 @@ export async function readUserGuide(): Promise<string> {
  * Read the Model Settings document
  */
 export async function readModelSettings(): Promise<string> {
-  return await Deno.readTextFile("docs/Model_Settings.md");
+  return await Deno.readTextFile("docs/user_guide/model-settings.md");
 }
 
 /**

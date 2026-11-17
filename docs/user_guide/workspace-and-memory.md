@@ -94,7 +94,7 @@ Related learnings are connected with typed links (topical/supersession). Request
 retrieval follows one hop of these links only when you opt in via
 `memory.session.expand_links = true` (default `false`); linked learnings surface at a
 reduced relevance score and never displace directly-matched ones. See
-[Exaix_Memory.md](../Exaix_Memory.md).
+[Memory](memory.md).
 
 #### Memory Lifecycle
 
@@ -103,7 +103,7 @@ approval, manual or opt-in auto-approval), retrieved (hybrid keyword + embedding
 temporally ranked), consolidated (dedup, supersession, reflection), and retired
 (superseded with audit trail). The closed self-learning loop, the local-first/cost-gated
 posture, deterministic fallbacks, and the full configuration reference are covered in
-the dedicated guide: [Exaix_Memory.md](../Exaix_Memory.md).
+the dedicated guide: [Memory](memory.md).
 
 ## File Format Reference
 

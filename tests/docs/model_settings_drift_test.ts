@@ -29,6 +29,6 @@ Deno.test("[model settings] every free-standing variable is still read by the fi
 
 Deno.test("[model settings] the User Guide points to the page and no longer holds the moved sections", async () => {
   const guide = await readUserGuide();
-  assertStringIncludes(guide, "Model_Settings.md");
+  assertStringIncludes(guide, "model-settings.md");
   assertNotMatch(guide, /#### 2\.4\.1 API Key Configuration/);
 });

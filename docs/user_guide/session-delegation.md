@@ -29,7 +29,7 @@ The delegate tools must be installed separately:
 | **OpenCode**    | [opencode.ai](https://opencode.ai) — CLI installer and setup guide                                                                                  |
 | **Claude Code** | [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code/overview) — requires Claude Pro/Max subscription            |
 | **Codex**       | [developers.openai.com/codex](https://developers.openai.com/codex/noninteractive) — requires `codex login` (ChatGPT Codex subscription; no API key) |
-| **OpenRouter**  | See [Enterprise providers](../Model_Settings.md#enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)    |
+| **OpenRouter**  | See [Enterprise providers](model-settings.md#enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)       |
 
 ### Launch Modes
 
@@ -87,7 +87,7 @@ bin_overrides = ["/path/to/.cache/mock_session_tool_bin"]
 registers it without Mode 2 (`supervised`) support (`resolveLaunch()` throws), unlike
 `claude-code`/`opencode`. It
 reuses the same `codex login` subscription credential as
-[Subscription-billed CLI providers](../Model_Settings.md#subscription-billed-cli-providers-codex-cli); there is no separate auth step
+[Subscription-billed CLI providers](model-settings.md#subscription-billed-cli-providers-codex-cli); there is no separate auth step
 for session delegation.
 
 Codex enforces scope through two independent, layered mechanisms:
@@ -125,7 +125,7 @@ like a plan execution: the daemon mints an execution record from the return's ow
 skill-guided extraction and Pending → approval pipeline. A rejected or expired
 return never does. The delegate's `transcript_ref` (the full session transcript)
 stays audit-only — extraction never reads it. See
-[Born: capture and extraction](../Exaix_Memory.md#21-born--capture-and-extraction) in Exaix_Memory.md for how
+[Born: capture and extraction](memory.md#21-born--capture-and-extraction) in the Memory guide for how
 this fits the wider capture story.
 
 ## Per-Step CLI Delegate Execution — the Cost-Preferred Path for Live/Eval Runs
