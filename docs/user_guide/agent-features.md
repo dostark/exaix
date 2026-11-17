@@ -2,9 +2,9 @@
 
 Reflexion, model intent flags, confidence scoring, session memory, retry and structured output. Part of the [Exaix User Guide](README.md).
 
-## Advanced Agent Features
+## Agent features
 
-Exaix includes sophisticated agent orchestration capabilities that enhance output quality, reliability, and context awareness. This section covers the advanced features available for agent configuration.
+Agent features change how an agent produces and checks its output: self-critique, model choice, confidence scoring, session memory, retries and output validation. This page explains each feature and its settings.
 
 ### Reflexion Pattern (Self-Critique)
 

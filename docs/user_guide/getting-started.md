@@ -37,7 +37,7 @@ Exaix is **not** a replacement for IDE-integrated AI assistants (Copilot, Cursor
 - **Quality Gate:** An automatic quality check that runs before agent execution. It scores your request and either lets it proceed, auto-enriches it, asks clarifying questions, or rejects it outright if it is too vague to be actionable. See [Request quality gate](requests-plans-reviews.md#request-quality-gate) for full details.
 - **Clarification Round:** One turn of the Q&A loop driven by the quality gate. The system asks 3–5 targeted questions; your answers are folded into a refined `IRequestSpecification` that guides the agent.
 - **Request Specification (`IRequestSpecification`):** A structured contract produced by the clarification loop. Contains `summary`, `goals`, `successCriteria`, `scope`, `constraints`, and `context` fields. Used as ground truth for evaluation downstream.
-- **Complexity:** The system classifies a request as `Simple`, `Medium`, `Complex`, or `Epic` to select the most cost-effective and powerful engine for the task.
+- **Complexity:** The system classifies a request as `Simple`, `Medium`, `Complex`, or `Epic` to select the engine that fits the task and its cost.
 - **Plan:** Agent's proposal for how to accomplish the request.
 - **Approval:** Human review gate before agent executes.
 - **Trace ID:** UUID linking everything together for audit.

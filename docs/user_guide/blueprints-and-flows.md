@@ -17,7 +17,7 @@ Tips:
 ## Blueprint file structure
 
 > **model resolution and intent:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
-> See [§6.2 Model Intent](agent-features.md#model-intent-model-resolution-and-intent) for the replacement system.
+> See [Model Intent](agent-features.md#model-intent-model-resolution-and-intent) for the replacement system.
 
 ```markdown
 ---
@@ -157,11 +157,11 @@ configuration in production, replacing an earlier `strategy: cli_delegate` step.
 and the single-shot `cli_delegate` strategy compose a small, scoped portal-knowledge/memory
 supplement onto the objective before each launch, and capture an immutable record of the exact
 bytes sent — disabled by default and additive; see the
-[Dogfooding Guide §6.7](../Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext) for
+[Bounded context supplement](../Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext) in the Dogfooding Guide for
 the full contract and its stated limitations. On a supported native client (Claude Code,
 OpenCode, and — governed cycle only — Codex), the same launch also gets a private, per-launch
 MCP connection so the child can actively query for more context mid-task; see
-[Dogfooding Guide §6.8](../Exaix_Dogfooding.md#68-session-bound-mcp-context-queries).
+[Session-bound MCP context queries](../Exaix_Dogfooding.md#68-session-bound-mcp-context-queries) in the Dogfooding Guide.
 
 ## Flow Step Execution Modes
 
@@ -212,5 +212,5 @@ See `Blueprints/Skills/README.md` for the full skill library.
 Each agent role's frontmatter also carries a `permitted_tools` allowlist — the
 least-privilege ceiling on which MCP tools that agent role may ever use,
 regardless of which skills get matched onto a request. See
-[§3.3 Skill Tools](skills.md#skill-tools) for how a matched skill's own `tools:`
+[Skill Tools](skills.md#skill-tools) for how a matched skill's own `tools:`
 declaration narrows within that ceiling.

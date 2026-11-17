@@ -12,22 +12,23 @@ Exaix includes a built-in evaluation framework for measuring agent behaviour qua
 - Each run writes the eval history and an `eval-report.json` in the output directory. The exit code is `0` when all scenarios passed, `1` when one or more fell below the threshold, and `2` for an infrastructure error.
 - `exactl eval history` queries the history. `--limit`, `--pack`, `--scenario` and `--since` narrow the result, and `-o json` prints machine-readable rows.
 - `exactl eval compare --run-a <run-id> --run-b <run-id>` compares two runs side by side.
-- `--max-cost-usd <usd>` bounds the spend of a run. The run stops scheduling once the accumulated tracked cost reaches the cap, and it skips the remaining scenarios, and it never truncates a task in the middle.
+- `--max-cost-usd <usd>` bounds the spend of a run. The run stops scheduling once the accumulated tracked cost reaches the cap, and it skips the remaining scenarios and never truncates a task in the middle.
 - `exactl eval report --view <view>` reads the history in a view.
 
-`eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
-task), `ablation` (per-subsystem contribution), `frontier` (accuracy vs cost with Pareto
-marking), `failures` (why runs fail, per family and cell), `external` (comparability against
-a public benchmark — currently Terminal-Bench; requires Docker to run tasks live, read-only
-against history otherwise; see `docs/Exaix_Evaluation.md` §17 for the methodology and its
-caveats), `robustness` (the AgentDojo triple per injection vector — clean utility,
-utility-under-attack, attack-success-rate, robustness gap), and `interactive` (per-persona
-clarification-loop convergence and policy-adherence rate; see `docs/Exaix_Evaluation.md` §18 for
-both views' methodology, safety model, and the `--run-ids` reproducibility option), and `memory`
-(per memory-ability recall/precision/MRR/nDCG/answer-correctness/abstention, plus a second table
-for the cross-cutting consolidation-quality/staleness/learning-effectiveness metrics; see
-`docs/Exaix_Evaluation.md` §19 for the ability taxonomy, metric definitions, and the
-per-corpus/per-provider/per-date positioning caveat); `-o json` gives machine-readable rows.
+`exactl eval report --view <view>` reads the history in one of these views. `-o json` gives machine-readable rows.
+
+| View          | What it shows                                                                                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cost`        | The default view. Cost of the runs.                                                                                                                                                                                           |
+| `families`    | Results per scenario family.                                                                                                                                                                                                  |
+| `lift`        | Exaix against the raw CLI on the same task.                                                                                                                                                                                   |
+| `ablation`    | The contribution of each subsystem.                                                                                                                                                                                           |
+| `frontier`    | Accuracy against cost, with Pareto marking.                                                                                                                                                                                   |
+| `failures`    | Why runs fail, per family and cell.                                                                                                                                                                                           |
+| `external`    | Comparability against a public benchmark, currently Terminal-Bench. It needs Docker to run tasks live and reads history only otherwise. See [External Benchmarks](../Exaix_Evaluation.md#17-external-benchmarks).             |
+| `robustness`  | The AgentDojo triple per injection vector: clean utility, utility under attack, attack success rate and the robustness gap.                                                                                                   |
+| `interactive` | Per persona: clarification-loop convergence and policy-adherence rate. Both views are explained in [Adversarial and Interactive Evaluation](../Exaix_Evaluation.md#18-adversarial--interactive-evaluation), with `--run-ids`. |
+| `memory`      | Per memory ability: recall, precision, MRR, nDCG, answer correctness and abstention, plus consolidation quality, staleness and learning effectiveness. See [Memory Evaluation](../Exaix_Evaluation.md#19-memory-evaluation).  |
 
 Every option is in the [eval command reference](../cli/eval.md).
 
@@ -112,6 +113,6 @@ exclude malformed judge responses and provider failures from quality-score aggre
 
 Scenario sandboxes are reclaimed on success and kept on failure; reclaim the backlog with
 `deno task sandboxes:prune` (dry-run by default). See
-[`tests/scenario_framework/README.md`](../../tests/scenario_framework/README.md) §2.5 and §4b.
+[`tests/scenario_framework/README.md`](../../tests/scenario_framework/README.md#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest) and [its subsystem cadence section](../../tests/scenario_framework/README.md#4b-subsystem-cadence--which-tier-runs-what).
 
 ---

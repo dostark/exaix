@@ -94,7 +94,7 @@ Related learnings are connected with typed links (topical/supersession). Request
 retrieval follows one hop of these links only when you opt in via
 `memory.session.expand_links = true` (default `false`); linked learnings surface at a
 reduced relevance score and never displace directly-matched ones. See
-[Exaix_Memory.md](../Exaix_Memory.md) §2.3.
+[Exaix_Memory.md](../Exaix_Memory.md).
 
 #### Memory Lifecycle
 
@@ -134,7 +134,7 @@ Implement user authentication for the API...
 
 | Benefit                 | Description                                                      |
 | ----------------------- | ---------------------------------------------------------------- |
-| **Memory Banks search** | Structured metadata enables powerful search and filtering        |
+| **Memory Banks search** | Structured metadata supports search and filtering                |
 | **CLI commands work**   | CLI can filter/sort by status, priority, agent_role              |
 | **Standard format**     | Most markdown tools expect YAML (`---` delimiters)               |
 | **Auto-generated**      | `exactl request create` creates proper frontmatter automatically |

@@ -125,7 +125,7 @@ like a plan execution: the daemon mints an execution record from the return's ow
 skill-guided extraction and Pending → approval pipeline. A rejected or expired
 return never does. The delegate's `transcript_ref` (the full session transcript)
 stays audit-only — extraction never reads it. See
-[Exaix_Memory.md §2.1](../Exaix_Memory.md#21-born--capture-and-extraction) for how
+[Born: capture and extraction](../Exaix_Memory.md#21-born--capture-and-extraction) in Exaix_Memory.md for how
 this fits the wider capture story.
 
 ## Per-Step CLI Delegate Execution — the Cost-Preferred Path for Live/Eval Runs
@@ -201,7 +201,7 @@ and only dispatches a step to it when the executing agent role's `capabilities` 
 through ReAct by default, or MCP when its capabilities select it, even with
 `[cli_delegate]` enabled globally.
 
-### Auth — making sure the subscription is actually used
+### Auth — using the subscription
 
 Claude Code's own auth precedence always prefers an `ANTHROPIC_API_KEY` (or
 `ANTHROPIC_AUTH_TOKEN`) present in the environment over a subscription login, even when

@@ -37,7 +37,7 @@ that binds its strong and light steps to concrete services. No blueprint hard-co
 
 `architecture-decision` needs the Team edition. In Solo the run fails with `capability_unavailable`, and
 `exactl flow list` shows `unavailable (needs voting)`. A gate with `onFail: halt` (the default) fails the run with
-`gate_halted`. See the User Guide, "Advanced Flow Controls", for the full semantics.
+`gate_halted`. See "Advanced Flow Controls" in `docs/user_guide/flow-authoring.md` for the full semantics.
 
 `templates/self-correcting.flow.template.yaml` is the abstract version of the self-correcting blueprint.
 It is a real gate retry loop: a `gate` step with `onFail: retry` and `loop.backTo` re-runs the steps

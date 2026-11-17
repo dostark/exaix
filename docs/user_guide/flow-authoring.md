@@ -94,7 +94,7 @@ YAML limit of 10 adds a runtime bound. Reaching the ceiling fails the run with `
 max_flow_retry_cost_usd = 2.5
 
 [system]
-watcher_timeout_sec = 60
+log_level = "info"
 
 [flow]
 max_gate_evaluations = 5

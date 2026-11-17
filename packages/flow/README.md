@@ -78,7 +78,7 @@ is a cumulative budget checked before each iteration. `FlowRuntimeValidator.vali
 Control failure codes: `gate_halted`, `gate_evaluation_limit`, `gate_loop_body_failed`, `gate_loop_body_skipped`,
 `gate_retry_requires_runner`, `flow_retry_budget_exceeded`, `flow_retry_budget_unavailable`,
 `flow_control_resume_unsupported`, `branch_output_unparseable`, `branch_condition_error`, `branch_no_match`.
-See `docs/user_guide/blueprints-and-flows.md`, "Advanced Flow Controls", for authoring rules.
+See `docs/user_guide/flow-authoring.md`, "Advanced Flow Controls", for authoring rules.
 
 ## Branch Routing and Capability Guards
 

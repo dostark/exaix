@@ -4,7 +4,7 @@ The activity journal, log queries, live watch and OpenTelemetry export. Part of 
 
 ## The Activity Journal
 
-The Activity Journal is a permanent, searchable audit trail of all agent actions, system events, and errors. It is append-only and stored locally in `journal.db`, and it is essential for debugging, compliance, and understanding system behavior. Every `config.set`, `plan.approved`, `tool.confirmed` and integrity check produces a typed event that you can query.
+The Activity Journal is a permanent, searchable audit trail of all agent actions, system events, and errors. It is append-only and stored locally in `journal.db`. Use it to debug a run, to audit what happened and to understand system behavior. Every `config.set`, `plan.approved`, `tool.confirmed` and integrity check produces a typed event that you can query.
 
 Human actions through the CLI are logged automatically:
 
@@ -41,11 +41,11 @@ For provider request diagnostics, set `log_level = "debug"` in your existing `[s
 
 ### Waiting for an event
 
-To **wait** for an event instead of querying, a readiness barrier, use `exactl log wait --event <type>`. It polls the journal until the matching event is journalled after a baseline, or until the timeout elapses. It prints the matched event and exits `0` on a match and `1` on timeout. This is useful in scripts and test harnesses that must block until the daemon is ready, a flow completes, a plan is approved, and so on. For example, `exactl log wait --event daemon.ready` blocks until the daemon is ready, with a default timeout of 30 seconds. `--timeout` raises the timeout, `--since` ignores earlier events, and `--payload` matches a substring of the payload.
+To block a script until an event happens, use `exactl log wait --event <type>`. It polls the journal until the matching event is journalled after a baseline, or until the timeout elapses. It prints the matched event and exits `0` on a match and `1` on timeout. Use it in scripts and test harnesses that must wait until the daemon is ready, a flow completes or a plan is approved. For example, `exactl log wait --event daemon.ready` blocks until the daemon is ready, with a default timeout of 30 seconds. `--timeout` raises the timeout, `--since` ignores earlier events, and `--payload` matches a substring of the payload.
 
 ### Direct database access
 
-For advanced analysis, you can query the SQLite database directly:
+Use direct SQL when `exactl log list` cannot express a query. The journal is a SQLite database, and `SELECT` statements are safe while the daemon runs. Replace `<date>` with an ISO date:
 
 ```bash
 # View the database schema
@@ -57,7 +57,7 @@ sqlite3 ~/Exaix/.exa/journal.db "
          MIN(timestamp) as first_seen,
          MAX(timestamp) as last_seen
   FROM activity
-  WHERE timestamp >= '2024-01-01'
+  WHERE timestamp >= '<date>'
   GROUP BY action_type
   ORDER BY count DESC;
 "
@@ -73,7 +73,7 @@ sqlite3 ~/Exaix/.exa/journal.db "
 "
 ```
 
-**Database Maintenance:**
+**Database maintenance.** The integrity check prints `ok` when the file is sound. Stop the daemon with `exactl daemon stop` before you vacuum:
 
 ```bash
 # Check database integrity
@@ -88,9 +88,9 @@ cp ~/Exaix/.exa/journal.db ~/backups/journal_$(date +%Y%m%d).db
 
 ## Watching an execution live
 
-The `exactl request watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types. Start it with `exactl request watch <request-id>`, or with `--trace <trace-id>`.
+`exactl request watch` follows the events of an agent execution as they happen, like `docker logs -f`. It connects to the local SSE stream and prints color-coded events. Start it with `exactl request watch <request-id>`, or with `--trace <trace-id>`.
 
-**Output format (color-coded):**
+**Output format (color-coded).** Each line has a timestamp, a symbol and the event:
 
 - Heartbeat (dim gray): `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms`
 - Tool start (cyan): `[14:30:16] ▶ tool.start tool="read_file"`
@@ -179,4 +179,4 @@ results, error text, and file paths never leave the export.
   call.
 
 Full span mapping, identity derivation, and privacy-attribute allowlist:
-[Exaix_Evaluation.md §20](../Exaix_Evaluation.md#20-opentelemetry-export).
+the OpenTelemetry export section of the [Evaluation guide](../Exaix_Evaluation.md#20-opentelemetry-export).

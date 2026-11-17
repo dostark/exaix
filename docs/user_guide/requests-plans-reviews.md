@@ -201,7 +201,7 @@ actionable signal is surfaced at the list level.
 **How it works:** The system reads the Activity Journal (the same underlying
 data that tracks execution progress) and projects a read-time classification of
 anomaly-relevant event types. No separate detection, LLM call, or write path is
-involved — events the system already emits are simply surfaced.
+involved — events the system already emits are surfaced.
 
 ## Git history by trace ID
 

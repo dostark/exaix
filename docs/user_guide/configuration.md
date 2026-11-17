@@ -76,7 +76,7 @@ native_tools_enabled = true
 
 The daemon's `ReActLoopStrategy` sends a real
 `tools[]`/`tool_choice` (or provider-equivalent) parameter to the configured provider's
-API, constraining the model to choose from the tools Exaix actually offers. Falls back
+API, constraining the model to choose from the tools Exaix offers. Falls back
 to the standard TOML-block prose path when `native_tools_enabled` is false or the provider
 does not support native tool selection. ReAct can finish a step in one model turn when it
 does not need to call a tool.

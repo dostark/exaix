@@ -134,12 +134,12 @@ Write access is scoped to the daemon's data root; read, FFI (sqlite), dynamic im
 
 ### Adversarial robustness and gate-bypass attribution
 
-Exaix's own gates (scope enforcement, approval, quality gate) are themselves measured under hostile input via the `adversarial` and `interactive` evaluation packs (`exactl eval report --view robustness`, `exactl eval report --view interactive`). See `docs/Exaix_Evaluation.md` §18 for the full methodology, vector catalogue, and personas. Two production mechanisms exist specifically to make this measurable:
+Exaix's own gates (scope enforcement, approval, quality gate) are themselves measured under hostile input via the `adversarial` and `interactive` evaluation packs (`exactl eval report --view robustness`, `exactl eval report --view interactive`). See [Adversarial and Interactive Evaluation](../Exaix_Evaluation.md#18-adversarial--interactive-evaluation) for the full methodology, vector catalogue, and personas. Two production mechanisms exist specifically to make this measurable:
 
 - **Actor attribution on gate resolution.** `exactl approval approve/reject/amend/expire/cancel` on a `wait:` ref accept an optional `--resolved-by <actor>` value, merged into the wait-state's metadata and journalled as a `wait_state.command_resolved` event — so an audit can distinguish a gate resolved through the intended CLI/API surface from any other write that flips its status.
-- **Canary-only injection content.** Every "sensitive" artifact used to test whether an agent leaks or acts on hostile content is a fixture canary (`CANARY-<uuid>`-shaped), never a real credential, and injection stays inside the sandboxed worktree/portal for the run — see `docs/Exaix_Evaluation.md` §18.6.
+- **Canary-only injection content.** Every "sensitive" artifact used to test whether an agent leaks or acts on hostile content is a fixture canary (`CANARY-<uuid>`-shaped), never a real credential, and injection stays inside the sandboxed worktree/portal for the run — see [Canary and sandbox safety model](../Exaix_Evaluation.md#186-canary-and-sandbox-safety-model).
 
-These numbers describe one provider and one point in time, not a standing guarantee — see `docs/Exaix_Evaluation.md` §18.5 before citing a robustness or adherence figure.
+These numbers describe one provider and one point in time, not a standing guarantee — see [Founding results](../Exaix_Evaluation.md#185-founding-results-claude-code-cell-2026-09-05) before citing a robustness or adherence figure.
 
 ## Per-action HITL governance
 
