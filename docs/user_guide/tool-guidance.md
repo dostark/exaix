@@ -27,23 +27,12 @@ included whole or skipped whole against the aggregate budget above — a large t
 fragment being skipped does not prevent a smaller tool's fragment later in the list from
 still fitting.
 
-**Restart required**: both keys are restart-swap configuration — `exactl config set` (or
-editing `exa.config.toml` directly) persists the new value immediately, but only plan
-executions started **after** the next `exactl daemon restart` observe it. Use the standard
-CLI path for either key:
-
-```bash
-exactl config get agents.inject_aci_docs
-exactl config set agents.inject_aci_docs true
-exactl config set agents.aci_doc_prompt_max_chars 8000
-exactl daemon restart
-```
+**Restart required**: both keys are restart-swap configuration. `exactl config set agents.inject_aci_docs true`, or an edit of `exa.config.toml`, persists the new value at once. Only plan executions that start **after** the next `exactl daemon restart` observe it. See [Config commands](configuration.md#config-commands).
 
 **Disabled compatibility**: with `inject_aci_docs` at its default `false`, the assembled
-prompt is byte-identical to the pre-Phase-112 baseline — no ACI section, no budget
-computation, and no `agent.prompt_assembled` event with `prompt_kind: "react"` is emitted
-at all for that iteration. Existing deployments upgrade with no prompt or behavior change
-until the flag is explicitly enabled.
+prompt has no ACI section and no budget computation. No `agent.prompt_assembled` event with
+`prompt_kind: "react"` is emitted for that iteration. Existing deployments see no prompt or
+behavior change until you enable the flag.
 
 ## Planning read-only tools
 
@@ -54,7 +43,6 @@ The `[planning]` block makes that call a bounded, **read-only** tool loop instea
 read files and query the portal's knowledge graph before committing to a plan.
 
 ```toml
-# exa.config.toml — NEW, additive
 [planning]
 # Enable the bounded read-only tool loop in the planning LLM call.
 # Default: false (single-call planning — today's behavior, byte-identical).
@@ -76,18 +64,11 @@ max_tool_calls_per_round = 3
 
 **Opt-in and live.** `tools_enabled` defaults to `false`; an unset or disabled deployment produces
 exactly the single-call planning request it did before. All four keys are live-read (`SwapClass.HOT`),
-so `exactl config set` takes effect on the next request — no daemon restart:
-
-```bash
-exactl config set planning.tools_enabled true
-exactl config set planning.max_tool_rounds 3
-exactl config set planning.max_tool_result_tokens 4000
-exactl config set planning.max_tool_calls_per_round 5
-```
+so `exactl config set planning.tools_enabled true` takes effect on the next request with no daemon restart.
 
 **Read-only by construction.** Only tools whose side-effect scope is `none` are offered, minus
 `list_available_tools` (which would advertise write tools the planner can never call). A planning
-call can never write, patch, delete, move, or run a command. The ten offered tools are:
+call can never write, patch, delete, move, or run a command. The offered tools are:
 `read_file`, `list_directory`, `search_files`, `search_text`, `git_info`, `query_relationships`,
 `find_dependents`, `query_symbols`, `get_module_dependencies`, and `search_memory`. Adding a new
 `none`-scoped tool to the Solo catalog automatically extends this list.
@@ -132,9 +113,8 @@ segments or an absolute prefix and never lists a path outside its search root.
 **Final-round contract.** A native conversation keeps the original prompt and completed
 assistant/tool-result rounds, omits tool definitions on the final request, and sets
 `toolChoice: none`. Tools are never executed on that round. The legacy replay path
-keeps its tool definitions with `toolChoice: none`. A completed Anthropic Haiku request
-through OpenRouter confirmed the native contract; the unit checks cover each native
-provider. Empty or refused responses do not establish that the contract was accepted.
+keeps its tool definitions with `toolChoice: none`. An empty or refused response does not
+establish that a provider accepted the contract.
 
 **Failure handling.** If the final round returns no text (some providers ignore `toolChoice: none`),
 the loop records `planning.tools.completed` with `stopReason: "empty_final"` and the request falls
@@ -182,7 +162,7 @@ parallel flag still executes at most one call per response.
 A native ReAct loop needs `[execution] native_tools_enabled = true`. The planning tool loop needs
 `[planning] tools_enabled = true`. Both need a provider that supports native tool calls.
 
-This phase runs calls one after another, in the order the model returned them. Batch dispatch and overlapping
+Exaix runs calls one after another, in the order the model returned them. Batch dispatch and overlapping
 calls are not available yet.
 
 A serial Flow dynamic step asks for one call per decision. A response with more than one call is rejected with an
