@@ -179,4 +179,4 @@ results, error text, and file paths never leave the export.
   call.
 
 Full span mapping, identity derivation, and privacy-attribute allowlist:
-the OpenTelemetry export section of the [Evaluation guide](../Exaix_Evaluation.md#20-opentelemetry-export).
+the OpenTelemetry export section of the [Evaluation guide](../evaluation-framework.md#20-opentelemetry-export).

@@ -1,269 +1,9 @@
-# Exaix Evaluation Guide
+# Exaix Evaluation Framework
 
-- **Version:** 1.6.0
-- **Date:** 2026-09-15
+- **Version:** 1.7.0
+- **Date:** 2026-11-17
 
-## 1. Introduction
-
-The Exaix Evaluation Framework turns the scenario testing infrastructure into a
-production-grade measurement tool. It lets you score agent behaviour quantitatively,
-track scores over time, compare runs, and gate CI on quality thresholds.
-
-**What it evaluates:**
-
-| Component            | Covered by pack           |
-| -------------------- | ------------------------- |
-| Agent flows          | `agent_flows`             |
-| Tool execution       | `mcp_tools_extended`      |
-| Routing              | `dynamic_execution`       |
-| Provider behaviour   | `provider_live`           |
-| Framework health     | `smoke`, `framework_test` |
-| End-to-end workflows | `integration_e2e`         |
-| Blueprint quality    | `blueprint-eval`          |
-| Eval self-test       | `eval-smoke`              |
-| Memory quality       | `memory`                  |
-
-Packs are also tagged by the **subsystem** they measure — `subsystem:tools`, `subsystem:mcp-server`,
-`subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows` — which is the
-axis `eval report --group-by subsystem` aggregates and the one the cadence tiers select on. See
-[§12 Subsystem Evaluation](#12-subsystem-evaluation).
-
----
-
-## 2. Quick Start
-
-```bash
-# Run all smoke scenarios with evaluation metrics
-exactl eval run --tag smoke
-
-# Run a specific pack with a score threshold
-exactl eval run --pack blueprint-eval --score-threshold 0.7
-
-# Run with multiple trials for reliability metrics
-exactl eval run --pack smoke --trials 5
-
-# View run history
-exactl eval history --limit 10
-
-# Compare two runs
-exactl eval compare --run-a <run-id> --run-b <run-id>
-
-# Bound a live run's spend and read the value-for-money view
-exactl eval run --pack swe_tasks --max-cost-usd 0.5
-exactl eval report --view frontier
-```
-
-**Exit codes:** `0` = all scenarios passed threshold; `1` = one or more failed.
-
----
-
-## 3. CLI Reference
-
-### 3.1 `exactl eval run`
-
-Execute scenarios with scoring and history recording.
-
-**Usage:**
-
-```bash
-exactl eval run [options]
-```
-
-**Options:**
-
-| Flag                    | Description                                  |
-| ----------------------- | -------------------------------------------- |
-| `-P, --pack <name>`     | Run all scenarios in a pack (repeatable)     |
-| `-t, --tag <tag>`       | Filter by tag (repeatable)                   |
-| `-s, --scenario <id>`   | Run a single named scenario (repeatable)     |
-| `--score-threshold <n>` | Minimum suite score to pass (default: 0.5)   |
-| `--trials <N>`          | Number of trials per scenario (default: 1)   |
-| `--history-store <fmt>` | Storage: `sqlite+jsonl` (default) or `jsonl` |
-| `--max-cost-usd <n>`    | Stop scheduling at the cost cap (see below)  |
-| `-v, --verbose`         | Show detailed output                         |
-
-**Examples:**
-
-```bash
-# Run a single scenario
-exactl eval run --scenario workspace-health-smoke
-
-# Run all scenarios in a pack with high threshold
-exactl eval run --pack agent_flows --score-threshold 0.8
-
-# Run by tag with multi-trial
-exactl eval run --tag eval --trials 3 --score-threshold 0.6
-
-# Bound a live run's spend: stop scheduling after $0.50 of tracked cost
-exactl eval run --pack swe_tasks --max-cost-usd 0.5
-
-# Run multiple packs
-exactl eval run --pack smoke --pack framework_test
-```
-
-`--max-cost-usd` is the phase's budget discipline for unattended runs. The cap is checked
-**between scenarios**, never mid-task: once the accumulated tracked cost reaches the cap, the
-remaining scenarios are skipped (reported as `skipped: budget`) and the run finishes on the
-completed scenarios' scores. A budget stop is not an infrastructure error, so the exit code is
-the normal `0`/`1` verdict; `budget_stopped: true` is recorded in the suite report (§9.5).
-
-### 3.2 `exactl eval history`
-
-Query evaluation run history.
-
-**Usage:**
-
-```bash
-exactl eval history [options]
-```
-
-**Options:**
-
-| Flag              | Description                          |
-| ----------------- | ------------------------------------ |
-| `-n, --limit <N>` | Show last N entries                  |
-| `--scenario <id>` | Filter by scenario ID                |
-| `--pack <name>`   | Filter by pack name                  |
-| `--since <date>`  | Filter to runs since date (ISO 8601) |
-| `-o <fmt>`        | Output: `table` (default) or `json`  |
-
-**Examples:**
-
-```bash
-# Show last 5 runs
-exactl eval history --limit 5
-
-# Show history for a specific scenario as JSON
-exactl eval history --scenario workspace-health-smoke -o json
-
-# Show runs since a date for a pack
-exactl eval history --pack smoke --since 2026-06-01
-```
-
-### 3.3 `exactl eval compare`
-
-Compare two evaluation runs side-by-side.
-
-**Usage:**
-
-```bash
-exactl eval compare --run-a <id> --run-b <id>
-```
-
-**Example:**
-
-```bash
-# Compare two runs by their run IDs
-exactl eval compare --run-a aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa \
-                     --run-b bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb
-```
-
-Output shows per-step score differences and overall score delta.
-
-### 3.4 `exactl eval report`
-
-Render a comparison over recorded history, grouped by `cell_id`/`provider`/`model`. The view
-is selected with `--view`; the current views are `cost` (default), `families`, `lift`,
-`ablation`, `frontier`, `failures`, and `external` (§17, comparability against a public
-benchmark). Report views read the same tracked-cost, score, and cell
-fields the history rows carry (§9), and `-o json` renders machine-readable rows for CI
-trend jobs.
-
-**Usage:**
-
-```bash
-exactl eval report [--view <view>] [--scenario <id>] [--limit <n>] [--pack <name>] [-o json]
-```
-
-#### `--view cost` (default)
-
-A cross-cell timing/token/tracked-cost comparison table. Output shows, per cell, mean
-wall-clock `duration_ms`, mean LLM-call `llm_duration_ms`, total prompt/completion tokens, and
-total/mean **tracked** cost (`tracked_cost_usd`) — see §9.4 for what "tracked" means. A
-cell whose every run had no tracked cost (e.g. a pure direct-API cell, which only ever
-produces a _predicted_ cost estimate) renders `—` for cost columns, never `0` and never a
-predicted figure relabeled as tracked.
-
-```bash
-exactl eval report --view cost --scenario fix-bug-null-guard-cli-all
-```
-
-#### `--view families`
-
-Per-task-family aggregate (mean score, pass@1, reconcile rate, duration) over the `task:` tag —
-the readout behind §12's subsystem reporting, narrowed to task families. `-o json` prints
-the same rows as one JSON array.
-
-```bash
-exactl eval report --view families [--pack <name>] [-o json]
-```
-
-#### `--view lift` — harness lift
-
-The core question "does Exaix add anything over running the raw CLI tool directly?" A **bare
-delegate cell** (`cell_id: bare/<tool>/<provider>`) runs the same pinned task with the raw
-delegate CLI (Claude Code, opencode, …) — no daemon, no pipeline — scored on the same outcome
-criteria as the Exaix cell. For each task family the lift view pairs the Exaix cell against its
-bare baseline and reports `meanDelta` (Exaix minus bare), `stdevDelta`, and a `noEffect` verdict
-when the delta is indistinguishable from noise — with an explicit basis (run ids, task count),
-never a bare point delta.
-
-```bash
-exactl eval report --view lift [--scenario <id>] [--pack <name>]
-```
-
-#### `--view ablation` — feature contribution
-
-What does each subsystem actually contribute? An **ablation cell**
-(`cell_id: ablate-<subsystem>/<tool>/<provider>`) runs the full loop with exactly one subsystem
-toggled off via a config preset (`tests/configs/eval-ablate-skills.toml`,
-`eval-ablate-quality-gate.toml`, `eval-ablate-portal-knowledge.toml`; the presets are
-byte-identical except their one toggle each). The view pairs each full-config cell against its
-`ablate-<subsystem>` sibling and reports per-subsystem `meanDelta`/`stdevDelta`/`noEffect` — the
-feature contribution, with basis and the same no-effect honesty as lift.
-
-```bash
-exactl eval report --view ablation [--scenario <id>] [--pack <name>]
-```
-
-#### `--view frontier` — accuracy vs cost
-
-Per cell, a point of (mean score, mean cost) plus `cost_per_solved` (Σ tracked cost ÷ passed
-tasks). Cells that are **Pareto-dominant** — no other cell is both better-scored and no more
-expensive — are marked. A cell with no cost data is left out of the dominance comparison and
-rendered with `—` for cost, never a made-up `0`.
-
-```bash
-# The efficiency readout adopters actually ask for
-exactl eval report --view frontier
-
-# Machine-readable rows for a CI trend job
-exactl eval report --view frontier -o json
-```
-
-#### `--view failures` — why runs fail
-
-Every run that failed records _why_ (§9.6). This view aggregates those failure classes across
-history: per-class counts with the family × cell breakdown, and the **top class per cell** — so
-you can see at a glance whether a cell keeps dying on one specific failure mode. Supports
-`-o json`.
-
-```bash
-exactl eval report --view failures
-exactl eval report --view failures -o json
-```
-
-#### `--view external` — comparability against a public benchmark
-
-Per (benchmark, version, cell): tasks run, resolved count/rate (never a silently partial
-denominator), the manifest's supported-subset size and coverage, mean tracked cost,
-provider/model, and run date — plus the single-sourced comparability caveat. Full methodology,
-the supported-subset ladder, and known limitations are in §17.
-
-```bash
-exactl eval report --view external
-exactl eval report --view external -o json
-```
+This guide is for people who write scenarios and extend the evaluation framework. It starts at section 4, because sections 1 to 3 (what the framework evaluates, the quick start, running scenarios, reading history and the report views) are in the User Guide [Evaluation](user_guide/evaluation.md) page. Section numbers are unchanged, so older references such as "section 12" still point to the right text.
 
 ---
 
@@ -706,7 +446,7 @@ the existing `cost_usd` field wherever it was already surfaced.
 ### 9.5 Suite Report & Budget Flag
 
 In eval mode the runner writes `eval-report.json` to the output directory with the run verdict,
-the aggregate score, and — when a `--max-cost-usd` cap stopped scheduling (§3.1) —
+the aggregate score, and — when a `--max-cost-usd` cap stopped scheduling ([the cost cap](user_guide/evaluation.md#running-scenarios)) —
 `"budget_stopped": true`:
 
 ```json
@@ -735,7 +475,7 @@ score came in below the pass threshold. The agent did something — just not the
 reconciled run that passed is not flagged.
 
 No new detector was built — the classes come from the existing anomaly projection over the
-run's trace. Read the taxonomy with `exactl eval report --view failures` (§3.4).
+run's trace. Read the taxonomy with `exactl eval report --view failures` ([report views](user_guide/evaluation.md#reading-the-reports)).
 
 ---
 
@@ -905,6 +645,85 @@ history with `benchmark`/`benchmark_version` provenance, surfaced by
 `exactl eval report --view external` (methodology, caveats, and coverage semantics are
 tracked in `exaix-dev-docs/planning/phase-144-external-benchmark-interop.md`).
 
+### Running the tiers by hand
+
+Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, agent_roles,
+skills, flows, memory — so coverage can be read per subsystem rather than per directory:
+
+```bash
+# Every mock-tier scenario across all seven subsystems
+deno task eval:subsystems
+
+# The cheap tier: one or more representatives per subsystem
+deno task eval:subsystems:core
+
+# The catalog/flow/agent-role/skill/tool parity gates
+deno task test:parity
+
+# Per-subsystem summary with pass counts and trend deltas
+exactl eval report --group-by subsystem
+```
+
+> **Run these by hand.** None is attached to a CI job or to the pre-commit gates. `eval:subsystems`
+> spawns daemons across roughly seventy scenarios; the nightly tier below spends provider budget.
+
+**The nightly provider-live recipe.** The mock tier proves mechanics through controlled responses.
+Tool-selection and output-quality baselines require live model decisions.
+
+```bash
+# Requires DEEPSEEK_API_KEY; the judge uses the subscription Claude CLI.
+# Strip unrelated API credentials and inherited driver selections.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --pack agent_role_eval --cell live --mode auto --eval-mode
+
+# Five skill-effectiveness cases and three shipped-flow artifact cases.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --tag nightly-quality --tag provider-live --cell live --mode auto --eval-mode
+
+# Reliability: repeat the four-role subset.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario senior-coder-smoke --scenario code-analyst-smoke \
+  --scenario software-architect-smoke --scenario quality-judge-smoke \
+  --cell live --mode auto --eval-mode --trials 3
+
+# Real tool selection and an imperfect-reference partial-credit control.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL EXAIX_EDITION=team \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario selection-multi-tool-partial-credit --cell openai-chat \
+  --mode auto --eval-mode --trials 3
+
+exactl eval report --group-by subsystem
+exactl eval report --group-by entity
+```
+
+Role artifacts can contain execution steps, analysis, or QA reports. The live structural
+check verifies role attribution; the separate judge evaluates the requested content.
+Reliability pass rates require both a successful trial outcome and its score threshold.
+Passing setup steps cannot turn a failed judge criterion into a successful trial. A file-based
+judge receives the matching artifact text. If that file cannot be read, the judge returns an
+error instead of grading the step's readiness message.
+
+`--tag provider-live` turns off the CI-safety filter that normally drops those scenarios; it does
+not widen the selection into other packs. Do not pin `EXA_LLM_PROVIDER` inside a scenario — step
+`env` is merged last and would override the value you set here.
+
+The trajectory scenario captures two real tool calls and scores an imperfect three-tool
+reference at 2/3. That is a scoring control, separate from tool-selection quality. Matrix cells
+select their provider through their configuration. The live quality config uses DeepSeek
+for the system under test and Claude Haiku through `claude-cli` for the judge. Record the
+judge criterion score separately from the suite score. Keep quality failures in the baseline;
+exclude malformed judge responses and provider failures from quality-score aggregates.
+
 ### Reading a subsystem report
 
 ```bash
@@ -1026,7 +845,7 @@ as if they were the same measurement.
 **The comparison views apply here.** Running a task on a bare-delegate cell (raw CLI, no Exaix)
 and on the ablation cells (one subsystem off) feeds `--view lift` and `--view ablation`, the
 per-cell `--view frontier` turns the corpus's tracked cost into the accuracy-vs-cost readout, and
-`--view failures` answers why runs fail per family and cell (§3.4).
+`--view failures` answers why runs fail per family and cell. See the [report views](user_guide/evaluation.md#reading-the-reports).
 
 ### Running
 
@@ -1319,19 +1138,19 @@ screening pass or a full-trial arm is an operator action, the same class as §12
 
 This section ties together the comparison machinery built across the phase: measuring **what
 Exaix adds over running the raw CLI tool directly**, **what each subsystem contributes**, **at
-what cost**, and **why runs fail**. The four report views (§3.4), gated scoring (§4.5), and the
-budget cap (§3.1/§9.5) are the tools; this section is the methodology.
+what cost**, and **why runs fail**. The report views ([user guide](user_guide/evaluation.md#reading-the-reports)), gated scoring (§4.5), and the
+budget cap ([user guide](user_guide/evaluation.md#running-scenarios), §9.5) are the tools; this section is the methodology.
 
 ### The cell taxonomy
 
 A "cell" is one configuration of the harness running one task. The comparison views pair cells
 that differ in exactly one thing:
 
-| Cell kind                          | `cell_id`                              | What differs from the Exaix cell                      |
-| ---------------------------------- | -------------------------------------- | ----------------------------------------------------- |
-| Exaix cell                         | `<tool>-<provider>`                    | — (the baseline configuration)                        |
-| **Bare-delegate cell** (§3.4 lift) | `bare/<tool>/<provider>`               | No Exaix at all — the raw CLI runs the same task      |
-| **Ablation cells** (§3.4 ablation) | `ablate-<subsystem>/<tool>/<provider>` | Exactly one subsystem toggled off via a config preset |
+| Cell kind                            | `cell_id`                              | What differs from the Exaix cell                      |
+| ------------------------------------ | -------------------------------------- | ----------------------------------------------------- |
+| Exaix cell                           | `<tool>-<provider>`                    | — (the baseline configuration)                        |
+| **Bare-delegate cell** (`lift` view) | `bare/<tool>/<provider>`               | No Exaix at all — the raw CLI runs the same task      |
+| **Ablation cells** (`ablation` view) | `ablate-<subsystem>/<tool>/<provider>` | Exactly one subsystem toggled off via a config preset |
 
 The three ablation presets (`tests/configs/eval-ablate-skills.toml`,
 `eval-ablate-quality-gate.toml`, `eval-ablate-portal-knowledge.toml`) are byte-identical except
@@ -1350,7 +1169,7 @@ ships with **three** factors, not four.
   `mean(full-config) − mean(ablate)`. If an arm varies more than one thing, its delta is
   confounded and is withheld, not rounded off.
 - **Gated scoring** (§4.5) applies to the corpus: a `class: security` failure zeroes the task.
-- **Cost is tracked, not predicted** (§9.4); the frontier (§3.4) marks Pareto-dominant cells.
+- **Cost is tracked, not predicted** (§9.4); the `frontier` view marks Pareto-dominant cells.
 
 ### Running the grid
 
@@ -1653,7 +1472,7 @@ Where §§1-18 measure Exaix's execution/harness quality, this section measures 
 subsystem: the memory bank (extraction, approval, consolidation, retrieval — see
 `ARCHITECTURE.md`'s Memory Subsystem section for the components themselves). Memory evaluation is
 a **sibling axis to harness evaluation, not a replacement for it** — it reuses the same
-`tests/scenario_framework`/`@exaix/eval-history`/`eval report` infrastructure (§§3-4, §9) rather
+`tests/scenario_framework`/`@exaix/eval-history`/`eval report` infrastructure (§4, §9) rather
 than a parallel eval stack, with its own `memory` pack, its own ability taxonomy, and its own
 `--view memory` report.
 

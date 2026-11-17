@@ -3,8 +3,9 @@
 The Scenario Framework is the execution engine behind **`exactl eval`** (primary)
 and the Exaix integration test runner (secondary). This document covers both roles.
 
-For **user-facing evaluation workflow, CLI reference, scoring model, and tutorials**,
-see **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)**.
+For the **evaluation workflow and the CLI**, see the User Guide
+[Evaluation](../../docs/user_guide/evaluation.md) page. For the **scoring model, scenario authoring and
+CI integration**, see **[`docs/evaluation-framework.md`](../../docs/evaluation-framework.md)**.
 
 For the **complete scenario authoring language — scenario structure, every step type, and
 every criterion kind** — see **[`SCENARIO_DSL.md`](./SCENARIO_DSL.md)**.
@@ -86,8 +87,9 @@ They work in any workspace, including CI pre-push hooks.
   falls back to JSONL. The DB path is workspace-rooted, overridable via
   `EXA_EVAL_DB_PATH`.
 
-See **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)** for the full
-CLI reference, scoring formulas, scenario authoring guide, and CI integration.
+See **[`docs/evaluation-framework.md`](../../docs/evaluation-framework.md)** for the scoring
+formulas, scenario authoring guide, and CI integration. The CLI is in the User Guide
+[Evaluation](../../docs/user_guide/evaluation.md) page.
 
 ### LLM Provider Configuration
 
@@ -212,14 +214,14 @@ from checks against the final recorded response.
 artefact (a skill, a blueprint change) improved anything — capture and replay only raise
 mechanics fidelity (the pipeline runs on real model shapes, not regex guesses). Whether an
 artefact actually helps is a provider-live question; see
-[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md).
+[`docs/evaluation-framework.md`](../../docs/evaluation-framework.md).
 
 ### Value Evaluation — Arm Authoring & Pre-Registration (Phase 158)
 
 Whether an artefact (agent role, skill, or flow) actually improves an outcome — not merely whether
 it is injected — is a separate, provider-live tier layered on top of the packs above. Full
 narrative (the no-effect rule, value-per-token, the validity gate, how to read a report) lives in
-[`docs/Exaix_Evaluation.md` §15](../../docs/Exaix_Evaluation.md#15-artefact-value-evaluation); this
+[`docs/evaluation-framework.md` §15](../../docs/evaluation-framework.md#15-artefact-value-evaluation); this
 section covers the mechanical "how do I author an arm" side.
 
 **An arm is a configuration overlay, never a `Blueprints/` edit.** Seven kinds cover every artefact
@@ -335,7 +337,7 @@ See `docs/user_guide/session-delegation.md` for `[cli_delegate]` config and auth
 
 Measures the memory bank (extraction, approval, consolidation, retrieval — Phase 147), a
 **sibling axis to harness evaluation, not a subset of it** — see
-[`docs/Exaix_Evaluation.md` §19](../../docs/Exaix_Evaluation.md#19-memory-evaluation) for the
+[`docs/evaluation-framework.md` §19](../../docs/evaluation-framework.md#19-memory-evaluation) for the
 full methodology, metric definitions, and positioning caveats. This section covers the
 mechanical corpus/pack layout.
 
@@ -798,7 +800,7 @@ diagnosis and do not supply quality scores.
 Two packs, distinct from the subsystem packs above, put Exaix's own gates under fire rather than
 measuring performance on cooperative tasks: `pack: "adversarial"` and `pack: "interactive"`
 (Phase 145). Full methodology — the injection-vector catalogue, the AgentDojo triple, the
-personas, and the never-weaken-a-gate rule — is in `docs/Exaix_Evaluation.md` §18; this section
+personas, and the never-weaken-a-gate rule — is in `docs/evaluation-framework.md` §18; this section
 covers only what an author touching these scenario files needs to know.
 
 **Tags.** Every adversarial scenario carries `vector:<name>` (`portal-readme`, `code-comment`,
@@ -843,7 +845,7 @@ explicit **Team/Enterprise-only CLI action** run after a scenario (or any other 
 already produced journal evidence: `exactl log export-otel <trace-id>` projects that one
 trace's supported journal rows into OTLP/HTTP JSON spans a Phoenix instance or an OpenTelemetry
 Collector can ingest. Full methodology — the span mapping, identity derivation, privacy allowlist,
-and eval-outcome join — is in `docs/Exaix_Evaluation.md` §20; this section covers only how it
+and eval-outcome join — is in `docs/evaluation-framework.md` §20; this section covers only how it
 relates to a scenario run and how to capture evidence of a real export.
 
 **Why post-run, not a runner flag.** The exporter reads an already-written journal snapshot; it
@@ -854,7 +856,7 @@ only opt-in" design — it is not something a Solo scenario run can accidentally
 
 **One underlying fix is not Team-only.** A scenario author asserting on `llm.call.completed`
 journal rows should know that `trace_id` now equals the request's own trace, not a disconnected
-per-call UUID, in every edition — see `docs/Exaix_Evaluation.md` §20.2's "core-wide, not Team-only"
+per-call UUID, in every edition — see `docs/evaluation-framework.md` §20.2's "core-wide, not Team-only"
 note.
 
 **Capturing evidence of a real export:**
@@ -892,7 +894,7 @@ real external receiver needs the redacted-evidence procedure above.
 | Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                                                   |
 | Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                                                     |
 | Debug a failing e2e scenario                  | `./bin/debug-scenario <id>` → `./bin/journal` / `./bin/delegate-inspect` (§6 Debugging) |
-| Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)                            |
+| Full CLI reference                            | [`docs/user_guide/evaluation.md`](../../docs/user_guide/evaluation.md)                  |
 | Schema contracts                              | `schema/step_schema.ts`, `schema/scenario_schema.ts`                                    |
 
 ---
@@ -1009,7 +1011,7 @@ classify `unsupported`, never a guess. Every supported task then runs through
 `scripts/sweep_terminal_bench_controls.ts`, which records a `controls_status`
 (`pass`/`fail`/`pending`) per task — only `pass` (both null and reference controls) tasks are
 safe to run live and trust the resolved/unresolved signal on. See
-`docs/Exaix_Evaluation.md` §17 for the full methodology, the 241/94/26 subset ladder, and the
+`docs/evaluation-framework.md` §17 for the full methodology, the 241/94/26 subset ladder, and the
 `eval report --view external` readout.
 
 ### Authoring External Benchmark Tasks (Phase 144 / Phase 160)
@@ -1116,7 +1118,7 @@ daemon's CWD is the workspace, not the repo). See
 ### Cell kinds: bare-delegate baseline and feature ablations
 
 Two additional cell markers sit beside the ordinary cell and feed the comparison report views
-([§16 Harness-Lift & Cost Evaluation](../../docs/Exaix_Evaluation.md#16-harness-lift--cost-evaluation)):
+([§16 Harness-Lift & Cost Evaluation](../../docs/evaluation-framework.md#16-harness-lift--cost-evaluation)):
 
 | Marker            | `cell_id`                        | Purpose                                                      |
 | ----------------- | -------------------------------- | ------------------------------------------------------------ |
@@ -1366,6 +1368,6 @@ Before committing a new scenario:
 - `scenarios/smoke/workspace-health-smoke.yaml` — minimal scenario example
 - `scenarios/framework_test/smoke-validation.yaml` — multi-step scenario with scores
 - `scenarios/integration_e2e/` — full E2E workflow scenarios
-- `docs/Exaix_Evaluation.md` — CLI reference, scoring formulas, authoring guide
+- `docs/evaluation-framework.md` — scoring formulas, authoring guide, CI integration; `docs/user_guide/evaluation.md` — the CLI workflow
 - `schema/scenario_schema.ts` — authoritative Zod schema for scenario YAML
 - `schema/step_schema.ts` — authoritative Zod schema for steps and criteria

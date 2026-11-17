@@ -994,7 +994,7 @@ The engine's user guide, rule reference, whole-tree checks and report schema are
 - `exaix-dev-docs/dev/Exaix_Dogfooding_Analysis.md` — Full analysis of dogfooding readiness, gaps, and future phases
 - `exaix-dev-docs/planning/phase-120-dogfooding-a-c.md` — dogfood infrastructure implementation plan (config, bootstrap, docs)
 - [Exaix User Guide](Exaix_User_Guide.md) — General usage and deployment
-- [Exaix Evaluation Guide](Exaix_Evaluation.md) — Scenario framework and `exactl eval`
+- [Exaix Evaluation Guide](evaluation-framework.md) — Scenario framework and `exactl eval`
 - `TOOLS.md` — All agent-accessible MCP tools
 - `docs/CODE_STYLE.md` — Coding standards and conventions
 - `.copilot/skills/` — Available agent skills for plans and execution

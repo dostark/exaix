@@ -7,7 +7,7 @@
 >
 > Companion docs: [`README.md`](./README.md) (framework roles & sandboxing),
 > [`AUTHORING.md`](./AUTHORING.md) (swe_tasks benchmark task authoring),
-> [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md) (eval workflow, scoring,
+> [`docs/evaluation-framework.md`](../../docs/evaluation-framework.md) (eval workflow, scoring,
 > `exactl eval` CLI).
 
 ---
@@ -29,7 +29,7 @@ The DSL has three layers:
 
 This document is the **language reference**. For how to run scenarios, the scoring model, and
 the `exactl eval` CLI, see the [`README.md`](./README.md) quick reference and
-[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md).
+[`docs/evaluation-framework.md`](../../docs/evaluation-framework.md).
 
 Validation happens at load time. A scenario that violates the schema (unknown field, a
 step missing a required field, a `shell` step, …) is rejected before any step executes.
@@ -724,7 +724,7 @@ Criterion scores are continuous 0–1 (LLM-judge reports a fractional score; oth
 status: `PASSED`=1, else 0); a **step score** is the weighted sum of its criteria
 (`score_weight`), a **suite score** the weighted sum of its steps (`step_weight`), and
 `scoring: gated` zeroes the suite on any `class: security` criterion failure. The exact
-formulas and thresholds live in [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md);
+formulas and thresholds live in [`docs/evaluation-framework.md`](../../docs/evaluation-framework.md);
 only the DSL knobs are listed here:
 
 | DSL knob                        | Effect                                                                                                              |

@@ -1,118 +1,97 @@
 # Evaluation
 
-Run and compare evaluation scenarios. Part of the [Exaix User Guide](README.md).
+Run evaluation scenarios, read the history and compare runs. Part of the [Exaix User Guide](README.md).
 
-## Evaluation and scoring
+## What the framework does
 
-Exaix includes a built-in evaluation framework for measuring agent behaviour quantitatively. It runs predefined scenarios against your workspace, scores the results with weighted scoring, tracks the history of runs, and gates CI on quality thresholds. For the complete CLI reference, the scoring model, the scenario authoring guide and the CI integration, see **[`docs/Exaix_Evaluation.md`](../Exaix_Evaluation.md)**.
+The Exaix evaluation framework measures agent behaviour with numbers. It runs predefined scenarios against your workspace, scores the results with weights, records the history of the runs, compares runs and gates CI on quality thresholds. This page covers the commands that you use to run and read evaluations. The [Evaluation Framework](../evaluation-framework.md) guide is for people who write scenarios and extend the framework: it covers scoring weights, judges, CI jobs and the benchmark packs.
 
-### Running and comparing
+A pack is a group of scenarios. These packs cover the main components:
 
-- `exactl eval run --pack <pack>` runs a scenario pack. Self-contained packs such as `blueprint-eval` need no sandbox. `--tag` selects scenarios by tag, `--trials <n>` repeats each scenario, and `--score-threshold <t>` sets the minimum score that passes.
-- Each run writes the eval history and an `eval-report.json` in the output directory. The exit code is `0` when all scenarios passed, `1` when one or more fell below the threshold, and `2` for an infrastructure error.
-- `exactl eval history` queries the history. `--limit`, `--pack`, `--scenario` and `--since` narrow the result, and `-o json` prints machine-readable rows.
-- `exactl eval compare --run-a <run-id> --run-b <run-id>` compares two runs side by side.
-- `--max-cost-usd <usd>` bounds the spend of a run. The run stops scheduling once the accumulated tracked cost reaches the cap, and it skips the remaining scenarios and never truncates a task in the middle.
-- `exactl eval report --view <view>` reads the history in a view.
+| Component            | Covered by pack           |
+| -------------------- | ------------------------- |
+| Agent flows          | `agent_flows`             |
+| Tool execution       | `mcp_tools_extended`      |
+| Routing              | `dynamic_execution`       |
+| Provider behaviour   | `provider_live`           |
+| Framework health     | `smoke`, `framework_test` |
+| End-to-end workflows | `integration_e2e`         |
+| Blueprint quality    | `blueprint-eval`          |
+| Eval self-test       | `eval-smoke`              |
+| Memory quality       | `memory`                  |
 
-`exactl eval report --view <view>` reads the history in one of these views. `-o json` gives machine-readable rows.
+Packs also carry a tag for the subsystem that they measure: tools, mcp-server, mcp-client, agent_roles, skills, flows and memory. `exactl eval report --group-by subsystem` aggregates on that tag. See [Subsystem Evaluation](../evaluation-framework.md#12-subsystem-evaluation).
 
-| View          | What it shows                                                                                                                                                                                                                 |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cost`        | The default view. Cost of the runs.                                                                                                                                                                                           |
-| `families`    | Results per scenario family.                                                                                                                                                                                                  |
-| `lift`        | Exaix against the raw CLI on the same task.                                                                                                                                                                                   |
-| `ablation`    | The contribution of each subsystem.                                                                                                                                                                                           |
-| `frontier`    | Accuracy against cost, with Pareto marking.                                                                                                                                                                                   |
-| `failures`    | Why runs fail, per family and cell.                                                                                                                                                                                           |
-| `external`    | Comparability against a public benchmark, currently Terminal-Bench. It needs Docker to run tasks live and reads history only otherwise. See [External Benchmarks](../Exaix_Evaluation.md#17-external-benchmarks).             |
-| `robustness`  | The AgentDojo triple per injection vector: clean utility, utility under attack, attack success rate and the robustness gap.                                                                                                   |
-| `interactive` | Per persona: clarification-loop convergence and policy-adherence rate. Both views are explained in [Adversarial and Interactive Evaluation](../Exaix_Evaluation.md#18-adversarial--interactive-evaluation), with `--run-ids`. |
-| `memory`      | Per memory ability: recall, precision, MRR, nDCG, answer correctness and abstention, plus consolidation quality, staleness and learning effectiveness. See [Memory Evaluation](../Exaix_Evaluation.md#19-memory-evaluation).  |
+## Quick start
+
+1. Run the smoke scenarios with evaluation metrics: `exactl eval run --tag smoke`.
+1. Run one pack with a score threshold: `exactl eval run --pack blueprint-eval --score-threshold 0.7`.
+1. Repeat each scenario to measure reliability: `exactl eval run --pack smoke --trials 5`.
+1. Read the history: `exactl eval history --limit 10`.
+1. Compare two runs: `exactl eval compare --run-a <run-id> --run-b <run-id>`.
+1. Bound the spend of a live run and read the value-for-money view: `exactl eval run --pack swe_tasks --max-cost-usd 0.5`, then `exactl eval report --view frontier`.
+
+The exit code is `0` when every scenario reaches the threshold. Self-contained packs such as `blueprint-eval` need no sandbox.
+
+## Running scenarios
+
+`exactl eval run` executes scenarios, scores them and records the run in the history. Select scenarios with these options. All three are repeatable:
+
+- `--pack <name>` (`-P`) runs every scenario of a pack.
+- `--tag <tag>` (`-t`) selects scenarios by tag.
+- `--scenario <id>` (`-s`) runs one named scenario.
+
+Tune the run with these options:
+
+- `--score-threshold <n>` sets the minimum suite score that passes. The default is 0.5.
+- `--trials <n>` repeats each scenario. The default is 1.
+- `--history-store sqlite+jsonl|jsonl` chooses the history storage. The default is `sqlite+jsonl`.
+- `--max-cost-usd <n>` bounds the spend of a run. See below.
+- `--verbose` (`-v`) prints detailed output.
+
+Each run writes the history and an `eval-report.json` in the output directory.
+
+**Exit codes.** `0` means that every scenario scored at or above the threshold. `1` means that one or more scenarios scored below it or failed. `2` means an infrastructure error, such as a catalog load failure or a runner exception outside step execution.
+
+**The cost cap.** `--max-cost-usd` is the budget discipline for unattended runs. The runner checks the cap between scenarios and never in the middle of a task. When the tracked cost reaches the cap, the runner skips the remaining scenarios (reported as `skipped: budget`) and finishes on the scores of the completed scenarios. A budget stop is not an infrastructure error, so the exit code is the normal `0` or `1`. The suite report records `budget_stopped: true`.
 
 Every option is in the [eval command reference](../cli/eval.md).
 
-### Subsystem evaluation
+## History and comparison
 
-Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, agent_roles,
-skills, flows, memory — so coverage can be read per subsystem rather than per directory:
+`exactl eval history` lists the recorded runs. `--limit` shows the last N entries, and `--scenario`, `--pack` and `--since` (an ISO 8601 date) narrow the list. `-o json` prints machine-readable rows.
 
-```bash
-# Every mock-tier scenario across all seven subsystems
-deno task eval:subsystems
+`exactl eval compare --run-a <run-id> --run-b <run-id>` compares two runs side by side and shows the score difference of each step and the overall score delta.
 
-# The cheap tier: one or more representatives per subsystem
-deno task eval:subsystems:core
+## Reading the reports
 
-# The catalog/flow/agent-role/skill/tool parity gates
-deno task test:parity
+`exactl eval report --view <view>` renders a comparison over the recorded history, grouped by cell, provider and model. The report views read the same tracked cost, score and cell fields as the history rows. `-o json` prints machine-readable rows for CI trend jobs.
 
-# Per-subsystem summary with pass counts and trend deltas
-exactl eval report --group-by subsystem
-```
+| View          | What it shows                                                                                                                                                                                                                     |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cost`        | The default view. Cost of the runs.                                                                                                                                                                                               |
+| `families`    | Results per scenario family.                                                                                                                                                                                                      |
+| `lift`        | Exaix against the raw CLI on the same task.                                                                                                                                                                                       |
+| `ablation`    | The contribution of each subsystem.                                                                                                                                                                                               |
+| `frontier`    | Accuracy against cost, with Pareto marking.                                                                                                                                                                                       |
+| `failures`    | Why runs fail, per family and cell.                                                                                                                                                                                               |
+| `external`    | Comparability against a public benchmark, currently Terminal-Bench. It needs Docker to run tasks live and reads history only otherwise. See [External Benchmarks](../evaluation-framework.md#17-external-benchmarks).             |
+| `robustness`  | The AgentDojo triple per injection vector: clean utility, utility under attack, attack success rate and the robustness gap.                                                                                                       |
+| `interactive` | Per persona: clarification-loop convergence and policy-adherence rate. Both views are explained in [Adversarial and Interactive Evaluation](../evaluation-framework.md#18-adversarial--interactive-evaluation), with `--run-ids`. |
+| `memory`      | Per memory ability: recall, precision, MRR, nDCG, answer correctness and abstention, plus consolidation quality, staleness and learning effectiveness. See [Memory Evaluation](../evaluation-framework.md#19-memory-evaluation).  |
 
-> **Run these by hand.** None is attached to a CI job or to the pre-commit gates. `eval:subsystems`
-> spawns daemons across roughly seventy scenarios; the nightly tier below spends provider budget.
+- **`cost`** compares cells. Per cell it shows the mean wall-clock duration, the mean LLM-call duration, the total prompt and completion tokens, and the total and mean **tracked** cost. A cell whose runs had no tracked cost, for example a direct-API cell that only produces a predicted estimate, shows `—` in the cost columns. It never shows `0` or a predicted figure that is labeled as tracked.
+- **`families`** shows, per task family, the mean score, pass@1, the reconcile rate and the duration. It groups by the `task:` tag.
+- **`lift`** answers "does Exaix add anything over running the raw CLI directly?" A bare delegate cell (`bare/<tool>/<provider>`) runs the same pinned task with the raw CLI, with no daemon and no pipeline, and the same outcome criteria score it. For each task family the view pairs the Exaix cell with its bare baseline. It reports `meanDelta` (Exaix minus bare), `stdevDelta` and a `noEffect` verdict when the delta cannot be told from noise, always with its basis.
+- **`ablation`** shows what each subsystem contributes. An ablation cell (`ablate-<subsystem>/<tool>/<provider>`) runs the full loop with exactly one subsystem switched off through a config preset. The view pairs each full cell with its ablated sibling and reports `meanDelta`, `stdevDelta` and `noEffect` per subsystem.
+- **`frontier`** shows, per cell, the mean score, the mean cost and `cost_per_solved` (the total tracked cost divided by the passed tasks). It marks Pareto-dominant cells: no other cell is both better scored and no more expensive. A cell without cost data stays out of the comparison and shows `—`.
+- **`failures`** aggregates the recorded failure classes: counts per class with the family and cell breakdown, and the top class of each cell. It shows whether a cell keeps failing in one way.
+- **`external`** shows, per benchmark, version and cell, the tasks run, the resolved count and rate, the size and coverage of the supported subset, the mean tracked cost, the provider and model, and the run date, with the comparability caveat.
 
-**The nightly provider-live recipe.** The mock tier proves mechanics through controlled responses.
-Tool-selection and output-quality baselines require live model decisions.
+## Scenario sandboxes
 
-```bash
-# Requires DEEPSEEK_API_KEY; the judge uses the subscription Claude CLI.
-# Strip unrelated API credentials and inherited driver selections.
-env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
-  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
-  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
-  deno run -A tests/scenario_framework/runner/main.ts \
-  --pack agent_role_eval --cell live --mode auto --eval-mode
+Scenario sandboxes are reclaimed on success and kept on failure. Reclaim the backlog with `deno task sandboxes:prune`, which is a dry run by default. See the [scenario framework README](../../tests/scenario_framework/README.md#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest).
 
-# Five skill-effectiveness cases and three shipped-flow artifact cases.
-env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
-  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
-  EXAIX_EDITION=team EXA_EVAL_LLM_MOCK=false \
-  deno run -A tests/scenario_framework/runner/main.ts \
-  --tag nightly-quality --tag provider-live --cell live --mode auto --eval-mode
+## Next steps
 
-# Reliability: repeat the four-role subset.
-env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
-  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
-  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
-  deno run -A tests/scenario_framework/runner/main.ts \
-  --scenario senior-coder-smoke --scenario code-analyst-smoke \
-  --scenario software-architect-smoke --scenario quality-judge-smoke \
-  --cell live --mode auto --eval-mode --trials 3
-
-# Real tool selection and an imperfect-reference partial-credit control.
-env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
-  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL EXAIX_EDITION=team \
-  deno run -A tests/scenario_framework/runner/main.ts \
-  --scenario selection-multi-tool-partial-credit --cell openai-chat \
-  --mode auto --eval-mode --trials 3
-
-exactl eval report --group-by subsystem
-exactl eval report --group-by entity
-```
-
-Role artifacts can contain execution steps, analysis, or QA reports. The live structural
-check verifies role attribution; the separate judge evaluates the requested content.
-Reliability pass rates require both a successful trial outcome and its score threshold.
-Passing setup steps cannot turn a failed judge criterion into a successful trial. A file-based
-judge receives the matching artifact text. If that file cannot be read, the judge returns an
-error instead of grading the step's readiness message.
-
-`--tag provider-live` turns off the CI-safety filter that normally drops those scenarios; it does
-not widen the selection into other packs. Do not pin `EXA_LLM_PROVIDER` inside a scenario — step
-`env` is merged last and would override the value you set here.
-
-The trajectory scenario captures two real tool calls and scores an imperfect three-tool
-reference at 2/3. That is a scoring control, separate from tool-selection quality. Matrix cells
-select their provider through their configuration. The live quality config uses DeepSeek
-for the system under test and Claude Haiku through `claude-cli` for the judge. Record the
-judge criterion score separately from the suite score. Keep quality failures in the baseline;
-exclude malformed judge responses and provider failures from quality-score aggregates.
-
-Scenario sandboxes are reclaimed on success and kept on failure; reclaim the backlog with
-`deno task sandboxes:prune` (dry-run by default). See
-[`tests/scenario_framework/README.md`](../../tests/scenario_framework/README.md#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest) and [its subsystem cadence section](../../tests/scenario_framework/README.md#4b-subsystem-cadence--which-tier-runs-what).
-
----
+To write scenarios, set scoring weights, add an LLM judge, run the CI jobs or the nightly provider-live recipe, read the [Evaluation Framework](../evaluation-framework.md) guide.

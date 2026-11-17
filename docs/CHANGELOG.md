@@ -610,7 +610,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   Consolidation & Learning-Effectiveness section (dedup rate, contradiction-resolution
   correctness, staleness handling, and whether the system actually gets faster/better
   after learning from a prior run). Supports `--format json`. See
-  [Exaix_Evaluation.md](Exaix_Evaluation.md) §19 for the full metric methodology and its
+  [Exaix_Evaluation.md](evaluation-framework.md) §19 for the full metric methodology and its
   keyword-only/no-embedding scope boundary.
 
 ## Unreleased — Phase 178 (Symbol-Level Dependency Graph)

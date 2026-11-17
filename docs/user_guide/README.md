@@ -36,9 +36,9 @@ How to deploy and use an Exaix workspace. The guide is split by topic, and each 
 | [Operations](operations.md)                              | Backup, restore, upgrade, troubleshooting, uninstall, daemon control and health checks.                                   |
 | [Monitoring and Logs](monitoring.md)                     | The activity journal, log queries, live watch and OpenTelemetry export.                                                   |
 | [Cost Tracking](cost-tracking.md)                        | Cost tracking, budgets and supported providers.                                                                           |
-| [Evaluation](evaluation.md)                              | Run and compare evaluation scenarios.                                                                                     |
+| [Evaluation](evaluation.md)                              | Run evaluation scenarios, read the history and compare runs.                                                              |
 
 ## Related documents
 
 - [CLI reference](../cli/index.md): every `exactl` command with its options, examples and exit codes, generated from the code.
-- [Evaluation guide](../Exaix_Evaluation.md) and [Dogfooding guide](../Exaix_Dogfooding.md): the contributor guides for scenario evaluation and for developing Exaix with Exaix.
+- [Evaluation Framework guide](../evaluation-framework.md) and [Dogfooding guide](../Exaix_Dogfooding.md): the contributor guides for scenario evaluation and for developing Exaix with Exaix.

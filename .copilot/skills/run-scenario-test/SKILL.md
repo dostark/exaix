@@ -104,7 +104,7 @@ Common failure classes and fixes
 Authoring pointers
   - Authoring language: tests/scenario_framework/SCENARIO_DSL.md (every step + criterion kind).
   - Authoring workflow: tests/scenario_framework/AUTHORING.md.
-  - Full evaluation guide (scoring, history, CI, value arms): docs/Exaix_Evaluation.md.
+  - Full evaluation guide (scoring, history, CI, value arms): docs/evaluation-framework.md.
   - Framework architecture + sandbox lifecycle: tests/scenario_framework/README.md (§2, §6).
   - Every new scenario must be schema-valid and should carry input_criteria/output_criteria
     with score_weight; a passing pack only means something if it is known to go red
@@ -124,7 +124,7 @@ failing step/criterion with observed-vs-expected evidence, and the fix."
 
 For broader knowledge, read the full documents this skill condenses:
 
-- [docs/Exaix_Evaluation.md](../../../docs/Exaix_Evaluation.md) — the full evaluation guide: CLI reference, scoring model, history & storage, CI integration, value evaluation arms.
+- [docs/evaluation-framework.md](../../../docs/evaluation-framework.md) — the evaluation framework guide: scoring model, history & storage, CI integration, value evaluation arms. The CLI workflow is in `docs/user_guide/evaluation.md`.
 - [docs/user_guide/session-delegation.md](../../../docs/user_guide/session-delegation.md) — subscription Claude Code / opencode CLI delegate configuration and auth.
 - [tests/scenario_framework/README.md](../../../tests/scenario_framework/README.md) — framework architecture, sandbox setup/lifecycle, debugging helpers, recorded fixtures.
 - [tests/scenario_framework/SCENARIO_DSL.md](../../../tests/scenario_framework/SCENARIO_DSL.md) — the complete scenario authoring language: every step type and criterion kind.

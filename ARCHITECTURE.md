@@ -1718,7 +1718,7 @@ Three properties are structural rather than conventional, because each failed si
 - **A green pack must be known to go red.** Each subsystem declares a mutation in `tests/scenario_framework/runner/pack_mutations.ts` that must turn its pack red, and a test verifies the mutation's anchor still resolves in its source file.
 - **A mean is reported only where criteria are graded.** Contract packs ask yes/no questions and report `passed/total`; gradedness is derived from the observed scores, not a maintained list.
 
-Cadence tiers (`ci-smoke`, `ci-core`, `ci-extended`, nightly provider-live) are selection profiles plus manually-invoked `deno task` entries — they are not attached to CI jobs. See `docs/Exaix_Evaluation.md` §12 and `tests/scenario_framework/README.md` §4b.
+Cadence tiers (`ci-smoke`, `ci-core`, `ci-extended`, nightly provider-live) are selection profiles plus manually-invoked `deno task` entries — they are not attached to CI jobs. See `docs/evaluation-framework.md` §12 and `tests/scenario_framework/README.md` §4b.
 
 ---
 

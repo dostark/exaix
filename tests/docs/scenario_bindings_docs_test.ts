@@ -17,7 +17,7 @@ import { readUserGuide } from "./helpers.ts";
 
 const AUTHORING = "tests/scenario_framework/AUTHORING.md";
 const SCENARIO_DSL = "tests/scenario_framework/SCENARIO_DSL.md";
-const EVALUATION = "docs/Exaix_Evaluation.md";
+const EVALUATION = "docs/evaluation-framework.md";
 
 async function authoringDocs(): Promise<string> {
   return (await Deno.readTextFile(AUTHORING)) + "\n" + (await Deno.readTextFile(SCENARIO_DSL));

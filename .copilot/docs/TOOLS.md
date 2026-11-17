@@ -33,7 +33,7 @@ runtime and the approval prompt would be the only thing between it and the effec
 `exaix_config_apply` mutate configuration while declaring no side-effect scope, which is why the
 approval flag is checked separately.
 
-See `docs/Exaix_Evaluation.md` §12 for the subsystem taxonomy and cadence.
+See `docs/evaluation-framework.md` §12 for the subsystem taxonomy and cadence.
 
 **Phase 162 (outbound MCP client, `exactl mcp tool`) note:** not applicable to this index. The
 phase adds no new Exaix-exposed agent tool — `packages/mcp/src/manifest.ts` is unchanged. It adds a

@@ -217,7 +217,7 @@ source-code replacement; manage the source repository and runtime workspace sepa
 | Understand architecture and invariants           | [Architecture](ARCHITECTURE.md)                                      |
 | Learn the project vocabulary                     | [Glossary](GLOSSARY.md)                                              |
 | Run a sandboxed Exaix-on-Exaix development cycle | [Dogfooding Guide](docs/Exaix_Dogfooding.md)                         |
-| Build or score scenario evaluations              | [Evaluation Guide](docs/Exaix_Evaluation.md)                         |
+| Build or score scenario evaluations              | [Evaluation Guide](docs/evaluation-framework.md)                     |
 | Set up a contributor workspace                   | [Contributing](CONTRIBUTING.md)                                      |
 | Contribute code                                  | [Contributing](CONTRIBUTING.md) and [Code Style](docs/CODE_STYLE.md) |
 | Review MCP tool contracts                        | [Tool reference](.copilot/docs/TOOLS.md)                             |
