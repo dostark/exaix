@@ -42,7 +42,7 @@ Wait states are persisted as JSON files at `{workspace}/WaitStates/{traceId}/{wa
 
 ### Tool confirmations
 
-A tool that needs human approval, such as a write outside the workspace or a dangerous config change, waits as a pending tool confirmation. `exactl approval approve tool:<confirmation-id>` lets the tool run. `exactl approval reject tool:<confirmation-id>` denies it. Pending confirmations also show in the journal: `exactl log list --action tool.confirmation_pending`.
+A tool that needs human approval, such as a write outside the workspace or a dangerous config change, waits as a pending tool confirmation. `exactl approval approve tool:<confirmation-id>` lets the tool run. `exactl approval reject tool:<confirmation-id>` denies it. Pending confirmations also show in the journal: `exactl log list --filter tool.confirmation_pending`.
 
 A tool confirmation takes one decision:
 

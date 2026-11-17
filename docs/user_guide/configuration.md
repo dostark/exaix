@@ -2,146 +2,44 @@
 
 Configuration areas, execution settings and the config commands. Part of the [Exaix User Guide](README.md).
 
-## **Config Commands** — Manage Configuration Overrides
+## Config commands
 
-Exaix manages runtime configuration through the **Config DB** (`.exa/config.db`)
-instead of TOML files. The `exactl config` command group provides full CRUD, audit, and security
-control over config keys registered via `configurable()`. **180+ keys** are registered across all
-packages; run `exactl config list` to see them all.
+Exaix manages runtime configuration through the **Config DB** (`.exa/config.db`). The `exactl config` command group reads and changes the keys that the packages register with `configurable()`. Run `exactl config show --sources` to see every key with its source. Every option is in the generated [config reference](../cli/config.md).
 
-```bash
-# Get the effective value of a key (Config DB → registry → schema default)
-exactl config get ai.provider
+A key resolves in this order: the Config DB override, the registry default, then the schema default. `exactl config get <key>` prints the effective value and `exactl config unset <key>` removes an override. `exactl config set <key> <value>` validates the value against the bounds of the key and applies rate limiting. `exactl config validate <key>` checks a value without writing it.
 
-# Set an override with validation and rate limiting
-exactl config set ai.timeout_ms 45000
+Tips:
 
-# Remove an override (falls back to registry default)
-exactl config unset ai.provider
+- **Audit and roll back.** Every change goes into an append-only history. `exactl config history <key>` lists it newest first. `exactl config rollback <key> <id>` restores an older value by history id. `exactl config compact` collapses the history to one row per key.
+- **Lock a key you must not change.** `exactl config lock add <key> --reason "<text>"` stops every surface from writing the key: the CLI, MCP and the daemon. `exactl config lock remove` and `exactl config lock list` undo and list locks. Use a lock when a key may be compromised.
+- **Keep secrets away from agents.** `exactl config block add "<pattern>" --reason "<text>"` denies matching keys to MCP agents. A lock stops all writers. The blocklist stops MCP writers only.
+- **Edit in bulk.** `exactl config edit` opens the overrides as `key=value` lines in `$EDITOR`. The changes pass through the same funnel of lock check, validation and debounce.
+- **Group overrides in profiles.** `exactl config set --profile <name> <key> <value>` writes into a named profile. `exactl config profile use <name>` switches to it, and `exactl config get --profile <name> <key>` reads from it.
 
-# Compare effective values against registry defaults
-exactl config show --sources
-
-# Validate a key against its registered schema bounds without writing
-exactl config validate ai.timeout_ms
-```
-
-**Audit & rollback:**
-
-```bash
-# Show the full append-only history for a key (newest-first)
-exactl config history ai.provider
-
-# Roll back to a previous value by history id
-exactl config rollback ai.provider 3
-```
-
-**Key locking (security control):**
-
-Prevents any further writes to a compromised key through every surface (CLI, MCP, daemon).
-
-```bash
-# Lock a key — no surface can modify it until unlocked
-exactl config lock add ai.provider --reason "compromised"
-
-# Unlock
-exactl config lock remove ai.provider
-
-# List all locked keys
-exactl config lock list
-```
-
-**Integrity checksum:**
-
-The daemon computes a SHA-256 checksum of the effective Config DB at boot and periodically
-(default every 60s). A tampered DB (e.g. `sqlite3 .exa/config.db` outside Exaix) journals
-`config.integrity_mismatch`.
-
-```bash
-# Verify manually
-exactl log verify
-
-# Check the journal for integrity events
-exactl log list --filter config.integrity_verified
-```
-
-**Bulk editing:**
-
-Open the current overrides in `$EDITOR`, edit key=value lines, and apply changes through the
-same security funnel (lock check + validation + debounce all apply).
-
-```bash
-exactl config edit
-```
-
-**Blocklist management:**
-
-Persistently deny specific key patterns to one or all MCP agents.
-
-```bash
-exactl config block add "ai.api_key" --reason "never expose"
-exactl config block list
-exactl config block remove "ai.api_key"
-```
-
-**Profiles:**
-
-Group overrides into named profiles and switch between them.
-
-```bash
-exactl config set --profile workstation ai.timeout_ms 60000
-exactl config profile use workstation
-exactl config profile list
-exactl config get --profile workstation ai.timeout_ms
-```
-
-**Hygiene:**
-
-```bash
-# Compact the append-only log (collapses to one row per key)
-exactl config compact
-```
+**Integrity checksum.** The daemon computes a SHA-256 checksum of the effective Config DB at boot and again every 60 seconds by default. A change made outside Exaix, for example with `sqlite3 .exa/config.db`, journals `config.integrity_mismatch`. Read the integrity events with `exactl log list --filter config.integrity_mismatch`. Note that `exactl log verify` checks the hash chain of the activity journal, not the Config DB.
 
 ---
 
-## Configuration
+## Configuration files
 
-Exaix is designed to be fully configurable without modifying source code. The primary configuration file is `exa.config.toml` (located in your workspace root).
+Exaix is designed to be fully configurable without a source change. The configuration file is `exa.config.toml` in your workspace root. The scaffold copies `templates/exa.config.sample.toml` to the workspace as `exa.config.sample.toml`. Copy it to `exa.config.toml` and change the settings you need.
 
-### The "No Magic Values" Policy
+### The "No Magic Values" policy
 
-We enforce a strict "No Magic Values" policy. This means all timeouts, limits, model names, and provider settings are defined in your configuration file, not hardcoded in the application.
+All timeouts, limits, model names and provider settings come from configuration, not from hardcoded values in the application. Every tunable default is registered with `configurable()` and so shows in `exactl config show`. Do not edit `packages/core/src/types/constants.ts` to change a setting. Set the key instead.
 
-- **Defaults:** A `exa.config.sample.toml` is provided with sensible defaults.
-- **Customization:** Copy `exa.config.sample.toml` to `exa.config.toml` to override any setting.
+### Key configuration areas
 
-### Key Configuration Areas
-
-The main configuration areas in `exa.config.toml` are:
-
-- **[system]:** Workspace paths, logging level
-- **[watcher]:** File watching settings (debounce, extensions)
-- **[models]:** AI provider configurations
-- **[agents]:** Agent blueprint settings
-- **[mcp]:** Model Context Protocol client configuration
-- **[quality_gate]:** Request quality gate thresholds, mode, and enrichment behaviour
-
-**Example configuration:**
+- **[system]:** Workspace paths, logging level and the outbound network allowlist.
+- **[watcher]:** File watching settings (debounce, stability check).
+- **[models]:** AI provider and model configurations.
+- **[agents]:** Agent blueprint settings.
+- **[mcp]:** The MCP server name, transport and authentication.
+- **[quality_gate]:** Request quality gate thresholds, mode and enrichment behaviour.
 
 ```toml
-[agents]
-default_model = "claude-opus-4.5"
-max_tokens = 8192
-
-[system]
-watcher_timeout_sec = 60
+[watcher]
 debounce_ms = 200
-
-[mcp]
-server_name = "exaix-mcp"
-version = "1.0.0"
-enable_stdio = true
-enable_sse = false
 
 # Quality gate — controls automatic request quality checks
 [quality_gate]
@@ -157,11 +55,7 @@ enrichment = 50 # below → auto-enrich (if auto_enrich = true)
 proceed = 70    # at or above → proceed immediately
 ```
 
-**Best Practices:**
-
-1. **Never modify `packages/core/src/types/constants.ts` directly** - All magic values are defined in `exa.config.toml`
-1. **Use `exa.config.sample.toml` as reference** - Contains documented examples for all settings
-1. **Validate after changes** - Run `exactl daemon restart` to ensure config is valid
+After a change, run `exactl daemon restart` so the daemon reads the new file and fails fast on an invalid one. The sample file documents every setting.
 
 ### Environment Variable Reference
 
@@ -189,14 +83,8 @@ does not need to call a tool.
 
 **Current scope:**
 
-- **Live-verified**: Anthropic, OpenAI, and Google. Real API calls confirm provider-enforced
-  tool selection end-to-end. Google's live verification was confirmed with a standard paid-tier
-  run returning `"serviceTier": "standard"` (25 dynamic tool call rows, total cost `$0.1211575`).
-- **OpenRouter live status: partly verified.** The OpenRouter live matrix ran five models. In the final run, request analysis passed five of six cases, and planning and ReAct passed 13 of 14. Two cases remain open and are accepted as known failures: the Qwen request-analysis case and one Ling ReAct repeat. The scenario cutover ran on 2026-10-12: the fix-bug cell passed with score 0.986, and a kept-sandbox run on `deepseek/deepseek-v4.1-flash` journaled 33 `dynamic_tool_call` rows (score 0.998). The planning marker cell passed with score 1.000.
-- **OpenRouter caveat**: tool support depends on the specific model OpenRouter routes
-  to, not on OpenRouter itself — check that a model's `supported_parameters` includes
-  `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool
-  selection through it.
+- **Live-verified:** Anthropic, OpenAI and Google. Real API calls confirm provider-enforced tool selection end to end.
+- **OpenRouter is partly verified.** Tool support depends on the model that OpenRouter routes to, not on OpenRouter itself. Check that the `supported_parameters` of a model include `tools` in the OpenRouter `/api/v1/models` listing before you rely on native tool selection through it.
 - Plan-step execution uses ReAct by default. MCP and CLI delegation remain explicit execution capabilities.
 
 #### Model bindings for flow steps
