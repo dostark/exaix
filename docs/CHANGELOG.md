@@ -637,7 +637,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   inspection of captured dogfood-context submissions (what a headless native agent
   actually saw at launch): summaries, full detail, or `--raw` export of the exact
   post-redaction prompt bytes. See
-  [Exaix_User_Guide.md](user_guide/requests-plans-reviews.md#exactl-request-inspect--read-only-dogfood-context-inspection).
+  [Exaix_User_Guide.md](user_guide/requests-plans-reviews.md#inspecting-what-a-delegated-agent-saw).
 
 ## Unreleased — Phase 145 (Adversarial Robustness & Interactive Evaluation)
 

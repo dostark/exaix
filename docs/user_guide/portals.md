@@ -75,7 +75,7 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 A portal may declare a `verification` block. After a plan's work is committed, Exaix runs the
 configured checks in the execution worktree. When a check fails and repair attempts remain, the
 truncated, redacted failure output is fed back to the model as a one-step repair plan; the daemon
-then re-verifies. This is opt-in: a portal without `verification` behaves exactly as before.
+then re-verifies. This is opt-in: a portal without `verification` runs no post-execution checks.
 
 Two check kinds are supported:
 
@@ -85,7 +85,7 @@ Two check kinds are supported:
 | `deno_lint` | the installed lint policy over the portal's tracked TypeScript | tracked files of the immutable target commit      |
 
 > `portals[].verification` (post-execution checks) is unrelated to `exactl portal verify`, which is
-> a read-only health check of a portal's symlink, target and permissions. It is also distinct from
+> a read-only health check of a portal's symlink, target and permissions. It also differs from
 > `ConfigService.updatePortalVerification`, which records a `last_verified` timestamp.
 
 ```toml
@@ -202,14 +202,13 @@ stdout, stderr, file and argv bounds, so a hostile portal cannot make the daemon
 data.
 
 `exactl review show` prints `verification_status` for the review's trace, and adds a warning line
-when it is `failed` or `error`, so a reviewer sees a failed verification before approving. For an
-deno_lint run it joins the one exact `file:line rule` list of that run and commit, capped by
+when it is `failed` or `error`, so a reviewer sees a failed verification before approving. For a
+`deno_lint` run it joins the one exact `file:line rule` list of that run and commit, capped by
 `findings_limit`. A clean run prints `lint: no findings remain`; a failed run prints the exact
 count and the capped entries plus any `more not listed` note; a missing or mismatched snapshot
 prints `lint: lint details unavailable`.
 
-The agent `run_deno_task` tool also stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s) where it
-previously had no timeout.
+The agent `run_deno_task` tool stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s).
 
 ## Portal Workflows
 
@@ -233,108 +232,36 @@ When you submit a request targeting a portal:
   - **Approve:** The feature branch is deleted after cleanup.
   - **Merge conflict:** Exaix aborts the merge (best effort) and removes the worktree checkout + pointer, but keeps the feature branch for manual conflict resolution.
 
-### Code Analysis with Portal
+### Analyze a project (read-only agent)
 
-Read-only agents (like `code-analyst`) execute in portal workspace but don't create git branches. Instead, they produce analysis artifacts stored in `Memory/Execution/`:
+Read-only agents such as `code-analyst` run in the portal but create no git branch. They produce an analysis artifact in `Memory/Execution/`.
 
-```bash
-# Add portal to workspace
-exactl portal add ~/git/MyProject my-project
+1. Add the project: `exactl portal add ~/git/MyProject my-project`.
+1. Submit the request: `exactl request create --portal my-project "Analyze src/ architecture"`.
+1. Find the result with `exactl review list`. An artifact review has an id such as `artifact-<id>`. Read it with `exactl review show artifact-<id>`.
+1. Accept it with `exactl review approve artifact-<id>`.
 
-# Submit analysis request (read-only agent)
-exactl request create --portal my-project "Analyze src/ architecture"
+The agent reads the portal files for context. The artifact is a markdown file with a frontmatter status, and you review it with the same `exactl review` commands as a code change.
 
-# Review results (artifact, not git review)
-exactl review list
-exactl review show artifact-<id>
+### Develop a feature (write-capable agent)
 
-# Approve the analysis
-exactl review approve artifact-<id>
-```
+Write-capable agents such as `feature-developer` create a feature branch in the portal repository.
 
-**Analysis Workflow:**
+1. Submit the request: `exactl request create --portal my-project --agent feature-developer "Add user authentication"`.
+1. Read the change with `exactl review list` and `exactl review show <review-id>`. You can also look at the branch in the repository with `git log --oneline` and `git diff main`.
+1. Approve it with `exactl review approve <review-id>`. This merges the feature branch into the base branch of the review.
 
-- Agent reads portal files for context
-- No git branch created (read-only operation)
-- Analysis stored as markdown artifact with frontmatter status
-- Review via unified `exactl review` command
+The review shows only the files that the agent changed, not the whole workspace. The history stays in the repository of the portal.
 
-### Feature Development with Portal
+### What Exaix does and what you do
 
-Write-capable agents (like `feature-developer`) create feature branches in the portal repository:
+Exaix does these steps for you: it creates feature branches in the portal repository, makes reviews point at that repository and not at the deployed workspace, applies file changes in the portal, and keeps the git history in the correct repository. You add the portal, review the change and approve it.
 
-```bash
-# Submit feature request (write-capable agent)
-exactl request create --portal my-project --agent feature-developer "Add user authentication"
+### Troubleshooting portal issues
 
-# Review changes in portal repository
-cd ~/git/MyProject
-git log --oneline  # Shows feature branch
-git diff main      # Shows actual code changes
-
-# Or review via Exaix
-exactl review list
-exactl review show <review-id>
-
-# Approve and merge
-exactl review approve <review-id>
-```
-
-**Development Workflow:**
-
-- Agent creates feature branch in portal's .git/
-- Code modifications happen in portal workspace
-- Review shows only modified files (not entire workspace)
-- Feature branch ready for review in source repository
-
-### Portal Git Integration
-
-**Automatic Behaviors:**
-
-- ✅ Write agents create feature branches in portal repository
-- ✅ Reviews reference portal repo, not deployed workspace
-- ✅ File modifications happen in portal workspace
-- ✅ Git history maintained in correct repository
-
-**Manual Steps:**
-
-- Add portals: `exactl portal add /path/to/repo alias`
-- Review changes: `exactl review show <id>`
-- Approve changes: `exactl review approve <id>`
-- Merge feature branch in portal repo after execution
-
-### Troubleshooting Portal Issues
-
-#### Issue: Portal not found
-
-```bash
-# Verify portal exists
-exactl portal list
-
-# Check portal configuration
-exactl portal show my-project
-```
-
-#### Issue: Git operations in wrong repository
-
-```bash
-# Verify portal has .git directory
-ls -la ~/git/MyProject/.git
-
-# Check review repository reference
-exactl review show <id> | grep repository
-```
-
-#### Issue: Review shows all workspace files
-
-```bash
-# This indicates portal execution didn't work
-# Verify request used --portal flag
-exactl request create --portal my-project "..."
-
-# Check that portal path is correct
-exactl portal show my-project
-```
+- **Portal not found.** Run `exactl portal list` to check that the alias exists. `exactl portal show <alias>` prints its configuration.
+- **Git operations in the wrong repository.** Check that the target of the portal is a git repository, so it has a `.git` entry. `exactl review show <review-id>` names the repository of the review.
+- **A review shows all workspace files.** The request did not run in the portal. Check that the request used `--portal <alias>`, and that `exactl portal show <alias>` prints the right path.
 
 #### Problems when adding a portal
 
@@ -352,21 +279,9 @@ exactl portal show my-project
 - Cannot use reserved names: `System`, `Workspace`, `Memory`, `Blueprints`, `Active`, `Archive`
 - Maximum length: 50 characters
 
-### Migration from Workspace Execution
+### Moving from workspace execution to a portal
 
-**Before (workspace execution):**
-
-```bash
-exactl request create "Analyze code"
-# Result: Operates in ~/Exaix
-```
-
-**After (portal execution - recommended):**
-
-```bash
-exactl request create --portal my-project "Analyze code"
-# Result: Operates in ~/git/MyProject
-```
+A request without `--portal` runs in the workspace, for example `~/Exaix`. A request with `--portal my-project` runs in the project, for example `~/git/MyProject`. Use a portal for work on a real project, because it keeps the git history in the right repository.
 
 ### Portal Knowledge Gathering
 
@@ -404,21 +319,7 @@ context about the project without reading every file on each request.
 | `standard` | Medium | High   | No           |
 | `deep`     | Slow   | Full   | Optional     |
 
-**CLI commands:**
-
-```bash
-# Run analysis manually (default: quick mode)
-exactl portal knowledge analyze MyProject
-
-# Force deep analysis, ignore staleness
-exactl portal knowledge analyze MyProject --mode deep --force
-
-# Display gathered knowledge (human-readable)
-exactl portal knowledge show MyProject
-
-# Display as machine-readable JSON
-exactl portal knowledge show MyProject --json
-```
+**Commands.** `exactl portal knowledge analyze <alias>` runs the analysis in the default `quick` mode. Add `--mode deep --force` to run a deep analysis and ignore staleness. `exactl portal knowledge show <alias>` prints the gathered knowledge, and `--json` prints it in machine-readable form. See the [portal reference](../cli/portal.md#exactl-portal-knowledge-analyze).
 
 **Configuration (`[portal_knowledge]` in `exa.config.toml`):**
 
@@ -451,7 +352,13 @@ symbols. The languages available depend on edition:
 | Enterprise | Same as Team, plus symbol-level reference edges when `enable_symbol_level_dependency_graph = true` |
 | None       | All other languages yield an empty map (fail-soft, no error)                                       |
 
-**Symbol-level reference edges** (`query_symbol_references`) answer "who calls this symbol" rather than "which file imports which file". The Solo-tier `find_dependents` tool answers the same question when you pass the file path and the symbol name joined with `#`. Pass a bare file path to it instead for file-level dependents. Symbol endpoints cover Go, Java, Rust, TypeScript, JavaScript, and Python portals. Both `find_dependents` and `query_relationships` accept a portal-qualified `@<alias>/<path>` endpoint as well as a portal-relative one. They are opt-in and Enterprise only, and the artifact that delivers them is the **Team build run with `EXAIX_EDITION=enterprise`** — the separate `build:enterprise` binary is still a scaffold with no runtime, so a green `build:enterprise` does not mean this feature works. Matching is name-and-scope based rather than semantic, and it resolves only against the capped symbol map, so treat the graph as a useful subset rather than a complete call graph. The tool is visible to every paid-edition MCP client and returns an empty list, not an error, on a portal analyzed without the symbol graph.
+**Symbol-level reference edges** (`query_symbol_references`) answer "who calls this symbol" and not "which file imports which file".
+
+- The Solo-tier `find_dependents` tool answers the same question when you pass the file path and the symbol name joined with `#`. Pass a bare file path to get file-level dependents. `find_dependents` and `query_relationships` accept a portal-qualified `@<alias>/<path>` endpoint and a portal-relative one.
+- Symbol endpoints cover Go, Java, Rust, TypeScript, JavaScript and Python portals.
+- The edges are opt-in and Enterprise only. The artifact that delivers them is the **Team build run with `EXAIX_EDITION=enterprise`**. The separate `build:enterprise` binary is still a scaffold with no runtime, so a green `build:enterprise` does not mean that this feature works.
+- Matching uses names and scopes, not semantics, and it resolves only against the capped symbol map. Treat the graph as a useful subset and not as a complete call graph.
+- The tool is visible to every paid-edition MCP client. On a portal that was analyzed without the symbol graph, it returns an empty list and not an error.
 
 Python extraction uses a local tree-sitter WASM grammar — no network access, no
 native code (`--allow-ffi` not required). Extended-language extractors (Team)
@@ -483,10 +390,6 @@ of its request context, without it needing to ask for them.
   <alias>` or by reading `knowledge.json` directly — they have no dedicated
   on-demand query surface for an agent today. Only exported symbols and file
   relationships do.
-- **Fixed history:** earlier versions of the relationship-graph builder traced only
-  a portal's first 5 entrypoints, severely undercounting large monorepos. This is
-  fixed — the limit is now a much higher, configurable default (500), with a
-  visible warning logged if a portal's entrypoint count ever exceeds it.
 
 ## Portal knowledge inclusion
 
@@ -509,10 +412,7 @@ The portal directory listing uses the same prompt-budget section. Adaptive
 knowledge gets at most the smaller of `max_tokens` and the section's remaining
 tokens after that listing. If no tokens remain, Exaix adds no adaptive knowledge
 segment. A selection that does run records `portal.knowledge.selection_applied`
-on the request trace with selected and finally included token counts. In the
-adaptive-context cutover fixture, a request naming `PaymentRouter` kept that symbol
-while the included knowledge segment used 76–77 adaptive tokens versus 85
-summary tokens across focused runs. The saving depends on the request and portal.
+on the request trace with selected and finally included token counts. The saving depends on the request and portal.
 
 Two read-only Solo ReAct tools let an authorized role inspect the cached graph
 when the prompt does not contain enough detail:

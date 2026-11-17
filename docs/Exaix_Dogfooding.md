@@ -804,7 +804,7 @@ child launches. Add `--record <record-id>` for one record, `--json` for machine-
 output, or `--raw` to redirect the exact captured `promptText` bytes. Raw output refuses
 an interactive terminal, and missing, expired, or legacy captures return exit code 3
 instead of reconstructing current context. See the
-[User Guide](user_guide/requests-plans-reviews.md#exactl-request-inspect--read-only-dogfood-context-inspection)
+[User Guide](user_guide/requests-plans-reviews.md#inspecting-what-a-delegated-agent-saw)
 for the complete command contract.
 
 The deterministic cutover suite proves both launch paths, cross-portal isolation,

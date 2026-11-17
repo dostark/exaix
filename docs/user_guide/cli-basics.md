@@ -4,58 +4,32 @@ Installing exactl, the command grammar, global options, exit codes, confirmation
 
 ## CLI Reference
 
-### Installation
+### Install exactl
 
-The Exaix CLI (`exactl`) provides a comprehensive interface for managing plans, reviews, git operations, the daemon, and portals.
+`exactl` is the command-line interface of Exaix. You use it to manage requests, plans, reviews, portals, the daemon and the configuration.
 
-**Automatic Installation (recommended):**
+**Prerequisites.** You need Deno 2 and a deployed Exaix workspace. See [Getting Started](getting-started.md#installation--deployment) to create one.
 
-The deploy script automatically installs `exactl` globally. You just need to ensure `~/.deno/bin` is in your PATH:
+**Automatic installation (recommended).** The deploy script installs `exactl` globally. Make sure `~/.deno/bin` is in your `PATH`:
 
 ```bash
 # Add to your ~/.bashrc or ~/.zshrc (one-time setup)
 echo 'export PATH="$HOME/.deno/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
-
-# Verify installation
-exactl --help
 ```
 
-**Manual Installation:**
-
-If you need to reinstall or the automatic installation failed:
+**Manual installation.** Use this when the automatic installation failed or you need to reinstall. Run it from your workspace. The `--config` flag is required so that the import map resolves:
 
 ```bash
-# From your Exaix workspace
 cd ~/Exaix
-
-# Install globally with config (required for import map resolution)
 deno install --global --allow-all --config deno.json -n exactl apps/exactl/main.ts
-
-# For Deno 1.x (older versions)
-# deno install --allow-all --config deno.json -n exactl apps/exactl/main.ts
 ```
 
-**Alternative: Use via task runner (no global install):**
+**Without a global install.** Run any command through the task runner from the workspace: `deno task cli daemon status`.
 
-```bash
-cd ~/Exaix
-deno task cli <command>
+**Check the result.** `exactl --help` prints the usage and the list of commands. `exactl daemon status` reports whether the daemon runs.
 
-# Examples:
-deno task cli daemon status
-deno task cli plan list
-```
-
-**Verify CLI is working:**
-
-```bash
-# Check exactl is accessible
-exactl --help
-
-# Check daemon status
-exactl daemon status
-```
+**If `exactl` is not found.** Check that `~/.deno/bin` is in your `PATH` and open a new shell. If the command still fails, run the manual installation again.
 
 ### Command Grammar
 
@@ -306,20 +280,9 @@ Each row is `PASS`, `WARN` or `FAIL`. A warning, such as a stopped daemon or an 
 
 `exactl completion bash`, `exactl completion fish` and `exactl completion zsh` print the completion script of a shell. Add `source <(exactl completion bash)` to `~/.bashrc` to complete commands and options with the Tab key.
 
-## **Version Command** - Display version information
+### Check the version
 
-Shows the Exaix binary version and workspace schema version.
-
-```bash
-# Show version info
-exactl version
-```
-
-The output includes `binary_version` (the daemon/CLI release) and
-`workspace_schema_version` (the data schema expected by the current workspace).
-If these mismatch, run `exactl doctor --schema` for details.
-
----
+`exactl version` prints the binary version, the workspace schema version, the path of the configuration file, the schema version on disk and a compatibility verdict. With `-o json` the fields are `binary_version`, `workspace_schema_version`, `on_disk_schema_version`, `compatible`, `migration_required` and `config_path`. If the binary and the workspace schema do not match, run `exactl doctor --schema` for details. See the [version reference](../cli/version.md).
 
 ## Finding a command
 

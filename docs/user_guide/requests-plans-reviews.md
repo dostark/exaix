@@ -6,21 +6,12 @@ Create requests, clarify them, approve plans, review agent output and inspect gi
 
 A request tells Exaix what you want done. You describe the work in plain language, and you can name an agent role or a flow, a portal and acceptance criteria. Exaix scores the request, asks questions when it is unclear, writes a plan, waits for your approval, runs the agents and hands you the result as a review.
 
-> **Recommended:** Create requests with `exactl request create`. Do not create files in `Workspace/Requests/` by hand, because that bypasses validation.
-
-| Aspect         | Manual File Creation     | `exactl request create`    |
-| -------------- | ------------------------ | -------------------------- |
-| Frontmatter    | Must write YAML manually | Auto-generated             |
-| Trace ID       | Must generate UUID       | Auto-generated             |
-| Validation     | None until daemon reads  | Immediate                  |
-| Audit trail    | Not logged               | Logged to Activity Journal |
-| Error handling | Silent failures          | Clear error messages       |
-| Speed          | ~30 seconds              | ~2 seconds                 |
+> **Recommended:** Create requests with `exactl request create`. Do not create files in `Workspace/Requests/` by hand. The command writes the frontmatter and the trace ID for you, validates the request at once, reports errors clearly and logs the action to the Activity Journal. A file that you write by hand skips all of this until the daemon reads it.
 
 ### The path of a request
 
 1. **Create.** `exactl request create "<what you want>"` writes the request file, assigns a trace ID and logs the action. For a long description, use `--file <path>`.
-1. **Quality gate.** Exaix scores the request before an agent runs. It lets the request proceed, enriches it, or asks clarifying questions that you answer with `exactl request clarify`. See [Request Quality Gate](#request-quality-gate--how-scoring-works).
+1. **Quality gate.** Exaix scores the request before an agent runs. It lets the request proceed, enriches it, or asks clarifying questions that you answer with `exactl request clarify`. See [Request Quality Gate](#request-quality-gate).
 1. **Plan.** The agent writes a plan, and `exactl plan list` shows plans that wait for your review. See [Plans](#plans).
 1. **Execute.** When you approve the plan, the daemon detects it, runs it, and records every step in the Activity Journal under the trace ID.
 1. **Review.** You review the result and approve it or reject it. See [Reviews](#reviews).
@@ -57,66 +48,30 @@ The resolver turns these flags into one provider and model, records the reason, 
 
 Every option is in the [request command reference](../cli/request.md).
 
-## **`exactl request clarify` — Interactive Clarification**
+## Answering clarification questions
 
-When a request enters the **REFINING** or **NEEDS_CLARIFICATION** status the quality gate has determined that the request needs more detail before it can be executed. Use `exactl request clarify` to answer the pending questions:
+When the quality gate decides that a request needs more detail, the request enters the `refining` or `needs_clarification` status and waits for your answers. `exactl request clarify <request-id>` without options prints the pending questions of the latest round. Each question has an id such as `r1q1`.
 
-```bash
-# Show pending questions for a request
-exactl request clarify <trace-id>
+1. Read the questions with `exactl request clarify <request-id>`.
+1. Answer them with `--answer <question-id>="<text>"`. Repeat the option for each question: `exactl request clarify <request-id> --answer r1q1="The users table" --answer r1q2="Only the read path"`.
+1. If more rounds follow, the status stays `needs_clarification` and the command prints the next questions. Answer them the same way.
+1. When the specification is good enough, run `exactl request clarify <request-id> --proceed`. Exaix injects the final specification and re-queues the request. The request moves to `pending` and then `planned`, and the agent plans against the specification.
 
-# Answer all questions interactively (prompts for each one)
-exactl request clarify <request-id>
+`--cancel` abandons the clarification and re-queues the request with its original body. `--resolved-by <actor>` records who resolved the wait state. See the [request reference](../cli/request.md#exactl-request-clarify).
 
-# Supply specific answers by question ID
-exactl request clarify <trace-id> --answer r1q1="The users table" --answer r1q2="src/db/queries.ts"
-
-# Force the request to proceed with the current specification
-exactl request clarify <trace-id> --proceed
-
-# Abandon clarification and revert to the original body
-exactl request clarify <trace-id> --cancel
-```
-
-**Options:**
-
-| Option          | Short | Description                                               |
-| --------------- | ----- | --------------------------------------------------------- |
-| `--interactive` | `-i`  | Prompt for each pending question sequentially             |
-| `--answer`      |       | Supply an answer: `--answer <question-id>="<text"`        |
-| `--proceed`     |       | Accept current specification and re-enter the pipeline    |
-| `--cancel`      |       | Cancel refinement and revert to the original request body |
-
-**Clarification workflow:**
-
-```text
-exactl request create "fix something"          # vague → quality gate detects low score
-→ status: REFINING                       # gate saves session + questions
-→ exactl request clarify <id>            # see the questions
-→ exactl request clarify <id> -i        # answer interactively
-→ status: NEEDS_CLARIFICATION           # awaiting further rounds or proceed
-→ exactl request clarify <id> --proceed # inject final spec and re-queue
-→ PENDING → PLANNED                     # agent runs against the specification
-```
-
-**Understanding quality gate statuses in `exactl request list`:**
+**Statuses that mean a request waits for you or for the gate:**
 
 | Status                | Meaning                                                              |
 | --------------------- | -------------------------------------------------------------------- |
-| `REFINING`            | Active Q&A loop in progress — use `exactl request clarify <id>`      |
-| `NEEDS_CLARIFICATION` | Awaiting your response to the most recent round of questions         |
-| `ENRICHING`           | Quality gate is auto-rewriting an underspecified request (transient) |
+| `refining`            | Active Q&A loop in progress. Use `exactl request clarify <id>`       |
+| `needs_clarification` | Awaiting your response to the most recent round of questions         |
+| `enriching`           | Quality gate is auto-rewriting an underspecified request (transient) |
 
-## **`exactl request cancel` — Cancel a Request**
+## Cancelling a request
 
-Use `exactl request cancel` to stop a request that no execution has started:
+`exactl request cancel <request-id>` stops a request that no execution has started. Add `--reason "<text>"` to record why. The id is a full trace id, a request file name or a trace id prefix of at least 8 characters.
 
-```bash
-exactl request cancel <trace-id>
-exactl request cancel <trace-id> --reason "Duplicate of another request"
-```
-
-The command accepts a request in the `pending` or `needs_clarification` status. It sets `status: cancelled`, writes a `request.cancelled` journal row with the previous status, the reason and who cancelled it, and cancels a pending clarification wait state of the request. The id is a full trace id, a request file name or a trace id prefix of at least 8 characters.
+The command accepts a request in the `pending` or `needs_clarification` status. It sets `status: cancelled`, writes a `request.cancelled` journal row with the previous status, the reason and who cancelled it, and cancels a pending clarification wait state of the request.
 
 Any other status exits with code 4 and the file stays as it was:
 
@@ -128,18 +83,18 @@ Any other status exits with code 4 and the file stays as it was:
 
 A request in `needs_clarification` also cancels its pending clarification wait states, and each one writes a `wait_state.command_resolved` row with your user identity. A wait state that cannot be cancelled makes the command exit with code 1 and print `exactl approval cancel wait:<resume-token>` for it, and the request stays cancelled. The command refuses a request that started while it ran, and it exits with code 2 for a request file whose trace id is not a plain id. A request file whose status is not a request status exits with code 6. The TUI cancel and delete actions use the same path.
 
-An empty, short or ambiguous id exits with code 2, and an unknown id exits with code 3. `exactl request clarify <trace-id> --cancel` is a different command: it abandons the clarification session and puts the request back in the queue.
+An empty, short or ambiguous id exits with code 2, and an unknown id exits with code 3. `exactl request clarify <request-id> --cancel` is a different command: it abandons the clarification session and puts the request back in the queue.
 
-## **Request Quality Gate — How Scoring Works**
+## Request quality gate
 
-Every request passes through a three-tier quality assessment before the agent runs:
+Every request is scored before the agent runs. The score decides what happens next:
 
-| Score range | Level       | Recommendation                            |
-| ----------- | ----------- | ----------------------------------------- |
-| 70 – 100    | Good/Excel. | **Proceed** — agent runs immediately      |
-| 50 – 69     | Acceptable  | **Auto-enrich** — gate rewrites the body  |
-| 20 – 49     | Poor        | **Needs clarification** — Q&A loop starts |
-| 0 – 19      | Very poor   | **Reject** — request returned to sender   |
+| Score range | Level      | Recommendation                            |
+| ----------- | ---------- | ----------------------------------------- |
+| 70 – 100    | Good       | **Proceed** — agent runs immediately      |
+| 50 – 69     | Acceptable | **Auto-enrich** — gate rewrites the body  |
+| 20 – 49     | Poor       | **Needs clarification** — Q&A loop starts |
+| 0 – 19      | Very poor  | **Reject** — request returned to sender   |
 
 **Tips for high-quality requests:**
 
@@ -150,43 +105,16 @@ Every request passes through a three-tier quality assessment before the agent ru
 
 **Auto-enrichment:** When a request scores in the _Acceptable_ range and `auto_enrich = true` is configured (default), the gate rewrites the request body into a more structured form. The original body is preserved in `originalBody` and never lost.
 
-## **`exactl request inspect` — Read-Only Dogfood Context Inspection**
+## Inspecting what a delegated agent saw
 
-When Exaix delegates work to a headless native agent (Claude Code, OpenCode, Codex),
-what that agent actually saw is captured immutably at launch time (source IDs, section
-budgets, granted tool schemas, the exact post-redaction prompt text). `exactl request
-inspect` reads those captures back — it never re-runs retrieval, never calls a model
-provider, and never reconstructs a prompt that was never captured:
+When Exaix delegates work to a headless native agent (Claude Code, OpenCode, Codex), it captures what that agent saw at launch time and never changes the capture. The capture holds the source IDs, the section budgets, the granted tool schemas and the exact post-redaction prompt text. `exactl request inspect <trace-id>` reads those captures back. It never re-runs retrieval, never calls a model provider and never reconstructs a prompt that was never captured. See the [request reference](../cli/request.md#exactl-request-inspect).
 
-```bash
-# Summaries of every captured record under a trace (or its child launches)
-exactl request inspect <trace-id>
+- `exactl request inspect <trace-id>` prints the summaries of the captured records of a trace, or of its child launches.
+- `--record <record-id>` prints the full detail of one record.
+- `--json` prints machine-readable output.
+- `--raw` with `--record` writes the exact bytes that went to the child, for example to a file that you diff or audit: `exactl request inspect <trace-id> --record <record-id> --raw > sent-prompt.txt`. It needs `--record` or a trace with one record, and it refuses to write to a terminal.
 
-# Full detail for a specific captured record
-exactl request inspect <trace-id> --record <record-id>
-
-# Machine-readable detail/summary output
-exactl request inspect <trace-id> --json
-
-# Export the exact post-redaction bytes sent to the child (for diffing/auditing)
-exactl request inspect <trace-id> --record <record-id> --raw > sent-prompt.txt
-```
-
-**Options:**
-
-| Option     | Description                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `--record` | Inspect one specific captured record by its UUID                                                                                      |
-| `--json`   | Machine-readable summary/detail output                                                                                                |
-| `--raw`    | Export the exact captured `promptText` bytes only — requires `--record` (or a single-record trace) and refuses to write to a terminal |
-
-**Input/output scope:** `<trace-id>` and `--record <uuid>` accept full UUIDs only. With no
-`--record`, a trace with exactly one captured record shows its detail automatically;
-a trace with multiple records shows an ordered summary list instead. A parent
-(governing) trace ID also finds records captured under its child launches. Native
-`prompt`/`tools`/`history` visibility is always reported explicitly as `unknown` when a
-client's own visibility state can't be observed. `--raw` is redirect-safe: nothing but
-the captured bytes is written to stdout.
+**Input and output scope.** `<trace-id>` and `--record <uuid>` accept full UUIDs only. Without `--record`, a trace with exactly one captured record shows its detail, and a trace with several records shows an ordered summary list. A parent (governing) trace ID also finds the records captured under its child launches. The `prompt`, `tools` and `history` visibility of a native client is reported as `unknown` when the state of the client cannot be observed. `--raw` is redirect-safe: nothing but the captured bytes goes to stdout.
 
 **Exit codes:**
 

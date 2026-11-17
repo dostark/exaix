@@ -2,21 +2,15 @@
 
 Inspect dynamic agent-role selection and routing policies. Part of the [Exaix User Guide](README.md).
 
-## Routing Commands — Inspect dynamic agent-role selection
+## Preview and validate routing
 
-Use routing commands to preview how Exaix will choose an agent role before executing a request, and to validate routing policy syntax and semantics.
+Routing decides which agent role handles a request. A routing policy holds the rules, and Exaix ranks the candidate roles against them. Preview the choice before you run the request, and validate a policy file before you rely on it. Every option is in the generated [model reference](../cli/model.md#exactl-model-route-explain).
 
-```bash
-# Preview routing candidate ranking for a request file
-exactl model route explain --request ./Workspace/Requests/my-request.md
+To preview the choice for a request, run `exactl model route explain --request <request-file>`. The command reads the frontmatter of the request and the policy rules, and it creates no plan. It prints the selected agent role and version, the matched rule, the routing strategy and the scores of the top candidates.
 
-# Validate a routing policy file
-exactl model route validate ./routing.policy.yaml
+To check a policy, run `exactl model route validate <policy-file>`. The command checks the YAML file against the current schema and the rule semantics. Without a path, it validates the configured default routing policy.
 
-# Validate the configured default routing policy
-exactl model route validate
-```
+Tips:
 
-`exactl model route explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected agent role/version, matched rule, routing strategy, and top candidate scores.
-
-`exactl model route validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file.
+- Run `explain` after each edit of a policy, with a request that you expect to match a specific rule.
+- Run `validate` in a script before you deploy a policy. A failed validation ends with exit code 6.

@@ -4,40 +4,7 @@ Procedural skills: format, matching, lifecycle and commands. Part of the [Exaix 
 
 ## Procedural Skills
 
-The `implementation-plan` Blueprint skill prepares a bounded implementation plan from agreed requirements.
-It uses the target project's conventions and covers dependencies, production wiring, validation, and migration rollback.
-Implementation-planning steps select this skill explicitly; other architect tasks retain their own purpose.
-The role supplies `response-contract`. Planning does not authorize implementation or publication.
-
-Use `blueprint-best-practices` for skill authoring and maintenance, including consistent metadata, references, revisions, and validation evidence.
-It no longer provides ordinary implementation-planning guidance and is selected separately from `implementation-plan`.
-
-For CLI-delegate flow steps, explicit skills and role defaults are pinned to
-immutable revisions before launch. Submission usage carries the request, trace,
-flow, and step identity. Missing skills, failed revision or usage writes, and
-insufficient space for an explicit or critical skill stop the launch.
-The role's critical `response-contract` requires `<thought>` and raw JSON inside
-`<content>`; the planning skill uses that contract.
-
-A role declares its deliverable with `output_contract`: `plan`, `analysis`, `security`, `qa`, `performance` or `verdict`.
-The runtime adds the matching `response-contract*` skill. A flow step can set `output_contract` to override the role.
-A `verdict` run returns one raw JSON verdict and does not receive the plan-schema instruction.
-
-The skill context budget defaults to 32,000 characters. To set it explicitly:
-
-```toml
-[skills]
-context_budget_chars = 32000
-```
-
-Existing explicit overrides remain effective. A 2,000-character override cannot
-fit the response contract alone. With `skills.inject_in_prompt = false`, skill injection remains
-disabled. Skill-authoring requests can explicitly select `blueprint-best-practices`
-with the `default` role; ordinary implementation planning selects `implementation-plan`.
-To restore the previous budget, set `skills.context_budget_chars = 2000`;
-flows that require the larger response contract will reject that budget.
-
-Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
+A procedural skill is a specialized how-to guide that an agent uses to do one kind of task correctly. Unlike declarative memory, which holds facts, a skill holds instructions, constraints and examples for a process, such as how to run the tests in this project or how to deploy to production. Exaix matches skills to a request and adds the matching ones to the prompt of the agent.
 
 ### Key Concepts
 
@@ -110,6 +77,20 @@ fallback_max_keywords = 32
 ```
 
 Edits to these settings apply to the next operation. A refused edit leaves the last valid config in force.
+
+### Output contracts and the context budget
+
+A role declares its deliverable with `output_contract`: `plan`, `analysis`, `security`, `qa`, `performance` or `verdict`. The runtime adds the matching `response-contract*` skill. A flow step can set `output_contract` to override the role. A `verdict` run returns one raw JSON verdict and does not receive the plan-schema instruction. The critical `response-contract` skill requires a `<thought>` block and raw JSON inside `<content>`, and the planning skill uses that contract.
+
+The skill context budget is 32,000 characters by default. Set it with `skills.context_budget_chars`. A budget of 2,000 characters cannot hold the response contract alone, and flows that need the larger contract reject it. With `skills.inject_in_prompt = false`, Exaix injects no skills.
+
+### Skills for planning and authoring
+
+Two bundled skills serve different tasks. Implementation-planning steps select the `implementation-plan` skill explicitly. It prepares a bounded plan from agreed requirements, uses the conventions of the target project, and covers dependencies, production wiring, validation and migration rollback. Planning does not authorize implementation or publication. Skill-authoring requests select `blueprint-best-practices` with the `default` role. It covers metadata, references, revisions and validation evidence, and it gives no implementation-planning guidance.
+
+### Skills in CLI-delegate flow steps
+
+For a CLI-delegate flow step, Exaix pins the explicit skills and the role defaults to immutable revisions before the launch. Each submission records the request, trace, flow and step identity. The launch stops when a skill is missing, when a revision or usage write fails, or when there is not enough space for an explicit or critical skill.
 
 ### Communication Requirement
 
