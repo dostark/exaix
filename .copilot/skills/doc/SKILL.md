@@ -29,7 +29,7 @@ Canonical prompt (short):
 Target file: {see map below}. Include: purpose, usage, code examples, edge cases."
 
 Doc target map
-  User-facing features  →  docs/Exaix_User_Guide.md
+  User-facing features  →  docs/user_guide/  (the topic file of the feature)
   Architecture/design   →  ARCHITECTURE.md  (update AGENT_LOGIC YAML block)
   Agent patterns        →  docs/Building_with_AI_Agents.md
   Developer setup       →  docs/dev/Exaix_Developer_Setup.md
@@ -39,8 +39,8 @@ Doc target map
   Submodule docs        →  exaix-dev-docs/ (see submodule-workflow skill)
 
 Doc update gate: before closing any step with a user-visible CLI flag, config key, or
-behavioral change, grep `docs/Exaix_User_Guide.md` for the command or feature. Missing?
-Update the User Guide in the same commit. "Not documented yet" blocks the step. Covers CLI
+behavioral change, grep `docs/user_guide/` for the command or feature. Missing?
+Update the matching user guide file in the same commit. "Not documented yet" blocks the step. Covers CLI
 subcommands, config keys, env vars, flag changes, and output-format changes users rely on.
 
 Sync commands

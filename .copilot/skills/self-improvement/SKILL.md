@@ -96,7 +96,7 @@ Position in the loop — this skill is the terminal step:
      one test helper's exact call, one component's event family, or one file's exact
      behavior — it is domain-specific and does NOT belong in a general skill. Route it to
      the owning domain doc instead (e.g. `tests/scenario_framework/README.md`,
-     `packages/<pkg>/README.md`, `docs/Exaix_User_Guide.md`), written as general guidance
+     `packages/<pkg>/README.md`, `docs/user_guide/`), written as general guidance
      led by the concrete example, or to the phase doc's own Retrospective.
    - Skill defect (wrong or missing guidance) → patch `.copilot/skills/<name>/SKILL.md`
      (canonical). `.agents`, `.claude`, and `.cursor` are repo-root **symlinks to
@@ -262,7 +262,7 @@ Do / Don't
 - ✅ Do remember `.agents`/`.claude`/`.cursor` are top-level symlinks to `.copilot` — editing `.copilot/skills/<name>/SKILL.md` already updates every mirror; verify with `stat -c %i` (or `ls -la .`) before manually copying anything.
 - ✅ Do keep general skills general — a phase/domain-specific detail (one scenario's shape,
   one test helper's exact call, one event family) belongs in the owning domain doc
-  (`tests/scenario_framework/README.md`, `packages/<pkg>/README.md`, `docs/Exaix_User_Guide.md`)
+  (`tests/scenario_framework/README.md`, `packages/<pkg>/README.md`, `docs/user_guide/`)
   or the phase doc's Retrospective, written as general guidance led by the concrete example,
   NOT in a general skill that every phase re-reads.
 - ❌ Don't broaden scope into "general best practices" unrelated to Exaix.

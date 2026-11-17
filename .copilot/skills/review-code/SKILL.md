@@ -242,8 +242,8 @@ For changed tests, including test-only rewrites:
 If the change introduces or modifies:
 
 - A public interface or schema → update `ARCHITECTURE.md`.
-- A CLI flag or user-facing behaviour → `docs/Exaix_User_Guide.md` MUST update in the
-  same commit. Grep the file for the feature name — absent means blocked.
+- A CLI flag or user-facing behaviour → the matching topic file in `docs/user_guide/` MUST update in the
+  same commit. Grep the folder for the feature name — absent means blocked.
 - An MCP tool handler → `TOOLS.md` (`deno task docs-sync-schemas`).
 - A new pattern/convention → mention in `docs/CODE_STYLE.md`.
 

@@ -1345,7 +1345,7 @@
     },
     {
       "path": "skills/plan/SKILL.md",
-      "contentHash": "d8c4f4554415104a0dfe32eae05f4bb51545fd9001bb19a8ab582cbdd7d55365",
+      "contentHash": "9b14f0aa016a2cb41cd84ed7cc76083e61168c243600b53f746833451c323ae0",
       "kind": "instruction",
       "spans": [
         {
@@ -1494,7 +1494,7 @@
         },
         {
           "selector": "heading:3. Documentation update protocol (§3D)",
-          "contentHash": "60e6a95003418c7c05afb739a5d1d8638209d5116d959d235f315e81f90f1c68",
+          "contentHash": "1a033b2e74f50ca124b454fa211383fea3a753019b0541e11a1a9fbeaf45a1f4",
           "kind": "documentation",
           "mode": "descriptive",
           "reason": "documentation section",
@@ -1558,11 +1558,11 @@
         }
       ],
       "review": {
-        "reviewer": "Codex, approved Step 6 planning prose correction review",
-        "reviewedHash": "d8c4f4554415104a0dfe32eae05f4bb51545fd9001bb19a8ab582cbdd7d55365",
+        "reviewer": "Claude Code (Claude Sonnet 5.5), reviewed the user guide path change against the STE rules on 2026-11-17",
+        "reviewedHash": "9b14f0aa016a2cb41cd84ed7cc76083e61168c243600b53f746833451c323ae0",
         "ruleContractHash": "9c1646ba672383e2973cc5377efd8890bc8047e121634a9d07a6bb7bbc390753",
         "technicalTermsHash": "121cdc4d9fbf8d8a6e0441ecff4147565ba8940267665540bbe616d52658fafa",
-        "classificationHash": "4652f79be71a61a66cf4541eaab77687e182c25310dd195254c7385819c36e0c",
+        "classificationHash": "2fdc2e35948859d5b34318ad9d1cb867bf5a079f3753175117dbb85bea9c2163",
         "contextHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "ruleDecisions": [
           {

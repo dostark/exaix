@@ -68,7 +68,7 @@ Phase 3 — PLAN (roadmap)
  11. Prioritization matrix: Critical (blocking/security/integrity) > High (quality/
      reliability) > Medium (features/moderate) > Low (polish/minor) > Documentation
      (always last).
- 12. The final sub-phase MUST be a Documentation Update: docs/Exaix_User_Guide.md,
+ 12. The final sub-phase MUST be a Documentation Update: docs/user_guide/,
      subsystem README.
 
 Phase 4 — ARTIFACTS (deliverables)

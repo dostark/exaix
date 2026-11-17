@@ -118,7 +118,7 @@
         "Run deno task docs-sync-schemas after MCP handler changes",
         "Follow the submodule-workflow skill for exaix-dev-docs changes",
         "Keep docs/CHANGELOG.md to user-facing changes, one sentence per entry",
-        "Gate every user-visible step on a docs/Exaix_User_Guide.md grep before closing",
+        "Gate every user-visible step on a docs/user_guide/ grep before closing",
         "Verify every runtime claim against source before writing it",
         "Keep ARCHITECTURE.md strategic: what and why, not where"
       ]

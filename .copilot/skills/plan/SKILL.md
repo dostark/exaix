@@ -452,8 +452,8 @@ goal with a fraction of the code. Nobody had priced the alternative.
 The final step updates the applicable documents:
 
 - `ARCHITECTURE.md` for new components or flows.
-- `docs/Exaix_User_Guide.md` for every user-facing CLI, configuration, or environment-variable change.
-  Planned Tests must include "User Guide updated", and the commit must include that edit. Grep the guide before closing.
+- `docs/user_guide/` for every user-facing CLI, configuration, or environment-variable change.
+  Planned Tests must include "User Guide updated", and the commit must include that edit. Grep the folder before closing.
 - `TOOLS.md` for MCP schema changes. Run `deno task docs-sync-schemas`.
 - `docs/CODE_STYLE.md` for new patterns.
 

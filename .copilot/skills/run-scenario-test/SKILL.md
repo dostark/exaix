@@ -125,7 +125,7 @@ failing step/criterion with observed-vs-expected evidence, and the fix."
 For broader knowledge, read the full documents this skill condenses:
 
 - [docs/Exaix_Evaluation.md](../../../docs/Exaix_Evaluation.md) — the full evaluation guide: CLI reference, scoring model, history & storage, CI integration, value evaluation arms.
-- [docs/Exaix_User_Guide.md](../../../docs/Exaix_User_Guide.md) — especially §2.5a: subscription Claude Code / opencode CLI delegate configuration and auth.
+- [docs/user_guide/session-delegation.md](../../../docs/user_guide/session-delegation.md) — subscription Claude Code / opencode CLI delegate configuration and auth.
 - [tests/scenario_framework/README.md](../../../tests/scenario_framework/README.md) — framework architecture, sandbox setup/lifecycle, debugging helpers, recorded fixtures.
 - [tests/scenario_framework/SCENARIO_DSL.md](../../../tests/scenario_framework/SCENARIO_DSL.md) — the complete scenario authoring language: every step type and criterion kind.
 - [tests/scenario_framework/AUTHORING.md](../../../tests/scenario_framework/AUTHORING.md) — the step-by-step scenario authoring workflow.
