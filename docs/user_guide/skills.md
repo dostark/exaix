@@ -53,34 +53,22 @@ Procedural Skills are specialized "how-to" guides that agents use to perform spe
 
 Skills load from an ordered list of roots. The first root that holds a name wins. Without a `[skills].roots` list the defaults are `Memory/Skills/project/<portal>` (only when you pass `--portal` or set `EXA_PORTAL`), `Memory/Skills/learned`, then `Blueprints/Skills`. Without a portal only global skills apply. The dogfood sandbox adds the worktree's `.copilot/skills` as a `dogfood` root.
 
-### CLI Access
+### Working with skills
 
-Use the `exactl skill` command. Add `--portal <alias>` to include that portal's project skills. Add `-o table|json|md` for output.
+Use the `exactl skill` command. Add `--portal <alias>` to include that portal's project skills, and `-o table|json|md` to choose the output format. Every option is in the [skill command reference](../cli/skill.md).
 
-```bash
-# List all available skills; --all also reports folders that did not load
-exactl skill list
-exactl skill list --category core
-exactl skill list --all -o json
+- `exactl skill list` lists the available skills. `--category core|project|learned` filters the list, and `--all` also reports the folders that did not load.
+- `exactl skill show <name>` shows one skill, and `--revision <revision-uuid>` shows one stored revision of it.
+- `exactl skill match "<request text>"` tests which skills a request would match.
+- `exactl skill create <name>` and `exactl skill derive --learning-ids a,b --name "..."` create a **draft**. You review its folder, then `exactl skill approve <name> --revision <revision-uuid>` approves the exact revision that you read. `exactl skill deprecate <name>` takes a skill out of matching.
+- `exactl skill revisions <name>` and `exactl skill usage --trace <trace-id>` show the history and the use of a skill.
+- `exactl skill validate [name]` gives typed reasons for every folder, and it exits with code 1 when one is invalid.
 
-# Show a skill, or one stored revision of it
-exactl skill show testing-standard
-exactl skill show testing-standard --revision <revision-uuid> -o json
+**The review flow.**
 
-# Test skill matching for a specific request
-exactl skill match "Implement the feature and run tests"
-
-# Create or derive a DRAFT, review its folder, then approve the exact revision
-exactl skill create release-notes --description "Draft release notes" --instructions "..."
-exactl skill derive --learning-ids a,b --name "API Security Patterns"
-exactl skill approve release-notes --revision <revision-uuid>
-exactl skill deprecate release-notes
-
-# History and audit
-exactl skill revisions release-notes
-exactl skill usage --trace <trace-id> -o json
-exactl skill validate            # typed reasons for every folder; exits 1 when one is invalid
-```
+1. Create a draft. The command prints the draft path, for example `learned/release-notes`, and its revision.
+1. Read the folder, then approve exactly the revision that you read.
+1. Use the skill in a request, for example `exactl request create "Write the release notes" --skills release-notes`.
 
 `approve` fails with exit code 1 when the draft changed after your review, so an old review never approves new content. `deprecate` takes a skill out of matching, and it needs a fresh approval to return. Exit code 0 means success, exit code 1 means a refused or failed operation, and exit code 2 means a malformed argument such as a revision that is not a UUID. Failures print a short message and never the body of a skill.
 
@@ -163,54 +151,3 @@ see `scripts/check_skill_size.ts`.
 A skill can optionally declare a `tools:` list — the MCP tools its own procedure calls for (e.g. `read_file`, `write_file`, `git_commit`). When one or more skills are matched onto a request, their `tools:` lists are combined into a single set (a matched-only tool is added once even if two skills both name it). That combined set is then narrowed to whatever the agent role's own `permitted_tools` allowlist already permits — a skill can only restrict which of the agent role's tools are shown, never add a tool the agent role isn't already allowed to use. If no matched skill declares `tools:`, the agent role's `permitted_tools` (or the full registered tool set, if the agent role has no allowlist) is used unchanged.
 
 This keeps prompts focused: an agent role broadly permitted to use many tools only sees the ones relevant to the skills actually driving a given request, without an author having to hand-tune `permitted_tools` per request.
-
-## **Skill Commands** - Manage Procedural Skills
-
-Skills are reusable procedural knowledge that agents apply. They are folders (`SKILL.md` plus an optional `exaix.yaml`). See [Procedural Skills](#procedural-skills) for the folder format, roots and plan pins.
-
-```bash
-exactl skill list [--all] [--category core|project|learned]
-exactl skill show <skill-id> [--revision <uuid>]
-exactl skill match "Implement user authentication"
-exactl skill create <name> --description "Skill description"
-exactl skill derive --learning-ids <id1,id2> --name "API Security Patterns"
-exactl skill approve <name> --revision <uuid>
-exactl skill deprecate <name>
-exactl skill revisions <name>
-exactl skill usage --trace <trace-id>
-exactl skill validate [name]
-```
-
-Every `exactl skill` command accepts `--portal` and the global `-o` option.
-
-**Review flow:**
-
-```bash
-# 1. A draft is created. It prints the draft path and its revision.
-$ exactl skill create release-notes --instructions "Summarize merged commits."
-Created draft skill: release-notes (release-notes)
-Draft path: learned/release-notes
-Revision: 3c0e...
-
-# 2. Read the folder, then approve exactly the revision you read.
-$ exactl skill approve release-notes --revision 3c0e...
-
-# 3. Use it in a request.
-$ exactl request create "Write the release notes" --skills release-notes
-```
-
-## **Skill Command** - Manage procedural skills
-
-The `skill` command is a top-level noun. See the **Skill Commands** section above
-for full documentation.
-
-```bash
-# List all skills
-exactl skill list
-
-# Show a specific skill
-exactl skill show <skill-id>
-
-# Find skills matching a request description
-exactl skill match "Refactor authentication module"
-```
