@@ -102,6 +102,14 @@ const VERIFIED_DATE_LENGTH = 10;
 const MODEL_ID_SEPARATOR = "/";
 /** The separator of a provider:model pair, which a curated list does not accept. */
 const PROVIDER_MODEL_PAIR_SEPARATOR = ":";
+
+/** A curated list holds provider names, because the resolver reads each entry as a provider. */
+function assertProviderName(entry: string): void {
+  if (!entry.includes(PROVIDER_MODEL_PAIR_SEPARATOR)) return;
+  throw new Error(
+    `Curate a provider name (e.g. anthropic), not a provider:model pair: '${entry}'. The resolver reads each entry as a provider.`,
+  );
+}
 const PROVIDER_NAME_SEPARATOR = "-";
 const SUBSCRIPTION_SUFFIX = "-cli";
 const LOCAL_SERVICES: ReadonlySet<string> = new Set(["ollama", "llamacpp", "self-hosted"]);
@@ -278,11 +286,7 @@ export class ModelCommands {
   private async validateEntries(entries: string[]): Promise<void> {
     const registered = new Set(await this.registry.getAllProviders());
     for (const entry of entries) {
-      if (entry.includes(PROVIDER_MODEL_PAIR_SEPARATOR)) {
-        throw new Error(
-          `Curate a provider name (e.g. anthropic), not a provider:model pair: '${entry}'. The resolver reads each entry as a provider.`,
-        );
-      }
+      assertProviderName(entry);
       const provider = this.providerOf(entry);
       if (registered.has(provider)) continue; // known provider — usable
       const matches = await this.matchesForBareName(entry);
