@@ -3,7 +3,7 @@
 - **Version:** 1.4.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system including automatic proposal approval
-- **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
+- **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](user_guide/workspace-and-memory.md#memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
 
 ## 1. Why Exaix Remembers
 

@@ -409,7 +409,7 @@ A native provider response can carry several tool calls. Exaix runs them one aft
 returned them. Each call goes through the tool registry and its permission checks, the same as a single call. The cap
 comes from the round policy: `tools.max_calls_per_turn` for ReAct and `planning.max_tool_calls_per_round` for planning.
 Under `tools.parallel_calls = "off"`, one call runs per response, and the others receive an error result. The modes and
-limits are in the [User Guide](../../docs/Exaix_User_Guide.md#parallel-tool-calls).
+limits are in the [User Guide](../../docs/user_guide/tool-guidance.md#parallel-tool-calls).
 
 Concurrent execution is not available yet.
 

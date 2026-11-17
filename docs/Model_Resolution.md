@@ -13,11 +13,11 @@ quality/cost-aware routing and more accurate cost tracking. Everything Solo does
 unchanged in Team. Team only adds capability, it never removes or silently changes Solo
 behaviour.
 
-| You want to know                                                                               | Read                                                                                                                                           |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| The request flags (`--model-size`, `--characteristic`, `--thinking`) and the curation commands | [User Guide, Request Commands](Exaix_User_Guide.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry) |
-| The config keys, environment variables, bindings and presets that set a provider or model      | [Model Settings](Model_Settings.md)                                                                                                            |
-| How Exaix turns those inputs into one model, and how to read the result                        | This page                                                                                                                                      |
+| You want to know                                                                               | Read                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The request flags (`--model-size`, `--characteristic`, `--thinking`) and the curation commands | [User Guide, Request Commands](user_guide/requests-plans-reviews.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry) |
+| The config keys, environment variables, bindings and presets that set a provider or model      | [Model Settings](Model_Settings.md)                                                                                                                             |
+| How Exaix turns those inputs into one model, and how to read the result                        | This page                                                                                                                                                       |
 
 ---
 
@@ -118,7 +118,7 @@ tries the list before any scoring, and the first healthy, registered provider wi
 - Curated lists work the same in Solo and Team. They are always checked before scoring.
 
 The commands (`exactl model candidates`, `exactl model list`) are in the
-[User Guide](Exaix_User_Guide.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
+[User Guide](user_guide/requests-plans-reviews.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
 The list lives under `model_sizes.<SIZE>.candidates` in `exa.config.toml`, described in
 [Model Settings](Model_Settings.md#model-configuration).
 

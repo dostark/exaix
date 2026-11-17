@@ -22,9 +22,9 @@
 
 ### Added
 
-- `-o, --output table|json|jsonl|md|text`, `--json`, `-q`, `--no-color`, `--no-input` and `-y, --yes` work on every `exactl` command before or after the command, and every list and show command prints machine-readable JSON with `-o json` (see [Global Options and the Output Contract](Exaix_User_Guide.md#41d-global-options-and-the-output-contract)).
+- `-o, --output table|json|jsonl|md|text`, `--json`, `-q`, `--no-color`, `--no-input` and `-y, --yes` work on every `exactl` command before or after the command, and every list and show command prints machine-readable JSON with `-o json` (see [Global Options and the Output Contract](user_guide/cli-basics.md#global-options-and-the-output-contract)).
 - In a machine format a failure prints `{"error":{"code":"…","message":"…"}}` on stderr and ends with its exit code.
-- `exactl doctor` runs five read-only checks (schema, config, daemon, provider and pricing), prints one row for each, and exits with 6, 5 or 7 for the first failing check, and `exactl doctor --schema` runs only the schema check (see [Health Check and Shell Completion](Exaix_User_Guide.md#41g-health-check-and-shell-completion)).
+- `exactl doctor` runs five read-only checks (schema, config, daemon, provider and pricing), prints one row for each, and exits with 6, 5 or 7 for the first failing check, and `exactl doctor --schema` runs only the schema check (see [Health Check and Shell Completion](user_guide/cli-basics.md#health-check-and-shell-completion)).
 - `exactl completion bash`, `exactl completion fish` and `exactl completion zsh` print the completion script of a shell.
 - `exactl <command> --help` shows a summary, the examples, the related commands, the exit codes and a link to the reference page of the command, and the same text is generated into [docs/cli/](cli/index.md) and the command table of the User Guide with `deno task docs:cli`.
 - `exactl log cost` shows the source of each price and groups costs with `--group-by model`, `portal` or `service`.
@@ -34,11 +34,11 @@
 
 - The `[model_presets]` section of `exa.config.toml` is now `[model_sizes]`, and `model_sizes.<SIZE>.candidates` holds the curated provider list of a size. A configuration that still has `[model_presets]` fails to load with an error that names `model_sizes`, so rename the section and keep its contents.
 - Messages, progress lines and errors go to stderr in every format, so stdout carries only data and `exactl -o json … | jq` is safe.
-- Every failure ends with a code that names its class: 3 for a missing item, 4 for a state conflict, 6 for an invalid result, 124 for a timeout, 2 for a usage error and 1 for the rest (see [Exit Codes](Exaix_User_Guide.md#41e-exit-codes)).
-- `exactl blueprint remove`, `exactl portal remove`, `exactl git worktree prune`, `exactl config rollback`, `exactl config compact`, `exactl memory learning remove`, `exactl request cancel`, `exactl approval cancel` and the `--all` forms of the approve commands ask for confirmation, and without a terminal or with `--no-input` they exit with code 2 until you pass `--yes` (see [Confirmation](Exaix_User_Guide.md#41f-confirmation)).
+- Every failure ends with a code that names its class: 3 for a missing item, 4 for a state conflict, 6 for an invalid result, 124 for a timeout, 2 for a usage error and 1 for the rest (see [Exit Codes](user_guide/cli-basics.md#exit-codes)).
+- `exactl blueprint remove`, `exactl portal remove`, `exactl git worktree prune`, `exactl config rollback`, `exactl config compact`, `exactl memory learning remove`, `exactl request cancel`, `exactl approval cancel` and the `--all` forms of the approve commands ask for confirmation, and without a terminal or with `--no-input` they exit with code 2 until you pass `--yes` (see [Confirmation](user_guide/cli-basics.md#confirmation)).
 - `-q` prints only ids in a human format, and each short flag has one meaning on every command, so the other short flags are removed (the one-letter flags that stay are `-o`, `-q`, `-y`, `-n`, `-s`, `-r`, `-m`, `-f`, `-P`, `-i`, `-k` and `-v`).
 - `exactl eval run` and the other eval commands that start the scenario runner end with the exit code of the runner, and a JSON error names such a code `CHILD_EXIT`.
-- `exactl config edit` and `exactl blueprint edit` need a terminal: without one, or with `--no-input`, they exit with code 2 before the editor starts (see [Global Options and the Output Contract](Exaix_User_Guide.md#41d-global-options-and-the-output-contract)).
+- `exactl config edit` and `exactl blueprint edit` need a terminal: without one, or with `--no-input`, they exit with code 2 before the editor starts (see [Global Options and the Output Contract](user_guide/cli-basics.md#global-options-and-the-output-contract)).
 - A missing portal, flow, request or configuration key exits with code 3 for `exactl portal show`, `portal verify`, `flow show`, `flow bindings`, `request analyze` and `config get`, where these commands ended with code 1 or 0.
 - The consent row of `exactl approval cancel` carries the trace id of the wait state, and a confirmation prompt shows no control characters of its argument.
 - `exactl config validate` exits with code 6 when the report holds issues, `exactl log verify` exits with code 6 for a broken journal chain, and an unknown skill exits with code 3.
@@ -90,7 +90,7 @@
 
 ### exactl command path renames
 
-The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (see [Command Grammar](Exaix_User_Guide.md#41b-command-grammar)).
+The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (see [Command Grammar](user_guide/cli-basics.md#command-grammar)).
 
 | Removed path                                                    | Replacement                                                                          |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -176,7 +176,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 - A portal can run its post-execution lint verification with the generic `deno_lint` check, which
   runs `deno lint` under a daemon-owned installed policy and lists the remaining findings in the
-  review (see [Portal Commands](Exaix_User_Guide.md#portal-commands---manage-external-project-access)).
+  review (see [Portal Commands](user_guide/portals.md#portal-commands---manage-external-project-access)).
 - `deno task unslop-ts:policy --out <workspace>/lint` installs a complete portal lint policy
   directory — engine bundle, catalog, plugin, config and manifest — for deployment.
 
@@ -272,7 +272,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- `tools.parallel_calls` (`auto` or `off`) and the `tools.max_calls_per_turn`, `tools.max_response_calls`, `tools.max_call_argument_bytes`, `tools.max_round_replay_bytes` and `tools.max_result_tokens` config keys control how many tool calls one model response may run (see [Parallel tool calls](Exaix_User_Guide.md#parallel-tool-calls)).
+- `tools.parallel_calls` (`auto` or `off`) and the `tools.max_calls_per_turn`, `tools.max_response_calls`, `tools.max_call_argument_bytes`, `tools.max_round_replay_bytes` and `tools.max_result_tokens` config keys control how many tool calls one model response may run (see [Parallel tool calls](user_guide/tool-guidance.md#parallel-tool-calls)).
 - `tools.max_concurrent_calls` is accepted and stored, and calls still run one after another.
 - A response that carries several tool calls is replayed to the provider as one round, with its assistant content, reasoning and signatures kept, for Google, Anthropic, OpenAI, OpenRouter and the OpenAI-compatible profiles including DeepSeek.
 - A change to a `tools.*` key in the config database applies from the next model turn, including inside a running ReAct execution.
@@ -293,7 +293,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- Flow gates support `evaluate.onFail: retry` with `loop.backTo`, which re-runs the loop body with the judge feedback (see [Advanced Flow Controls](Exaix_User_Guide.md#advanced-flow-controls)).
+- Flow gates support `evaluate.onFail: retry` with `loop.backTo`, which re-runs the loop body with the judge feedback (see [Advanced Flow Controls](user_guide/routing.md#advanced-flow-controls)).
 - `branch` steps route a flow on the agent's JSON output and skip the targets not taken.
 - A flow can declare `requires_capabilities: [voting]`, and `exactl flow list` shows a Capabilities column.
 - Five flow blueprints with companion binding overlays: `self-correcting-implementation`, `triage-router`, `parallel-research`, `guarded-change` and `architecture-decision`.
@@ -314,7 +314,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- Skills are folders (`SKILL.md` plus an optional `exaix.yaml`) that the daemon reads directly, so an edit applies to the next request without a restart (see [Procedural Skills](Exaix_User_Guide.md#33-procedural-skills)).
+- Skills are folders (`SKILL.md` plus an optional `exaix.yaml`) that the daemon reads directly, so an edit applies to the next request without a restart (see [Procedural Skills](user_guide/skills.md#procedural-skills)).
 - A skill folder written for another harness loads without a sidecar and matches on keywords from its name and description.
 - `exactl skills approve`, `deprecate`, `revisions`, `usage --trace` and `validate`, plus `show --revision`, review and audit skills, and every command accepts `--portal`.
 - `[skills]` accepts `roots` and resource limits, and `skills.keyword_match_saturation`, and changes apply to the next operation.
@@ -464,31 +464,31 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 - General-purpose tools accept familiar names such as `Read`, `glob`, and `grep`, plus
   parameter aliases such as `file_path`, across agent execution, MCP HTTP, and local
   dispatch, while MCP SDK stdio accepts canonical tool names with parameter aliases
-  (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  (see [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 - `tools.strict_params` enables live rejection of unknown tool parameters, defaults to
   `false`, and honors Config DB overrides before TOML configuration (see
-  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 - Activity Journal events `tool.alias.rewritten` and `tool.param.unknown` expose
   normalization and unknown parameters, with producer provider/model attribution when
-  known (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  known (see [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 
 ### Changed
 
 - Canonical tool names are now `search_text`, `find_dependents`, `run_deno_task`, and
   `query_symbols`, with `grep_search` retained as a general-purpose alias and retired
   Exaix-specific names rejected (see
-  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 
 ### Fixed
 
 - `run_deno_task` executes the validated Deno task and reports its actual outcome (see
-  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 
 ### Security
 
 - Supported aliases normalize before permission, approval, and portal-confinement
   checks, and invalid Exaix-specific names in permission or approval rules fail
-  validation (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+  validation (see [Tool names and aliases](user_guide/mcp.md#tool-names-and-aliases)).
 
 ## Unreleased — Phase 199 (Read-Only Exploration Tools in the Planning Call)
 
@@ -498,18 +498,18 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   tool loop so the model can open files, list directories, search, and query the portal's
   relationship/knowledge graph before committing to a plan; default `false` keeps today's
   single-call behavior byte-for-byte, and the key is live-read so `exactl config set` takes effect
-  on the next request (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+  on the next request (see [Planning read-only tools](user_guide/tool-guidance.md#planning-read-only-tools)).
 - `planning.max_tool_rounds`, `planning.max_tool_result_tokens`, and `planning.max_tool_calls_per_round`
   config keys — bound the planning loop's generate rounds, per-result token carry-over, and tool
   calls executed per round, so an enabled loop's latency, context, and cost stay capped (see
-  [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+  [Planning read-only tools](user_guide/tool-guidance.md#planning-read-only-tools)).
 - `exactl request create --dry-run-context` now prints the available read-only planning tools,
   whether the planning loop would actually activate for the selected provider, and the worst-case
-  extra tokens/cost per run (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+  extra tokens/cost per run (see [Planning read-only tools](user_guide/tool-guidance.md#planning-read-only-tools)).
 - `planning.tools.completed`, `planning.tools.skipped`, and `planning.tools.aborted` journal events
   — record when an enabled planning loop finishes (rounds, tool-call count, stop reason, summed
   tokens), is skipped for a named reason (provider without native tool support, no portal, portal
-  read denied), or aborts mid-loop (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+  read denied), or aborts mid-loop (see [Planning read-only tools](user_guide/tool-guidance.md#planning-read-only-tools)).
 
 ### Security
 
@@ -531,16 +531,16 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   facts plus request-scored relevant entries (ranked against task type, tags, and
   referenced files) instead of the fixed portal summary; default `"summary"` preserves
   today's prompt content byte-for-byte. See
-  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+  [Portal knowledge inclusion](user_guide/portals.md#portal-knowledge-inclusion).
 - `portal_knowledge.core_max_tokens` / `portal_knowledge.relevant_max_entries` config
   keys — bound adaptive mode's always-included core segment and the maximum ranked
   relevant entries added after it. See
-  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+  [Portal knowledge inclusion](user_guide/portals.md#portal-knowledge-inclusion).
 - `query_symbols` / `get_module_dependencies` — two read-only Solo ReAct tools that let
   an authorized agent role inspect the cached portal AST graph (ranked symbol lookup;
   forward import-dependency traversal) when adaptive knowledge doesn't cover what the
   request needs; list their names in a role's `permitted_tools` to enable them. See
-  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+  [Portal knowledge inclusion](user_guide/portals.md#portal-knowledge-inclusion).
 
 ### Fixed
 
@@ -555,7 +555,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 - Communication requirement — all agent instructions, skill guidance, structured
   responses, and code comments follow ASD-STE100 plus the five Exaix STE Extension v1
   rules (result-first, omit needless detail and self-reflection, prefer bullets), with
-  documentation deliverables exempt. See [Communication requirement](Exaix_User_Guide.md#communication-requirement).
+  documentation deliverables exempt. See [Communication requirement](user_guide/skills.md#communication-requirement).
 - `deno task check:agent-prose` — local authoring gate that reviews instruction prose in
   `.copilot` and `Blueprints` against the shared ASD-STE100 / Exaix STE Extension v1 rule
   set (available in the CLI, not enabled in CI).
@@ -583,11 +583,11 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   via `exactl config set budget.cost_target_tokens_per_request <n>` or the TOML `[budget]`
   section, effective on the next daemon restart; values below the allocator's minimum
   feasible total are rejected at config time. See
-  [Exaix_User_Guide.md](Exaix_User_Guide.md#113-budget-enforcement).
+  [Exaix_User_Guide.md](user_guide/cost-tracking.md#budget-enforcement).
 - `skills.render_mode = "trimmed"` — drop each ordinary matched skill's `examples` section
   from the rendered prompt (critical skills always render in full); default `"full"` keeps
   the skill body in its original order. See
-  [Exaix_User_Guide.md](Exaix_User_Guide.md#configuration).
+  [Exaix_User_Guide.md](user_guide/skills.md#configuration).
 - `deno task check:skill-size` — advisory skill content-size governance that reports the
   per-skill rendered contribution (including `examples`) in the selected render mode.
 - `exactl cost --group-by model|portal` — grouped call counts now sum each persisted row's
@@ -617,7 +617,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- The `portal_knowledge.enable_symbol_level_dependency_graph` config key turns on symbol-level reference edges for the Enterprise edition, so an agent can ask which symbols call or reference a symbol rather than which file imports which file (see [Portal Knowledge Gathering](Exaix_User_Guide.md#portal-knowledge-gathering)).
+- The `portal_knowledge.enable_symbol_level_dependency_graph` config key turns on symbol-level reference edges for the Enterprise edition, so an agent can ask which symbols call or reference a symbol rather than which file imports which file (see [Portal Knowledge Gathering](user_guide/portals.md#portal-knowledge-gathering)).
 - The `query_symbol_references` tool returns those edges, in both directions, from a portal's cached knowledge. It is available to every paid-edition MCP client and returns an empty list, not an error, when the analysis did not collect symbol edges.
 - The Solo-tier `find_dependents` tool answers a symbol question when you pass a `<file>#<symbol>` endpoint, so "who calls this function" works without the MCP surface.
 
@@ -637,7 +637,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   inspection of captured dogfood-context submissions (what a headless native agent
   actually saw at launch): summaries, full detail, or `--raw` export of the exact
   post-redaction prompt bytes. See
-  [Exaix_User_Guide.md](Exaix_User_Guide.md#exactl-request-inspect--read-only-dogfood-context-inspection).
+  [Exaix_User_Guide.md](user_guide/requests-plans-reviews.md#exactl-request-inspect--read-only-dogfood-context-inspection).
 
 ## Unreleased — Phase 145 (Adversarial Robustness & Interactive Evaluation)
 
@@ -700,7 +700,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 - `exactl journal` can now distinguish direct, non-flow agent executions (routed through
   the request pipeline) with `runner_kind: agent-runner` — previously these executions
   left no execution-attribution record in the Activity Journal at all (see
-  [Exaix_User_Guide.md §10.3](Exaix_User_Guide.md#103-activity-journal)).
+  [Exaix_User_Guide.md §10.3](user_guide/monitoring.md#activity-journal)).
 
 ### Changed
 
@@ -719,7 +719,7 @@ you hit a "no such column" error after upgrading.
 - The LLM persona concept is now called "Agent Role" everywhere it's user-visible:
   blueprints live under `Blueprints/Agents/` (previously `Blueprints/Identities/`), and
   blueprint/request frontmatter uses `agent_role:` as the sole key (see
-  [Exaix_User_Guide.md §4.6](Exaix_User_Guide.md#46-file-format-reference)).
+  [Exaix_User_Guide.md §4.6](user_guide/workspace-and-memory.md#file-format-reference)).
 - `exactl request`'s `-i, --identity <name>` flag is now `-a, --agent-role <name>`.
 
 ### Removed
@@ -762,7 +762,7 @@ if you hit a "no such column" error after upgrading.
   durable banks.
 - New end-user guide [Exaix_Memory.md](Exaix_Memory.md) explains the memory lifecycle,
   the self-learning loop, and the CLI inspection and approval flow.
-- Delegated sessions ([session_delegate](Exaix_User_Guide.md#258-memory-participation))
+- Delegated sessions ([session_delegate](user_guide/session-delegation.md#memory-participation))
   now participate in the memory lifecycle too: an accepted session mints an execution
   record and runs through the same extraction and approval pipeline as a plan
   execution, instead of contributing nothing.
@@ -897,7 +897,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Fixed
 
-- Activity Journal lifecycle events now preserve canonical request and execution trace correlation across request analysis, context budgeting, cost tracking, and plan-amendment decisions, so trace-scoped audit queries return complete records (see [Activity Journal](Exaix_User_Guide.md#log--journal-commands---query-the-activity-journal)).
+- Activity Journal lifecycle events now preserve canonical request and execution trace correlation across request analysis, context budgeting, cost tracking, and plan-amendment decisions, so trace-scoped audit queries return complete records (see [Activity Journal](user_guide/monitoring.md#log--journal-commands---query-the-activity-journal)).
 
 ## Unreleased — Phase 163 (MCP Server Spec Compliance)
 

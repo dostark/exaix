@@ -91,7 +91,7 @@ cheapest = ["ollama"]
   **exempt from cost filtering**, so it can win even under a tight budget. An unknown-priced
   model is never treated as "cheapest" — only a genuinely known price qualifies.
 - Curate these lists from the CLI instead of editing TOML by hand — see
-  [`exactl model candidates` and `exactl model list`](Exaix_User_Guide.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
+  [`exactl model candidates` and `exactl model list`](user_guide/requests-plans-reviews.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
 - **Editions:** the Solo floor is a static, offline catalog. A live catalog and stricter routing arrive with the Team edition, see [Team model registry](#team-model-registry-live-catalog). [Model Resolution](Model_Resolution.md) explains the precedence chain, characteristic scoring, multi-route pricing and cost accuracy.
 
 ### Provider comparison
@@ -252,7 +252,7 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 
 `[session_delegate] tool = "codex"` (Mode 3 headless session delegation) is a **separate**
 Codex integration path with its own sandbox model — see
-[§2.5.7](Exaix_User_Guide.md#257-codex-sandbox-and-permitted-path-security). This subsection covers only the
+[§2.5.7](user_guide/session-delegation.md#codex-sandbox-and-permitted-path-security). This subsection covers only the
 ReAct-loop analysis/planning provider above.
 
 ## Team model registry (live catalog)
