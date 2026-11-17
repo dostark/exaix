@@ -293,7 +293,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 
 ### Added
 
-- Flow gates support `evaluate.onFail: retry` with `loop.backTo`, which re-runs the loop body with the judge feedback (see [Advanced Flow Controls](user_guide/routing.md#advanced-flow-controls)).
+- Flow gates support `evaluate.onFail: retry` with `loop.backTo`, which re-runs the loop body with the judge feedback (see [Advanced Flow Controls](user_guide/flow-authoring.md#advanced-flow-controls)).
 - `branch` steps route a flow on the agent's JSON output and skip the targets not taken.
 - A flow can declare `requires_capabilities: [voting]`, and `exactl flow list` shows a Capabilities column.
 - Five flow blueprints with companion binding overlays: `self-correcting-implementation`, `triage-router`, `parallel-research`, `guarded-change` and `architecture-decision`.

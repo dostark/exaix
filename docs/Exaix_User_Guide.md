@@ -11,6 +11,7 @@ The user guide is split by topic and lives in [docs/user_guide/](user_guide/READ
 - [Requests, Plans and Reviews](user_guide/requests-plans-reviews.md)
 - [Portals](user_guide/portals.md)
 - [Blueprints and Flows](user_guide/blueprints-and-flows.md)
+- [Flow Authoring](user_guide/flow-authoring.md)
 - [Routing](user_guide/routing.md)
 - [Skills](user_guide/skills.md)
 - [Workspace and Memory](user_guide/workspace-and-memory.md)

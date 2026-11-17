@@ -336,6 +336,22 @@ exactl request create --portal my-project "..."
 exactl portal show my-project
 ```
 
+#### Problems when adding a portal
+
+- **Target path does not exist.** `exactl portal add` stops with "Target path does not exist" and changes nothing. Check that the path exists and that you can access it.
+- **Alias already exists.** Use a different alias, or remove the existing portal first.
+- **Invalid alias characters.** Use only letters, numbers, dashes and underscores. The alias rules below list the rest.
+- **Permission denied on macOS.** The error says "Full Disk Access required". Open System Settings, then Privacy & Security, then Full Disk Access, and enable it for your terminal.
+- **inotify limit on Linux.** A warning says that the file watch limit may be insufficient for large portals. Raise the limit with `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p`.
+
+**Alias validation rules:**
+
+- Must contain only alphanumeric characters, dashes, and underscores
+- Cannot start with a number
+- Cannot be empty
+- Cannot use reserved names: `System`, `Workspace`, `Memory`, `Blueprints`, `Active`, `Archive`
+- Maximum length: 50 characters
+
 ### Migration from Workspace Execution
 
 **Before (workspace execution):**

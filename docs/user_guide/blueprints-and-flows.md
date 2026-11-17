@@ -43,6 +43,29 @@ exactl blueprint remove <agent-id>
 exactl blueprint remove security-auditor --yes # Skip the confirmation
 ```
 
+## Blueprint file structure
+
+> **model resolution and intent:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
+> See [§6.2 Model Intent](agent-features.md#model-intent-model-resolution-and-intent) for the replacement system.
+
+```markdown
+---
+agent_role: "senior-coder"
+name: "Senior Coder"
+model: "anthropic:claude-3-sonnet"
+capabilities: ["code_generation", "debugging"]
+output_contract: plan
+default_skills: ["code-review", "portal-grounding"]
+created: "2025-12-02T10:00:00Z"
+created_by: "user@example.com"
+version: "1.0.0"
+---
+
+# Senior Coder Agent
+
+System prompt with <thought> and <content> tags...
+```
+
 ## **Flow Commands** - Manage multi-agent workflows
 
 Flows allow you to coordinate multiple agents to perform complex tasks.

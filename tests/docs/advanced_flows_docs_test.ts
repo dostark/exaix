@@ -41,8 +41,8 @@ function sectionOf(markdown: string, heading: string, level: number): string {
 
 async function authoringGuide(): Promise<string> {
   const guide = await readUserGuide();
-  return sectionOf(guide, "### Flow Step Types", 3) +
-    sectionOf(guide, "### Advanced Flow Controls", 3);
+  return sectionOf(guide, "## Flow Step Types", 2) +
+    sectionOf(guide, "## Advanced Flow Controls", 2);
 }
 
 function blocks(markdown: string, info: string): string[] {
@@ -122,7 +122,7 @@ Deno.test("[docs] User Guide updated for every changed interface/schema/config/C
   assertFalse(guide.includes("onMaxIterations"), "stale loop syntax");
 });
 
-Deno.test("[docs] config and overlay examples parse through their owning schemas", async () => {
+Deno.test("[docs] the config example and the shipped companion overlays parse through their owning schemas", async () => {
   const guide = await authoringGuide();
   const configs = blocks(guide, "toml config");
   assert(configs.length > 0, "Missing a flow config example");
@@ -130,20 +130,11 @@ Deno.test("[docs] config and overlay examples parse through their owning schemas
   assertEquals(config.flow?.max_gate_evaluations, 5);
   assertEquals(config.flow?.namespace_prompt_max_bytes, 8192);
   assert((config.max_flow_retry_cost_usd ?? 0) > 0);
-  const overlays = blocks(guide, "toml overlay");
-  assertEquals(overlays.length, BLUEPRINT_IDS.length);
-  for (const overlay of overlays) {
-    const parsed = BindingOverlaySchema.parse(parseToml(overlay));
-    assert(Object.keys(parsed.bindings ?? {}).every((selector) => /^(flow|role):/.test(selector)));
-  }
-});
-
-Deno.test("[docs] overlay examples match the shipped companion overlay files", async () => {
-  const guide = await authoringGuide();
-  const shown = blocks(guide, "toml overlay").map((block) => JSON.stringify(parseToml(block)));
   for (const id of BLUEPRINT_IDS) {
-    const shipped = JSON.stringify(parseToml(await Deno.readTextFile(`configs/bindings/flows/${id}.example.toml`)));
-    assertArrayIncludes(shown, [shipped], `Guide overlay for ${id} drifted from the shipped file`);
+    const path = `configs/bindings/flows/${id}.example.toml`;
+    assertStringIncludes(guide, path, `the guide links the companion overlay of ${id}`);
+    const parsed = BindingOverlaySchema.parse(parseToml(await Deno.readTextFile(path)));
+    assert(Object.keys(parsed.bindings ?? {}).every((selector) => /^(flow|role):/.test(selector)));
   }
 });
 
@@ -218,7 +209,7 @@ const GATE_WAIT_CLAIM =
 
 Deno.test("[docs] every step type in the guide table is a FlowStepType member", async () => {
   const guide = await readUserGuide();
-  const table = sectionOf(guide, "### Flow Step Types", 3);
+  const table = sectionOf(guide, "## Flow Step Types", 2);
   const types = firstColumn(table);
   assert(types.length >= 4);
   const valid = new Set<string>(Object.values(FlowStepType));
