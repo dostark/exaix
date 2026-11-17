@@ -2,49 +2,33 @@
 
 Backup, restore, upgrade, troubleshooting, uninstall, daemon control and health checks. Part of the [Exaix User Guide](README.md).
 
-## **Daemon Commands** - Control the Exaix daemon
+## Running the daemon
 
-Manage the background daemon process:
+Exaix runs as a background daemon. It serves the MCP API, runs scheduled tasks, and monitors workspace health. The `exactl daemon` command manages it:
 
-```bash
-# Start the daemon (runs in background, returns to prompt)
-exactl daemon start
+- `exactl daemon start` starts the daemon in the background and returns to the prompt. `deno task start:bg` does the same, and `deno task start` runs it in the foreground for development, with live output.
+- `exactl daemon status` shows the PID, the uptime and the version.
+- `exactl daemon logs` shows the daemon log. It shows 50 lines by default, `--limit` changes that, and `--follow` streams the log like `tail -f`.
+- `exactl daemon restart` restarts the daemon, and `exactl daemon stop` sends SIGTERM for a graceful shutdown.
 
-# Alternative: start via deno task (also backgrounds)
-deno task start:bg
+> [!TIP]
+> **Graceful Shutdown:** The daemon handles shutdown signals to ensure critical operations (like database writes or git commits) complete before exiting.
 
-# For development: run in foreground (blocks terminal, shows live output)
-deno task start
+Every option is in the [daemon command reference](../cli/daemon.md). [Monitoring and Logs](monitoring.md) shows how to follow what the daemon does through the Activity Journal.
 
-# Stop the daemon gracefully
-exactl daemon stop
+## Health checks
 
-# Restart the daemon
-exactl daemon restart
+The daemon exposes health endpoints and performs self-monitoring. It checks:
 
-# Check daemon status
-exactl daemon status
+- **Database Connectivity**: Verifies SQLite WAL mode and query response.
+- **Disk Space**: Monitoring `warn` and `critical` thresholds.
+- **Memory Usage**: Tracks heap usage to prevent OOM errors.
 
-# View daemon logs
-exactl daemon logs
-exactl daemon logs --limit 100           # Show last 100 lines
-exactl daemon logs --follow              # Stream logs (like tail -f)
-```
+`exactl daemon status` shows whether the daemon runs, and `exactl doctor` runs the read-only checks of the workspace. See [Health Check and Shell Completion](cli-basics.md#health-check-and-shell-completion). For a quick look at the whole system, read the last lines of the daemon log with `exactl daemon logs --limit 20`, and list the pending work with `exactl plan list` and `exactl review list`. `exactl git status` and `exactl git branch list` show the state of the repository and the branches that agents created.
 
-## **Migrate Command** - Check workspace schema compatibility
+## Schema check
 
-When upgrading Exaix, the workspace schema version may change. `exactl doctor --schema`
-compares the binary's expected schema version against the workspace's stored version.
-
-```bash
-# Check schema compatibility
-exactl doctor --schema
-```
-
-If versions mismatch, the command reports the expected and actual versions and
-recommends migration steps. This is also checked automatically at daemon start.
-
----
+When you upgrade Exaix, the workspace schema version may change. `exactl doctor --schema` compares the schema version that the binary expects with the version stored in the workspace. If the versions differ, the command reports both and recommends migration steps. The daemon also checks this at start.
 
 ## Bootstrap (Reference Implementation)
 
@@ -69,43 +53,7 @@ exactl daemon start
 exactl daemon status
 ```
 
-**Complete workflow example:**
-
-```bash
-# 1. Create a request (quick method - recommended)
-exactl request create "Implement user authentication for the API"
-# Output: ✓ Request created: request-a1b2c3d4.md
-
-# Alternative: Manual file creation (if you need custom frontmatter)
-# echo "Implement user authentication" > ~/Exaix/Workspace/Requests/auth.md
-
-# 2. Agent will generate a plan automatically
-# Wait a moment... (daemon watches Workspace/Requests)
-
-# 3. Review the plan
-exactl plan list
-exactl plan show implement-auth
-
-# 4. Approve the plan
-exactl plan approve implement-auth
-
-# 5. Review changes created by agents
-exactl review list
-exactl review show implement-auth
-
-# 6. Approve the review to merge
-exactl review approve implement-auth
-
-# Current Status:
-# ✅ Request creation automated
-# ✅ Plan generation automated
-# ✅ Plan approval workflow complete
-# ✅ Plan detection and parsing implemented
-# ✅ Review creation and approval available
-# 🚧 Full agent-driven execution in development
-
-# All completed steps logged to Activity Journal with trace_id
-```
+To send your first request, see [Getting Started](getting-started.md) and [Requests, Plans and Reviews](requests-plans-reviews.md).
 
 ## Operational Procedures
 
@@ -160,7 +108,7 @@ deno task start
 # 1. Stop daemon
 deno task stop
 
-# 2. Backup current version (see 12.1)
+# 2. Backup current version (see Backup above)
 tar -czf exaix-pre-upgrade.tar.gz ~/Exaix
 
 # 3. Pull latest code
@@ -296,69 +244,4 @@ rm ~/.deno/bin/exactl
 
 # 4. Portals are just symlinks - actual projects untouched
 # Nothing to clean unless you want to remove project directories
-```
-
-### Health Check
-
-```bash
-# Check daemon status
-exactl daemon status
-
-# Output:
-# 🔧 Daemon Status
-# Version: 1.0.0
-# Status: Running ✓
-# PID: 12345
-# Uptime: 2:15:30
-
-# View recent activity
-exactl daemon logs --limit 20
-
-# Check git repository status
-exactl git status
-
-# List pending work
-exactl plan list
-exactl review list
-
-# View all branches
-exactl git branch list
-```
-
-## Daemon Management & Monitoring
-
-Exaix can run as a background daemon to serve the MCP API, run scheduled tasks, and monitor workspace health.
-
-### Daemon Control
-
-Use the `exactl daemon` command to manage the background service:
-
-```bash
-# Start the daemon
-exactl daemon start
-
-# Check status (PID, uptime, version)
-exactl daemon status
-
-# View live logs
-exactl daemon logs -f
-
-# Stop the daemon (sends SIGTERM for graceful shutdown)
-exactl daemon stop
-```
-
-> [!TIP]
-> **Graceful Shutdown:** The daemon handles shutdown signals to ensure critical operations (like database writes or git commits) complete before exiting.
-
-### Health Checks
-
-The daemon exposes health endpoints and performs self-monitoring. checking:
-
-- **Database Connectivity**: Verifies SQLite WAL mode and query response.
-- **Disk Space**: Monitoring `warn` and `critical` thresholds.
-- **Memory Usage**: Tracks heap usage to prevent OOM errors.
-
-```bash
-# Perform an ad-hoc health check
-exactl daemon status
 ```
