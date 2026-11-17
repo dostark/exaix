@@ -50,6 +50,7 @@ const EDITED_SINCE_BASELINE = new Set([
   "commit",
   "coverage",
   "doc",
+  "dogfood-development",
   "exaix-development",
   "explore",
   "fix-bug",

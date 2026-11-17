@@ -486,7 +486,7 @@ search has meaningful behavior without a portal, relationship graphs do not.
 Note: `search_memory` is also the name of one of the three tools
 [`DogfoodContextServer`](../../packages/mcp/server/dogfood_context_server.ts) grants a
 delegated dogfood child session over a private per-launch MCP connection (see
-[Dogfooding Guide §6.8](../../docs/Exaix_Dogfooding.md#68-session-bound-mcp-context-queries)).
+[Dogfooding Guide §6.8](../../docs/dogfooding.md#68-session-bound-mcp-context-queries)).
 That server calls the same scoped memory-retrieval path directly — it is a separate, narrower
 transport (loopback-only, bearer-gated, three tools total), not a wrapper around this
 `ToolRegistry` entry, and is never reachable through Solo's own `ToolRegistry.execute()`.

@@ -16,7 +16,7 @@
 > 2. During development, add entries under `## Unreleased — Phase <N>`.
 > 3. Every entry must be a single sentence, user-facing, no internal file paths.
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
-> 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
+> 4. Link to the relevant section in the [User Guide](user_guide/README.md) for detailed docs.
 
 ## Unreleased — Phase 239 (exactl Output, Exit-Code and Help Contracts)
 
@@ -577,17 +577,17 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   call; honors `skills.render_mode`, `disableSkills`, and portal-knowledge settings exactly
   as the daemon would, and reports a cold/stale portal as `Portal knowledge: stale/unavailable`
   instead of computing from pre-compaction numbers. See the `exactl request create`
-  options table in [Exaix_User_Guide.md](Exaix_User_Guide.md).
+  options table in [User Guide](user_guide/README.md).
 - `[budget] cost_target_tokens_per_request` config key — optional hard cap on assembled
   prompt tokens per request, enforced by both the planning call and the ReAct loop; set
   via `exactl config set budget.cost_target_tokens_per_request <n>` or the TOML `[budget]`
   section, effective on the next daemon restart; values below the allocator's minimum
   feasible total are rejected at config time. See
-  [Exaix_User_Guide.md](user_guide/cost-tracking.md#budget-enforcement).
+  [User Guide](user_guide/cost-tracking.md#budget-enforcement).
 - `skills.render_mode = "trimmed"` — drop each ordinary matched skill's `examples` section
   from the rendered prompt (critical skills always render in full); default `"full"` keeps
   the skill body in its original order. See
-  [Exaix_User_Guide.md](user_guide/skills.md#configuration).
+  [User Guide](user_guide/skills.md#configuration).
 - `deno task check:skill-size` — advisory skill content-size governance that reports the
   per-skill rendered contribution (including `examples`) in the selected render mode.
 - `exactl cost --group-by model|portal` — grouped call counts now sum each persisted row's
@@ -637,7 +637,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   inspection of captured dogfood-context submissions (what a headless native agent
   actually saw at launch): summaries, full detail, or `--raw` export of the exact
   post-redaction prompt bytes. See
-  [Exaix_User_Guide.md](user_guide/requests-plans-reviews.md#inspecting-what-a-delegated-agent-saw).
+  [User Guide](user_guide/requests-plans-reviews.md#inspecting-what-a-delegated-agent-saw).
 
 ## Unreleased — Phase 145 (Adversarial Robustness & Interactive Evaluation)
 
@@ -700,7 +700,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
 - `exactl journal` can now distinguish direct, non-flow agent executions (routed through
   the request pipeline) with `runner_kind: agent-runner` — previously these executions
   left no execution-attribution record in the Activity Journal at all (see
-  [Exaix_User_Guide.md §10.3](user_guide/monitoring.md#the-activity-journal)).
+  [User Guide](user_guide/monitoring.md#the-activity-journal)).
 
 ### Changed
 
@@ -719,7 +719,7 @@ you hit a "no such column" error after upgrading.
 - The LLM persona concept is now called "Agent Role" everywhere it's user-visible:
   blueprints live under `Blueprints/Agents/` (previously `Blueprints/Identities/`), and
   blueprint/request frontmatter uses `agent_role:` as the sole key (see
-  [Exaix_User_Guide.md §4.6](user_guide/workspace-and-memory.md#file-format-reference)).
+  [User Guide](user_guide/workspace-and-memory.md#file-format-reference)).
 - `exactl request`'s `-i, --identity <name>` flag is now `-a, --agent-role <name>`.
 
 ### Removed
@@ -795,7 +795,7 @@ cloud model is available, and automatic approval stays off until you enable it.
   other files internally, and which files belong to which architecture layer — covering
   every entrypoint in a portal by default. Query it mid-task via two new Solo-tier ReAct
   tools, `query_relationships` and `find_dependents` (grant them to an identity's
-  `permitted_tools`; see `Exaix_User_Guide.md` §5.8, "Portal Knowledge Gathering").
+  `permitted_tools`; see the [User Guide](user_guide/README.md), "Portal Knowledge Gathering").
 
 ### Fixed
 
@@ -811,7 +811,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 - A new `session_delegate_cycle` flow step type runs a hardened, multi-step implementation
   plan as one governed sequence of external session delegations — each step's changes are
   reviewed and gated before the next step launches, and progress survives a daemon restart
-  without re-running completed steps (see `Exaix_User_Guide.md` §4, "Session Delegate Cycle
+  without re-running completed steps (see the [User Guide](user_guide/README.md), "Session Delegate Cycle
   Step Type").
 
 ### Changed
@@ -827,7 +827,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 - Generating requests from a plan document now copies the full phase document into
   the workspace at `.exa/PlanContext/<slug>.md` and points every generated request at
   it, so a delegate that needs more than the inline summary can read the source
-  document directly (see `Exaix_User_Guide.md` §4.6).
+  document directly (see the [User Guide](user_guide/README.md)).
 
 ### Changed
 
@@ -836,7 +836,7 @@ cloud model is available, and automatic approval stays off until you enable it.
   step, instead of only the step's own four scraped subsections.
 - Request files now use `identity_id` as the frontmatter field naming the identity
   blueprint that should handle the request; the old `identity` field name is retired
-  and no longer read (see `Exaix_User_Guide.md` §4.6).
+  and no longer read (see the [User Guide](user_guide/README.md)).
 
 ## Unreleased — Phase 167 (Codex CLI Session Adapter)
 
@@ -847,7 +847,7 @@ cloud model is available, and automatic approval stays off until you enable it.
   supported, separately-tested Codex surfaces — the headless gate runs in an isolated
   worktree, reports every touched path, and routes through the workspace-root + post-hoc
   `permitted_paths` reconciliation model (subscription auth via the stored `codex login`
-  credential; see `Exaix_User_Guide.md` §2.4.6 / §2.5.7).
+  credential; see the [User Guide](user_guide/README.md)).
 - `session_delegate.harden_permissions = true` now derives Codex's `--sandbox` mode from
   the gate (`code_changes` → `workspace-write`, all other gates → `read-only`) and the
   minimum-version probe fails closed instead of only warning.
@@ -878,14 +878,14 @@ cloud model is available, and automatic approval stays off until you enable it.
 - External MCP clients (Claude Desktop, Claude Code, and other connected agents) now see a
   short "Selection hint" appended to `patch_file`/`write_file`'s advertised description in
   `tools/list`, giving them the same tool-preference guidance Exaix's own internal agent
-  already uses (see `Exaix_User_Guide.md` §8.2).
+  already uses (see the [User Guide](user_guide/README.md)).
 
 ### Fixed
 
 - A blueprint's `hitl.require_secondary_approval` rules now actually gate tool calls made
   through the standard plan-execution path, not just Flow's dynamic steps — previously
   declared in blueprint frontmatter but silently never enforced there (see
-  `Exaix_User_Guide.md` §12.4).
+  the [User Guide](user_guide/README.md)).
 
 ### Security
 
@@ -907,17 +907,17 @@ cloud model is available, and automatic approval stays off until you enable it.
   secret) — opt into bearer-token authentication for `exactl mcp start --sse`, so
   unauthenticated clients are rejected with `401` while clients presenting the configured
   token are accepted; the server fails fast at startup if the flag is on but the token is
-  unset (see `Exaix_User_Guide.md` §8.1).
+  unset (see the [User Guide](user_guide/README.md)).
 - `execution_mode: dynamic` flow steps now execute for real on the Team/Enterprise edition —
   the step runs a model-driven tool-selection loop bounded by its `permitted_tools` instead
-  of silently falling back to the declared path (see `Exaix_User_Guide.md` — "Flow Step
+  of silently falling back to the declared path (see the [User Guide](user_guide/README.md) — "Flow Step
   Execution Modes").
 
 ### Changed
 
 - `exactl mcp start` now serves the MCP protocol through the official TypeScript SDK,
   negotiating the current protocol version (2025-11-25, up from the legacy 2024-11-05) over
-  both stdio and, with `--sse --port <N>`, real Streamable HTTP (see `Exaix_User_Guide.md`
+  both stdio and, with `--sse --port <N>`, real Streamable HTTP (see the [User Guide](user_guide/README.md)
   §8.1).
 
 ### Fixed
@@ -932,7 +932,7 @@ cloud model is available, and automatic approval stays off until you enable it.
   client, with `--list-tools` to enumerate its tools and `--call-tool <name> --args '<json>'`
   to invoke one, using the modern Streamable HTTP transport and falling back automatically
   to the legacy SSE transport for servers that have not migrated yet (see
-  `Exaix_User_Guide.md` §8.4).
+  the [User Guide](user_guide/README.md)).
 - `EXA_MCP_BEARER_TOKEN` env var — authenticate to token-gated MCP servers (for example
   GitHub's official MCP endpoint) with a bearer token instead of an interactive login flow.
 
@@ -982,7 +982,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 - A flow step's YAML can now declare `strategy: react | mcp | cli_delegate` to route that
   step through the agent strategy registry (tool-capable execution: reading the repo,
   running commands, delegating to a CLI) instead of the default single-shot generation,
-  without changing `execution_mode` (see `Exaix_User_Guide.md` — "Flow Step Execution
+  without changing `execution_mode` (see the [User Guide](user_guide/README.md) — "Flow Step Execution
   Strategy").
 
 ### Changed
@@ -1039,9 +1039,9 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Added
 
-- Native tool-calling support (`tools` and `tool_choice` parameters) for OpenAI, Google, and OpenRouter direct-API providers, ensuring models choose from tools Exaix actually offers (see `Exaix_User_Guide.md` §5.3a).
-- Paid-tier live verification for Google Gemini provider native tool-calling under standard production quotas (see `Exaix_User_Guide.md` §5.3a).
-- Scoping of scenario security checks via cell lists, enabling `assert-no-dynamic-tool-calls` security gates to run exclusively on CLI-delegate cells (see `Exaix_User_Guide.md` §5.3a).
+- Native tool-calling support (`tools` and `tool_choice` parameters) for OpenAI, Google, and OpenRouter direct-API providers, ensuring models choose from tools Exaix actually offers (see the [User Guide](user_guide/README.md)a).
+- Paid-tier live verification for Google Gemini provider native tool-calling under standard production quotas (see the [User Guide](user_guide/README.md)a).
+- Scoping of scenario security checks via cell lists, enabling `assert-no-dynamic-tool-calls` security gates to run exclusively on CLI-delegate cells (see the [User Guide](user_guide/README.md)a).
 
 ## Unreleased — Phase 150 (Dogfood Delegation Fidelity)
 
@@ -1097,7 +1097,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 - `exactl eval report --group-by subsystem|entity` — per-subsystem and per-entity score rows with trend deltas, combinable with `--tag` (see `Exaix_Evaluation.md §12`).
 - `skills.resolved` journal event — records the skills applied to every request, with the pinned/matched/defaults breakdown that produced the final set.
-- `deno task eval:subsystems`, `eval:subsystems:core` and `test:parity` — run the subsystem evaluation packs and the catalog-parity gates (see `Exaix_User_Guide.md §13`).
+- `deno task eval:subsystems`, `eval:subsystems:core` and `test:parity` — run the subsystem evaluation packs and the catalog-parity gates (see the [User Guide](user_guide/README.md)).
 - `--keep-sandbox` on the scenario runner, plus `deno task scenario:prune` to reclaim old sandboxes; a scenario run now removes its own sandbox on success and always keeps it on failure.
 
 ### Changed
@@ -1205,7 +1205,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Added
 
-- `exactl config get`, `set`, `unset`, `validate` and `show` — around 150 previously source-only defaults are now inspectable and tunable without forking Exaix, with every write validated against the setting's registered type and bounds (see `Exaix_User_Guide.md`).
+- `exactl config get`, `set`, `unset`, `validate` and `show` — around 150 previously source-only defaults are now inspectable and tunable without forking Exaix, with every write validated against the setting's registered type and bounds (see the [User Guide](user_guide/README.md)).
 - Configuration overrides are persisted in an append-only log in the workspace, so a change survives a daemon restart and every change keeps an audit trail.
 - `exactl config show --sources` — see where each effective value came from (default, file, or override).
 
@@ -1230,7 +1230,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Added
 
-- `exactl models list` and `exactl models pricing` — inspect the Solo model floor's provider/model list, pricing provenance (`static`/`unknown`), and verified-at staleness (see `Exaix_User_Guide.md §2.4.2`).
+- `exactl models list` and `exactl models pricing` — inspect the Solo model floor's provider/model list, pricing provenance (`static`/`unknown`), and verified-at staleness (see the [User Guide](user_guide/README.md)).
 - `exactl config model --size <S|M|L|XL> <providers…>` — curate a per-size preferred provider list (with `--characteristic`, `--list`, and `--clear`), written back to `model_presets.<SIZE>.candidates` in `exa.config.toml`.
 - Curated `model_presets.<SIZE>.candidates` and `model_presets.<SIZE>.characteristics` config keys — a size request resolves via this preferred list first (journalled `reason: preferred_list`).
 
@@ -1243,7 +1243,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 ### Deprecations
 
 - **Hardcoded `model:` in identity blueprints is deprecated.** Replace with
-  `model_size:` + `characteristics:` frontmatter fields. See `Exaix_User_Guide.md §6.2`
+  `model_size:` + `characteristics:` frontmatter fields. See the [User Guide](user_guide/README.md)
   for migration guide.
 
 ### Added

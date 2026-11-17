@@ -1768,7 +1768,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 
 ## Related Documentation
 
-- **[User Guide](docs/Exaix_User_Guide.md)** — End-user documentation
+- **[User Guide](docs/user_guide/README.md)** — End-user documentation
 - **Package and App READMEs** — Implementation reference (formerly `docs/dev/`):
   - `packages/flow/README.md` — Flow engine, orchestration services, session tool integration
   - `packages/request/README.md` — Request processing, analysis, routing
@@ -1784,7 +1784,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle, event taxonomy
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
-- **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
+- **[Dogfooding Guide](docs/dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
 - **Dogfood Agent Role and Skills** — The `dogfood-developer` agent role (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder`) bundles 4 rigor skills (tdd-methodology, portal-grounding, security-first, code-review) as `default_skills`; the retired `exaix-conventions` runtime skill was merged into `.copilot/skills/exaix-development` (Exaix dev guidance does not belong in the runtime catalog). Two meta-workflow skills (`gap-analysis`, `step-execution`) are skill folders under `Blueprints/Skills/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so agent-role rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
 - **Dogfood Meta-Workflow Skills** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) reading the `.copilot/skills` folders as a dogfood skills root from `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/review-phase-code output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 

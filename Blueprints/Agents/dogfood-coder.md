@@ -55,7 +55,7 @@ govern Exaix-side tool access, not the delegated child's native tool surface:
 - `search_memory` — project/global memory scoped to the bound portal.
 
 The connection is loopback-only, bearer-authenticated, single-child, and closes when the
-delegated session ends. See `docs/Exaix_Dogfooding.md` §6.7/§6.8 for the full contract.
+delegated session ends. See `docs/dogfooding.md` §6.7/§6.8 for the full contract.
 
 ## Communication requirement
 

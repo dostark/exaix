@@ -114,7 +114,7 @@ cancellation, or timeout. The execution package owns the stock strategy integrat
 daemon owns retrieval, capture, and endpoint lifecycle.
 
 This capture is evidence of bytes Exaix submitted, not of native CLI internals. See
-[`docs/Exaix_Dogfooding.md`](../../docs/Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext)
+[`docs/dogfooding.md`](../../docs/dogfooding.md#67-bounded-context-supplement-dogfoodcontext)
 for configuration, privacy boundaries, inspection, and live cutover status.
 
 `packages/execution/src/context/` provides a segment-level compaction layer (Phase 83) that runs inside the ReAct loop before each LLM call.

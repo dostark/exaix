@@ -24,7 +24,7 @@ describe("Docs helpers", () => {
 
   it("reads a specific documentation file", async () => {
     originalCwd = Deno.cwd();
-    const content = await readDoc("Exaix_User_Guide.md");
+    const content = await readDoc("user_guide/README.md");
     assertStringIncludes(content, "#");
   });
 

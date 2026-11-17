@@ -104,7 +104,7 @@ dogfood-context launch/turn and tears it down when the launch closes.
   and an explicit expiry check on every call.
 - **Native client wiring** (Claude Code, OpenCode, both launch paths; Codex, governed
   cycle only) lives in `@exaix/session`'s `dogfood_mcp_config.ts` — see that package's
-  README and `docs/Exaix_Dogfooding.md` §6.8.
+  README and `docs/dogfooding.md` §6.8.
 
 ## Key Modules
 

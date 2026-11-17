@@ -41,4 +41,4 @@ How to deploy and use an Exaix workspace. The guide is split by topic, and each 
 ## Related documents
 
 - [CLI reference](../cli/index.md): every `exactl` command with its options, examples and exit codes, generated from the code.
-- [Evaluation Framework guide](../evaluation-framework.md) and [Dogfooding guide](../Exaix_Dogfooding.md): the contributor guides for scenario evaluation and for developing Exaix with Exaix.
+- [Evaluation Framework guide](../evaluation-framework.md) and [Dogfooding guide](../dogfooding.md): the contributor guides for scenario evaluation and for developing Exaix with Exaix.

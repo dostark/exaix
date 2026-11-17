@@ -25,7 +25,7 @@ Key points
 - Crash recovery is automatic via journal replay.
 
 See also
-  User guide         →  [docs/Exaix_Dogfooding.md](../../docs/Exaix_Dogfooding.md)
+  User guide         →  [docs/dogfooding.md](../../docs/dogfooding.md)
   Dogfood agent role →  [Blueprints/Agents/dogfood-developer.md](../../Blueprints/Agents/dogfood-developer.md)
   Dogfood flow       →  [Blueprints/Flows/dogfood-loop.flow.yaml](../../Blueprints/Flows/dogfood-loop.flow.yaml)
 

@@ -8,7 +8,7 @@ capabilities: [system_overview, installation, initial_setup]
 links:
   - "ARCHITECTURE.md"
   - "GLOSSARY.md"
-  - "docs/Exaix_User_Guide.md"
+  - "docs/user_guide/README.md"
   - "CONTRIBUTING.md"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
@@ -92,7 +92,7 @@ design rationale, see [Architecture](ARCHITECTURE.md).
 
 This path installs the `exactl` CLI from the repository checkout, then drives Exaix
 with `exactl` commands only. It uses Ollama for a local model; choose a cloud provider in
-the [User Guide](docs/Exaix_User_Guide.md) if that better fits your environment.
+the [User Guide](docs/user_guide/README.md) if that better fits your environment.
 
 ### Prerequisites
 
@@ -143,7 +143,7 @@ needs more detail, use `exactl request clarify <trace-id>` before proceeding.
 The default clone is a complete Solo checkout; Team, Enterprise, and planning submodules
 require separate access and are not needed for this path. For deployment and contribution
 setup, see [Contributing](CONTRIBUTING.md). For a self-hosted workflow that uses Exaix to
-develop Exaix, use the [Dogfooding Guide](docs/Exaix_Dogfooding.md) and its isolated
+develop Exaix, use the [Dogfooding Guide](docs/dogfooding.md) and its isolated
 worktree instructions.
 
 ## Core capabilities
@@ -167,7 +167,7 @@ through ad-hoc application code.
 Portals attach project repositories under a named alias. Memory stores durable knowledge,
 and skills add reusable procedural instructions to an agent’s prompt. These mechanisms
 provide context without requiring every task to start from an empty chat session. Their
-configuration and access boundaries matter; see the [User Guide](docs/Exaix_User_Guide.md)
+configuration and access boundaries matter; see the [User Guide](docs/user_guide/README.md)
 before mounting projects that contain sensitive material.
 
 ### Provider and native-client flexibility
@@ -183,8 +183,8 @@ turn their private session state into Exaix state.
 Use `exactl` to create requests (`request create`), inspect and approve plans
 (`plan list`, `plan approve`), list pending decisions (`approval list`), follow a trace
 (`request watch`), and inspect the journal (`log list`). The terminal dashboard offers an interactive operational view. See
-the [CLI and configuration reference](docs/Exaix_User_Guide.md) for commands, output
-contracts, and troubleshooting.
+the [CLI reference](docs/cli/index.md) for commands, output
+contracts, and exit codes, and [Operations](docs/user_guide/operations.md) for troubleshooting.
 
 ### Security boundaries
 
@@ -213,10 +213,10 @@ source-code replacement; manage the source repository and runtime workspace sepa
 
 | If you need to...                                | Start here                                                           |
 | ------------------------------------------------ | -------------------------------------------------------------------- |
-| Submit, inspect, and operate ordinary AI work    | [User Guide](docs/Exaix_User_Guide.md)                               |
+| Submit, inspect, and operate ordinary AI work    | [User Guide](docs/user_guide/README.md)                              |
 | Understand architecture and invariants           | [Architecture](ARCHITECTURE.md)                                      |
 | Learn the project vocabulary                     | [Glossary](GLOSSARY.md)                                              |
-| Run a sandboxed Exaix-on-Exaix development cycle | [Dogfooding Guide](docs/Exaix_Dogfooding.md)                         |
+| Run a sandboxed Exaix-on-Exaix development cycle | [Dogfooding Guide](docs/dogfooding.md)                               |
 | Build or score scenario evaluations              | [Evaluation Guide](docs/evaluation-framework.md)                     |
 | Set up a contributor workspace                   | [Contributing](CONTRIBUTING.md)                                      |
 | Contribute code                                  | [Contributing](CONTRIBUTING.md) and [Code Style](docs/CODE_STYLE.md) |

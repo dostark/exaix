@@ -72,7 +72,7 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   connection or its config survives a restart. Wired into `session_delegate_service.ts`'s
   `resolveHardenedLaunch` (governed cycle, all three tools) and
   `packages/execution/src/strategies/cli_delegate_strategy.ts` (CLI-delegate, claude/opencode
-  only — codex is governed-cycle-only). See `docs/Exaix_Dogfooding.md` §6.8 and
+  only — codex is governed-cycle-only). See `docs/dogfooding.md` §6.8 and
   `packages/mcp/server/dogfood_context_server.ts` for the server side.
 
 ### Agent Role Threading (Phase 174)
