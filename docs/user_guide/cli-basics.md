@@ -87,7 +87,7 @@ the command that replaces it on one line. The
 
 **What waits for a human.** `exactl approval list` shows every pending human decision from all eight sources,
 oldest first, with the exact command that decides each row. A source that takes longer than 30 seconds is skipped with a notice on stderr, and the command ends after it printed the other rows. See
-[Approval Commands](security-and-safety.md#approval-commands---resolve-wait-states-and-tool-confirmations) for the `approval` verbs.
+[Approvals](security-and-safety.md#approvals) for the `approval` verbs.
 
 ### Command Summary
 
