@@ -1,7 +1,7 @@
 /**
  * @module DocsExaCtlExamplesTest
  * @path apps/exactl/tests/docs_exactl_examples_test.ts
- * @description Checks every exactl invocation in the fenced blocks of docs/*.md and the .copilot skill files against the live command tree.
+ * @description Checks every exactl invocation in the fenced blocks of docs/*.md, docs/user_guide/*.md and the .copilot skill files against the live command tree.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path, apps/exactl/src/docs/example_validator.ts]
  * @related-files [apps/exactl/src/docs/example_validator.ts, apps/exactl/src/docs/command_tree_walk.ts]
@@ -21,8 +21,8 @@ const SKIPPED_DOCS: ReadonlySet<string> = new Set(["docs/CHANGELOG.md"]);
 
 /** Invocations that are invalid on purpose: the bare root, a tree diagram and the Team-only export. The key is the file. */
 const INTENTIONAL: Readonly<Record<string, readonly string[]>> = {
-  "docs/Exaix_User_Guide.md": [
-    "exactl",
+  "docs/user_guide/cli-basics.md": ["exactl"],
+  "docs/user_guide/monitoring.md": [
     "exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --eval-run-id run-042",
     "exactl log export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --stdout",
@@ -127,12 +127,13 @@ async function markdownFiles(dir: string, deep: boolean): Promise<string[]> {
   return files;
 }
 
-Deno.test("every exactl invocation in docs/*.md and .copilot skill files passes validateExample", async () => {
+Deno.test("every exactl invocation in docs/*.md, docs/user_guide/*.md and .copilot skill files passes validateExample", async () => {
   const root = createExaCtlCommand();
   const nodes = walkCommandTree(root);
   const globalFlags = globalOptionsOf(root);
   const files = [
     ...await markdownFiles(join(REPO_ROOT, "docs"), false),
+    ...await markdownFiles(join(REPO_ROOT, "docs", "user_guide"), false),
     ...await markdownFiles(join(REPO_ROOT, ".copilot", "skills"), true),
   ].filter((path) => !SKIPPED_DOCS.has(relative(REPO_ROOT, path)));
   const failures: string[] = [];

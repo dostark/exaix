@@ -329,7 +329,7 @@ exactl eval run --scenario tests/scenario_framework/scenarios/swe_tasks/fix-bug-
 exactl eval run --scenario tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all.yaml --cell claude-code
 ```
 
-See `docs/Exaix_User_Guide.md` §2.5a for `[cli_delegate]` config and auth setup.
+See `docs/user_guide/session-delegation.md` for `[cli_delegate]` config and auth setup.
 
 ### Memory Evaluation (Phase 148)
 

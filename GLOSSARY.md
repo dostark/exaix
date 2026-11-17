@@ -62,7 +62,7 @@ A soft ranking hint (`cheapest` or `fastest`) that scores candidate providers wi
 
 ### Required Capabilities (model resolution and intent)
 
-A hard filter that excludes providers lacking **all** listed capabilities. Values include `chat`, `streaming`, `vision`, `tools`, and `multi-model`. Only available in blueprint frontmatter (no CLI flag). See `docs/Exaix_User_Guide.md §6.2` for the per-provider support matrix.
+A hard filter that excludes providers lacking **all** listed capabilities. Values include `chat`, `streaming`, `vision`, `tools`, and `multi-model`. Only available in blueprint frontmatter (no CLI flag). See `docs/user_guide/agent-features.md` for the per-provider support matrix.
 
 ### Provider
 

@@ -8,11 +8,11 @@
  * the scenario-framework README points at the authoring gate tasks.
  */
 
+import { readUserGuide } from "./helpers.ts";
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 
 const CONTRIBUTING_PATH = "CONTRIBUTING.md";
-const USER_GUIDE_PATH = "docs/Exaix_User_Guide.md";
 const COMMENTS_DOC_PATH = "scripts/check_ste100_comments.md";
 const SCENARIO_README_PATH = "tests/scenario_framework/README.md";
 const BLUEPRINTS_SKILLS_README_PATH = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/README.md`;
@@ -44,7 +44,7 @@ Deno.test("CONTRIBUTING names the two authoring gate tasks", async () => {
 });
 
 Deno.test("User Guide documents the communication requirement", async () => {
-  const guide = await read(USER_GUIDE_PATH);
+  const guide = await readUserGuide();
   const lower = guide.toLowerCase();
   assert(
     lower.includes("asd-ste100") || lower.includes("ste100") || lower.includes("communication requirement"),
@@ -53,7 +53,7 @@ Deno.test("User Guide documents the communication requirement", async () => {
 });
 
 Deno.test("User Guide states token savings are not guaranteed", async () => {
-  const guide = await read(USER_GUIDE_PATH);
+  const guide = await readUserGuide();
   assertStringIncludes(
     guide.toLowerCase(),
     "no guaranteed token savings",

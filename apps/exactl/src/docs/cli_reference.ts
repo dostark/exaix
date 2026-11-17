@@ -327,7 +327,7 @@ export function renderCliReference(input: ICliReferenceInput): ICliReference {
     leaves.map((leaf) => [
       `\`${COMMAND_PROGRAM} ${pathKey(leaf.node.path)}\``,
       leaf.doc.summary,
-      `[${leaf.node.path[0]}](cli/${pageName(leaf.node.path[0])}${
+      `[${leaf.node.path[0]}](../cli/${pageName(leaf.node.path[0])}${
         leaf.node.path.length > 1 ? `#${anchorOf(leaf.node.path)}` : ""
       })`,
     ]),

@@ -2,7 +2,7 @@
 /**
  * @module GenerateCliReference
  * @path scripts/generate_cli_reference.ts
- * @description Writes the generated exactl CLI reference from the command tree and the doc records: docs/cli pages, the JSON manifest and the table of the User Guide.
+ * @description Writes the generated exactl CLI reference from the command tree and the doc records: docs/cli pages, the JSON manifest and the command table of the CLI Basics page of the user guide.
  *
  * Usage:
  *   deno task docs:cli
@@ -19,7 +19,7 @@ import { CliEdition, renderCliReference } from "../apps/exactl/src/docs/cli_refe
 const REPO_ROOT = join(import.meta.dirname ?? ".", "..");
 const SOLO_OUTPUT_DIR = join(REPO_ROOT, "docs", "cli");
 const TEAM_OUTPUT_DIR = join(REPO_ROOT, "exaix-team", "docs", "cli");
-const USER_GUIDE = join(REPO_ROOT, "docs", "Exaix_User_Guide.md");
+const USER_GUIDE = join(REPO_ROOT, "docs", "user_guide", "cli-basics.md");
 const SOLO_MANIFEST = join(SOLO_OUTPUT_DIR, "exactl-cli.json");
 const BLOCK_START = "<!-- exactl-reference:start -->";
 const BLOCK_END = "<!-- exactl-reference:end -->";
@@ -47,7 +47,9 @@ async function updateUserGuide(table: string): Promise<void> {
   const text = await Deno.readTextFile(USER_GUIDE);
   const start = text.indexOf(BLOCK_START);
   const end = text.indexOf(BLOCK_END);
-  if (start === -1 || end === -1 || end < start) throw new Error(`The User Guide has no ${BLOCK_START} block.`);
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error(`The CLI Basics page of the user guide has no ${BLOCK_START} block.`);
+  }
   const next = `${text.slice(0, start + BLOCK_START.length)}\n\n${table}\n\n${text.slice(end)}`;
   if (next !== text) await Deno.writeTextFile(USER_GUIDE, next);
 }

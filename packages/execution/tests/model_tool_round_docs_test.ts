@@ -16,7 +16,7 @@ import { ToolsRoundLoop } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 
 const REPO_ROOT = new URL("../../../", import.meta.url);
-const GUIDE_HEADING = "### Parallel tool calls";
+const GUIDE_HEADING = "## Parallel tool calls";
 const ARCHITECTURE_HEADING = "#### Parallel tool-round policy and provider profiles";
 const TOOLS_HEADING = "## Native Tool Calls per Response";
 const CODE_STYLE_HEADING = "## Native Tool-Round Replay";
@@ -86,7 +86,7 @@ function issueCodesFor(key: string, value: number): string[] {
   return parsed.error.issues.filter((issue) => issue.path.join(".") === key).map((issue) => issue.code);
 }
 
-const guide = await readDoc("docs/Exaix_User_Guide.md");
+const guide = await readDoc("docs/user_guide/tool-guidance.md");
 const architecture = await readDoc("ARCHITECTURE.md");
 const referenceData = await readDoc("docs/Reference_Data.md");
 const tools = await readDoc(".copilot/docs/TOOLS.md");
@@ -194,7 +194,7 @@ const ENFORCEMENT_TESTS = [
 ] as const;
 
 Deno.test("[model_tool_round_docs] the User Guide names the limits each loop enforces, and tests prove them", async () => {
-  const section = sectionOf(await readDoc("docs/Exaix_User_Guide.md"), GUIDE_HEADING).replace(/\s+/g, " ");
+  const section = sectionOf(await readDoc("docs/user_guide/tool-guidance.md"), GUIDE_HEADING).replace(/\s+/g, " ");
   assertStringIncludes(section, "The response, argument and replay limits apply to both loops.");
   assertStringIncludes(section, "reuses a call id from an earlier round");
   for (const [path, titleFragment] of ENFORCEMENT_TESTS) {

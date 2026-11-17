@@ -48,8 +48,8 @@ function section(text: string, heading: string): string {
 
 Deno.test("User Guide documents the openai-chat keys, presets, secrets and pinned models", async () => {
   const guide = await readUserGuide();
-  const compatible = section(guide, "### 11.6 Supported Providers") +
-    section(guide, "### 5.3a Execution Configuration") +
+  const compatible = section(guide, "### Supported Providers") +
+    section(guide, "### Execution Configuration") +
     section(await readModelSettings(), "## OpenAI-compatible Chat Completions (`openai-chat`)");
   for (const token of [...COMPATIBLE_KEYS, ...PRESETS, ...SECRET_VARIABLES, "openai-chat", "[ai.compatible]"]) {
     assertStringIncludes(compatible, token);

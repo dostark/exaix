@@ -6,7 +6,7 @@ Memory bank and vector memory abstractions for Exaix.
 
 `@exaix/memory` owns **structured long-term knowledge storage** — project context, execution history, cross-project learnings, and pending memory proposals. It provides both programmatic access (via `MemoryBankService`) and CLI access (via `exactl memory` commands).
 
-For CLI usage, see `docs/Exaix_User_Guide.md` §3.2 (Memory Banks). For schema definitions, see `packages/schemas/src/memory_bank.ts`.
+For CLI usage, see `docs/user_guide/workspace-and-memory.md` (Memory Banks). For schema definitions, see `packages/schemas/src/memory_bank.ts`.
 
 ## Data Schemas
 
@@ -34,6 +34,6 @@ Schemas are defined in `@exaix/schemas`:
 
 ## See Also
 
-- [`docs/Exaix_User_Guide.md`](../../docs/Exaix_User_Guide.md) §3.2 — CLI usage and directory structure
+- [`docs/user_guide/workspace-and-memory.md`](../../docs/user_guide/workspace-and-memory.md) — CLI usage and directory structure
 - [@exaix/schemas](../../packages/schemas/) — Validation schemas for all memory data types
 - [@exaix/portal](../../packages/portal/) — Knowledge gathering pipeline for portals

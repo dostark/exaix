@@ -98,8 +98,8 @@ steps:
 
 `strategy` is valid only on a `declared` step (the default when `execution_mode` is omitted) —
 setting it on a `dynamic` step is a schema validation error, since a dynamic step already
-selects its own tools at runtime. See `docs/Exaix_User_Guide.md`'s "Flow Step Execution
-Strategy" section for the full field documentation and the `react` vs `cli_delegate`
+selects its own tools at runtime. See "Flow Step Execution
+Strategy" in `docs/user_guide/blueprints-and-flows.md` for the full field documentation and the `react` vs `cli_delegate`
 control-axis tradeoff.
 
 ## Per-step effort/thinking

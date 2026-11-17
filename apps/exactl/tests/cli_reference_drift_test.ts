@@ -15,7 +15,7 @@ import { CliEdition, renderCliReference } from "../src/docs/cli_reference.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 const CLI_DOCS_DIR = join(REPO_ROOT, "docs", "cli");
-const USER_GUIDE = join(REPO_ROOT, "docs", "Exaix_User_Guide.md");
+const USER_GUIDE = join(REPO_ROOT, "docs", "user_guide", "cli-basics.md");
 const GENERATOR = join(REPO_ROOT, "scripts", "generate_cli_reference.ts");
 const REGENERATE_HINT = "Run `deno task docs:cli` and commit the result.";
 const BLOCK_START = "<!-- exactl-reference:start -->";

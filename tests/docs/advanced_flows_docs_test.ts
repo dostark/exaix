@@ -41,8 +41,8 @@ function sectionOf(markdown: string, heading: string, level: number): string {
 
 async function authoringGuide(): Promise<string> {
   const guide = await readUserGuide();
-  return sectionOf(guide, "##### Flow Step Types", 5) +
-    sectionOf(guide, "##### Advanced Flow Controls", 5);
+  return sectionOf(guide, "### Flow Step Types", 3) +
+    sectionOf(guide, "### Advanced Flow Controls", 3);
 }
 
 function blocks(markdown: string, info: string): string[] {
@@ -156,7 +156,7 @@ Deno.test("[docs] the guide and Model Settings say --overlay reads TOML directly
 
 Deno.test("[docs] Flow Commands documents availability in exactl flow list", async () => {
   const guide = await readUserGuide();
-  const commands = flat(sectionOf(guide, "#### **Flow Commands** - Manage multi-agent workflows", 4));
+  const commands = flat(sectionOf(guide, "## **Flow Commands** - Manage multi-agent workflows", 2));
   assertStringIncludes(commands, "exactl flow list");
   assertStringIncludes(commands, "unavailable (needs voting)");
   assertStringIncludes(commands, "tierEligible");
@@ -218,7 +218,7 @@ const GATE_WAIT_CLAIM =
 
 Deno.test("[docs] every step type in the guide table is a FlowStepType member", async () => {
   const guide = await readUserGuide();
-  const table = sectionOf(guide, "##### Flow Step Types", 5);
+  const table = sectionOf(guide, "### Flow Step Types", 3);
   const types = firstColumn(table);
   assert(types.length >= 4);
   const valid = new Set<string>(Object.values(FlowStepType));
@@ -237,7 +237,7 @@ Deno.test("[docs] built-in evaluation criteria in the guide are library criteria
 });
 
 Deno.test("[docs] the guide shows the exact None label for flows without capabilities", async () => {
-  const commands = flat(sectionOf(await readUserGuide(), "#### **Flow Commands** - Manage multi-agent workflows", 4));
+  const commands = flat(sectionOf(await readUserGuide(), "## **Flow Commands** - Manage multi-agent workflows", 2));
   assertStringIncludes(commands, "shows `None`");
 });
 

@@ -8,6 +8,7 @@
  */
 
 import { assertEquals, assertNotMatch, assertStringIncludes } from "@std/assert";
+import { readUserGuide } from "./helpers.ts";
 import { join } from "@std/path";
 import { MODEL_SETTINGS_DOC, OTHER_VARIABLES, renderModelSettings } from "../../scripts/generate_model_settings.ts";
 
@@ -27,7 +28,7 @@ Deno.test("[model settings] every free-standing variable is still read by the fi
 });
 
 Deno.test("[model settings] the User Guide points to the page and no longer holds the moved sections", async () => {
-  const guide = await Deno.readTextFile(join(REPO_ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   assertStringIncludes(guide, "Model_Settings.md");
   assertNotMatch(guide, /#### 2\.4\.1 API Key Configuration/);
 });

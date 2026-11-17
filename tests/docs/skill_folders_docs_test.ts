@@ -17,12 +17,17 @@ import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { REPO_ROOT } from "@exaix/testing";
+import { readUserGuide } from "./helpers.ts";
 
-const GUIDE = "docs/Exaix_User_Guide.md";
+const GUIDE_DIR = "docs/user_guide";
+const GUIDE_FILES: string[] = [...Deno.readDirSync(GUIDE_DIR)]
+  .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
+  .map((entry) => `${GUIDE_DIR}/${entry.name}`)
+  .sort();
 const REFERENCE = "docs/Reference_Data.md";
 const SAMPLE_CONFIG = "templates/exa.config.sample.toml";
 const ACTIVE_GUIDANCE = [
-  GUIDE,
+  ...GUIDE_FILES,
   REFERENCE,
   "ARCHITECTURE.md",
   "docs/CODE_STYLE.md",
@@ -86,7 +91,7 @@ async function help(...args: string[]): Promise<string> {
 }
 
 Deno.test("[skill docs] the User Guide documents every registered skill command and its public options", async () => {
-  const guide = await read(GUIDE);
+  const guide = await readUserGuide();
   const group = await help("skill");
   for (const command of SKILL_COMMANDS) {
     assert(new RegExp(`^\\s+${command}\\b`, "m").test(group), `exactl skill registers ${command}`);
@@ -153,7 +158,7 @@ Deno.test("[skill docs] the reference data documents the scope table and the app
   const reference = await read(REFERENCE);
   assertStringIncludes(reference, "skill_revision_scopes", "the scope table is documented");
   assert(/append-only/i.test(reference), "the retention rule is documented");
-  const guide = await read(GUIDE);
+  const guide = await readUserGuide();
   assertStringIncludes(guide, "own portal", "the Guide explains the portal rule for history reads");
   assert(/control (byte|character)s?/i.test(guide), "the Guide explains that control bytes are removed from output");
 });

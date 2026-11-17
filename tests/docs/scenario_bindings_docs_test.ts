@@ -107,9 +107,9 @@ Deno.test("[docs] the Evaluation guide documents presets, judge bindings, pins a
 });
 
 Deno.test("[docs] no doc presents a meta/qwen preference route for Ollama", async () => {
-  const files = [AUTHORING, SCENARIO_DSL, EVALUATION, "docs/Exaix_User_Guide.md", "ARCHITECTURE.md"];
+  const files = [AUTHORING, SCENARIO_DSL, EVALUATION, "ARCHITECTURE.md", "user guide"];
   for (const file of files) {
-    const text = await Deno.readTextFile(file);
+    const text = file === "user guide" ? await readUserGuide() : await Deno.readTextFile(file);
     assert(!/^\s*(meta|qwen)\s*=\s*\[/m.test(text), `${file} declares a meta/qwen preference list`);
     assert(!/preferences[^\n]*\b(meta|qwen)\b\s*[:=]/.test(text), `${file} routes Ollama by a meta/qwen preference`);
   }

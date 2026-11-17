@@ -6,6 +6,7 @@
  * @description Doc-content assertions for the post-execution verification feature.
  */
 
+import { readUserGuide } from "../docs/helpers.ts";
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -21,7 +22,7 @@ function fencedTomlBlocks(markdown: string): string[] {
 Deno.test({
   name: "User Guide both-kind verification example parses through ConfigSchema",
   fn: async () => {
-    const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+    const guide = await readUserGuide();
     const block = fencedTomlBlocks(guide).find((candidate) =>
       candidate.includes('kind = "deno_lint"') && candidate.includes('kind = "deno_task"')
     );
@@ -53,7 +54,7 @@ Deno.test({
 Deno.test({
   name: "User Guide documents the lint policy, defaults and failure classes",
   fn: async () => {
-    const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+    const guide = await readUserGuide();
     for (
       const token of [
         'kind = "deno_lint"',
@@ -96,7 +97,7 @@ Deno.test("ARCHITECTURE describes the terminal lint snapshot and review join", a
 });
 
 Deno.test("User Guide documents portals[].verification", async () => {
-  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   for (
     const token of [
       "portals[].verification",
@@ -113,7 +114,7 @@ Deno.test("User Guide documents portals[].verification", async () => {
 });
 
 Deno.test("User Guide distinguishes portals[].verification from exactl portal verify", async () => {
-  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   assertStringIncludes(guide, "unrelated to `exactl portal verify`");
   assertStringIncludes(guide, "updatePortalVerification");
 });
@@ -141,14 +142,14 @@ Deno.test("ARCHITECTURE and the event taxonomy describe the verification stage",
 });
 
 Deno.test("User Guide documents the scoped-only verification arg rule", async () => {
-  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   for (const token of ["--allow-<name>=<values>", "--permission-set", "short permission flags", "bounded in memory"]) {
     assertStringIncludes(guide, token);
   }
 });
 
 Deno.test("User Guide documents verification_status in exactl review show", async () => {
-  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   assertStringIncludes(guide, "`exactl review show` prints `verification_status`");
 });
 
@@ -160,7 +161,7 @@ Deno.test("Reference_Data documents the repair phase on trace-scoped plan.execut
 
 Deno.test("docs-integrity-claims: the integrity control is described at the layer that enforces it", async () => {
   const readme = await Deno.readTextFile(join(ROOT, "packages", "lint-policy", "README.md"));
-  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const guide = await readUserGuide();
   for (const text of [readme, guide]) {
     assertStringIncludes(text, "containment");
     assertStringIncludes(text, "installer");

@@ -12,14 +12,18 @@ import { readUserGuide } from "./helpers.ts";
 
 // User Guide Structure Tests
 
-Deno.test("User Guide has main sections", async () => {
-  const guide = await readUserGuide();
-
-  // Should have numbered main sections
-  assertStringIncludes(guide, "## 1.");
-  assertStringIncludes(guide, "## 2.");
-  assertStringIncludes(guide, "## 3.");
-  assertStringIncludes(guide, "## 4.");
+Deno.test("User Guide has an index that links every topic file, and each file has a title", async () => {
+  const readme = await Deno.readTextFile("docs/user_guide/README.md");
+  const names: string[] = [];
+  for await (const entry of Deno.readDir("docs/user_guide")) {
+    if (entry.isFile && entry.name.endsWith(".md") && entry.name !== "README.md") names.push(entry.name);
+  }
+  assert(names.length > 0, "the user guide has topic files");
+  for (const name of names.sort()) {
+    assertStringIncludes(readme, `(${name})`, `the index links ${name}`);
+    const text = await Deno.readTextFile(`docs/user_guide/${name}`);
+    assert(/^# \S/.test(text), `${name} starts with a title`);
+  }
 });
 
 Deno.test("User Guide has Introduction section", async () => {

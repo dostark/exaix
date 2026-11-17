@@ -5,11 +5,19 @@
  * including Markdown section parsing and link validation.
  */
 
+const USER_GUIDE_DIR = "docs/user_guide";
+
 /**
- * Read the User Guide document
+ * Read the User Guide: every topic file of docs/user_guide, in name order, joined into one text.
  */
 export async function readUserGuide(): Promise<string> {
-  return await Deno.readTextFile("docs/Exaix_User_Guide.md");
+  const names: string[] = [];
+  for await (const entry of Deno.readDir(USER_GUIDE_DIR)) {
+    if (entry.isFile && entry.name.endsWith(".md")) names.push(entry.name);
+  }
+  names.sort();
+  const parts = await Promise.all(names.map((name) => Deno.readTextFile(`${USER_GUIDE_DIR}/${name}`)));
+  return parts.join("\n\n");
 }
 
 /**
