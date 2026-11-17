@@ -13,11 +13,12 @@ quality/cost-aware routing and more accurate cost tracking. Everything Solo does
 unchanged in Team. Team only adds capability, it never removes or silently changes Solo
 behaviour.
 
-| You want to know                                                                               | Read                                                                                                                                                            |
-| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The request flags (`--model-size`, `--characteristic`, `--thinking`) and the curation commands | [User Guide, Request Commands](user_guide/requests-plans-reviews.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry) |
-| The config keys, environment variables, bindings and presets that set a provider or model      | [Model Settings](Model_Settings.md)                                                                                                                             |
-| How Exaix turns those inputs into one model, and how to read the result                        | This page                                                                                                                                                       |
+| You want to know                                                                          | Read                                                                  |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| The request flags (`--model-size`, `--characteristic`, `--thinking`)                      | [User Guide, Requests](user_guide/requests-plans-reviews.md#requests) |
+| The commands that curate and list models (`exactl model candidates`, `exactl model list`) | [Section 3](#3-curating-your-preferred-providers) of this page        |
+| The config keys, environment variables, bindings and presets that set a provider or model | [Model Settings](Model_Settings.md)                                   |
+| How Exaix turns those inputs into one model, and how to read the result                   | This page                                                             |
 
 ---
 
@@ -117,10 +118,43 @@ tries the list before any scoring, and the first healthy, registered provider wi
   an entry that the base list lacks.
 - Curated lists work the same in Solo and Team. They are always checked before scoring.
 
-The commands (`exactl model candidates`, `exactl model list`) are in the
-[User Guide](user_guide/requests-plans-reviews.md#exactl-model-candidates--exactl-model-list--solo-model-curation-the-curated-model-registry).
 The list lives under `model_sizes.<SIZE>.candidates` in `exa.config.toml`, described in
-[Model Settings](Model_Settings.md#model-configuration).
+[Model Settings](Model_Settings.md#model-configuration). You do not edit the file by hand: the
+commands below write the same setting that the resolver reads, so there is no separate database.
+Every option is in the [model command reference](cli/model.md).
+
+```bash
+# Inspect the Solo model floor: one row per service that serves a model, with its author, route,
+# price source, source URL, verified date, stale flag and per-Mtok prices
+exactl model list
+
+# Only the services that serve one model, as <author>/<model>
+exactl model list --model anthropic/claude-sonnet-4
+
+# Curate the preferred providers for size M (order matters: the first healthy provider wins)
+exactl model candidates --size M anthropic ollama
+
+# Add a characteristic reorder hint (promotes ollama when --characteristic cheapest is used)
+exactl model candidates --size M --characteristic cheapest ollama
+
+# Show the current curated lists (unregistered providers are flagged "unconfigured")
+exactl model candidates --list
+
+# Clear a size's curated list (falls back to scoring)
+exactl model candidates --size M --clear
+```
+
+An ambiguous bare name that matches a model owned by more than one provider is rejected with the
+qualifying options.
+
+### Reading `exactl model list`
+
+The prices in `exactl model list` are what Exaix assumes, not facts. The `Provenance` column says where a
+price came from. It reads `static` for a known, dated price and `unknown` for a price without a source.
+`Source URL` and `Verified` say when the price was last checked, and `Stale` reads `yes` when the price is
+older than `model_registry.price_staleness_max_days` (default 90). The `Route` column is derived from the
+service adapter: `*-cli` is `subscription`, `ollama`, `llamacpp` and `self-hosted` are `local`,
+`openrouter` is `aggregator`, and every other service is `native`.
 
 ## 4. Characteristics: preferences, not filters
 
@@ -170,6 +204,21 @@ Everything below only applies once it's on. With it off, Team behaves exactly li
 makes no extra network calls at all. By default the catalog refreshes every six hours and
 prices refresh daily. [Team model registry](Model_Settings.md#team-model-registry-live-catalog)
 lists every key.
+
+With the catalog on, `exactl model candidates` validates an explicit entry against the live catalog and
+admits a real model that you have not used before, where Solo passes the entry through. Two more commands
+become available. `exactl model refresh` needs the Team live catalog, and it does nothing in Solo.
+
+```bash
+# Trigger or inspect the live refresh cycle
+exactl model refresh
+
+# Append an advisory benchmark-score column to the model list
+exactl model list --benchmark swe_bench_verified
+```
+
+The **Model Registry** row of the edition table in [Reference Data](Reference_Data.md#edition-model--component-availability)
+shows how this fits the Solo, Team and Enterprise split.
 
 ### What gets added to your catalog automatically
 

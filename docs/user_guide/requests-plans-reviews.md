@@ -2,207 +2,11 @@
 
 Create requests, clarify them, approve plans, review agent output and inspect git history. Part of the [Exaix User Guide](README.md).
 
-## **Request Commands** - Primary Interface for Creating Requests
+## Requests
 
-> **⚠️ RECOMMENDED:** Use `exactl request create` to create requests. Do NOT manually create files in `/Workspace/Requests/` — this is error-prone and bypasses validation.
+A request tells Exaix what you want done. You describe the work in plain language, and you can name an agent role or a flow, a portal and acceptance criteria. Exaix scores the request, asks questions when it is unclear, writes a plan, waits for your approval, runs the agents and hands you the result as a review.
 
-The `exactl request create` command is the **primary interface** for submitting work to Exaix agents:
-
-```bash
-# Basic usage - just describe what you want
-exactl request create "Implement user authentication for the API"
-
-# With options
-exactl request create "Add rate limiting" --agent senior_coder --priority high
-exactl request create "Fix security bug" --priority critical --portal MyProject
-exactl request create "Patch release branch" --portal MyProject --target-branch release_1.2
-exactl request create "Build a web app" --flow web-development
-
-# From file (for complex/long requests)
-exactl request create --file ~/requirements.md
-exactl request create --file ./feature-spec.md --agent architect
-
-# List pending requests
-exactl request list
-exactl request list --status pending
-
-# Show request details
-exactl request show <trace-id>
-exactl request show a1b2c3d4
-
-# Dry run (see what would be created)
-exactl request create "Test" --dry-run
-
-# JSON output (for scripting)
-exactl request create "Test" --json
-
-# Inject skills to override agent limitations
-exactl request create "Audit and write report" --agent security-expert --skills documentation-driven
-
-# Trigger immediate intent analysis
-exactl request create "Implement a new authentication flow" --analyze --engine llm
-exactl request create "Update documentation" --analyze --engine heuristic
-
-# Analyze an existing request
-exactl request analyze a1b2c3d4
-exactl request analyze "Existing Request Subject" --engine llm
-```
-
-**Options:**
-
-| Option                  | Short | Description                                                                                                                                                  |
-| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--agent`               |       | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                                                             |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                                                                    |
-| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                                                                |
-| `--portal`              |       | Portal alias for project context                                                                                                                             |
-| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                                                  |
-| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                                                                             |
-| `--file`                | `-f`  | Read description from file                                                                                                                                   |
-| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                                                                              |
-| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                                                                    |
-| `--interactive`         | `-i`  | Interactive mode with prompts                                                                                                                                |
-| `--dry-run`             |       | Preview without creating                                                                                                                                     |
-| `--dry-run-context`     |       | Print a projected input-token breakdown (per-segment token estimates, budget, compaction trigger, cost) without writing a request file or calling a real LLM |
-| `--json`                |       | Machine-readable output                                                                                                                                      |
-| `--analyze`             |       | Trigger immediate intent analysis                                                                                                                            |
-| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                                                                                |
-| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (model resolution and intent)                                           |
-| `--thinking`            |       | Extended thinking: bare `--thinking` means `true`; accepts `true`, `false`, or `auto` (model resolution and intent)                                          |
-| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high`, or `auto` — `auto` asks the system to decide per request (model resolution and intent)                      |
-| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (model resolution and intent)                                  |
-| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (model resolution and intent)                                                     |
-
-**Example workflow:**
-
-```bash
-# 1. Create a request with one command
-$ exactl request create "Add input validation to all API endpoints"
-✓ Request created: request-a1b2c3d4.md
-  Trace ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890
-  Priority: normal
-  Agent: default
-  Path: /home/user/Exaix/Workspace/Requests/request-a1b2c3d4.md
-  Next: Daemon will process this automatically
-
-# 2. Check if plan was generated
-$ exactl plan list
-📋 Plans (1):
-
-🔍 add-validation-a1b2c3d4
-   Status: review
-   Trace: a1b2c3d4...
-
-# 3. List your requests
-$ exactl request list
-📥 Requests (1):
-
-🟢 a1b2c3d4
-   Status: pending
-   Agent: default
-   Created: user@example.com @ 2025-11-27T10:30:00.000Z
-```
-
-**Structured criteria example:**
-
-```bash
-exactl request create "Implement file upload validation" \
-  --agent senior-coder \
-  --acceptance-criteria "All existing tests pass" \
-  --acceptance-criteria "Payloads over 1MB are rejected" \
-  --expected-outcome "Upload endpoint documents size limits"
-```
-
-Explicit criteria improve request quality in three ways: they raise the analyzer's confidence about what success looks like, they feed directly into downstream evaluation, and they reduce clarification churn for borderline requests.
-
-**Model intent examples (model resolution and intent):**
-
-```bash
-# Large model with extended reasoning for complex tasks
-exactl request create "Design authentication architecture" --model-size L --thinking --effort high
-
-# Let the system decide the effort tier from task complexity (auto resolution)
-exactl request create "Design authentication architecture" --effort auto
-
-# Quick, cheap task — small model, no thinking
-exactl request create "Format all files" --model-size S --characteristic cheapest
-
-# Balanced: medium model, some reasoning, speed priority
-exactl request create "Refactor utils module" --model-size M --thinking --effort low --characteristic fastest
-
-# Pin to a specific provider but let ModelResolver pick the model
-exactl request create "Audit dependencies" --model-size XL --preferred-provider anthropic
-```
-
-The resolver turns these flags into one provider and model, records the reason, and journals a `model.resolved` event. [Model Resolution](../Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the rules, the reasons and the fixed client of daemon execution.
-
-### `exactl model candidates` & `exactl model list` — Solo model curation (the curated model registry)
-
-Curate the per-size preferred lists and inspect the Solo model floor without editing TOML by hand.
-Curated lists are written back to `exa.config.toml` (`model_sizes.<SIZE>.candidates`) — the same
-surface the resolver reads — so there is no separate database.
-
-```bash
-# Inspect the Solo model floor: one row per service that serves a model, with its author, route,
-# price source, source URL, verified date, stale flag and per-Mtok prices
-exactl model list
-
-# Only the services that serve one model, as <author>/<model>
-exactl model list --model anthropic/claude-sonnet-4
-
-# Curate the preferred providers for size M (order matters — first healthy provider wins)
-exactl model candidates --size M anthropic ollama
-
-# Add a characteristic reorder hint (promotes ollama when --characteristic cheapest is used)
-exactl model candidates --size M --characteristic cheapest ollama
-
-# Show the current curated lists (unregistered providers are flagged "unconfigured")
-exactl model candidates --list
-
-# Clear a size's curated list (falls back to scoring)
-exactl model candidates --size M --clear
-```
-
-Prices in `model list` are what Exaix assumes, not facts. The `Provenance` column says where a price came
-from, `Source URL` and `Verified` say when it was last checked, and `Stale` reads `yes` when the price is older
-than `model_registry.price_staleness_max_days` (default 90). The `Route` column is derived from the service
-adapter: `*-cli` is `subscription`, `ollama`, `llamacpp` and `self-hosted` are `local`, `openrouter` is
-`aggregator`, and every other service is `native`.
-
-Notes:
-
-- Entries are **provider names**, not `provider:model` pairs. An ambiguous bare name that matches a
-  model owned by more than one provider is rejected with the qualifying options; an unknown
-  provider is stored but flagged `unconfigured` (a pre-curation allowance).
-- Pricing **provenance** is shown as `static` (a known, dated price) or `unknown`. A price older
-  than 90 days is marked `(stale)`. The Solo floor is offline — there is **no `models refresh`**;
-  a live, auto-refreshed catalog arrives with the Team edition (the Team edition model registry).
-
-### Team: live model catalog (the Team edition model registry)
-
-Enable the self-updating catalog with `model_registry.enabled = true`. [Team model registry](../Model_Settings.md#team-model-registry-live-catalog) lists every key of the `[model_registry]` block.
-
-With the catalog enabled, `exactl model candidates` validates an explicit entry against the live
-catalog (and auto-admits a real-but-unused model on first use, instead of Solo's pass-through),
-and two more commands become available:
-
-```bash
-# Trigger/inspect the live refresh cycle
-exactl model refresh
-
-# Append an advisory benchmark-score column to the model list
-exactl model list --benchmark swe_bench_verified
-```
-
-See [`docs/Model_Resolution.md`](../Model_Resolution.md) for the full explanation of what each
-setting does — curation, characteristics (including the benchmark-driven `best`), the live
-catalog, multi-route pricing, and cost accuracy.
-
-See the **Model Registry** row of the edition comparison table in
-[`docs/Reference_Data.md`](../Reference_Data.md#edition-model--component-availability) for how
-this fits into the overall Solo / Team / Enterprise split.
-
-**Why CLI instead of manual files?**
+> **Recommended:** Create requests with `exactl request create`. Do not create files in `Workspace/Requests/` by hand, because that bypasses validation.
 
 | Aspect         | Manual File Creation     | `exactl request create`    |
 | -------------- | ------------------------ | -------------------------- |
@@ -212,6 +16,46 @@ this fits into the overall Solo / Team / Enterprise split.
 | Audit trail    | Not logged               | Logged to Activity Journal |
 | Error handling | Silent failures          | Clear error messages       |
 | Speed          | ~30 seconds              | ~2 seconds                 |
+
+### The path of a request
+
+1. **Create.** `exactl request create "<what you want>"` writes the request file, assigns a trace ID and logs the action. For a long description, use `--file <path>`.
+1. **Quality gate.** Exaix scores the request before an agent runs. It lets the request proceed, enriches it, or asks clarifying questions that you answer with `exactl request clarify`. See [Request Quality Gate](#request-quality-gate--how-scoring-works).
+1. **Plan.** The agent writes a plan, and `exactl plan list` shows plans that wait for your review. See [Plans](#plans).
+1. **Execute.** When you approve the plan, the daemon detects it, runs it, and records every step in the Activity Journal under the trace ID.
+1. **Review.** You review the result and approve it or reject it. See [Reviews](#reviews).
+
+`exactl request list` shows the status of each request, for example `pending`, `needs_clarification` or `planned`, and `exactl request show <trace-id>` shows one request.
+
+### Choosing how a request runs
+
+- **Agent or flow.** `--agent <role>` selects an agent role, and `--flow <name>` selects a multi-agent flow. The two exclude each other.
+- **Project.** `--portal <alias>` runs the request against a project, and `--target-branch <branch>` sets the branch that the review merges into. See [Portals](portals.md).
+- **Priority.** `--priority` takes `low`, `normal`, `high` or `critical`.
+- **Skills.** `--skills documentation-driven` injects skills into the agent, for example when a role needs a skill it does not have.
+- **Acceptance criteria.** `--acceptance-criteria` and `--expected-outcome` are repeatable. Explicit criteria improve request quality in three ways: they raise the analyzer's confidence about what success looks like, they feed directly into downstream evaluation, and they reduce clarification churn for borderline requests.
+
+### Choosing the model
+
+Without options, Exaix picks the model for you. Four flags steer the choice: `--model-size S|M|L|XL`, `--thinking`, `--effort low|medium|high|auto` and `--characteristic cheapest|fastest`. The flag `--preferred-provider <provider>` narrows the providers.
+
+```bash
+# A hard design task: a large model with extended reasoning
+exactl request create "Design authentication architecture" --model-size L --thinking --effort high
+
+# A small, cheap task
+exactl request create "Format all files" --model-size S --characteristic cheapest
+```
+
+The resolver turns these flags into one provider and model, records the reason, and journals a `model.resolved` event. [Model Resolution](../Model_Resolution.md#2-how-the-choice-gets-made) explains the order of the rules, the reasons and the fixed client of daemon execution, and [section 3](../Model_Resolution.md#3-curating-your-preferred-providers) shows how to curate the preferred providers.
+
+### Previewing and scripting
+
+- `--dry-run` shows what would be created without writing it, and `--dry-run-context` prints a projected input-token breakdown.
+- `--analyze` runs an immediate intent analysis, and `--engine heuristic|llm|hybrid` chooses the engine. `exactl request analyze <id>` analyzes a request that exists.
+- `--json` prints machine-readable output for scripts.
+
+Every option is in the [request command reference](../cli/request.md).
 
 ## **`exactl request clarify` — Interactive Clarification**
 
@@ -353,95 +197,34 @@ the captured bytes is written to stdout.
 | `2`  | Invalid input — malformed UUID, `--json`+`--raw` together, ambiguous `--raw`, or `--raw` to a terminal |
 | `3`  | No capture — legacy, expired, or never-captured trace/record (never reconstructs a prompt)             |
 
-## **Plan Commands** - Review AI-generated plans
+## Plans
 
-Review and approve plans before agents execute them:
+A plan is the agent's proposal for how to do a request. Nothing runs until you approve it.
 
-> **⚠️ IMPLEMENTATION STATUS:** Plan approval moves plans to `Workspace/Active/` where they are detected and parsed (Steps 5.12.1-5.12.2 ✅). Automatic agent-driven execution (Steps 5.12.3-5.12.6) is in development. In the agent-driven model, LLM agents will have direct portal access through scoped tools (read_file, write_file, git_create_branch, git_commit) and will create reviews themselves. See [ARCHITECTURE.md](../../ARCHITECTURE.md#plan-execution-flow) for details.
+1. `exactl plan list` shows the plans that wait for review, and `--status review` filters the list. `exactl plan show <plan-id>` shows one plan.
+1. `exactl plan approve <plan-id>` approves it. The plan moves to `Workspace/Active/`, where the daemon detects it, parses it and runs it. See [Architecture](../../ARCHITECTURE.md#plan-execution-flow) for the flow.
+1. `exactl plan reject <plan-id> --reason "..."` rejects it with a reason, and `exactl plan revise <plan-id> --comment "..."` asks for changes. Repeat `--comment` for each point.
 
-```bash
-# List all plans awaiting review
-exactl plan list
-exactl plan list --status review          # Filter by status
+A running plan can pause when it needs a structural change. [Security and Safety](security-and-safety.md) describes plan amendments, which you approve in the same way. Every option is in the [plan command reference](../cli/plan.md).
 
-# Show plan details
-exactl plan show <plan-id>
+## Reviews
 
-# Approve a plan (moves to Workspace/Active for detection and parsing)
-exactl plan approve <plan-id>
+A review is the result of an executed plan: a git branch with code changes, or an artifact. You decide what happens to it.
 
-# Reject a plan with reason
-exactl plan reject <plan-id> --reason "Approach too risky"
+1. `exactl review list` shows the reviews that wait for you, and `--status pending` filters the list.
+1. `exactl review show <request-id>` shows the diff for code, or the content for an artifact.
+1. `exactl review approve <request-id>` merges the branch into the review's base branch, or marks the artifact approved.
+1. `exactl review reject <request-id> --reason "..."` deletes the branch, or marks the artifact rejected.
 
-# Request revisions with comments
-exactl plan revise <plan-id> \
-  --comment "Add error handling" \
-  --comment "Include unit tests"
-```
+When the portal declares post-execution checks, `exactl review show` also prints their result. See [Portals](portals.md#post-execution-verification-portalsverification). Every option is in the [review command reference](../cli/review.md).
 
-## **Review Commands** - Review agent-generated outputs
-
-After agents execute plans and create git branches or artifacts, review their outputs:
-
-```bash
-# List all pending reviews (agent-created branches and artifacts)
-exactl review list
-exactl review list --status pending
-
-# Show review details with diff (for code) or content (for artifacts)
-exactl review show <request-id>
-exactl review show feat/implement-auth-550e8400
-
-# Approve review (merges branch to main or marks artifact approved)
-exactl review approve <request-id>
-
-# Reject review (deletes branch or marks artifact rejected)
-exactl review reject <request-id> --reason "Failed code review"
-```
-
-**Cleanup behavior (code reviews):**
+### Cleanup behavior (code reviews)
 
 - **Reject:** Deletes the feature branch (best-effort cleanup if the branch is checked out in a worktree).
 - **Approve:** Merges into the review’s recorded base branch (often `main`).
   - If the review was executed in an **isolated worktree**, Exaix also removes the worktree checkout and its pointer at `Memory/Execution/{trace-id}/worktree`, and then deletes the feature branch.
   - If the review was executed on a normal branch checkout, Exaix merges but does not automatically delete the feature branch.
 - **Merge conflict on approve (worktree reviews):** Exaix attempts `git merge --abort` and removes the worktree checkout + pointer to avoid leaving orphaned worktrees. The feature branch is kept so a human can resolve and re-merge.
-
-**Example workflow:**
-
-```bash
-# 1. See what code changes are ready
-$ exactl review list
-📋 Reviews (1):
-
-📌 implement-auth (feat/implement-auth-550e8400)
-   Files: 12
-   Created: 2025-11-25 14:30:22
-   Trace: 550e8400...
-
-# 2. Review the changes
-$ exactl review show implement-auth
-📋 Review: implement-auth
-
-Branch: feat/implement-auth-550e8400
-Files changed: 12
-Commits: 3
-
-Commits:
-  a3f21b89 - Add JWT authentication
-  c4d8e123 - Add login endpoint
-  f9a23c45 - Add auth middleware
-
-Diff:
-[full diff output...]
-
-# 3. Approve or reject
-$ exactl review approve implement-auth
-✓ Review approved
-  Branch: feat/implement-auth-550e8400
-  Merged to main: 3b5f7a21
-   Files changed: 12
-```
 
 ### Execution Anomaly Surfacing
 
@@ -492,89 +275,18 @@ data that tracks execution progress) and projects a read-time classification of
 anomaly-relevant event types. No separate detection, LLM call, or write path is
 involved — events the system already emits are simply surfaced.
 
-## **Git Commands** - Repository operations with trace_id
+## Git history by trace ID
 
-Query git history and track changes by trace_id:
+Every branch and commit that agents create carries the trace ID of its request, so you can find the work of one request in the repository.
 
-```bash
-# List all branches with trace metadata
-exactl git branch list
-exactl git branch list --pattern "feat/*"     # Filter pattern
+- `exactl git branch list` lists the branches with their trace metadata, and `--pattern "feat/*"` finds the branches that agents created.
+- `exactl git status` shows the status of the repository.
+- `exactl git log --trace <trace-id>` shows all commits of one request.
 
-# Show repository status
-exactl git status
+Every option is in the [git command reference](../cli/git.md).
 
-# Search commits by trace_id
-exactl git log --trace <trace-id>
-```
+## Daily and weekly routine
 
-**Example workflow:**
+**Daily.** Start with the work that waits for you: `exactl plan list` and `exactl review list`. Read each plan before you approve it, and review each change before you merge it. At the end of the day, check that the daemon is healthy with `exactl daemon status`, as [Operations](operations.md) describes.
 
-```bash
-# Find all branches created by agents
-$ exactl git branch list --pattern "feat/*"
-🌳 Branches (3):
-
-  feat/implement-auth-550e8400
-   Last commit: a3f21b89 (11/25/2025)
-   Trace: 550e8400...
-
-  feat/add-tests-7a3c9b12
-   Last commit: b2c31a45 (11/24/2025)
-   Trace: 7a3c9b12...
-
-# Check workspace status
-$ exactl git status
-📊 Repository Status
-
-Branch: main
-
-Modified (2):
-  M src/auth/handler.ts
-  M src/shared/schemas/config.ts
-
-# Find all commits for a specific request
-$ exactl git log --trace 550e8400-e29b-41d4-a716-446655440000
-📜 Commits for trace 550e8400...
-
-a3f21b89 - Add JWT authentication
-  Author: exaix-agent
-  Date: 11/25/2025, 2:30:45 PM
-```
-
-## Common Workflows
-
-**Daily Operations:**
-
-```bash
-# Morning: Check what's pending
-exactl plan list
-exactl review list
-
-# Review and approve plans
-exactl plan show <id>
-exactl plan approve <id>
-
-# Review and merge code
-exactl review show <id>
-exactl review approve <id>
-
-# End of day: Check daemon health
-exactl daemon status
-```
-
-**Weekly Maintenance:**
-
-```bash
-# Stop daemon for backup
-exactl daemon stop
-
-# Backup workspace (see section 5.1)
-tar -czf exaix-backup-$(date +%Y%m%d).tar.gz ~/Exaix
-
-# Clean up old branches
-exactl git branch list | grep -v main | xargs git branch -d
-
-# Restart daemon
-exactl daemon start
-```
+**Weekly.** Stop the daemon and back up the workspace, as [Operations](operations.md) describes, then remove the feature branches that you no longer need and restart the daemon.
