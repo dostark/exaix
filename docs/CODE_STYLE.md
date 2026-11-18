@@ -1088,11 +1088,21 @@ The Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix 
 [guide](../packages/lint-policy/docs/style_guide.md) holds the Exaix additions. The `unslop-ts` engine holds the
 generic rules, and its [guide](../unslop-ts/docs/style_guide.md) describes them.
 
-| Task                         | Runs                                            |
-| ---------------------------- | ----------------------------------------------- |
-| `deno task lint`             | The plugin rules                                |
-| `deno task check:style`      | The script checks of `check_code_style.ts`      |
-| `deno task check:magic`      | The magic-value and duplicate-constant checks   |
-| `deno task docs:style-rules` | Regenerates the rule reference from the catalog |
+| Task                          | Runs                                                 |
+| ----------------------------- | ---------------------------------------------------- |
+| `deno task lint`              | The plugin rules                                     |
+| `deno task check:style`       | The script checks of `check_code_style.ts`           |
+| `deno task check:magic`       | The magic-value and duplicate-constant checks        |
+| `deno task check:cycles`      | The advisory import-cycle report                     |
+| `deno task check:cycles:gate` | The import-cycle gate against the committed baseline |
+| `deno task docs:style-rules`  | Regenerates the rule reference from the catalog      |
+
+`check:cycles:gate` fails on a runtime import cycle that `packages/lint-policy/cycle_baseline.json` does not list,
+and on an unresolved import that the file's `allowed_unresolved` list does not cover. A cycle whose member set grew
+counts as new. Add a reviewed baseline entry only for a cycle that is accepted, and add an allowlist entry only with
+a reason. Type-only and mixed cycles are advisory. Refresh the baseline with
+`deno run --allow-read --allow-env --allow-write=packages/lint-policy unslop-ts/src/cli/whole_tree.ts
+--descriptor=packages/lint-policy/unslop.project.ts --rule=import-cycles
+--baseline=packages/lint-policy/cycle_baseline.json --update-baseline` and review the diff.
 
 [Agent knowledge base manifest](../.copilot/manifest.json)

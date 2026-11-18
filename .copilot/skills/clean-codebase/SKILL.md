@@ -51,6 +51,7 @@ Phase 1 — Baseline
   2. Run each check and record failures:
      deno lint; deno task fmt:check; deno task check:style; check:test-placement;
      check:magic; check:no-edition-conditionals; check:arch; check:complexity;
+     check:cycles:gate;
      check:unused-exports:strict; check:duplication; check:tool-result-parity;
      check:skill-index; check:manifests; check:hardcoded-models; check:event-strings;
      check:optional-params; check:leak-guard; check:docs; check:version (--dry-run);
