@@ -7,6 +7,11 @@ edition: solo
 request_fixture: fixtures/requests/flow_blueprints/triage_router_docs.md
 mode_support: [auto]
 portals: []
+# The docs request scores in the gate's clarification band, and a clarification round calls an LLM
+# the scenario never records. The scenario tests the docs route, so the gate is off here; the bug
+# route scenario keeps it on.
+workspace_config:
+  quality_gate.enabled: false
 steps:
   - id: start-daemon
     type: exactl

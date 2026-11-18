@@ -2,7 +2,7 @@
   "scenarioId": "self-correcting-implementation",
   "edition": "solo",
   "flow": "self-correcting-implementation",
-  "fixtureDir": "fixtures/mock_recordings/phase205/self_correcting",
+  "fixtureDir": "fixtures/mock_recordings/flow_blueprints",
   "requestStepId": "submit",
   "selectedPath": [
     "plan",

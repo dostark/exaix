@@ -49,7 +49,7 @@ Deno.test({
       const recording = JSON.parse(
         await Deno.readTextFile(join(
           FRAMEWORK_HOME,
-          "fixtures/mock_recordings/phase205/self_correcting",
+          "fixtures/mock_recordings/flow_blueprints",
           `self-correcting-implementation__submit__quality-gate--judge__${attempt}.json`,
         )),
       );

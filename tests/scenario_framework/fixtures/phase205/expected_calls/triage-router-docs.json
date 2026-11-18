@@ -2,7 +2,7 @@
   "scenarioId": "triage-router-docs",
   "edition": "solo",
   "flow": "triage-router",
-  "fixtureDir": "fixtures/mock_recordings/phase205/triage",
+  "fixtureDir": "fixtures/mock_recordings/flow_blueprints",
   "requestStepId": "submit",
   "selectedPath": [
     "triage",
