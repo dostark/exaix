@@ -24,6 +24,7 @@ import {
   STEP_KIND_JUDGE,
 } from "@exaix/ai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import {
   BindOneOffSchema,
@@ -164,17 +165,24 @@ export function llmKeyEnv(spec: IBindingSpec): string | undefined {
   return llmTestCatalog().services[spec.service ?? ""]?.key_env;
 }
 
-/** The first missing predicate of the preset row of the bound service, or null when the live test can run. */
-export function liveLlmSkipReason(spec: IBindingSpec): string | null {
+/** The first missing predicate of the preset row of the bound service, or null when the live test can run.
+ *  The `binOnPath` probe decides the binary predicate, so a test does not depend on the host PATH. */
+export function liveLlmSkipReason(
+  spec: IBindingSpec,
+  binOnPath: Opt<(bin: string) => boolean, Reason.TestOverride> = undefined,
+): string | null {
   if (spec.service === undefined) throw new Error(`a live binding must name its service: ${JSON.stringify(spec)}`);
-  return liveSkipReason(spec.service);
+  return liveSkipReason(spec.service, undefined, binOnPath);
 }
 
 const CLI_INTERFACE = "cli";
 
 /** The first reason that the bound service cannot run a test of the Exaix tool choice, or null. A CLI service runs its own tools. */
-export function liveLlmToolControlSkipReason(spec: IBindingSpec): string | null {
-  const gate = liveLlmSkipReason(spec);
+export function liveLlmToolControlSkipReason(
+  spec: IBindingSpec,
+  binOnPath: Opt<(bin: string) => boolean, Reason.TestOverride> = undefined,
+): string | null {
+  const gate = liveLlmSkipReason(spec, binOnPath);
   if (gate !== null) return gate;
   const isCli = llmTestCatalog().services[spec.service ?? ""]?.interface === CLI_INTERFACE;
   return isCli

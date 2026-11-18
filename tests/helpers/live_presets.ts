@@ -11,6 +11,7 @@
  */
 
 import { join } from "@std/path";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IBindingCatalog, IBindingSpec } from "@exaix/schemas";
 import { REPO_ROOT } from "@exaix/testing";
 import {
@@ -51,14 +52,16 @@ export function liveSpecOf(service: string): IBindingSpec {
   return spec;
 }
 
-/** The first missing predicate of the preset of `service`, or null when its live test can run. */
+/** The first missing predicate of the preset of `service`, or null when its live test can run.
+ *  The `binOnPath` probe lets a test decide the binary predicate instead of reading the host PATH. */
 export function liveSkipReason(
   service: string,
   env: Record<string, string | undefined> = Deno.env.toObject(),
+  binOnPath: Opt<(bin: string) => boolean, Reason.TestOverride> = undefined,
 ): string | null {
   presetOf(service);
   const [cell] = resolveCatalogCells(catalog, [livePresetName(service)]);
-  return cellPredicateSkipReason(cell, env);
+  return cellPredicateSkipReason(cell, env, binOnPath);
 }
 
 /** The models and services that the `live-*` rows add to the catalog, so every live service is bindable by name. */

@@ -131,7 +131,10 @@ Deno.test("[llm_bindings] a cli-delegate service is still refused, because it is
 
 Deno.test("[llm_bindings] the Codex CLI live gate needs its opt-in and the binary, and no key", async () => {
   await withEnv({ EXA_MATRIX_CODEX: null }, () => {
-    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }) ?? "", "EXA_MATRIX_CODEX");
+    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }, () => true) ?? "", "EXA_MATRIX_CODEX");
+  });
+  await withEnv({ EXA_MATRIX_CODEX: "1" }, () => {
+    assertStringIncludes(liveLlmSkipReason({ service: "codex-cli" }, () => false) ?? "", "'codex'");
   });
   assertEquals(llmKeyEnv({ service: "codex-cli" }), undefined);
 });
@@ -164,7 +167,7 @@ Deno.test("[llm_bindings] the live gate follows the service that EXA_TEST_BIND b
       OPENAI_API_KEY: null,
     },
     () => {
-      const reason = liveLlmSkipReason(liveLlmSpec("opencode-go")) ?? "";
+      const reason = liveLlmSkipReason(liveLlmSpec("opencode-go"), () => true) ?? "";
       assertStringIncludes(reason, "OPENAI_API_KEY");
     },
   );
@@ -172,18 +175,24 @@ Deno.test("[llm_bindings] the live gate follows the service that EXA_TEST_BIND b
 
 Deno.test("[llm_bindings] a CLI service cannot run a test that asserts which Exaix tool the model picks", async () => {
   await withEnv({ EXA_MATRIX_CODEX: "1" }, () => {
-    const reason = liveLlmToolControlSkipReason({ service: "codex-cli", service_model_id: "gpt-5.6-terra" });
+    const reason = liveLlmToolControlSkipReason(
+      { service: "codex-cli", service_model_id: "gpt-5.6-terra" },
+      () => true,
+    );
     assertStringIncludes(reason ?? "", "runs its own tools");
   });
 });
 
 Deno.test("[llm_bindings] an API service passes the tool control check, and the gate of its own row still applies", async () => {
   await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: "1", DEEPSEEK_API_KEY: "k" }, () => {
-    assertEquals(liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }), null);
+    assertEquals(
+      liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }, () => true),
+      null,
+    );
   });
   await withEnv({ [ENV_TEST_ENABLE_PAID_LLM]: null, DEEPSEEK_API_KEY: "k" }, () => {
     assertStringIncludes(
-      liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }) ?? "",
+      liveLlmToolControlSkipReason({ service: "deepseek", service_model_id: "deepseek-v4-pro" }, () => true) ?? "",
       ENV_TEST_ENABLE_PAID_LLM,
     );
   });
