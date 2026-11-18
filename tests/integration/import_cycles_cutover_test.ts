@@ -142,19 +142,16 @@ Deno.test("import-cycles-cutover-real: the real repository report records the co
     allowed_unresolved: readonly { from: string; specifier: string; reason: string }[];
     allowed_unresolved_population?: number;
   };
-  assertEquals(parsed.totals.runtime_sccs, 5);
-  assertEquals(parsed.totals.files, 10);
+  assertEquals(parsed.totals.runtime_sccs, 0);
+  assertEquals(parsed.totals.files, 0);
   assertEquals(parsed.totals.type_only_sccs, 0);
-  assertEquals(parsed.totals.mixed_sccs, 9);
+  assertEquals(parsed.totals.mixed_sccs, 2);
   assertEquals(parsed.graph.unresolved, 9);
   assert(parsed.graph.code_files >= 3426);
-  assertEquals(baseline.cycles.length, 5);
+  assertEquals(baseline.cycles.length, 0);
   assertEquals(baseline.allowed_unresolved.length, 9);
   for (const entry of baseline.allowed_unresolved) assert(entry.reason.length > 0);
-  const largest = Math.max(
-    ...parsed.cycles.filter((cycle) => cycle.kind === "runtime").map((cycle) => cycle.files.length),
-  );
-  assertEquals(largest, 2);
+  assertEquals(parsed.cycles.filter((cycle) => cycle.kind === "runtime"), []);
 });
 
 Deno.test("import-cycles-cutover-baseline: the real gate passes the committed baseline and rejects a cycle it does not list", async () => {
@@ -166,7 +163,7 @@ Deno.test("import-cycles-cutover-baseline: the real gate passes the committed ba
     "--fail-on-stale",
   ]);
   assertEquals(passing.code, 0, passing.stderr);
-  assertStringIncludes(passing.stderr, "5 matched");
+  assertStringIncludes(passing.stderr, "0 matched");
 
   const dir = await Deno.makeTempDir({ prefix: "cycle_cutover_gate_" });
   try {

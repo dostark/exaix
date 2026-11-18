@@ -1100,7 +1100,8 @@ generic rules, and its [guide](../unslop-ts/docs/style_guide.md) describes them.
 `check:cycles:gate` fails on a runtime import cycle that `packages/lint-policy/cycle_baseline.json` does not list,
 and on an unresolved import that the file's `allowed_unresolved` list does not cover. A cycle whose member set grew
 counts as new. Add a reviewed baseline entry only for a cycle that is accepted, and add an allowlist entry only with
-a reason. Type-only and mixed cycles are advisory. Refresh the baseline with
+a reason. Type-only and mixed cycles are advisory. The committed baseline currently lists no runtime cycle, and the two mixed
+SCCs that remain are advisory until the structural layering work lands. Refresh the baseline with
 `deno run --allow-read --allow-env --allow-write=packages/lint-policy unslop-ts/src/cli/whole_tree.ts
 --descriptor=packages/lint-policy/unslop.project.ts --rule=import-cycles
 --baseline=packages/lint-policy/cycle_baseline.json --update-baseline` and review the diff.

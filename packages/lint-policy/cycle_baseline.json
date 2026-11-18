@@ -2,91 +2,50 @@
   "version": 1,
   "allowed_unresolved": [
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/runner/assertions.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/runner/evidence_collector.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/runner/history_writer_dispatch.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/runner/judge_bindings.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/runner/scenario_catalog.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
       "specifier": "../../../../../../tests/scenario_framework/schema/scenario_schema.ts",
-      "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
-    },
-    {
       "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
-      "specifier": "../../../../../../tests/scenario_framework/schema/step_schema.ts",
       "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-212/final_round_probe.ts",
+      "specifier": "../../../../../../tests/scenario_framework/schema/step_schema.ts",
+      "from": "exaix-dev-docs/evidence/phase-142/2026-10-16/closure/regrade.ts",
+      "reason": "Archived phase-142 evidence script; its stale six-level relative path leaves the project root and it is not part of the measured workspace."
+    },
+    {
       "specifier": "../../../../apps/common/registry_bootstrap.ts",
+      "from": "exaix-dev-docs/evidence/phase-212/final_round_probe.ts",
       "reason": "Archived phase-212 probe; its relative path leaves the project root and it is not part of the measured workspace."
     },
     {
-      "from": "exaix-dev-docs/evidence/phase-212/final_round_probe.ts",
       "specifier": "../../../../tests/helpers/native_tool_round_harness.ts",
+      "from": "exaix-dev-docs/evidence/phase-212/final_round_probe.ts",
       "reason": "Archived phase-212 probe; its relative path leaves the project root and it is not part of the measured workspace."
     }
   ],
-  "cycles": [
-    {
-      "id": "cyc-75c2a1bbccea0167",
-      "kind": "runtime",
-      "files": [
-        "packages/mcp/testing/mod.ts",
-        "packages/mcp/testing/test_setup.ts"
-      ]
-    },
-    {
-      "id": "cyc-85cabc1fb1a16eb8",
-      "kind": "runtime",
-      "files": [
-        "scripts/test_isolation.ts",
-        "scripts/test_parallel.ts"
-      ]
-    },
-    {
-      "id": "cyc-b7b50ed8843a29fc",
-      "kind": "runtime",
-      "files": [
-        "packages/tui/src/helpers/dialog_base.ts",
-        "packages/tui/src/helpers/dialog_rendering.ts"
-      ]
-    },
-    {
-      "id": "cyc-d1cc5de3ed2a0977",
-      "kind": "runtime",
-      "files": [
-        "packages/request/src/portal_context_builder.ts",
-        "packages/request/src/processor.ts"
-      ]
-    },
-    {
-      "id": "cyc-e058c60504d2770d",
-      "kind": "runtime",
-      "files": [
-        "packages/testing/mod.ts",
-        "tests/integration/helpers/test_environment.ts"
-      ]
-    }
-  ]
+  "cycles": []
 }
