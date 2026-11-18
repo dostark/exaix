@@ -29,13 +29,8 @@ export * from "./src/helpers/notifications.ts";
 export * from "./src/helpers/handle_key.ts";
 export * from "./src/helpers/prod_handle_key.ts";
 export {
-  BOX,
   ConfirmDialog,
   InputDialog,
-  renderBoxBottom,
-  renderBoxLine,
-  renderBoxLineCentered,
-  renderBoxTop,
   renderButton,
   renderDialogEnding,
   renderInputField,
@@ -44,3 +39,4 @@ export {
   setupDialogRender,
   wrapToWidth,
 } from "./src/helpers/dialog_base.ts";
+export { BOX, renderBoxBottom, renderBoxLine, renderBoxLineCentered, renderBoxTop } from "./src/helpers/dialog_box.ts";

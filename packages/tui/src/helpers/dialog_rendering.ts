@@ -8,7 +8,7 @@
  */
 
 import { colorize, type ITuiTheme, visibleLength } from "./colors.ts";
-import { renderBoxBottom, renderBoxLine, renderBoxTop } from "./dialog_base.ts";
+import { renderBoxBottom, renderBoxLine, renderBoxTop } from "./dialog_box.ts";
 
 // Common Rendering Functions
 

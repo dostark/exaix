@@ -23,12 +23,9 @@ export { type IFlowRunner, type IFlowValidator, RequestRouter, RoutingError } fr
 
 export { RequestService } from "./service.ts";
 
-export {
-  buildPortalKnowledgeSummary,
-  type IRequestProcessingContext,
-  type IRequestProcessorConfig,
-  RequestProcessor,
-} from "./processor.ts";
+export { type IRequestProcessingContext, type IRequestProcessorConfig, RequestProcessor } from "./processor.ts";
+
+export { buildPortalKnowledgeSummary } from "./portal_knowledge_summary.ts";
 
 export { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 

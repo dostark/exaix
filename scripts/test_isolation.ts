@@ -18,7 +18,7 @@ import { fromFileUrl, join, resolve } from "@std/path";
 import { TextLineStream } from "@std/streams";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framework/runner/matrix_expander.ts";
-import { trackChild, untrackChild } from "./test_parallel.ts";
+import { trackChild, untrackChild } from "./child_process_registry.ts";
 import { dockerImageId, type IReplacedImageSeams, removeReplacedImage } from "./docker_images.ts";
 import {
   type IContainerRunResult,

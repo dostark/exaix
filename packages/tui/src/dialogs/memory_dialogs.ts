@@ -12,13 +12,12 @@ import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
   DialogBase,
   type IDialogRenderOptions,
-  renderBoxLine,
-  renderBoxTop,
   renderButton,
   renderDialogEnding,
   renderProposalInfo,
   setupDialogRender,
 } from "@exaix/tui/helpers/dialog_base.ts";
+import { renderBoxLine, renderBoxTop } from "@exaix/tui/helpers/dialog_box.ts";
 import { TUI_DIALOG_INNER_PADDING, TUI_LAYOUT_DIALOG_WIDTH } from "@exaix/tui/helpers/constants.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 

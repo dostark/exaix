@@ -19,7 +19,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { Opt, Reason } from "@exaix/core/types";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
-import { buildPortalKnowledgeSummary } from "./processor.ts";
+import { buildPortalKnowledgeSummary } from "./portal_knowledge_summary.ts";
 
 interface IPortalContextBuilderConfig {
   config: Config;

@@ -44,13 +44,12 @@ import {
   startWorkerContainer,
   TEST_CONTAINER_IMAGE_ENV,
 } from "../../scripts/test_isolation.ts";
+import { trackChild, untrackChild } from "../../scripts/child_process_registry.ts";
 import {
   buildContainerEnv,
   containerResultFailureBlock,
   killActiveChildGroups,
   SEQUENTIAL_TESTS,
-  trackChild,
-  untrackChild,
 } from "../../scripts/test_parallel.ts";
 import { parseDotReporterCounts, parseSummaryLine } from "../../scripts/test_output_parse.ts";
 import {

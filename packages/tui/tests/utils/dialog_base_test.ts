@@ -9,18 +9,14 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { DialogStatus, type SkillStatus as _SkillStatus } from "@exaix/core";
+import { ConfirmDialog, InputDialog, renderButton, SelectDialog, wrapToWidth } from "@exaix/tui/helpers/dialog_base.ts";
 import {
   BOX,
-  ConfirmDialog,
-  InputDialog,
   renderBoxBottom,
   renderBoxLine,
   renderBoxLineCentered,
   renderBoxTop,
-  renderButton,
-  SelectDialog,
-  wrapToWidth,
-} from "@exaix/tui/helpers/dialog_base.ts";
+} from "@exaix/tui/helpers/dialog_box.ts";
 import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createMockDialogRenderOptions } from "../helpers.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";

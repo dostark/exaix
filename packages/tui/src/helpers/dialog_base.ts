@@ -7,8 +7,9 @@
  * @related-files ["packages/tui/src/helpers/dialog_rendering.ts", "packages/tui/src/helpers/keyboard.ts"]
  */
 
-import { ANSI, colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";
+import { ANSI, colorize, getTheme, type ITuiTheme } from "./colors.ts";
 import { renderDialogButtons, renderDialogLine, renderDialogTitle, renderEmptyDialogLine } from "./dialog_rendering.ts";
+import { renderBoxBottom, renderBoxLine, renderBoxLineCentered } from "./dialog_box.ts";
 import {
   TUI_DIALOG_DEFAULT_HEIGHT,
   TUI_DIALOG_INNER_PADDING,
@@ -99,29 +100,6 @@ function initSimpleDialogRender(options: IDialogRenderOptions): {
   const lines: string[] = [];
   return { theme, innerWidth, lines };
 }
-
-// Box Drawing Characters
-
-export const BOX = {
-  topLeft: "┌",
-  topRight: "┐",
-  bottomLeft: "└",
-  bottomRight: "┘",
-  horizontal: "─",
-  vertical: "│",
-  teeLeft: "├",
-  teeRight: "┤",
-  teeTop: "┬",
-  teeBottom: "┴",
-  cross: "┼",
-  // Double line variants
-  doubleHorizontal: "═",
-  doubleVertical: "║",
-  doubleTopLeft: "╔",
-  doubleTopRight: "╗",
-  doubleBottomLeft: "╚",
-  doubleBottomRight: "╝",
-} as const;
 
 // Base Dialog Class
 
@@ -539,54 +517,6 @@ export class SelectDialog<T = string> extends DialogBase<T> {
 }
 
 // Rendering Helpers
-
-/**
- * Render top border with optional title
- */
-export function renderBoxTop(width: number, title: string, theme: ITuiTheme): string {
-  const titleLen = visibleLength(title);
-  const leftLen = 2;
-  const rightLen = Math.max(0, width - leftLen - titleLen);
-  const left = BOX.horizontal.repeat(leftLen);
-  const right = BOX.horizontal.repeat(rightLen);
-  return colorize(
-    `${BOX.topLeft}${left}${title}${right}${BOX.topRight}`,
-    theme.border,
-    theme.reset,
-  );
-}
-
-/**
- * Render bottom border
- */
-export function renderBoxBottom(width: number, theme: ITuiTheme): string {
-  return colorize(
-    `${BOX.bottomLeft}${BOX.horizontal.repeat(width)}${BOX.bottomRight}`,
-    theme.border,
-    theme.reset,
-  );
-}
-
-/**
- * Render a box line with content
- */
-export function renderBoxLine(content: string, width: number, theme: ITuiTheme): string {
-  const paddedContent = padEnd(content, width);
-  const border = colorize(BOX.vertical, theme.border, theme.reset);
-  return `${border}${paddedContent}${border}`;
-}
-
-/**
- * Render a centered box line
- */
-export function renderBoxLineCentered(content: string, width: number, theme: ITuiTheme): string {
-  const contentLen = visibleLength(content);
-  const leftPad = Math.floor((width - contentLen) / 2);
-  const rightPad = width - contentLen - leftPad;
-  const paddedContent = " ".repeat(leftPad) + content + " ".repeat(rightPad);
-  const border = colorize(BOX.vertical, theme.border, theme.reset);
-  return `${border}${paddedContent}${border}`;
-}
 
 /**
  * Render a button

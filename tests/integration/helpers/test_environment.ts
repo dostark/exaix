@@ -10,11 +10,16 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
+import {
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  createStubProvider,
+} from "@exaix/testing/helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing/helpers/init_db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
@@ -44,7 +49,7 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRejectedDir,
   getWorkspaceRequestsDir,
-} from "@exaix/testing";
+} from "@exaix/testing/helpers/paths_helper.ts";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { Opt, Reason } from "@exaix/core/types";

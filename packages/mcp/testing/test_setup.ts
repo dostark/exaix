@@ -27,7 +27,7 @@ import {
   GIT_CMD_STATUS,
   GIT_CMD_WORKTREE,
 } from "@exaix/git/constants.ts";
-import { AllowAllPermissionsService } from "@exaix/mcp/testing";
+import { AllowAllPermissionsService } from "./allow_all_permissions.ts";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";

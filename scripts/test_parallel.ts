@@ -33,6 +33,7 @@ import {
   selectBatch2Strategy,
   TEST_CONTAINER_IMAGE_ENV,
 } from "./test_isolation.ts";
+import { activeChildPids, trackChild, untrackChild } from "./child_process_registry.ts";
 import { pruneStaleBuildCache } from "./docker_images.ts";
 import { TEST_CONTAINER_REPORTER_ENV } from "./test_container_driver.ts";
 import type { IContainerRunResult } from "./test_container_driver.ts";
@@ -68,11 +69,10 @@ const BATCH1_WORKER_COUNT = Deno.env.get("DENO_JOBS") ?? String(navigator.hardwa
 // PIDs of running `deno test` batch children, spawned `detached` so a group-wide
 // SIGTERM also reaches subprocesses they spawn (e.g. daemons booted by individual
 // test files) — a child's own children are not signaled when only the child is killed.
-const activeChildPids = new Set<number>();
 
 /** `pids`/`kill` are injectable (default: real tracked set, `Deno.kill`) so this is unit-testable without spawning real processes. */
 export function killActiveChildGroups(
-  pids: Iterable<number> = activeChildPids,
+  pids: Iterable<number> = activeChildPids(),
   kill: (pid: number) => void = (pid) => Deno.kill(pid, "SIGTERM"),
 ): void {
   for (const pid of pids) {
@@ -82,16 +82,6 @@ export function killActiveChildGroups(
       // already dead, or not a process group leader (e.g. non-Linux) — nothing to signal
     }
   }
-}
-
-/** Register a spawned child's pid so `killActiveChildGroups` reaches it on shutdown. */
-export function trackChild(pid: number): void {
-  activeChildPids.add(pid);
-}
-
-/** Remove a child's pid once it has exited. */
-export function untrackChild(pid: number): void {
-  activeChildPids.delete(pid);
 }
 
 type TestReporter = typeof SUPPORTED_REPORTERS[number];
@@ -714,7 +704,7 @@ async function runAndCapture(
   });
 
   const child = command.spawn();
-  activeChildPids.add(child.pid);
+  trackChild(child.pid);
   const outChunks: Uint8Array[] = [];
   const errChunks: Uint8Array[] = [];
 
@@ -785,7 +775,7 @@ async function runAndCapture(
     drain(child.stdout, outChunks, Deno.stdout),
     drain(child.stderr, errChunks, Deno.stderr),
   ]);
-  activeChildPids.delete(child.pid);
+  untrackChild(child.pid);
 
   // Combine stdout + stderr to maximise chance of finding the summary line.
   const allText = new TextDecoder().decode(
