@@ -1,7 +1,7 @@
 /**
  * @module ExaixScriptRules
  * @path packages/lint-policy/src/script_rules.ts
- * @description The fourteen consumer script specs and the six whole-tree host commands.
+ * @description The fourteen consumer script specs and the nine whole-tree host commands.
  * @architectural-layer Tooling
  * @dependencies [@dostark/unslop-ts]
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rule_schemas.ts]
@@ -233,7 +233,7 @@ export const SCRIPT_RULES: Readonly<Record<string, IScriptRuleSpec>> = Object.fr
   ]),
 );
 
-/** The six real whole-tree host commands and their fixed engine controls. */
+/** The nine real whole-tree host commands and their fixed engine controls. */
 function hostCommand(task: string): readonly string[] {
   return [DENO, TASK, task];
 }
@@ -279,5 +279,9 @@ export const WHOLE_TREE_HOSTS: Readonly<Record<string, IWholeTreeHostSpec>> = {
   "duplicate-code": {
     controls: WHOLE_TREE_CHECKS["duplicate-code"].controls,
     command: hostCommand("check:duplication"),
+  },
+  "import-cycles": {
+    controls: WHOLE_TREE_CHECKS["import-cycles"].controls,
+    command: hostCommand("check:cycles"),
   },
 };

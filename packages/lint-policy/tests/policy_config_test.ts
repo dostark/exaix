@@ -86,6 +86,7 @@ const HOST_TASKS: Readonly<Record<string, string>> = {
   "constant-restatement": "check:constant-restatement",
   "unused-exports": "check:unused-exports",
   "optional-params": "check:optional-params",
+  "import-cycles": "check:cycles",
 };
 
 function compiled(): ICompiledConfig {
@@ -118,6 +119,28 @@ Deno.test("every_script_rule_has_metadata", () => {
   }
 });
 
+Deno.test("the_descriptor_hosts_import_cycles_with_the_advisory_task", async () => {
+  const host = descriptor.wholeTreeHosts["import-cycles"];
+  assert(host, "import-cycles has no host");
+  assertEquals(host.command, ["deno", "task", "check:cycles"]);
+  assertEquals(host.controls, WHOLE_TREE_CHECKS["import-cycles"].controls);
+  const configured = (POLICY_CONFIG as { rules: Record<string, { level?: string; options?: JSONObject }> })
+    .rules["import-cycles"];
+  assertEquals(configured.level, "warn");
+  assertEquals(configured.options?.gateRoots, ["packages/", "apps/", "scripts/", "exaix-team/", "exaix-enterprise/"]);
+  assertEquals(POLICY_COMPILED.rules["import-cycles"].engine, "whole-tree");
+  assertEquals(POLICY_COMPILED.rules["import-cycles"].effectiveLevel, "warn");
+  assertEquals(
+    (POLICY_CATALOG.wholeTree as JSONObject | undefined)?.importCycles,
+    configured.options,
+  );
+  const root = JSON.parse(await Deno.readTextFile(new URL("../../../deno.json", import.meta.url))) as {
+    tasks: Record<string, string>;
+  };
+  assertStringIncludes(root.tasks["check:cycles"], "--rule=import-cycles");
+  assert(!root.tasks["check:cycles"].includes("--fail"));
+});
+
 Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
   assertEquals(Object.keys(descriptor.scriptRules).sort(), Object.keys(SCRIPT_RULES).sort());
   assertEquals(Object.keys(descriptor.wholeTreeHosts).sort(), Object.keys(WHOLE_TREE_CHECKS).sort());
@@ -145,7 +168,7 @@ Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
   }
 });
 
-Deno.test("consumer_host_commands_match_all_six_task_definitions", async () => {
+Deno.test("consumer_host_commands_match_all_nine_task_definitions", async () => {
   const root = JSON.parse(await Deno.readTextFile(new URL("../../../deno.json", import.meta.url))) as {
     tasks: Record<string, string>;
   };
@@ -185,6 +208,7 @@ Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async (
   const actual = semanticCompiledProjection(POLICY_COMPILED, descriptor, ids);
   delete (actual.wholeTree as JSONObject).unusedFiles;
   delete (actual.wholeTree as JSONObject).duplicateCode;
+  delete (actual.wholeTree as JSONObject).importCycles;
   assertEquals(actual, semanticCatalogProjection(catalog as JsonValue, descriptor, ids));
   const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
   assertEquals(layout, (catalog as { layout?: JSONValue }).layout);

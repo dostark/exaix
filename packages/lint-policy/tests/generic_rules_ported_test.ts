@@ -23,7 +23,7 @@ interface IGuardCatalog {
   readonly wholeTree?: { readonly magicLiterals?: { readonly additionalStrings?: readonly string[] } };
 }
 
-const WHOLE_TREE_HOSTS = new Set(["duplicate-type", "duplicate-constant"]);
+const WHOLE_TREE_HOSTS = new Set(["duplicate-type", "duplicate-constant", "import-cycles"]);
 const WHOLE_TREE_SETTINGS_ID = "magic-literals";
 const PLUGIN_ID = "exaix/import-placement";
 const BOUNDARY_ID = "exaix/import-boundaries";

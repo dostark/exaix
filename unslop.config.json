@@ -1782,6 +1782,25 @@
       "scope": "prod",
       "optIn": true,
       "reason": "Opt-in: keeps module re-exports in barrel files (mod.ts, index.ts) so each symbol has one public path."
+    },
+    "import-cycles": {
+      "level": "warn",
+      "reason": "Advisory until the committed cycle baseline gates a new runtime cycle.",
+      "options": {
+        "minFiles": 2,
+        "includeSelf": false,
+        "includeTypeOnly": true,
+        "gateRoots": [
+          "packages/",
+          "apps/",
+          "scripts/",
+          "exaix-team/",
+          "exaix-enterprise/"
+        ],
+        "baseline": null,
+        "failOnNew": true,
+        "failOnStale": false
+      }
     }
   }
 }
