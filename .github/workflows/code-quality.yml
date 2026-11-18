@@ -219,6 +219,13 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:skill-ephemera
 
+      # The cycle gate walks the repository once (measured 19 s over 3,426 files on 2026-11-18).
+      # CYCLE_GATE_TIMEOUT_SEC = 180.
+      - name: "Gate 28: Import Cycle Baseline"
+        if: always() && steps.setup-deno.outcome == 'success'
+        timeout-minutes: 3
+        run: deno task check:cycles:gate
+
   edition-build:
     name: "Edition Build Smoke Tests"
     runs-on: ubuntu-latest

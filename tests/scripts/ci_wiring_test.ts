@@ -328,6 +328,20 @@ Deno.test("[ci_wiring] code-quality's static gates match scripts/ci.ts's CI-appl
   );
 });
 
+Deno.test("[ci_wiring] the import-cycle gate runs in CI once with a timeout and stays out of the hook", () => {
+  assertStringIncludes(CI_SOURCE, '{ cmd: ["deno", "task", "check:cycles:gate"]');
+  const start = CODE_QUALITY_WORKFLOW.indexOf("Gate 28");
+  assert(start > 0, "Gate 28 is missing from code-quality.yml");
+  const step = CODE_QUALITY_WORKFLOW.slice(start, CODE_QUALITY_WORKFLOW.indexOf("- name:", start + 10));
+  assertStringIncludes(step, "deno task check:cycles:gate");
+  assertStringIncludes(step, "timeout-minutes: 3");
+  assert(
+    CODE_QUALITY_WORKFLOW.split("deno task check:cycles:gate").length === 2,
+    "the cycle gate must run exactly once in the workflow",
+  );
+  assert(!HOOKS_SOURCE.includes("check:cycles"), "the cycle gate must not join the pre-commit hook");
+});
+
 Deno.test("[ci_wiring] ci.ts test phases drive test_all for every edition", () => {
   const mappings = [...CI_SOURCE.matchAll(/const testTask = ([^;]+);/g)].map((m) => m[1]);
   assert(mappings.length >= 2, "expected the testTask mapping in both testCommand and allCommand");

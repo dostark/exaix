@@ -82,6 +82,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:scenario-declarative", "--", "--fail"], desc: "Scenario Declarative-Purity Check" },
   { cmd: ["deno", "task", "check:complexity"], desc: "Code Complexity Gate" },
   { cmd: ["deno", "task", "check:arch"], desc: "Architecture Validation" },
+  { cmd: ["deno", "task", "check:cycles:gate"], desc: "Import Cycle Baseline Gate" },
   { cmd: ["deno", "task", "check:unused-exports:fail"], desc: "Unused Exports Gate" },
   { cmd: ["deno", "task", "check:unused-exports:parity:strict"], desc: "Unused Exports Parity Gate" },
   { cmd: ["deno", "task", "check:unused-files:fail"], desc: "Unused Files Gate" },
