@@ -15,7 +15,7 @@ import {
   ScenarioSchemaVersionSchema,
   ScenarioStepSchema,
 } from "./step_schema.ts";
-import { MatrixSchema } from "../runner/matrix_expander.ts";
+import { MatrixSchema } from "./matrix_schema.ts";
 import { ScoringMode } from "../runner/scoring.ts";
 
 /** A scenario pin. Its `note` is required, because a pin without a stated reason is an unexplained frozen value. */

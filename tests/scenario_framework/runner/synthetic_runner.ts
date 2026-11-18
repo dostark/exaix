@@ -29,7 +29,6 @@ import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loade
 import {
   binIsOnPath,
   type ICellConfigTargets,
-  type IMatrixBlock,
   type IRunnableStepGroup,
   MATRIX_START_DAEMON_STEP_ID,
   overlayRequestBindings,
@@ -38,6 +37,7 @@ import {
   resolveRunnableSteps,
   stepsOnlySkippedCellsOwn,
 } from "./matrix_expander.ts";
+import type { IMatrixBlock } from "../schema/matrix_schema.ts";
 import { loadCellCatalog, resolveScenarioMatrixCells } from "./cell_catalog.ts";
 import {
   buildRunBindingsFile,

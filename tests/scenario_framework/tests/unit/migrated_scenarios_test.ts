@@ -13,7 +13,7 @@ import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
-import type { IMatrixCell } from "../../runner/matrix_expander.ts";
+import type { IMatrixCell } from "../../schema/matrix_schema.ts";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { buildRunBindingsFile, planScenarioBindings } from "../../runner/binding_layers.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";

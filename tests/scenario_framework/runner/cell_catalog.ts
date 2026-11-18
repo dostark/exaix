@@ -18,7 +18,7 @@
 import { z } from "zod";
 import { parse as parseToml } from "@std/toml";
 import { BINDING_ID_PATTERN, BindingCatalogSchema, BindingsTableSchema, CatalogServiceSchema } from "@exaix/schemas";
-import { type IMatrixBlock, type IMatrixCell, MatrixCellSchema } from "./matrix_expander.ts";
+import { type IMatrixBlock, type IMatrixCell, MatrixCellSchema } from "../schema/matrix_schema.ts";
 import type { IScenario } from "../schema/scenario_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";

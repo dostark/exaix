@@ -15,7 +15,7 @@ import {
 import type { JSONObject, JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
-import type { IReviewLintSummary } from "./review_commands.ts";
+import type { IReviewLintSummary } from "./review_types.ts";
 
 /** The run identity a lint snapshot row declares, with the payload text that the full schema reads later. */
 interface ISnapshotBinding {

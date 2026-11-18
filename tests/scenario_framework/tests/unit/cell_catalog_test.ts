@@ -13,7 +13,7 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
-import type { IMatrixCell } from "../../runner/matrix_expander.ts";
+import type { IMatrixCell } from "../../schema/matrix_schema.ts";
 import { ConfigSchema } from "@exaix/schemas";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";

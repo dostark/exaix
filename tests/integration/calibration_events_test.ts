@@ -21,11 +21,11 @@ import {
   CalibrationRunner,
   type ICalibrationClock,
   type ICalibrationJudgeAdapter,
-  type ICalibrationReferenceAdapter,
   type ICalibrationRunResult,
   type ICalibrationSourceReaderAdapter,
   type ICalibrationStoreAdapter,
 } from "../scenario_framework/runner/calibration_runner.ts";
+import type { ICalibrationReferenceAdapter } from "../scenario_framework/runner/calibration_contracts.ts";
 import type {
   ICalibrationSourceItem,
   ICalibrationSourceSelection,

@@ -10,13 +10,11 @@
 // Edge-case and end-to-end tests for TUI dashboard
 import {
   createDefaultDashboardState,
-  getDashboardHelpSections,
-  type IPane,
   type ITuiDashboard,
   launchTuiDashboard,
-  renderPaneTitleBar,
   renderViewPicker,
 } from "../src/tui_dashboard.ts";
+import { getDashboardHelpSections, type IPane, renderPaneTitleBar } from "../src/dashboard/primitives.ts";
 import { PortalStatus } from "@exaix/core";
 import { SplitDirection } from "@exaix/tui";
 

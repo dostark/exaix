@@ -64,11 +64,8 @@ export {
   strategyLane,
   voterLane,
 } from "./src/contracts/flow_recording_context.ts";
-export {
-  FlowCheckpointCoordinator,
-  type IFlowCheckpointCoordinator,
-  type IFlowCheckpointRequest,
-} from "./src/flow_checkpoint_coordinator.ts";
+export { FlowCheckpointCoordinator, type IFlowCheckpointCoordinator } from "./src/flow_checkpoint_coordinator.ts";
+export type { IFlowCheckpointRequest } from "./src/flow_types.ts";
 export { StepOutputFormatter } from "./src/step_output_formatter.ts";
 export { FlowNamespaceCoordinator, type IFlowNamespaceCoordinator } from "./src/flow_namespace_coordinator.ts";
 export { AgentComposerAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "./src/agent_composer_adapter.ts";

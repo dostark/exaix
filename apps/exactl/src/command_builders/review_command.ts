@@ -8,7 +8,8 @@
 
 import { toExaCtlError } from "./command_failure.ts";
 import { Command } from "@cliffy/command";
-import { formatLintSummary, type IReviewDetails, verificationWarning } from "../commands/review_commands.ts";
+import { formatLintSummary, verificationWarning } from "../commands/review_commands.ts";
+import type { IReviewDetails } from "../commands/review_types.ts";
 import { RequestOperation, RequestPriority } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";

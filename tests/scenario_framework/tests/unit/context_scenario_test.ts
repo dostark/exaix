@@ -16,7 +16,8 @@ import { assert, assertArrayIncludes, assertEquals, assertStringIncludes } from 
 import { dirname, fromFileUrl, join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
-import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
+import { expandMatrix } from "../../runner/matrix_expander.ts";
+import { MatrixSchema } from "../../schema/matrix_schema.ts";
 import { loadScenarioCatalog, selectScenarioCatalogEntries } from "../../runner/scenario_catalog.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 

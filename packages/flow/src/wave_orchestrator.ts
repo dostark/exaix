@@ -11,7 +11,7 @@
  */
 
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import { DependencyResolver } from "@exaix/flow";
+import { DependencyResolver } from "./dependency_resolver.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { finalizeStepResult } from "./step_result_finalizer.ts";
 import { isTerminalFlowControlCode } from "./errors/flow_control_errors.ts";

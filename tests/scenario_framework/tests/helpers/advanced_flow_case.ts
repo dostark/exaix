@@ -11,7 +11,8 @@ import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
-import { type IAdvancedFlowCaseEvidence, retainAdvancedFlowEvidence } from "./advanced_flow_evidence.ts";
+import { retainAdvancedFlowEvidence } from "./advanced_flow_evidence.ts";
+import type { IAdvancedFlowCase, IAdvancedFlowCaseEvidence } from "./advanced_flow_types.ts";
 import { ConfigService } from "@exaix/core/config";
 import { PathResolver } from "@exaix/portal";
 import { withEnv } from "@exaix/testing";
@@ -21,17 +22,6 @@ import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
 import { loadManifest } from "./expected_call_manifest.ts";
 import { resolveFlowBinaries } from "./compiled_flow_fixture.ts";
 import { buildGuardedLauncher } from "./guarded_change_fixture.ts";
-
-export interface IAdvancedFlowCase {
-  file: string;
-  scenarioId: string;
-  action: string;
-  status: string;
-  phaseStep: number;
-  evaluations: number;
-  iterations: number;
-  edition: string;
-}
 
 export interface IAdvancedFlowRunOptions {
   outputDir?: Opt<string, Reason.OptionalInput>;

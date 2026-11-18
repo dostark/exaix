@@ -34,6 +34,11 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../schema/step_schema.ts";
 import { evaluateLlmJudgeCriterion, type ICalibrationCaptureMetadata } from "./assertions.ts";
 import { evaluateReference } from "./calibration_reference.ts";
+import type {
+  ICalibrationReferenceAdapter,
+  ICalibrationVendorTarget,
+  IJudgeScoreResult,
+} from "./calibration_contracts.ts";
 import {
   type ICalibrationSourceItem,
   type ICalibrationSourceSelection,
@@ -41,26 +46,7 @@ import {
   readCalibrationSources,
 } from "./calibration_sources.ts";
 
-export interface ICalibrationVendorTarget {
-  readonly provider: string;
-  readonly model: string;
-}
-
-export interface IJudgeScoreResult {
-  readonly score: number;
-  readonly provider: string;
-  readonly model: string;
-}
-
 export interface ICalibrationJudgeAdapter {
-  score(
-    item: ICalibrationSourceItem,
-    rubric: ICalibrationRubric,
-    target: ICalibrationVendorTarget,
-  ): Promise<IJudgeScoreResult>;
-}
-
-export interface ICalibrationReferenceAdapter {
   score(
     item: ICalibrationSourceItem,
     rubric: ICalibrationRubric,

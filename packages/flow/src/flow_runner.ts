@@ -59,7 +59,7 @@ import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegat
 import { type IFlowTraceStore, isUuid } from "./flow_trace_store.ts";
 import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
-import { FlowCheckpointService, type IFlowCheckpointService } from "@exaix/flow";
+import { FlowCheckpointService, type IFlowCheckpointService } from "./checkpoint_service.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";

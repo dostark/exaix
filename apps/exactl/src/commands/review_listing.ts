@@ -19,7 +19,7 @@ import { ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import { GIT_CMD_BRANCH } from "@exaix/git/constants.ts";
 import { artifactFromRow, DatabaseArtifactRepository } from "@exaix/core/artifact";
-import type { IReviewMetadata, ReviewTypeFilter } from "./review_commands.ts";
+import type { IReviewMetadata } from "./review_types.ts";
 
 /** A stored code review row used by listing and metadata projection. */
 interface IDatabaseCodeReviewRow {
@@ -395,11 +395,11 @@ export class ReviewListing extends BaseCommand {
     return resolve(dirname(portalEntryPath), linkTarget);
   }
 
-  shouldIncludeArtifacts(type: ReviewTypeFilter): boolean {
+  shouldIncludeArtifacts(type: ReviewFilterEnum): boolean {
     return type === ReviewFilterEnum.ALL || type === ReviewFilterEnum.ARTIFACT;
   }
 
-  shouldIncludeCode(type: ReviewTypeFilter): boolean {
+  shouldIncludeCode(type: ReviewFilterEnum): boolean {
     return type === ReviewFilterEnum.ALL || type === ReviewFilterEnum.CODE;
   }
 

@@ -13,7 +13,7 @@ import { computeRevisionId, computeSkillContentSha256 } from "@exaix/core/skills
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import { z } from "zod";
-import type { IEvidenceResult } from "./skill_evaluation_evidence.ts";
+import type { IEvidenceResult } from "./skill_evaluation_types.ts";
 import approvedSkills from "../fixtures/skill_eval/phase234/approved_skill_revisions.json" with { type: "json" };
 
 /** The approved revision an isolated case must deliver. */

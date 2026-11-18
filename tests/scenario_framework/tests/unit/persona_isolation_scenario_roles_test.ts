@@ -10,7 +10,7 @@ import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
-import type { IMatrixCell } from "../../runner/matrix_expander.ts";
+import type { IMatrixCell } from "../../schema/matrix_schema.ts";
 import { loadCellCatalog, resolveScenarioMatrixCells } from "../../runner/cell_catalog.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 

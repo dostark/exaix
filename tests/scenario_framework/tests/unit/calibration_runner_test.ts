@@ -18,15 +18,14 @@ import {
   FileCalibrationStoreAdapter,
   type ICalibrationClock,
   type ICalibrationJudgeAdapter,
-  type ICalibrationReferenceAdapter,
   type ICalibrationRunResult,
   type ICalibrationSourceReaderAdapter,
   type ICalibrationStoreAdapter,
-  type ICalibrationVendorTarget,
   LocalCalibrationJudgeAdapter,
   LocalCalibrationReferenceAdapter,
   SystemCalibrationClock,
 } from "../../runner/calibration_runner.ts";
+import type { ICalibrationReferenceAdapter, ICalibrationVendorTarget } from "../../runner/calibration_contracts.ts";
 import type { ICalibrationSourceItem, ICalibrationSourceSelection } from "../../runner/calibration_sources.ts";
 
 const NO_BACKWARD_KEYS: Record<string, null> = {

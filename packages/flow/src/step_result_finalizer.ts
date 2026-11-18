@@ -7,7 +7,8 @@
  * @related-files [packages/flow/src/wave_orchestrator.ts, packages/flow/src/flow_runner.ts]
  */
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import type { IFlowCheckpointCoordinator, IFlowCheckpointRequest } from "./flow_checkpoint_coordinator.ts";
+import type { IFlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
+import type { IFlowCheckpointRequest } from "./flow_types.ts";
 import type { IFlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
 import type { IStepResult } from "./flow_types.ts";
 interface IStepFinalizationContext {

@@ -15,7 +15,7 @@ import { PlanCommands } from "./plan_commands.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import { type LintCheckRunOutcome, type LintErrorClass, VerificationStatus } from "@exaix/schemas";
+import { VerificationStatus } from "@exaix/schemas";
 import { projectReviewVerification } from "./review_verification.ts";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
@@ -26,75 +26,8 @@ import { createGitService } from "../../../../apps/common/adapters/git_adapter.t
 import { GIT_CMD_DIFF, GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
 import { artifactFromRow, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { ReviewListing } from "./review_listing.ts";
+import type { IReviewDetails, IReviewLintSummary, IReviewMetadata } from "./review_types.ts";
 import { ReviewDecisions } from "./review_decisions.ts";
-
-export interface IReviewMetadata {
-  type?: ReviewType;
-  file_path?: string;
-  branch: string;
-  trace_id: string;
-  request_id: string;
-  base_branch?: string;
-  worktree_path?: string;
-  files_changed: number;
-  created_at: string;
-  agent_role: string;
-  // Request context
-  request_subject?: string;
-  request_agent_role?: string;
-  request_portal?: string;
-  request_priority?: string;
-  request_created_by?: string;
-  request_flow?: string;
-  request_rejected_path?: string;
-  // Plan context
-  plan_id?: string;
-  plan_status?: string;
-  // Portal context
-  portal?: string;
-  // Status context
-  status?: IReviewStatus;
-  approved_at?: string;
-  approved_by?: string;
-  // Anomaly context
-  anomalySummary?: IAnomalySummary;
-  rejected_at?: string;
-  rejected_by?: string;
-  rejection_reason?: string;
-  subject?: string;
-}
-
-export interface IReviewDetails extends IReviewMetadata {
-  diff: string;
-  commits: Array<{
-    sha: string;
-    message: string;
-    timestamp: string;
-  }>;
-  anomalies?: IAnomalyFinding[];
-  /** Post-execution verification outcome from the trace's execution.completed row. */
-  verification_status?: VerificationStatus;
-  /** Validated terminal lint findings summary of the review run. */
-  lint?: IReviewLintSummary;
-}
-
-/** One configured lint check outcome in the review. */
-interface IReviewLintCheck {
-  check_index: number;
-  outcome: `${LintCheckRunOutcome}`;
-  total: number | null;
-  error_class: LintErrorClass | null;
-}
-
-/** The validated terminal lint summary of one review run. */
-export interface IReviewLintSummary {
-  total: number | null;
-  findings: Array<{ file: string; line: number; rule: string }>;
-  truncated: boolean;
-  checks: IReviewLintCheck[];
-  /** True when the completed run has no loadable final snapshot. */
-  unavailable?: boolean;
-}
 
 /** Formats the review lint summary as display-safe lines. */
 export function formatLintSummary(summary: IReviewLintSummary): string[] {

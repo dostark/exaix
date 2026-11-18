@@ -43,7 +43,7 @@ import type { IPlanContextResolver } from "./plan_context_resolver.ts";
 import type { ISessionDelegationCoordinator } from "@exaix/session/session_delegation.ts";
 import type { ISessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import type { ISessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
-import type { IFlowCheckpointService } from "@exaix/flow";
+import type { IFlowCheckpointService } from "./checkpoint_service.ts";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
@@ -702,3 +702,16 @@ export type ExecuteFlowStep = (
   stepResults: Map<string, IStepResult>,
   repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
 ) => Promise<IStepResult>;
+
+/** The request a checkpoint restore reads. */
+export interface IFlowCheckpointRequest {
+  userPrompt: string;
+  portal?: string;
+  executionRoot?: string;
+  planContextRef?: string;
+  requestSha256?: string;
+  bindingSnapshot?: IBindingRunSnapshot;
+  traceId?: string;
+  requestId?: string;
+  requestAnalysis?: IRequestAnalysis;
+}

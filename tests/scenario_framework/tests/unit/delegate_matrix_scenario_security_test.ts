@@ -9,7 +9,8 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
+import { expandMatrix } from "../../runner/matrix_expander.ts";
+import { MatrixSchema } from "../../schema/matrix_schema.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 import { parseMatrixScenario } from "./helpers/delegate_matrix_scenario_fixture.ts";
 

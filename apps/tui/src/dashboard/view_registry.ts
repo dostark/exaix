@@ -15,7 +15,7 @@ import { AgentStatusView } from "../agent_status_view.ts";
 import { RequestManagerView } from "../request_manager_view.ts";
 import { MemoryView } from "../memory_view.ts";
 import { SkillsManagerView } from "../skills_manager_view.ts";
-import type { ITuiView } from "../tui_dashboard.ts";
+import type { ITuiView } from "./primitives.ts";
 import type { ILogService, IStructuredLogger } from "@exaix/core/types";
 import type { IJournalService } from "@exaix/core/types";
 import type { IMemoryService } from "@exaix/core/types";

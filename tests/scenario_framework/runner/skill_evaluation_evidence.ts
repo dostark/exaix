@@ -13,6 +13,7 @@ import { createMockConfig } from "@exaix/testing";
 import { parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { z } from "zod";
 import { readRequirementsArtifact } from "./requirements_artifact.ts";
+import type { EvidenceStatus, IEvidenceResult } from "./skill_evaluation_types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import evidenceRequirements from "../fixtures/skill_eval/phase234/evidence_requirements.json" with { type: "json" };
 import {
@@ -23,11 +24,6 @@ import {
   verifySkillSubmission,
 } from "./skill_delivery_observation.ts";
 
-export type EvidenceStatus = "passed" | "failed" | "pending";
-export interface IEvidenceResult {
-  status: EvidenceStatus;
-  reasons: string[];
-}
 export interface IPhase234Evidence {
   delivery: IEvidenceResult;
   behavior: IEvidenceResult;

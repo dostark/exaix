@@ -23,15 +23,14 @@ import { parse as parseToml } from "@std/toml";
 import { walk } from "@std/fs";
 import {
   expandMatrix,
-  type IMatrixBlock,
-  type IMatrixCell,
   MATRIX_START_DAEMON_STEP_ID,
-  MatrixSchema,
   overlayRequestBindings,
   requireRunnableGroup,
   resolveRunnableSteps,
   stepsOnlySkippedCellsOwn,
 } from "../../runner/matrix_expander.ts";
+import type { IMatrixBlock, IMatrixCell } from "../../schema/matrix_schema.ts";
+import { MatrixSchema } from "../../schema/matrix_schema.ts";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";

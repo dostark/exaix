@@ -11,7 +11,6 @@
  * @related-files ["packages/flow/src/flow_runner.ts"]
  */
 import type { IFlow, IFlowCheckpoint, IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_EVENT_CHECKPOINT_CLEARED,
@@ -30,20 +29,8 @@ import { FlowExecutionError } from "./flow_errors.ts";
 import type { IFlowEventLogger, IStepResult } from "./flow_types.ts";
 import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
 import { FlowControlStateStore } from "./flow_control_state_store.ts";
-import type { IBindingRunSnapshot } from "@exaix/schemas";
+import type { IFlowCheckpointRequest } from "./flow_types.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-
-export interface IFlowCheckpointRequest {
-  userPrompt: string;
-  portal?: string;
-  executionRoot?: string;
-  planContextRef?: string;
-  requestSha256?: string;
-  bindingSnapshot?: IBindingRunSnapshot;
-  traceId?: string;
-  requestId?: string;
-  requestAnalysis?: IRequestAnalysis;
-}
 
 interface IFlowCheckpointCoordinatorDeps {
   checkpointService?: IFlowCheckpointService;

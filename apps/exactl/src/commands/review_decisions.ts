@@ -23,7 +23,7 @@ import {
   GIT_CMD_REV_PARSE,
   GIT_CMD_WORKTREE,
 } from "@exaix/git/constants.ts";
-import type { IReviewDetails } from "./review_commands.ts";
+import type { IReviewDetails } from "./review_types.ts";
 
 /** What the review decisions take from the review command that owns them. */
 export interface IReviewDecisionsCallbacks {

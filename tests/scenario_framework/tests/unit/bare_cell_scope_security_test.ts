@@ -30,7 +30,8 @@ import {
   type ISweTaskTemplateOptions,
   renderSweTaskBareTemplate,
 } from "../../runner/scenario_templates.ts";
-import { BARE_DELEGATE_STEP_ID, expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
+import { BARE_DELEGATE_STEP_ID, expandMatrix } from "../../runner/matrix_expander.ts";
+import { MatrixSchema } from "../../schema/matrix_schema.ts";
 import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
 
 interface IParsedBareStep {

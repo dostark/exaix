@@ -30,7 +30,7 @@ import type {
   ICalibrationReferenceAdapter,
   ICalibrationVendorTarget,
   IJudgeScoreResult,
-} from "./calibration_runner.ts";
+} from "./calibration_contracts.ts";
 import type { ICalibrationSourceItem } from "./calibration_sources.ts";
 
 export interface IReferenceEvaluationInput {

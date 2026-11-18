@@ -13,20 +13,8 @@ import { ConfigService } from "@exaix/core/config";
 import type { IActivityRecord } from "@exaix/core/types";
 import { PathResolver } from "@exaix/portal";
 import { BindingLockSchema, RunBindingsFileSchema } from "@exaix/schemas";
-import type { IAdvancedFlowCase } from "./advanced_flow_case.ts";
+import type { IAdvancedFlowCase, IAdvancedFlowCaseEvidence } from "./advanced_flow_types.ts";
 import type { IExpectedCallManifest } from "./expected_call_manifest.ts";
-
-export interface IAdvancedFlowCaseEvidence {
-  scenarioId: string;
-  edition: string;
-  requestTrace: string;
-  flowRunId: string;
-  activities: IActivityRecord[];
-  binaries: Array<{ path: string; sha256: string }>;
-  configSha256: string;
-  locks: Array<ReturnType<typeof BindingLockSchema.parse>>;
-  runBindings: Array<ReturnType<typeof RunBindingsFileSchema.parse>>;
-}
 
 export async function sha256(bytes: Uint8Array): Promise<string> {
   return encodeHex(new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes))));

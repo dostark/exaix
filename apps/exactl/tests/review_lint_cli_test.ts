@@ -11,7 +11,8 @@
 import { createReviewJournalFixture } from "./helpers/review_journal_fixture.ts";
 import { LintErrorClass } from "@exaix/schemas";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { formatLintSummary, type IReviewLintSummary } from "../src/commands/review_commands.ts";
+import { formatLintSummary } from "../src/commands/review_commands.ts";
+import type { IReviewLintSummary } from "../src/commands/review_types.ts";
 
 const capOne: IReviewLintSummary = {
   total: 2,

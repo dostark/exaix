@@ -9,7 +9,7 @@
 import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateAction, FlowStepSkipCode, FlowStepType } from "@exaix/core";
 import type { BindingOutcome, IBindingRunSnapshot } from "@exaix/schemas";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import type { IFlowCheckpointRequest } from "./flow_checkpoint_coordinator.ts";
+import type { IFlowCheckpointRequest } from "./flow_types.ts";
 import { FlowExecutionError } from "./flow_errors.ts";
 import type { IStepResult } from "./flow_types.ts";
 import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
