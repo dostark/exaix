@@ -13,7 +13,7 @@
 
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
-import { type Opt, Reason } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { loadScenarioCatalog } from "../../tests/scenario_framework/runner/scenario_catalog.ts";
 import { selectScenariosForExecution } from "../../tests/scenario_framework/runner/modes.ts";
 import { ScenarioCiProfile } from "../../tests/scenario_framework/runner/config.ts";

@@ -4,7 +4,7 @@
  * @description Exercises the bounded exaport check prototype on seeded and clean fixtures.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
- * @related-files [scripts/go_port/benchmark.ts]
+ * @related-files [scripts/go_port/cost_comparison.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";

@@ -62,6 +62,24 @@ Deno.test("go-port-docs-plan: the plan keeps its steps and records the post-gap 
   assertStringIncludes(plan, "## Gap Remediation Plan");
 });
 
+Deno.test("go-port-retired: spent one-shot harness files are gone and evidence remains", async () => {
+  const retired = [
+    "scripts/go_port/benchmark.ts",
+    "scripts/go_port/check_prereqs.ts",
+    "scripts/go_port/phase214_ready.ts",
+    "tests/scripts/go_port_benchmark_test.ts",
+    "tests/scripts/go_port_check_prereqs_test.ts",
+  ];
+  for (const path of retired) {
+    const exists = await Deno.stat(join(REPO_ROOT, path)).then(() => true).catch(() => false);
+    assertEquals(exists, false, `${path} should be retired`);
+  }
+  for (const name of ["benchmarks.json", "prerequisites.json", "phase214_ready.json"]) {
+    const text = await read(DOCS, "evidence", "go-port", name);
+    assert(text.length > 0, `${name} evidence should remain`);
+  }
+});
+
 Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the decision", async () => {
   const readme = await read(GO_ROOT, "README.md");
   assertStringIncludes(readme, "Go 1.27.4");

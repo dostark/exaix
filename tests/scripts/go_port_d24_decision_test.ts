@@ -4,12 +4,11 @@
  * @description Validates the D24 decision rule and the Phase 214 readiness gate.
  * @architectural-layer Test
  * @dependencies [@std/assert]
- * @related-files [scripts/go_port/d24_decision.ts, scripts/go_port/phase214_ready.ts]
+ * @related-files [scripts/go_port/d24_decision.ts]
  */
 
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { decide, type ID24Input } from "../../scripts/go_port/d24_decision.ts";
-import { readinessErrors } from "../../scripts/go_port/phase214_ready.ts";
 
 function packageCost(overrides: Partial<ID24Input["packages"][number]> = {}): ID24Input["packages"][number] {
   return {
@@ -65,43 +64,6 @@ Deno.test("d24-missing-evidence: a dry-run pilot is not a proceed measurement", 
   assertEquals(decision.decision, "revise");
   assertEquals(decision.reasons.some((reason) => reason.includes("dry-run")), true);
   assertThrows(() => decide(input({ packages: [] })), Error, "packages");
-});
-
-Deno.test("phase214-ready: proceed needs the parent, team exception and CI approval", () => {
-  const proceed = decide(input());
-  assertEquals(
-    readinessErrors({
-      decision: proceed,
-      parent_protected: true,
-      team_exception: true,
-      ci_approved: true,
-      evidence: ["snapshot", "verdicts", "benchmarks", "cost"],
-    }),
-    [],
-  );
-  const missing = readinessErrors({
-    decision: proceed,
-    parent_protected: false,
-    team_exception: false,
-    ci_approved: false,
-    evidence: [],
-  });
-  assertEquals(missing.length, 3);
-});
-
-Deno.test("phase214-ready-d26: a revise forecast does not block the committed port", () => {
-  const forecast = decide(input({ packages: [packageCost({ extent: "dry-run" })] }));
-  assertEquals(forecast.decision, "revise");
-  assertEquals(
-    readinessErrors({
-      decision: forecast,
-      parent_protected: true,
-      team_exception: true,
-      ci_approved: true,
-      evidence: ["snapshot", "verdicts", "benchmarks", "cost"],
-    }),
-    [],
-  );
 });
 
 Deno.test("phase245-real-run: the committed evidence is non-empty and the decision is recorded", async () => {
