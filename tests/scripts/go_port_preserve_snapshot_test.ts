@@ -7,11 +7,14 @@
  * @related-files [scripts/go_port/preserve_snapshot.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import {
+  assertSnapshotCli,
   assertTargetAllowed,
   cloneSnapshot,
+  smokeVerdict,
+  snapshotCli,
   snapshotEnv,
   validateManifestRefs,
 } from "../../scripts/go_port/preserve_snapshot.ts";
@@ -69,4 +72,23 @@ Deno.test("preserve-snapshot-cli: the environment binds the snapshot exactl and 
   const env = snapshotEnv("/snapshot");
   assertEquals(env.EXA_BIN_PATH, "/snapshot/tests/scenario_framework/bin");
   assertEquals(env.EXA_DAEMON_SCRIPT, "/snapshot/apps/daemon/main.ts");
+});
+
+Deno.test("preserve-snapshot-verdict: the run manifest decides pass or fail", () => {
+  assertEquals(smokeVerdict({ outcome: "success" }), "pass");
+  assertEquals(smokeVerdict({ outcome: "failure" }), "fail");
+  assertThrows(() => smokeVerdict({}), Error, "outcome");
+});
+
+Deno.test("preserve-snapshot-resolved-cli: the CLI paths are inside the snapshot and must exist", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "snapshot_cli_" });
+  try {
+    assertEquals(snapshotCli(dir).exactl, join(dir, "tests", "scenario_framework", "bin", "exactl"));
+    await assertRejects(() => assertSnapshotCli(dir), Error);
+    await Deno.mkdir(join(dir, "tests", "scenario_framework", "bin"), { recursive: true });
+    await Deno.writeTextFile(join(dir, "tests", "scenario_framework", "bin", "exactl"), "#!/bin/sh\n");
+    await assertSnapshotCli(dir);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });

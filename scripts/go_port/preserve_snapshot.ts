@@ -93,11 +93,44 @@ async function statusOf(cwd: string): Promise<string> {
   return new TextDecoder().decode(result.stdout);
 }
 
+/** The two recorded smoke verdicts. */
+type TVerdict = "pass" | "fail";
+
+/** The snapshot's own CLI and daemon paths. */
+export function snapshotCli(
+  snapshot: string,
+): { readonly bin: string; readonly exactl: string; readonly daemon: string } {
+  const bin = join(snapshot, "tests", "scenario_framework", "bin");
+  return {
+    bin,
+    exactl: join(bin, "exactl"),
+    daemon: join(snapshot, "apps", "daemon", "main.ts"),
+  };
+}
+
+/** Refuses a snapshot whose own CLI is missing or resolves outside the snapshot. */
+export async function assertSnapshotCli(snapshot: string): Promise<void> {
+  const cli = snapshotCli(snapshot);
+  const realSnapshot = await Deno.realPath(snapshot);
+  const realExactl = await Deno.realPath(cli.exactl);
+  if (!realExactl.startsWith(`${realSnapshot}${SEPARATOR}`)) {
+    throw new Error(`snapshot exactl resolves outside the snapshot: ${realExactl}`);
+  }
+}
+
+/** Reads the scenario outcome and returns the recorded verdict. */
+export function smokeVerdict(raw: { readonly outcome?: string }): TVerdict {
+  if (raw.outcome === undefined || raw.outcome === "") {
+    throw new Error("smoke run manifest has no outcome");
+  }
+  return raw.outcome === "success" ? "pass" : "fail";
+}
+
 /** The environment that makes the scenario runner use the snapshot's own CLI and daemon. */
 export function snapshotEnv(snapshot: string): ISnapshotEnv {
   return {
-    EXA_BIN_PATH: join(snapshot, "tests", "scenario_framework", "bin"),
-    EXA_DAEMON_SCRIPT: join(snapshot, "apps", "daemon", "main.ts"),
+    EXA_BIN_PATH: snapshotCli(snapshot).bin,
+    EXA_DAEMON_SCRIPT: snapshotCli(snapshot).daemon,
   };
 }
 
@@ -156,6 +189,7 @@ async function main(args: readonly string[]): Promise<number> {
   }
   await Deno.remove(target, { recursive: true }).catch(() => {});
   await cloneSnapshot(manifest, target, REPO_ROOT);
+  await assertSnapshotCli(target);
   const commands: ICommandRecord[] = [];
   if (!args.includes("--skip-check")) commands.push(await run(["deno", "task", "check"], target));
   let smoke: { id: string; verdict: string; exit_code: number; evidence_hash: string } | null = null;
@@ -177,9 +211,12 @@ async function main(args: readonly string[]): Promise<number> {
       { EXA_LLM_PROVIDER: "mock", ...snapshotEnv(target) },
     );
     commands.push(record);
+    const manifestRecord = JSON.parse(
+      await Deno.readTextFile(join(target, "evidence", "run-manifest.json")),
+    ) as { readonly outcome?: string };
     smoke = {
       id: SMOKE_SCENARIO,
-      verdict: "pass",
+      verdict: smokeVerdict(manifestRecord),
       exit_code: record.exit_code,
       evidence_hash: await hashTree(join(target, "evidence")),
     };
@@ -194,7 +231,7 @@ async function main(args: readonly string[]): Promise<number> {
   await Deno.mkdir(dirname(output), { recursive: true });
   await Deno.writeTextFile(output, `${JSON.stringify(evidence, null, 2)}\n`);
   console.log(`✅ snapshot ${target}`);
-  return 0;
+  return smoke === null || smoke.verdict === "pass" ? 0 : 1;
 }
 
 if (import.meta.main) Deno.exit(await main(Deno.args));
