@@ -1,128 +1,152 @@
 /**
  * @module GoPortCostComparisonTest
  * @path tests/scripts/go_port_cost_comparison_test.ts
- * @description Validates the two-arm cost comparison schema, hazards, selection and extrapolation.
+ * @description Validates the two-arm cost schema, conversion activity logs, hazards, selection and extrapolation.
  * @architectural-layer Test
  * @dependencies [@std/assert]
  * @related-files [scripts/go_port/cost_comparison.ts]
  */
 
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
-import { validateCostComparison } from "../../scripts/go_port/cost_comparison.ts";
+import {
+  type IActivityHours,
+  type ICostComparison,
+  type IPackageCost,
+  validateCostComparison,
+} from "../../scripts/go_port/cost_comparison.ts";
 
-Deno.test("cost-comparison-schema: a missing arm, activity or hazard fails", () => {
-  const good = {
-    selection: { criteria: "small leaf", packages: ["p"] },
-    packages: [
-      {
-        package: "p",
-        arm: "converter-assisted",
-        extent: "dry-run",
-        hours: {
-          tool_development: 0,
-          ts_preparation: 0.1,
-          review: 0,
-          test_repair: 0,
-          parity_debugging: 0,
-          marker_resolution: 0,
-        },
-        total: 0.1,
-        hazards: [],
-        construct_family: "utility",
-      },
-    ],
-    extrapolation: { low: 0.1, high: 0.2, unit: "agent-hours", basis: "tool-only pilot" },
+const ACTIVITIES = [
+  "tool_development",
+  "ts_preparation",
+  "review",
+  "test_repair",
+  "parity_debugging",
+  "marker_resolution",
+] as const;
+
+function hours(value = 1): IActivityHours {
+  return {
+    tool_development: value,
+    ts_preparation: value,
+    review: value,
+    test_repair: value,
+    parity_debugging: value,
+    marker_resolution: value,
   };
-  assertEquals(validateCostComparison(good), []);
-  assertThrows(() => validateCostComparison({ ...good, packages: [{ ...good.packages[0], arm: "" }] }), Error, "arm");
+}
+
+function activityLog() {
+  return ACTIVITIES.map((activity) => ({
+    activity,
+    start: "2026-11-19T10:00:00.000Z",
+    end: "2026-11-19T11:00:00.000Z",
+  }));
+}
+
+function packageCost(overrides: Partial<IPackageCost> = {}): IPackageCost {
+  return {
+    package: "packages/shared",
+    arm: "agent-only",
+    extent: "conversion",
+    hours: hours(),
+    time_log: activityLog(),
+    spend_usd: 10,
+    total: 6,
+    hazards: [],
+    construct_family: "utility",
+    ...overrides,
+  };
+}
+
+function costDoc(overrides: Partial<ICostComparison> = {}): ICostComparison {
+  return {
+    selection: { criteria: "small leaf", packages: ["packages/shared"] },
+    packages: [
+      packageCost({ arm: "converter-assisted" }),
+      packageCost({ arm: "agent-only" }),
+    ],
+    extrapolation: { low: 100, high: 200, unit: "agent-hours", basis: "construct family" },
+    ...overrides,
+  };
+}
+
+Deno.test("cost-comparison-schema: a missing arm, activity, log or hazard fails", () => {
+  assertEquals(validateCostComparison(costDoc()), []);
   assertThrows(
-    () => validateCostComparison({ ...good, packages: [{ ...good.packages[0], hours: {} }] }),
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], arm: "" as never }] })),
+    Error,
+    "arm",
+  );
+  assertThrows(
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], hours: {} as never }] })),
     Error,
     "hours",
   );
-});
-
-Deno.test("cost-comparison-extrapolation: low above high or a bad total fails", () => {
-  const good = {
-    selection: { criteria: "x", packages: ["p"] },
-    packages: [{
-      package: "p",
-      arm: "agent-only",
-      extent: "dry-run",
-      hours: {
-        tool_development: 0,
-        ts_preparation: 0.1,
-        review: 0,
-        test_repair: 0,
-        parity_debugging: 0,
-        marker_resolution: 0,
-      },
-      total: 0.1,
-      hazards: [],
-      construct_family: "x",
-    }],
-    extrapolation: { low: 0.2, high: 0.1, unit: "agent-hours", basis: "x" },
-  };
-  assertThrows(() => validateCostComparison(good), Error, "extrapolation");
   assertThrows(
-    () =>
-      validateCostComparison({
-        ...good,
-        extrapolation: { ...good.extrapolation, low: 0.1, high: 0.2 },
-        packages: [{ ...good.packages[0], total: 0 }],
-      }),
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], time_log: [] }] })),
     Error,
-    "total",
+    "time_log",
   );
-});
-
-Deno.test("cost-comparison-hazards: an unresolved hazard must be named", () => {
-  const good = {
-    selection: { criteria: "x", packages: ["p"] },
-    packages: [{
-      package: "p",
-      arm: "agent-only",
-      extent: "dry-run",
-      hours: {
-        tool_development: 0,
-        ts_preparation: 0.1,
-        review: 0,
-        test_repair: 0,
-        parity_debugging: 0,
-        marker_resolution: 0,
-      },
-      total: 0.1,
-      hazards: ["unresolved"],
-      construct_family: "x",
-    }],
-    extrapolation: { low: 0.1, high: 0.2, unit: "agent-hours", basis: "x" },
-  };
-  assertEquals(validateCostComparison(good), []);
   assertThrows(
-    () => validateCostComparison({ ...good, packages: [{ ...good.packages[0], hazards: [1] as never }] }),
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], hazards: [1] as never }] })),
     Error,
     "hazards",
   );
 });
 
-Deno.test("cost-comparison-real: the committed evidence has both arms", async () => {
+Deno.test("cost-comparison-extrapolation: low above high or a bad total fails", () => {
+  assertThrows(
+    () => validateCostComparison(costDoc({ extrapolation: { low: 200, high: 100, unit: "agent-hours", basis: "x" } })),
+    Error,
+    "extrapolation",
+  );
+  assertThrows(
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], total: 0 }] })),
+    Error,
+    "total",
+  );
+});
+
+Deno.test("cost-comparison-selection: an empty package list is refused", () => {
+  assertThrows(
+    () =>
+      validateCostComparison(
+        costDoc({ selection: { criteria: "x", packages: [] }, packages: [] }),
+      ),
+    Error,
+    "selection.packages",
+  );
+  assertThrows(
+    () => validateCostComparison(costDoc({ packages: [{ ...costDoc().packages[0], construct_family: "" }] })),
+    Error,
+    "construct_family",
+  );
+});
+
+Deno.test("cost-comparison-conversion: a conversion needs both arms and a complete log", () => {
+  assertEquals(validateCostComparison(costDoc()), []);
+  assertThrows(
+    () => validateCostComparison(costDoc({ packages: [packageCost()] })),
+    Error,
+    "arm",
+  );
+  const missingReview = packageCost({
+    hours: { ...packageCost().hours, review: 0 },
+  });
+  assertThrows(
+    () => validateCostComparison(costDoc({ packages: [packageCost({ arm: "converter-assisted" }), missingReview] })),
+    Error,
+    "hours.review",
+  );
+});
+
+Deno.test("cost-comparison-real: the committed evidence keeps both dry-run arms", async () => {
   const evidence = await Deno.readTextFile(
     new URL("../../exaix-dev-docs/evidence/go-port/cost_comparison.json", import.meta.url),
   );
   assertStringIncludes(evidence, "converter-assisted");
   assertStringIncludes(evidence, "agent-only");
   assertStringIncludes(evidence, "dry-run");
-});
-
-Deno.test("cost-comparison-selection: an empty package list is refused", () => {
-  assertThrows(
-    () =>
-      validateCostComparison({
-        selection: { criteria: "x", packages: [] },
-        packages: [],
-        extrapolation: { low: 0, high: 1, unit: "agent-hours", basis: "x" },
-      }),
-    Error,
-    "selection.packages",
-  );
+  assertStringIncludes(evidence, "spend_usd");
+  assertStringIncludes(evidence, "time_log");
 });
