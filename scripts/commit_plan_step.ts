@@ -26,7 +26,7 @@ import { type IOwningRepo, type IPlanRef, parsePlanField, resolveOwningRepo } fr
 
 /** Submodules whose committed files a phase plan may reference by their own
  *  repository-relative path. */
-const PLAN_CODE_SUBMODULES = ["exaix-team", "exaix-enterprise"];
+const PLAN_CODE_SUBMODULES = ["unslop-ts", "exaix-team", "exaix-enterprise"];
 
 /** Run a git command in `cwd`; return trimmed stdout (empty on failure). */
 async function git(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {

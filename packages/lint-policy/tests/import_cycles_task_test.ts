@@ -54,6 +54,7 @@ Deno.test("check-task-cycles-adopted: the cycle tasks run through the check rout
     assertStringIncludes(config.tasks[name], "unslop-ts/src/cli/unslop.ts check");
     assertStringIncludes(config.tasks[name], "--rule=import-cycles");
   }
+  assertStringIncludes(config.tasks["check:cycles:gate"], "--strict");
   const gate = await task("check:cycles:gate");
   assertEquals(gate.code, 0, gate.stderr);
   assertStringIncludes(gate.stderr, "import-cycle gate passed");

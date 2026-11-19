@@ -587,7 +587,7 @@ export function validateCommitMsg(
 /** The staged (`--cached`) changed-file paths, repo-root-relative, or [] on failure. */
 /** Submodules whose committed files a phase plan may reference.
  *  The path is repository-relative, for example `exaix-team/packages/x/src/y.ts`. */
-const PLAN_CODE_SUBMODULES = ["exaix-team", "exaix-enterprise"];
+const PLAN_CODE_SUBMODULES = ["unslop-ts", "exaix-team", "exaix-enterprise"];
 
 /** Changed files of every code submodule the parent is committing. A paid-edition plan step keeps its source in a submodule, and those paths must pass the arrow-path check too.
  *  A staged diff comes first, then the submodule's last commit, because the pointer in this commit ships that committed work. */
