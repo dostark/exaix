@@ -15,6 +15,7 @@ version: "1.2.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
 ---
+
 ```text
 Key points
 
@@ -148,8 +149,11 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
    `check_commit_msg.ts`'s `KNOWN_COMMIT_FIELDS` omits it, so a `remediation:` line would be
    swallowed into `impact:`; mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>`), then
-   `deno run -A scripts/commit_plan_step.ts <msg-file> --commit`. Read #commit's validator
-   traps first (Structural Bloom, impact-component-word-in-what, semicolon-in-impact).
+   `deno run -A scripts/commit_plan_step.ts <msg-file> --commit`. Preflight the message:
+   each `impact:` entry is a separate `Component: detail` span, every component word must
+   appear in `what:`, and five or more changed files need at least two `what:` bullets.
+   A plan criterion may cite `path:symbol`; the gate strips the symbol, and `unslop-ts` is a
+   plan code submodule alongside `exaix-team` and `exaix-enterprise`.
 1. If the user's saved preference forbids a `plan:` field, skip `commit_plan_step.ts`: commit the
    submodule plan doc first, then the parent (code and pointer) with ordinary structured
    messages. Keep the `→ path` done-marks.

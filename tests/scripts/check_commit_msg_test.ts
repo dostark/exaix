@@ -648,6 +648,20 @@ plan: exaix-dev-docs/planning/phase-134.md#6`;
     assertEquals(result.success, true, result.errors?.join(", "));
   });
 
+  it("accepts a criterion path with a symbol suffix staged in the unslop-ts submodule", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["unslop-ts/src/cli/commands/check.ts:runCheck"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["unslop-ts"],
+        submoduleStagedFiles: ["src/cli/commands/check.ts"],
+      },
+    });
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
   it("still blocks a submodule path that is not staged in that submodule", () => {
     const result = validateCommitMsg(baseMsg, {
       changedFileCount: 6,

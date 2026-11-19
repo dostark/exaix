@@ -538,9 +538,10 @@ export function validateCommitMsg(
     /** A plan path may carry its submodule prefix (`exaix-team/x`), while the
      *  submodule reports `x`. Accept either form. */
     const isChanged = (path: string): boolean => {
-      if (changed.has(path)) return true;
+      const file = path.split(":")[0];
+      if (changed.has(file)) return true;
       for (const sub of PLAN_CODE_SUBMODULES) {
-        if (path.startsWith(`${sub}/`) && changed.has(path.slice(sub.length + 1))) return true;
+        if (file.startsWith(`${sub}/`) && changed.has(file.slice(sub.length + 1))) return true;
       }
       return false;
     };
