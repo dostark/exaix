@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAnomalyFinding } from "@exaix/core/events";
 import { ReviewCommands } from "../src/commands/review_commands.ts";
-import type { IReviewMetadata } from "../src/commands/review_commands.ts";
+import type { IReviewMetadata } from "../src/commands/review_types.ts";
 import { ReviewStatus } from "@exaix/core/status";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";

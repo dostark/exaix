@@ -7,7 +7,7 @@
  * partitioning, and responsive view resizing.
  */
 
-import type { IPane, ITuiView } from "../src/tui_dashboard.ts";
+import type { IPane, ITuiView } from "../src/dashboard/primitives.ts";
 
 export function makePane(id: string, viewName: string, overrides: Partial<IPane> = {}): IPane {
   return {

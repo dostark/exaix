@@ -71,7 +71,9 @@ Deno.test("[flows_fixture_coverage] [security] omissions and extra fixtures cann
   };
   assert((await errorsFor(loop, flipped)).some((error) => error.includes("verdict")));
 
-  const duplicate = [...loop.recordings, { ...loop.recordings[0], file: "copy.json" }];
+  const scoped = loop.recordings.find((recording) => recording.callSite?.scenarioId === loop.manifest.scenarioId);
+  assert(scoped);
+  const duplicate = [...loop.recordings, { ...scoped, file: "copy.json" }];
   assert((await errorsFor(loop, loop.manifest, duplicate)).some((error) => error.includes("duplicate")));
 
   const branch = pick("branch-routing");

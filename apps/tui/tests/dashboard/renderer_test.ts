@@ -11,7 +11,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { testProdRender } from "../renderer_test_utils.ts";
 import { makePane } from "../layout_test_utils.ts";
-import type { IPane } from "../../src/tui_dashboard.ts";
+import type { IPane } from "../../src/dashboard/primitives.ts";
 
 Deno.test("prodRender: falls back to 80x24 when consoleSize throws", async () => {
   const originalConsoleSize = (Deno as Partial<{ consoleSize: () => { columns: number; rows: number } }> as {

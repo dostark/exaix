@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAnomalyFinding } from "@exaix/core/events";
 import { ReviewCommands } from "../../apps/exactl/src/commands/review_commands.ts";
-import type { IReviewMetadata } from "../../apps/exactl/src/commands/review_commands.ts";
+import type { IReviewMetadata } from "../../apps/exactl/src/commands/review_types.ts";
 import { ReviewStatus } from "@exaix/core/status";
 import { createCliTestContext, initGitRepo, runGitCommand } from "../../apps/exactl/tests/helpers/test_setup.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

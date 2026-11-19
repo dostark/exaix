@@ -592,7 +592,10 @@ Deno.test("the root deno.json resolves the engine from unslop-ts only", async ()
     assertStringIncludes(tasks[name], `${ENGINE_ROOT}/src/cli/rule_report.ts`);
   }
   for (const name of WHOLE_TREE_TASKS) {
-    assertStringIncludes(tasks[name], `${ENGINE_ROOT}/src/cli/whole_tree.ts`);
+    const engine = name === "check:constant-restatement"
+      ? `${ENGINE_ROOT}/src/cli/unslop.ts check`
+      : `${ENGINE_ROOT}/src/cli/whole_tree.ts`;
+    assertStringIncludes(tasks[name], engine);
   }
 });
 

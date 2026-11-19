@@ -24,7 +24,7 @@ import {
   type IApprovalReaders,
   type IApprovalSource,
 } from "../src/commands/approval_sources.ts";
-import type { IReviewMetadata } from "../src/commands/review_commands.ts";
+import type { IReviewMetadata } from "../src/commands/review_types.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
