@@ -82,6 +82,31 @@ Deno.test("Self-improvement loop: routes domain-specific findings to domain docs
   );
 });
 
+Deno.test("Self-improvement loop: proposals are validated against existing guidance", async () => {
+  const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
+
+  assertStringIncludes(
+    processMd,
+    "Validate each proposal against the existing skill and document text",
+    "the retro must validate a proposal against the existing corpus first",
+  );
+  assertStringIncludes(
+    processMd,
+    "Validate against the corpus FIRST",
+    "the routing step must check the owning skill before proposing a patch",
+  );
+  assertStringIncludes(
+    processMd,
+    "execution miss, not a proposal",
+    "an already-covered rule must be classified as an execution miss",
+  );
+  assertStringIncludes(
+    processMd,
+    "Don't propose a new rule before proving the corpus does not already state it",
+    "the Do/Don't list must forbid duplicate proposals",
+  );
+});
+
 Deno.test("process-guards: the review-remediation-retro guardrails stay pinned", async () => {
   const [review, remediate, retro, nextSteps, commit] = await Promise.all([
     Deno.readTextFile(".copilot/skills/review-phase-code/SKILL.md"),

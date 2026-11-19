@@ -9,6 +9,7 @@ version: "1.3.0"
 topics: ["self-improvement", "instruction-adequacy", "retrospective", "agents", "maintenance", "rag", "process"]
 qwen_skill: self-improvement
 ---
+
 ```text
 Key points
 
@@ -25,6 +26,9 @@ Key points
   appropriate.
 - The retro is what makes the loop self-improving: it must close with real patches (or an
   explicit no-fix rationale per finding) — never a summary alone.
+- Validate each proposal against the existing skill and document text before reporting it.
+  A finding already covered by an instruction is an execution miss, not a proposal: mark it
+  REJECTED and cite the rule instead of adding a duplicate patch.
 
 Canonical prompt (short):
 - Mid-task: "Before implementing changes, run an Instruction Adequacy Check against .copilot/. If instructions are insufficient, patch .copilot/ with the smallest update needed (doc/template/cross-reference), rebuild/validate artifacts, then proceed with the primary task using the improved instructions."
@@ -89,6 +93,9 @@ Position in the loop — this skill is the terminal step:
    - **Q4 — Minor items**: Small inconsistencies, stale cross-links, nits? They count.
 
 3. **Route every finding to a fix** (do not stop at "good to know")
+   - **Validate against the corpus FIRST.** Grep the owning skill and the docs it cites for
+     the rule. If the guidance already covers the finding, mark it REJECTED as an execution
+     miss and cite the file and section; do not propose a new patch.
    - **Classify the finding FIRST: is it a general process/skill defect, or a
      phase/domain-specific detail?** A general skill (e.g. `review-phase-code`,
      `remediate-code-gaps`, `test-development`) must only carry guidance that is true for
@@ -257,6 +264,7 @@ Do / Don't
 - ✅ Do rebuild `.copilot/manifest.json` and chunks after agent doc edits.
 - ✅ Do add a regression test when a missing instruction caused a real failure.
 - ✅ Do run the retro only at the terminal step of the phase loop, after `#remediate-code-gaps`.
+- ✅ Do validate each proposal against the existing skill and document text; an already-documented rule is an execution miss, not a proposal.
 - ✅ Do answer all four retro questions from session evidence — not from memory of "having had a fine session".
 - ✅ Do route every retro finding to PATCHED / DEFERRED / REJECTED — findings without a disposition are not findings, they are noise.
 - ✅ Do remember `.agents`/`.claude`/`.cursor` are top-level symlinks to `.copilot` — editing `.copilot/skills/<name>/SKILL.md` already updates every mirror; verify with `stat -c %i` (or `ls -la .`) before manually copying anything.
@@ -269,6 +277,7 @@ Do / Don't
 - ❌ Don't update many docs at once without a clear gap list.
 - ❌ Don't rewrite a skill wholesale to fix one friction point — patch the smallest section.
 - ❌ Don't declare a retro complete on a summary alone — a retro with zero patches must say why (every finding REJECTED/DEFERRED with rationale).
+- ❌ Don't propose a new rule before proving the corpus does not already state it.
 - ❌ Don't regenerate `.copilot/DOCS.md` and commit wholesale cosmetic table drift — restore it from git when the only diff is formatting (keep content rows).
 - ✅ Do verify a phase doc's completion at the step level (checkboxes, per-step Status
   markers, Reachability Ledger rows) before trusting or rewriting its top-line Status
