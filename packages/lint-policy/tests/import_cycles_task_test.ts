@@ -46,6 +46,19 @@ Deno.test("cycle-task-advisory: check:cycles reports the repository cycles and e
   assertStringIncludes(result.stdout, "Graph ");
 });
 
+Deno.test("check-task-cycles-adopted: the cycle tasks run through the check route", async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(ROOT, "deno.json"))) as {
+    tasks: Record<string, string>;
+  };
+  for (const name of ["check:cycles", "check:cycles:gate"]) {
+    assertStringIncludes(config.tasks[name], "unslop-ts/src/cli/unslop.ts check");
+    assertStringIncludes(config.tasks[name], "--rule=import-cycles");
+  }
+  const gate = await task("check:cycles:gate");
+  assertEquals(gate.code, 0, gate.stderr);
+  assertStringIncludes(gate.stderr, "import-cycle gate passed");
+});
+
 Deno.test("cycle-task-json: check:cycles can emit the JSON report for evidence", async () => {
   const result = await new Deno.Command(Deno.execPath(), {
     args: [

@@ -42,6 +42,16 @@ Deno.test("constant_restatement_descriptor_preserves_scoped_permissions", async 
   assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
 });
 
+Deno.test("check-task-restatement-adopted: the migrated settings task runs through the check route", async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
+    tasks: Record<string, string>;
+  };
+  assertStringIncludes(config.tasks["check:constant-restatement"], "unslop-ts/src/cli/unslop.ts check");
+  const result = await runTask("check:constant-restatement", []);
+  assertEquals(result.code, 0, result.stderr);
+  assertStringIncludes(result.stdout, "No constant restatements");
+});
+
 interface ITaskResult {
   readonly code: number;
   readonly stdout: string;
