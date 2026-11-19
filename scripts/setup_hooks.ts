@@ -50,6 +50,40 @@ if [ "$STAGED_CHANGES" = "$DOCS_POINTER_CHANGE" ] &&
   exit 0
 fi
 
+# A tooling-only change (Go-port scripts, their tests, or the docs pointer) does not
+# need the whole-tree product gates. Run the scoped gates and let CI cover the rest.
+STAGED_PATHS=\$(git diff --cached --name-only --diff-filter=ACMR) || exit 1
+TOOLING_PATHS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -Ev '^(scripts/go_port/|tests/scripts/go_port_|exaix-dev-docs$)' || true)
+if [ -n "$STAGED_PATHS" ] && [ -z "$TOOLING_PATHS" ]; then
+  echo "🔧 Tooling-only change: running the scoped Go-port gates."
+  STAGED_TS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -E '\.ts$' || true)
+  STAGED_MD=\$(printf '%s\\n' "$STAGED_PATHS" | grep -E '\.md$' || true)
+  if [ -n "$STAGED_TS" ]; then
+    deno fmt --check $STAGED_TS || exit 1
+    deno lint $STAGED_TS || exit 1
+    deno check $STAGED_TS || exit 1
+    deno task check:arch || exit 1
+    deno task check:unused-exports:parity:strict || exit 1
+  fi
+  if [ -n "$STAGED_MD" ]; then
+    deno run --allow-read scripts/markdown_lint.ts $STAGED_MD || exit 1
+  fi
+  deno task check:optional-params:staged || exit 1
+  deno task check:ste100-comments:staged || exit 1
+  deno task check:md-path:staged || exit 1
+  deno task check:doc-section-refs:staged || exit 1
+  GO_PORT_TESTS=\$(ls tests/scripts/go_port_*_test.ts 2>/dev/null || true)
+  if command -v go >/dev/null 2>&1; then
+    deno test --allow-all $GO_PORT_TESTS || exit 1
+  else
+    echo "⚠️  go is not on PATH; skipping go_port_go_stub_test.ts."
+    GO_PORT_TESTS=\$(printf '%s\\n' "$GO_PORT_TESTS" | grep -v 'go_port_go_stub_test.ts' || true)
+    deno test --allow-all $GO_PORT_TESTS || exit 1
+  fi
+  echo "✅ Tooling-only gates passed."
+  exit 0
+fi
+
 echo "
 🔍 Running Pre-commit Gates..."
 
@@ -602,7 +636,7 @@ export async function installHooks() {
 
   console.log(`✅ Hooks installed successfully in ${hooksDir}`);
   console.log(
-    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture, scenario declarative-purity, skill duplication",
+    "   - pre-commit: Gate 0 (main branch guard) + full tree gates, with a tooling-only fast path for scripts/go_port, tests/scripts/go_port_* and the docs pointer",
   );
   console.log("   - pre-push: regenerate .copilot/manifest.json, type-check, security tests");
   console.log("   - pre-merge-commit: regenerate .copilot/manifest.json for merge commits");
