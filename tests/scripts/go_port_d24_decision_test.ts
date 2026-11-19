@@ -89,6 +89,21 @@ Deno.test("phase214-ready: proceed needs the parent, team exception and CI appro
   assertEquals(missing.length, 3);
 });
 
+Deno.test("phase214-ready-d26: a revise forecast does not block the committed port", () => {
+  const forecast = decide(input({ packages: [packageCost({ extent: "dry-run" })] }));
+  assertEquals(forecast.decision, "revise");
+  assertEquals(
+    readinessErrors({
+      decision: forecast,
+      parent_protected: true,
+      team_exception: true,
+      ci_approved: true,
+      evidence: ["snapshot", "verdicts", "benchmarks", "cost"],
+    }),
+    [],
+  );
+});
+
 Deno.test("phase245-real-run: the committed evidence is non-empty and the decision is recorded", async () => {
   const evidence = [
     "snapshot_run.json",

@@ -2,7 +2,7 @@
 /**
  * @module GoPortPhase214Ready
  * @path scripts/go_port/phase214_ready.ts
- * @description Validates that the D24 decision and the owner prerequisites make Phase 214 ready.
+ * @description Validates that the owner prerequisites and evidence make Phase 214 ready under D26.
  * @architectural-layer Tooling
  * @dependencies [@std/path]
  * @related-files [exaix-dev-docs/evidence/go-port/d24_decision.json, exaix-dev-docs/planning/phase-245-go-port-prerequisites.md]
@@ -25,10 +25,9 @@ export interface IReadinessInput {
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), "..", ".."));
 
-/** Returns every reason the next phase is not ready. */
+/** Returns every reason the next phase is not ready. D24 is a forecast, not a gate. */
 export function readinessErrors(input: IReadinessInput): string[] {
   const errors: string[] = [];
-  if (input.decision.decision !== "proceed") errors.push(`D24 decision is ${input.decision.decision}, not proceed`);
   if (!input.parent_protected) errors.push("parent go-port protection is not live");
   if (!input.team_exception) errors.push("exaix-team protection exception is missing");
   if (!input.ci_approved) errors.push("CI trigger approval is missing");
@@ -74,7 +73,7 @@ async function main(args: readonly string[]): Promise<number> {
   for (const file of evidence) {
     if (!(await Deno.stat(file).then(() => true).catch(() => false))) errors.push(`missing evidence ${file}`);
   }
-  const result = { ready: errors.length === 0, decision: decision.decision, errors };
+  const result = { ready: errors.length === 0, decision: decision.decision, d26: "committed", errors };
   await Deno.writeTextFile(
     join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", "phase214_ready.json"),
     `${JSON.stringify(result, null, 2)}\n`,
@@ -83,7 +82,7 @@ async function main(args: readonly string[]): Promise<number> {
     for (const error of errors) console.error(`❌ ${error}`);
     return 1;
   }
-  console.log("✅ Phase 214 is ready");
+  console.log(`✅ Phase 214 is ready (D26 committed; D24 forecast: ${decision.decision})`);
   return 0;
 }
 
