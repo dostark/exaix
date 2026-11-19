@@ -56,6 +56,18 @@ interface IBaselineInput {
 interface IRunManifest {
   readonly scenarioId?: string;
   readonly outcome?: string;
+  readonly suite_score?: number;
+  readonly steps?: readonly {
+    readonly stepId?: string;
+    readonly executionStatus?: string;
+    readonly score?: number;
+  }[];
+}
+
+/** One selected scenario's stable identity. */
+interface ISelectedScenario {
+  readonly id: string;
+  readonly scenario_path: string;
 }
 
 const PROFILE = "ci-smoke";
@@ -106,6 +118,49 @@ export function compareBaselines(previous: IScenarioBaseline, current: IScenario
   return errors;
 }
 
+/** Parses the optional replay baseline path. */
+export function replayPath(args: readonly string[]): string | undefined {
+  const arg = args.find((candidate) => candidate.startsWith("--replay="));
+  return arg?.slice("--replay=".length);
+}
+
+/** Returns the selected ids that produced no verdict. */
+export function missingVerdicts(
+  selectedIds: readonly string[],
+  verdicts: readonly IScenarioVerdict[],
+): string[] {
+  const found = new Set(verdicts.map((verdict) => verdict.id));
+  return selectedIds.filter((id) => !found.has(id));
+}
+
+/** Hashes the selected scenario paths and their manifest hashes. */
+export async function catalogHashFor(
+  selected: readonly ISelectedScenario[],
+  manifestScenarios: Readonly<Record<string, string>>,
+): Promise<string> {
+  const scenarios: Record<string, string> = {};
+  for (const scenario of selected) {
+    const path = join("tests", "scenario_framework", scenario.scenario_path);
+    scenarios[path] = manifestScenarios[path] ?? "";
+  }
+  return await contentHash({ scenarios });
+}
+
+/** Hashes the stable run result. Durations and timestamps are excluded. */
+export async function normalizedRunHash(raw: IRunManifest): Promise<string> {
+  const normalized = {
+    scenarioId: raw.scenarioId ?? "",
+    outcome: raw.outcome ?? "",
+    suite_score: raw.suite_score ?? 0,
+    steps: (raw.steps ?? []).map((step) => ({
+      stepId: step.stepId ?? "",
+      executionStatus: step.executionStatus ?? "",
+      score: step.score ?? 0,
+    })),
+  };
+  return await contentHash(normalized);
+}
+
 /** The runner command and environment that binds the snapshot CLI. */
 export function runnerCommand(
   snapshot: string,
@@ -127,11 +182,6 @@ export function runnerCommand(
   };
 }
 
-async function sha256(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes.buffer as ArrayBuffer);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 /** Reads every run manifest under the output directory and hashes its evidence. */
 async function readRunManifests(output: string): Promise<IScenarioVerdict[]> {
   const verdicts: IScenarioVerdict[] = [];
@@ -144,7 +194,7 @@ async function readRunManifests(output: string): Promise<IScenarioVerdict[]> {
       verdicts.push({
         id: raw.scenarioId,
         verdict,
-        evidence_hash: await sha256(await Deno.readFile(entry.path)),
+        evidence_hash: await normalizedRunHash(raw),
       });
     }
   } catch {
@@ -164,11 +214,12 @@ async function main(args: readonly string[]): Promise<number> {
   const manifest = JSON.parse(
     await Deno.readTextFile(join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", "snapshot_manifest.json")),
   ) as { scenarios: Record<string, string> };
-  const catalog_hash = await contentHash({ scenarios: manifest.scenarios });
   await Deno.remove(output, { recursive: true }).catch(() => {});
   await Deno.mkdir(output, { recursive: true });
   const catalog = await loadScenarioCatalog({ frameworkHome: join(snapshot, "tests", "scenario_framework") });
   const selected = selectScenariosForExecution({ scenarios: catalog, profile: ScenarioCiProfile.SMOKE });
+  const selectedEntries = catalog.filter((scenario) => selected.some((entry) => entry.id === scenario.id));
+  const catalog_hash = await catalogHashFor(selectedEntries, manifest.scenarios);
   const verdicts: IScenarioVerdict[] = [];
   for (const scenario of selected) {
     const scenarioOutput = join(output, scenario.id);
@@ -183,8 +234,9 @@ async function main(args: readonly string[]): Promise<number> {
     if (!result.success) console.error(`❌ scenario ${scenario.id} exited ${result.code}`);
     verdicts.push(...await readRunManifests(scenarioOutput));
   }
-  if (verdicts.length === 0) {
-    console.error("❌ no run manifest was written by the ci-smoke profile");
+  const missing = missingVerdicts(selected.map((scenario) => scenario.id), verdicts);
+  if (verdicts.length === 0 || missing.length > 0) {
+    console.error(`❌ missing verdict(s): ${missing.join(", ") || "none"}`);
     return 1;
   }
   const baseline: IScenarioBaseline = {
@@ -194,6 +246,23 @@ async function main(args: readonly string[]): Promise<number> {
     started_at: new Date().toISOString(),
     verdicts,
   };
+  const replay = replayPath(args);
+  if (replay !== undefined) {
+    let previous: IScenarioBaseline;
+    try {
+      previous = parseBaseline(JSON.parse(await Deno.readTextFile(resolve(replay))));
+    } catch (error) {
+      console.error(`❌ replay baseline read failed: ${error instanceof Error ? error.message : String(error)}`);
+      return 1;
+    }
+    const errors = compareBaselines(previous, baseline);
+    if (errors.length > 0) {
+      for (const error of errors) console.error(`❌ ${error}`);
+      return 1;
+    }
+    console.log("✅ replay matches the recorded baseline");
+    return 0;
+  }
   const path = join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", "scenario_verdicts.json");
   await Deno.writeTextFile(path, `${JSON.stringify(baseline, null, 2)}\n`);
   console.log(`✅ ${verdicts.length} scenario verdict(s) written to ${path}`);

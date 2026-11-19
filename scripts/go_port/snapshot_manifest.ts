@@ -129,7 +129,7 @@ function isLockfile(path: string): boolean {
 }
 
 /** Builds the baseline manifest for a repository root. */
-async function createManifest(
+export async function createManifest(
   root: string,
   options: { readonly allowDirty?: boolean; readonly images?: readonly string[] } = {},
 ): Promise<ISnapshotManifest> {
@@ -164,7 +164,9 @@ async function createManifest(
   };
   const body = { ...manifest, content_hash: "" };
   const bytes = new TextEncoder().encode(JSON.stringify(body)).byteLength;
-  assertBounds(Object.keys(scenarios).length + Object.keys(fixtures).length, bytes);
+  const entries = Object.keys(submodules).length + Object.keys(lockfiles).length +
+    Object.keys(scenarios).length + Object.keys(fixtures).length + Object.keys(images).length;
+  assertBounds(entries, bytes);
   return { ...manifest, content_hash: await contentHash(body as TJsonValue) };
 }
 

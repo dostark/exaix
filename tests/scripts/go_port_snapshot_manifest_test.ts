@@ -12,6 +12,7 @@ import {
   assertBounds,
   assertClean,
   contentHash,
+  createManifest,
   MAX_ENTRIES,
   MAX_MANIFEST_BYTES,
   parseSubmodules,
@@ -54,4 +55,22 @@ Deno.test("snapshot-manifest-secrets: untracked and local-secret paths are exclu
     selectTrackedPaths(["src/a.ts", ".env", ".exa/journal.db", "exaix-dev-docs/evidence/go-port/x.json", "deno.lock"]),
     ["src/a.ts", "deno.lock"],
   );
+});
+
+Deno.test("snapshot-manifest-real-determinism: two runs on one clean repo produce one hash", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "snapshot_manifest_" });
+  try {
+    const run = (args: readonly string[]) =>
+      new Deno.Command("git", { args: [...args], cwd: dir, stdout: "null", stderr: "null" }).output();
+    await run(["init"]);
+    await Deno.writeTextFile(`${dir}/README.md`, "fixture\n");
+    await run(["add", "README.md"]);
+    await run(["-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "-m", "fixture"]);
+    const first = await createManifest(dir);
+    const second = await createManifest(dir);
+    assertEquals(first.dirty, false);
+    assertEquals(first.content_hash, second.content_hash);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });
