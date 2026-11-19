@@ -7,7 +7,7 @@
  * @related-files [scripts/go_port/d24_decision.ts]
  */
 
-import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
@@ -42,11 +42,12 @@ Deno.test("go-port-prereq-docs: the evidence index names each recorded file", as
   assertStringIncludes(index, "D24 `revise`");
 });
 
-Deno.test("go-port-docs-plan: the plan is complete and has no open checkbox", async () => {
+Deno.test("go-port-docs-plan: the plan keeps its steps and records the post-gap review", async () => {
   const plan = await read(DOCS, "planning", "phase-245-go-port-prerequisites.md");
-  assertStringIncludes(plan, "status: COMPLETED");
-  assertFalse(/^[-*] \[ \]/m.test(plan), "plan has an open checkbox");
-  assertStringIncludes(plan, "**✅ COMPLETE**");
+  const manifests = plan.match(/^# step-manifest$/gm) ?? [];
+  assert(manifests.length >= 10, "plan lost its step manifests");
+  assertStringIncludes(plan, "## Post-Gap Analysis");
+  assertStringIncludes(plan, "## Gap Remediation Plan");
 });
 
 Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the decision", async () => {
