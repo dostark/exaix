@@ -7,7 +7,7 @@
  * @related-files [scripts/go_port/snapshot_manifest.ts]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import {
   assertBounds,
   assertClean,
@@ -70,6 +70,23 @@ Deno.test("snapshot-manifest-real-determinism: two runs on one clean repo produc
     const second = await createManifest(dir);
     assertEquals(first.dirty, false);
     assertEquals(first.content_hash, second.content_hash);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("snapshot-manifest-clean: a dirty tree is refused and a clean tree records false", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "snapshot_clean_" });
+  try {
+    const run = (args: readonly string[]) =>
+      new Deno.Command("git", { args: [...args], cwd: dir, stdout: "null", stderr: "null" }).output();
+    await run(["init"]);
+    await Deno.writeTextFile(`${dir}/README.md`, "fixture\n");
+    await assertRejects(() => createManifest(dir), Error, "dirty");
+    await run(["add", "README.md"]);
+    await run(["-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "-m", "fixture"]);
+    const manifest = await createManifest(dir);
+    assertEquals(manifest.dirty, false);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
