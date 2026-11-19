@@ -68,3 +68,12 @@ Deno.test("go-internal-boundary: a separate module cannot import internal", asyn
     await Deno.remove(dir, { recursive: true });
   }
 });
+
+Deno.test("go-gate-topology: the edition boundary runs in a pinned Go workflow", async () => {
+  const workflow = await Deno.readTextFile(join(GO_ROOT, ".github", "workflows", "go.yml"));
+  assertStringIncludes(workflow, 'go-version: "1.27.4"');
+  assertStringIncludes(workflow, "go build ./...");
+  assertStringIncludes(workflow, "GOWORK=off go build ./...");
+  assertStringIncludes(workflow, "go test ./...");
+  assertStringIncludes(workflow, "editionstub");
+});

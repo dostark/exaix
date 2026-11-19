@@ -8,6 +8,7 @@
  */
 
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { fromFileUrl, join } from "@std/path";
 import {
   type IActivityHours,
   type ICostComparison,
@@ -15,6 +16,8 @@ import {
   validateCostComparison,
 } from "../../scripts/go_port/cost_comparison.ts";
 import { decide, evidenceErrors, type ID24Input } from "../../scripts/go_port/d24_decision.ts";
+
+const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 
 const ACTIVITIES = [
   "tool_development",
@@ -125,7 +128,7 @@ Deno.test("d24-stop: both metrics over budget stop the port", () => {
   assertEquals(decision.decision, "stop");
 });
 
-Deno.test("d24-missing-evidence: a dry-run pilot is not a forecast measurement", () => {
+Deno.test("d24-dry-run: a dry-run pilot is not a forecast measurement", () => {
   const decision = decide(
     input({
       packages: [
@@ -192,23 +195,23 @@ Deno.test("d24-evidence-tamper: a missing or mismatched evidence reference fails
   assertEquals(evidenceErrors({ ...valid, cost_packages: 0 }).length > 0, true);
 });
 
-Deno.test("phase245-real-run: the committed evidence is non-empty and the decision is recorded", async () => {
-  const evidence = [
-    "snapshot_run.json",
-    "scenario_verdicts.json",
-    "benchmarks.json",
-    "cost_comparison.json",
-    "d24_decision.json",
-  ];
-  for (const name of evidence) {
-    const text = await Deno.readTextFile(
-      new URL(`../../exaix-dev-docs/evidence/go-port/${name}`, import.meta.url),
-    );
-    assertEquals(text.length > 100, true);
+Deno.test("phase245-real-run: the cutover script reads the real evidence", async () => {
+  const output = await Deno.makeTempDir({ prefix: "d24_output_" });
+  try {
+    const result = await new Deno.Command("deno", {
+      args: ["run", "-A", "scripts/go_port/d24_decision.ts", `--output=${output}`],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+    const decision = JSON.parse(
+      await Deno.readTextFile(join(output, "d24_decision.json")),
+    ) as { decision: string; reasons: readonly string[]; extrapolated_hours: number };
+    assertStringIncludes("proceed,revise,stop", decision.decision);
+    assertEquals(decision.extrapolated_hours >= 0, true);
+    if (decision.decision !== "proceed") assertEquals(decision.reasons.length > 0, true);
+  } finally {
+    await Deno.remove(output, { recursive: true });
   }
-  const decision = JSON.parse(
-    await Deno.readTextFile(new URL("../../exaix-dev-docs/evidence/go-port/d24_decision.json", import.meta.url)),
-  ) as { decision: string; reasons: readonly string[] };
-  assertStringIncludes("proceed,revise,stop", decision.decision);
-  if (decision.decision !== "proceed") assertEquals(decision.reasons.length > 0, true);
 });

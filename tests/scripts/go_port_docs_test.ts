@@ -86,3 +86,11 @@ Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the d
   assertStringIncludes(readme, "D24 returned **revise**");
   assertStringIncludes(readme, "tools/exaport");
 });
+
+Deno.test("go-port-docs-contracts: the plan names the implemented evidence contracts", async () => {
+  const plan = await read(DOCS, "planning", "phase-245-go-port-prerequisites.md");
+  for (const name of ["ICostComparison", "ID24Decision", "time_log", "spend_usd", "extrapolated_hours"]) {
+    assertStringIncludes(plan, name);
+  }
+  assertStringIncludes(plan, "validated by hand-written validators");
+});
