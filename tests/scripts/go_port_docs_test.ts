@@ -27,12 +27,12 @@ Deno.test("go-port-prereq-docs: the strategy records the W0a evidence and D24 re
   assertStringIncludes(strategy, "exaix-dev-docs/evidence/go-port/");
 });
 
-Deno.test("go-port-prereq-docs: the registry drops the Phase 245 row and blocks Phase 214", async () => {
+Deno.test("go-port-prereq-docs: the registry drops the closed Phase 245 and Phase 214 rows", async () => {
   const registry = await read(DOCS, "planning", "PHASE_REGISTRY.md");
   assertEquals(/^\| \d+\s+\| 245\s+\|/m.test(registry), false);
-  assertStringIncludes(registry, "| 214   | GP-01  | D26");
+  assertEquals(/^\| 214\s+\|/m.test(registry), false);
   assertStringIncludes(registry, "D26");
-  assertStringIncludes(registry, "**Current selection:** Phase 214");
+  assertStringIncludes(registry, "Phase 214 closed on 2026-11-20");
 });
 
 Deno.test("go-port-prereq-docs: the evidence index names each recorded file", async () => {
