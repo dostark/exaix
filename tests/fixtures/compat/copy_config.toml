@@ -1,0 +1,10 @@
+[system]
+root = "/compat/ws"
+version = "1.0.0"
+log_level = "info"
+
+[[portals]]
+alias = "app"
+target_path = "/compat/ws/portals-src/app"
+default_branch = "main"
+execution_strategy = "worktree"

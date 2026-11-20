@@ -15,6 +15,7 @@ export const SANDBOX_BIN = "/compat/bin";
 export const SANDBOX_LIB = "/compat/lib";
 export const SANDBOX_REF = "/compat/ref";
 export const SANDBOX_DENODIR = "/compat/denodir";
+export const SANDBOX_CONTROL = "/compat/ctl";
 /** The harness work tree, a sibling of the repository, relative to the repository root. */
 export const SANDBOX_TREE_ROOT = "../exaix-sandboxes/phase-214";
 
@@ -54,7 +55,12 @@ export function resolveBindingPath(path: string): string {
 }
 
 /** Builds the bubblewrap arguments, without the command to run. */
-export function buildBwrapArgs(binding: ICandidateBinding, copyDir: string, homeDir: string): string[] {
+export function buildBwrapArgs(
+  binding: ICandidateBinding,
+  copyDir: string,
+  homeDir: string,
+  controlDir: string | null = null,
+): string[] {
   const args = [
     ...BASE_MOUNTS,
     "--bind",
@@ -74,6 +80,8 @@ export function buildBwrapArgs(binding: ICandidateBinding, copyDir: string, home
   for (const tree of binding.trees) {
     args.push(tree.writable ? "--bind" : "--ro-bind", resolveBindingPath(tree.sourcePath), tree.mountPath);
   }
+
+  if (controlDir !== null) args.push("--bind", resolve(controlDir), SANDBOX_CONTROL);
 
   args.push(...ISOLATION_FLAGS);
   for (const [name, value] of Object.entries(binding.env)) {
@@ -107,7 +115,7 @@ export function assertBindingAllowed(binding: ICandidateBinding, tsHashes: Reado
   }
 }
 
-function decodeOutput(bytes: Uint8Array): { text: string; encoding: OutputEncoding } {
+export function decodeOutput(bytes: Uint8Array): { text: string; encoding: OutputEncoding } {
   try {
     return { text: new TextDecoder("utf-8", { fatal: true }).decode(bytes), encoding: OutputEncoding.UTF8 };
   } catch {
@@ -152,3 +160,25 @@ export async function probeBwrap(command: string = BWRAP_COMMAND): Promise<boole
 
 /** Sandbox tests declare `ignore: !BWRAP_USABLE`, so Deno reports them as ignored and never as passed. */
 export const BWRAP_USABLE = await probeBwrap();
+
+/** Copies every writable tree into the target directory and returns a binding that points at the copies. */
+export async function materializeWritableTrees(
+  binding: ICandidateBinding,
+  targetDir: string,
+): Promise<ICandidateBinding> {
+  const trees = [];
+  for (const tree of binding.trees) {
+    if (!tree.writable) {
+      trees.push(tree);
+      continue;
+    }
+    const destination = resolve(join(targetDir, basename(tree.mountPath)));
+    await Deno.remove(destination, { recursive: true }).catch(() => undefined);
+    await Deno.mkdir(targetDir, { recursive: true });
+    const copy = await new Deno.Command("cp", { args: ["-a", resolveBindingPath(tree.sourcePath), destination] })
+      .output();
+    if (!copy.success) throw new Error(`could not copy the tree for ${tree.mountPath}`);
+    trees.push({ ...tree, sourcePath: destination });
+  }
+  return { ...binding, trees };
+}

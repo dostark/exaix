@@ -19,6 +19,7 @@ import {
   assertBindingAllowed,
   buildBwrapArgs,
   BWRAP_USABLE,
+  materializeWritableTrees,
   probeBwrap,
   runInSandbox,
   SANDBOX_COPY_ROOT,
@@ -282,4 +283,28 @@ Deno.test("sandbox: the committed ts-frozen binding is complete and consistent",
     Error,
     "go-standalone",
   );
+});
+
+Deno.test("sandbox: a writable tree is copied per run and the original stays untouched", async () => {
+  const scratch = await makeScratch(["exactl"]);
+  try {
+    const original = join(scratch.dir, "cache");
+    await Deno.mkdir(original);
+    await Deno.writeTextFile(join(original, "entry"), "cached");
+    const binding: ICandidateBinding = {
+      ...bindingOf(CandidateKind.TS_FROZEN, scratch.executables),
+      trees: [
+        { sourcePath: original, mountPath: SANDBOX_DENODIR, writable: true, contentHash: FAKE_SHA },
+        { sourcePath: "/x/ref", mountPath: SANDBOX_REF, writable: false, contentHash: FAKE_SHA },
+      ],
+    };
+    const copied = await materializeWritableTrees(binding, join(scratch.dir, "run"));
+
+    assertEquals(copied.trees[1], binding.trees[1]);
+    assertEquals(copied.trees[0].sourcePath, join(scratch.dir, "run", "denodir"));
+    await Deno.writeTextFile(join(copied.trees[0].sourcePath, "entry"), "changed");
+    assertEquals(await Deno.readTextFile(join(original, "entry")), "cached");
+  } finally {
+    await Deno.remove(scratch.dir, { recursive: true });
+  }
 });
