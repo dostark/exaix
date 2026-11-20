@@ -3,9 +3,9 @@ name: "Code Quality Gates"
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, go-port]
   pull_request:
-    branches: [main]
+    branches: [main, go-port]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
