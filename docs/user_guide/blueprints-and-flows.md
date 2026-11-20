@@ -92,7 +92,7 @@ genuinely needs to read the live repository or produce real file changes.
 
 `feature-development.flow.yaml` ships with `strategy: "cli_delegate"` on all 6 of its steps as
 a worked example of this rollout, chosen to match its own direct-execution comparison baseline
-(see `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
+(see `exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`'s `feature-development`
 decision).
 
 ## Session Delegate Cycle Step Type

@@ -2,7 +2,7 @@
  * @module FlowStrategyAuditTest
  * @path tests/blueprints/flow_strategy_audit_test.ts
  * @description Cross-checks Phase 159 Step 7's flow catalog strategy audit table (recorded in
- *   exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md) against a live
+ *   exaix-dev-docs/completed/phase-159-flow-step-execution-strategy.md) against a live
  *   enumeration of Blueprints/Flows/*.flow.yaml, so no step in the shipped catalog silently
  *   lacks an explicit strategy decision and no flow's strategy assignment regresses unnoticed.
  */

@@ -6,7 +6,7 @@
  * Tests complementary to reflexive_agent_criteria_test.ts — covers only
  * behaviors not already tested there (cap logic, no-goals analysis, etc.).
  * @architectural-layer Tests
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [@/exaix-dev-docs/completed/phase-49-quality-pipeline-hardening.md]
  */
 import { ANALYZER_VERSION } from "@exaix/core";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";

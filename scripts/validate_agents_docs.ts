@@ -85,7 +85,9 @@ async function main() {
       for await (const entry of walk(dir, { exts: [".md"], maxDepth: 4 })) {
         if (entry.isFile) {
           if (
-            isAgentEvidencePath(entry.path) || entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
+            isAgentEvidencePath(entry.path) || entry.path.includes("/planning/") ||
+            entry.path.startsWith("exaix-dev-docs/completed/") ||
+            entry.path.startsWith("exaix-dev-docs/cancelled/") || entry.path.includes("/issues/") ||
             entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
             entry.path.includes("/vc/") ||
             entry.name === "MAINTENANCE.md" || entry.name === "TOOLS.md"

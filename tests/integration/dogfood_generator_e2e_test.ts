@@ -24,7 +24,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 const BLUEPRINT_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
-const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-dogfooding-a-c.md");
+const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "completed", "phase-120-dogfooding-a-c.md");
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 

@@ -48,7 +48,7 @@ The shared rule catalog (`scripts/config/ste100_rule_catalog.json`) names each
 supported rule and its technical terms. To review or extend a term or a rule
 decision, update the catalog, regenerate the classification, and record the
 decision next to the entry — see
-`exaix-dev-docs/planning/phase-195-asd-ste100-agent-prose.md` (§ Pre-registration
+`exaix-dev-docs/completed/phase-195-asd-ste100-agent-prose.md` (§ Pre-registration
 and the rule catalog) for the review process and obligation evidence.
 
 (Sections 1.1–1.6 have been removed and relocated to the central guide.)

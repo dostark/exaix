@@ -7,7 +7,7 @@
  * Catches drift that frontmatter/link/manifest checks (docs-agent-validate,
  * markdown_lint.ts, build_agents_index.ts) cannot see: claims that contradict each
  * other across documents, or that contradict the shipped/excluded phase ground truth
- * exaix-dev-docs/planning/phase-91-positioning-and-narrative.md establishes.
+ * exaix-dev-docs/completed/phase-91-positioning-and-narrative.md establishes.
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";

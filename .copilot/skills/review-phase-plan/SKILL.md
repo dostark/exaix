@@ -81,7 +81,7 @@ risk before we start coding. Write the gaps into the document."
 
 Examples
 - "#review-phase-plan exaix-dev-docs/planning/phase-65-flow-scheduler.md"
-- "#review-phase-plan exaix-dev-docs/planning/phase-48-acceptance-criteria-propagation.md
+- "#review-phase-plan exaix-dev-docs/completed/phase-48-acceptance-criteria-propagation.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't

@@ -367,13 +367,13 @@ convert a phase planning document into a queue of request files:
 
 ```bash
 # Generate request files for dogfooding phase E (default: Workspace/Requests/)
-deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/completed/phase-122-dogfooding-e.md
 
 # Preview without writing
-deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --dry-run
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/completed/phase-122-dogfooding-e.md --dry-run
 
 # Write to the sandbox's request queue (external sandbox root)
-deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --out-dir "$DOGFOOD_SANDBOX/workspace/Workspace/Requests/"
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/completed/phase-122-dogfooding-e.md --out-dir "$DOGFOOD_SANDBOX/workspace/Workspace/Requests/"
 ```
 
 The generator reads fenced YAML step-manifests (the `# step-manifest` blocks in
@@ -550,7 +550,7 @@ When the daemon delegates to a headless agent:
    files were touched), attributes costs, and presents the changeset
    for human review.
 
-This implements session delegation (shipped — see `exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`).
+This implements session delegation (shipped — see `exaix-dev-docs/completed/phase-111-session-delegation-runtime-and-e2e.md`).
 Without it, the daemon uses its in-process agent (`ReActLoopStrategy`) which works identically
 but runs on the daemon's own provider.
 
@@ -992,7 +992,7 @@ The engine's user guide, rule reference, whole-tree checks and report schema are
 ## See Also
 
 - `exaix-dev-docs/dev/Exaix_Dogfooding_Analysis.md` — Full analysis of dogfooding readiness, gaps, and future phases
-- `exaix-dev-docs/planning/phase-120-dogfooding-a-c.md` — dogfood infrastructure implementation plan (config, bootstrap, docs)
+- `exaix-dev-docs/completed/phase-120-dogfooding-a-c.md` — dogfood infrastructure implementation plan (config, bootstrap, docs)
 - [Exaix User Guide](user_guide/README.md) — General usage and deployment
 - [Exaix Evaluation Guide](evaluation-framework.md) — Scenario framework and `exactl eval`
 - `TOOLS.md` — All agent-accessible MCP tools

@@ -147,10 +147,10 @@ Bias toward leaving `strategy` unset; opt a step in only when its task genuinely
 `feature-development.flow.yaml` ships `strategy: "cli_delegate"` on all 6 of its steps as a
 worked example — required uniformly (not a discretionary rubric outcome for every one of its
 steps) to match its own direct-execution comparison arm; see
-`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
+`exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`'s `feature-development`
 decision (`REVISE` as of 2026-08-05: same measured quality as direct execution, meaningfully
 higher token/wall-clock cost) and
-`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`'s Step 7 audit table for
+`exaix-dev-docs/completed/phase-159-flow-step-execution-strategy.md`'s Step 7 audit table for
 the full 17-flow catalog rollout and its per-step rationale.
 
 ## Using flows
@@ -180,7 +180,7 @@ it as a `*.flow.yaml`, the integrity gate will require those agent roles to exis
 
 A new flow must carry either a value-evaluation result (a flow-ablation or flow-swap
 delta from the value tier described in
-`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
+`exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`) or a stated reason
 it cannot be measured yet (e.g. it is not corpus-reachable). A flow with neither is
 presence-tested (it loads and produces its files) but never shown to help. A value
 decision for a flow whose steps mix execution strategies is confounded — pin every

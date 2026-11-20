@@ -11,7 +11,7 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
 > test-backed, and wired into production via `apps/daemon/main.ts`. The daemon
 > constructs all session-delegation services when `session_delegate.enabled = true`.
 > For the runtime wiring, gate hooks, and headless launch details, see
-> `exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`.
+> `exaix-dev-docs/completed/phase-111-session-delegation-runtime-and-e2e.md`.
 
 ## Contract
 

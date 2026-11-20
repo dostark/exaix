@@ -5,7 +5,7 @@
  * @description Runs the ci-smoke profile against the preserved snapshot and records per-scenario verdicts.
  * @architectural-layer Tooling
  * @dependencies [@std/fs, @std/path]
- * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/planning/phase-245-go-port-prerequisites.md]
+ * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/completed/phase-245-go-port-prerequisites.md]
  *
  * Usage:
  *   deno run -A scripts/go_port/scenario_baseline.ts [--snapshot=<dir>] [--output=<dir>]

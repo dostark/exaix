@@ -5,7 +5,7 @@
  * @description Writes the deterministic Phase 245 baseline manifest from tracked files, submodule SHAs and runtime versions.
  * @architectural-layer Tooling
  * @dependencies [@std/path]
- * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/planning/phase-245-go-port-prerequisites.md]
+ * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/completed/phase-245-go-port-prerequisites.md]
  *
  * Usage:
  *   deno run -A scripts/go_port/snapshot_manifest.ts [--allow-dirty] [--output=<path>]

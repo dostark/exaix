@@ -63,8 +63,8 @@ Find all gaps between plan claims and implementation, write them into the
 document with remediation steps."
 
 Examples
-- "#review-phase-code exaix-dev-docs/planning/phase-63-flow-error-recovery.md"
-- "#review-phase-code exaix-dev-docs/planning/phase-64-flow-namespace-blackboard.md
+- "#review-phase-code exaix-dev-docs/completed/phase-63-flow-error-recovery.md"
+- "#review-phase-code exaix-dev-docs/completed/phase-64-flow-namespace-blackboard.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't

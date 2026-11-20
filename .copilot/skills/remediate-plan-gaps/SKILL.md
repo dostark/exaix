@@ -38,7 +38,7 @@ Canonical prompt (short):
 Edit each step to close its gaps, re-run tests, bump version, update Status."
 
 Examples
-- "#remediate-plan-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
+- "#remediate-plan-gaps exaix-dev-docs/completed/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
 - ✅ Read each gap entry and its Resolution before editing.

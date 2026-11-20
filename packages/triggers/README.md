@@ -249,4 +249,4 @@ deduplication from genuine policy failures.
 - `packages/core/src/triggers/` — `ITriggerAdapter`, `ExecutionTriggerEnvelope`, `ExecutionTriggerEnvelopeSchema`
 - `packages/core/src/types/enums.ts` — `FilesystemEventKind`, `TriggerDisposition`
 - `packages/core/src/types/constants.ts` — `TRIGGER_PAYLOAD_MAX_BYTES`
-- `exaix-dev-docs/planning/phase-88-trigger-adapters-and-event-ingestion.md` — implementation plan
+- `exaix-dev-docs/completed/phase-88-trigger-adapters-and-event-ingestion.md` — implementation plan

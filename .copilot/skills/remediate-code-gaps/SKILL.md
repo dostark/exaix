@@ -42,7 +42,7 @@ Canonical prompt (short):
 remediation steps. Edit source files to close each gap, re-run tests, CI gates, commit."
 
 Examples
-- "#remediate-code-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
+- "#remediate-code-gaps exaix-dev-docs/completed/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
 - ✅ Read each gap's remediation step (Actions) before editing.

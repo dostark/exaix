@@ -10,7 +10,7 @@ flow: "dogfood-loop"
 
 # Plan the next dogfooding iteration against this repository
 
-Plan the next self-hosted development iteration, using `exaix-dev-docs/planning/phase-142-subsystem-evaluation-packs.md` for current phase state. Determine:
+Plan the next self-hosted development iteration, using `exaix-dev-docs/completed/phase-142-subsystem-evaluation-packs.md` for current phase state. Determine:
 
 - Which phase step is next and what it depends on
 - Which parts are safe for an agent to execute unattended

@@ -331,7 +331,7 @@ Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged â
 });
 
 Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far smaller than the source doc", async () => {
-  const realDoc = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-171-packages-team-submodule-extraction.md");
+  const realDoc = join(REPO_ROOT, "exaix-dev-docs", "completed", "phase-171-packages-team-submodule-extraction.md");
   // The planning corpus lives in a submodule; absent in bare checkouts â†’ nothing to prove.
   const realDocExists = await Deno.stat(realDoc).then(() => true).catch(() => false);
   if (!realDocExists) {

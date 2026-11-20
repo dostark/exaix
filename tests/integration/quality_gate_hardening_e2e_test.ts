@@ -8,7 +8,7 @@
  *   Gap 3: Content-based complexity classification (heuristic + constants)
  *   Gap 4: Structured frontmatter criteria flow through pipeline
  * @architectural-layer Tests
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [@/exaix-dev-docs/completed/phase-49-quality-pipeline-hardening.md]
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";

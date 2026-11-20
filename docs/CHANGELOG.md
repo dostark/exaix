@@ -690,7 +690,7 @@ The command grammar is `exactl <noun> [<sub-noun>] <verb> [<id>…] [flags]` (se
   submodule as `exaix-team/apps/mcp-server/` — both `exaix-team/` and `exaix-enterprise/`
   now share the identical `packages/` + `apps/` layout. No CLI command, config key, or
   public `@exaix/*`/`@exaix-team/*` package export changed. See
-  `exaix-dev-docs/planning/phase-193-team-enterprise-directory-restructure.md` for the full
+  `exaix-dev-docs/completed/phase-193-team-enterprise-directory-restructure.md` for the full
   record.
 
 ## Unreleased — Phase 180 (Runner Terminology + AgentRunner Journal Tagging)

@@ -643,7 +643,7 @@ running). Select it explicitly, e.g.
 or a single task via `--scenario external-terminal-bench-<task-id>`. Results land in eval
 history with `benchmark`/`benchmark_version` provenance, surfaced by
 `exactl eval report --view external` (methodology, caveats, and coverage semantics are
-tracked in `exaix-dev-docs/planning/phase-144-external-benchmark-interop.md`).
+tracked in `exaix-dev-docs/completed/phase-144-external-benchmark-interop.md`).
 
 ### Running the tiers by hand
 
@@ -1120,7 +1120,7 @@ control used — it fell back to a ReAct loop instead. The comparison therefore 
 once** (flow orchestration _and_ execution strategy), not one, so the delta cannot be attributed to
 flow orchestration alone. It is recorded `awaiting-remeasurement`, not `keep`/`revise`/`remove`,
 pending a controlled re-run once flow steps can opt into `strategy: "cli_delegate"` — see
-`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`. The lesson generalizes: an
+`exaix-dev-docs/completed/phase-159-flow-step-execution-strategy.md`. The lesson generalizes: an
 arm that appears to isolate one variable can still be confounded by something the comparison
 didn't hold fixed, and the honest response is to withhold the verdict, not round it off.
 
@@ -1128,7 +1128,7 @@ didn't hold fixed, and the honest response is to withhold the verdict, not round
 
 Live-run records — the actual arm results, per-skill/agent-role/flow decisions, and founding
 baselines for trend comparison — are recorded directly in
-`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`, dated per run. This tier is
+`exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`, dated per run. This tier is
 provider-live and deliberately scheduled (never a CI gate, never a pre-commit hook); running a
 screening pass or a full-trial arm is an operator action, the same class as §12's fixture capture.
 
@@ -1445,7 +1445,7 @@ the real `claude-code` cell. Every attacked twin resolved to defended
 any persona. None of the three personas converged in a single clarification round — the real
 engine judged even the cooperative persona's specific, honest answer as not yet satisfied, a
 genuine finding about the engine's one-round satisfaction bar rather than a scenario defect. See
-`exaix-dev-docs/planning/phase-145-adversarial-and-interactive-eval.md` Success Metrics for the
+`exaix-dev-docs/completed/phase-145-adversarial-and-interactive-eval.md` Success Metrics for the
 full per-vector and per-persona tables and their individual-run provenance.
 
 **These numbers are a point-in-time snapshot, not a live guarantee.** They describe one provider,
@@ -1607,7 +1607,7 @@ real and worth stating plainly:
   judge leg is gated) is the natural place to close this gap; none exists yet.
 
 This boundary was found and disclosed by the 2026-09-13 Post-Gap Analysis in
-`exaix-dev-docs/planning/phase-148-memory-evaluation-framework.md` — see that document's GAP-2
+`exaix-dev-docs/completed/phase-148-memory-evaluation-framework.md` — see that document's GAP-2
 for the full evidence trail.
 
 ---
@@ -1752,7 +1752,7 @@ CI proves the wire contract against an in-process receiver
 delivery to a real OTel-native tool. The live cutover run used the compiled Team CLI against a
 real `otel/opentelemetry-collector-contrib` instance and confirmed the root/child spans and eval
 attributes it received; the OTel trace-export planning record in
-`exaix-dev-docs/planning/phase-177-otel-trace-export.md` documents the redacted invocation, collector
+`exaix-dev-docs/completed/phase-177-otel-trace-export.md` documents the redacted invocation, collector
 config, and receiver output. Typed `otel.export.started`/`completed`/`failed` audit events (written
 only after the immutable input snapshot is taken) record destination scheme/host/port, record/span
 counts, duration, error code, and retry count for every invocation — never headers, URL user-info,

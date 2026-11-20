@@ -5,7 +5,7 @@
  * @description Clones the recorded baseline outside the repository, runs check and one smoke scenario, and records the result.
  * @architectural-layer Tooling
  * @dependencies [@std/path]
- * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/planning/phase-245-go-port-prerequisites.md]
+ * @related-files [exaix-dev-docs/evidence/go-port/snapshot_manifest.json, exaix-dev-docs/completed/phase-245-go-port-prerequisites.md]
  *
  * Usage:
  *   deno run -A scripts/go_port/preserve_snapshot.ts [--manifest=<path>] [--target=<dir>] [--skip-check] [--skip-smoke]

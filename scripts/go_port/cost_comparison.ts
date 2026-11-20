@@ -5,7 +5,7 @@
  * @description Records the bounded converter-assisted and agent-only cost pilot for two leaf packages.
  * @architectural-layer Tooling
  * @dependencies [@std/path]
- * @related-files [exaix-dev-docs/evidence/go-port/cost_comparison.json, exaix-dev-docs/planning/phase-245-go-port-prerequisites.md]
+ * @related-files [exaix-dev-docs/evidence/go-port/cost_comparison.json, exaix-dev-docs/completed/phase-245-go-port-prerequisites.md]
  *
  * Usage:
  *   deno run -A scripts/go_port/cost_comparison.ts

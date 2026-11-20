@@ -536,7 +536,7 @@ Binding issues are reported by `exactl flow bindings` and fail the flow prefligh
 | `pinned`                       | Exact override conflicts with a pinned flow value.            |
 | `lock_mismatch`                | Replay inputs differ from the saved lock.                     |
 
-The implementation contract is tracked in the [flow-step model bindings plan](../../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
+The implementation contract is tracked in the [flow-step model bindings plan](../../exaix-dev-docs/completed/phase-204-flow-step-model-bindings.md#step-10--documentation).
 
 ## OpenAI-compatible Chat Completions (`openai-chat`)
 

@@ -55,7 +55,7 @@ Deno.test("go-port-prereq-docs: D26 unblocks Phase 214 in the readiness evidence
 });
 
 Deno.test("go-port-docs-plan: the plan keeps its steps and records the post-gap review", async () => {
-  const plan = await read(DOCS, "planning", "phase-245-go-port-prerequisites.md");
+  const plan = await read(DOCS, "completed", "phase-245-go-port-prerequisites.md");
   const manifests = plan.match(/^# step-manifest$/gm) ?? [];
   assert(manifests.length >= 10, "plan lost its step manifests");
   assertStringIncludes(plan, "## Post-Gap Analysis");
@@ -88,7 +88,7 @@ Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the d
 });
 
 Deno.test("go-port-docs-contracts: the plan names the implemented evidence contracts", async () => {
-  const plan = await read(DOCS, "planning", "phase-245-go-port-prerequisites.md");
+  const plan = await read(DOCS, "completed", "phase-245-go-port-prerequisites.md");
   for (const name of ["ICostComparison", "ID24Decision", "time_log", "spend_usd", "extrapolated_hours"]) {
     assertStringIncludes(plan, name);
   }

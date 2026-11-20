@@ -7,7 +7,7 @@
  * across the pipeline: FlowRunner -> GateEvaluator -> CriteriaGenerator ->
  * ReflexiveAgent -> ConfidenceScorer (Phase 48, Step 12).
  * @architectural-layer Tests
- * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
+ * @related-files [@/exaix-dev-docs/completed/phase-48-acceptance-criteria-propagation.md]
  */
 import {
   ANALYZER_VERSION,

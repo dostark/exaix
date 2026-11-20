@@ -120,7 +120,7 @@ that **validates those proposals before they take effect**. Audit the boundary.
 → `Deno.dlopen`) the daemon currently REQUIRES `--allow-ffi`, so the Deno
 permission set cannot be a hard escape boundary — treat it as defense-in-depth
 and treat the **container** as the real containment layer. (Removing this
-dependency is tracked in `exaix-dev-docs/planning/phase-110-security-hardening-followups.md`.)
+dependency is tracked in `exaix-dev-docs/completed/phase-110-security-hardening-followups.md`.)
 
 ### Reusable Security Primitives (prefer these over a new check)
 
@@ -341,7 +341,7 @@ For each finding, write a TDD-First remediation step:
    `exaix-dev-docs/dev/security/Exaix_Security_Vulnerability_Analysis.md` (keep its
    numbering and status conventions), and add the Attack-Surface row (S1–S9)
    each finding belongs to. Open security work is tracked in
-   `exaix-dev-docs/planning/phase-110-security-hardening-followups.md`.
+   `exaix-dev-docs/completed/phase-110-security-hardening-followups.md`.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts <doc>`.
 
 ---

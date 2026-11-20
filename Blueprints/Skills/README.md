@@ -88,7 +88,7 @@ instructions into the agent's prompt.
 
 A new skill must carry either a value-evaluation result (a paired treatment/control
 delta from the value tier described in
-`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
+`exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`) or a stated reason
 it cannot be measured yet (e.g. no corpus task reaches it). A skill with neither is
 presence-tested but never shown to help — see that phase's Executive Summary for why
 that distinction matters.

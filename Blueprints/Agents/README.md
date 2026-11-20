@@ -96,7 +96,7 @@ exactl blueprint create my-agent-role --name "My Agent Role" --model "provider:m
 
 A new agent role must carry either a value-evaluation result (a head-to-head or
 config-arm delta from the value tier described in
-`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
+`exaix-dev-docs/completed/phase-158-artefact-value-evaluation.md`) or a stated reason
 it cannot be measured yet (e.g. it is not corpus-reachable). An agent role with neither is presence-tested but never shown to help.
 
 **Persona-body value specifically** is a separate, narrower question from "does this agent role earn its place" — `agent-role-swap`/`agent-role-config` vary the whole bundle or
