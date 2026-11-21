@@ -41,8 +41,8 @@ import { liveSkipReason } from "../helpers/live_presets.ts";
 const REPO_ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 const SCRATCH_ROOT = "/tmp";
 
-/** The live claude legs need an authenticated Claude subscription, so they run only when the `live-calibration-sandbox` preset holds. */
-const LIVE_CLAUDE_IGNORED = liveSkipReason("calibration-sandbox") !== null;
+/** The live legs spend real claude and codex subscription quota, so they run only when the `live-calibration-sandbox` preset holds. */
+const LIVE_CALIBRATION_IGNORED = liveSkipReason("calibration-sandbox") !== null;
 
 Deno.test({
   name: "[CalibrationSandbox] assertSandboxSupported succeeds on this Linux+bwrap environment",
@@ -125,7 +125,7 @@ Deno.test({
 
 Deno.test({
   name: "[CalibrationSandbox][live] a real sandboxed claude call succeeds and returns real content",
-  ignore: LIVE_CLAUDE_IGNORED,
+  ignore: LIVE_CALIBRATION_IGNORED,
   fn: async () => {
     const result = await runSandboxedCliCall({
       cli: CalibrationSandboxCli.Claude,
@@ -140,7 +140,7 @@ Deno.test({
 
 Deno.test({
   name: "[CalibrationSandbox][live] a real sandboxed codex call succeeds and returns real content",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: LIVE_CALIBRATION_IGNORED,
   fn: async () => {
     const result = await runSandboxedCliCall({
       cli: CalibrationSandboxCli.Codex,
@@ -174,7 +174,7 @@ class FixedClock implements ICalibrationClock {
 Deno.test({
   name:
     "[CalibrationSandbox][live] CalibrationRunner completes a real end-to-end run with the sandboxed reference adapter",
-  ignore: LIVE_CLAUDE_IGNORED,
+  ignore: LIVE_CALIBRATION_IGNORED,
   fn: async () => {
     const item: ICalibrationSourceItem = {
       id: "sandbox-integration-item",
