@@ -92,7 +92,10 @@ Deno.test(
     assertStringIncludes(workflow, "GOTOOLCHAIN: local");
     assertStringIncludes(workflow, "fetch-depth: 0");
     assertStringIncludes(workflow, "make ci");
-    assertStringIncludes(makefile, "check: check-index fmt vet tidy test build stub");
+    const checkLine = makefile.split("\n").find((line) => line.startsWith("check:")) ?? "";
+    for (
+      const target of ["check-index", "fmt", "layercheck", "vet", "tidy", "lint", "test", "build", "stub"]
+    ) assertStringIncludes(checkLine, target);
     for (
       const command of [
         "go vet ./...",
