@@ -33,6 +33,7 @@
     "./packages/session",
     "./packages/model-registry",
     "./packages/lint-policy",
+    "./scripts/go_port/exaport",
     "./unslop-ts",
     "./apps/daemon",
     "./apps/exactl",
