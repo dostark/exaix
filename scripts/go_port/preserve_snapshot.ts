@@ -13,6 +13,7 @@
 
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve, SEPARATOR } from "@std/path";
+import { argValue } from "./cli_args.ts";
 
 /** The refs a snapshot must check out. */
 interface IManifestRefs {
@@ -83,14 +84,20 @@ export async function cloneSnapshot(refs: IManifestRefs, target: string, repoRoo
   if (before !== after) throw new Error("source worktree changed while cloning the snapshot");
 }
 
-async function statusOf(cwd: string): Promise<string> {
+export async function gitOutput(cwd: string, args: readonly string[]): Promise<string> {
   const result = await new Deno.Command("git", {
-    args: ["-C", cwd, "status", "--porcelain"],
+    args: [...args],
+    cwd,
     env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
-    stderr: "null",
+    stderr: "piped",
   }).output();
-  return new TextDecoder().decode(result.stdout);
+  if (!result.success) throw new Error(new TextDecoder().decode(result.stderr).trim() || `git ${args[0]} failed`);
+  return new TextDecoder().decode(result.stdout).trim();
+}
+
+async function statusOf(cwd: string): Promise<string> {
+  return await gitOutput(cwd, ["status", "--porcelain"]);
 }
 
 /** The two recorded smoke verdicts. */
@@ -171,12 +178,8 @@ async function run(command: readonly string[], cwd: string, env: Record<string, 
 }
 
 async function main(args: readonly string[]): Promise<number> {
-  const value = (name: string): string | undefined => {
-    const arg = args.find((candidate) => candidate.startsWith(`--${name}=`));
-    return arg?.slice(name.length + 3);
-  };
-  const manifestPath = value("manifest") ?? DEFAULT_MANIFEST;
-  const target = resolve(value("target") ?? DEFAULT_TARGET);
+  const manifestPath = argValue(args, "manifest") ?? DEFAULT_MANIFEST;
+  const target = resolve(argValue(args, "target") ?? DEFAULT_TARGET);
   const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
     content_hash: string;
     parent: string;

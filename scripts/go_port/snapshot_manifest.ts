@@ -14,7 +14,9 @@
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 /** A JSON value that the manifest hash accepts. */
-type TJsonValue = string | number | boolean | null | readonly TJsonValue[] | { readonly [key: string]: TJsonValue };
+export type TJsonValue = string | number | boolean | null | readonly TJsonValue[] | {
+  readonly [key: string]: TJsonValue;
+};
 
 /** The deterministic baseline document. */
 interface ISnapshotManifest {
@@ -36,14 +38,14 @@ const DEFAULT_OUTPUT = join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", 
 export const MAX_ENTRIES = 10_000;
 export const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 
-function stable(value: TJsonValue): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+export function stable(value: TJsonValue): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
   const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
   return `{${entries.map(([key, child]) => `${JSON.stringify(key)}:${stable(child)}`).join(",")}}`;
 }
 
-async function sha256Hex(value: string | Uint8Array): Promise<string> {
+export async function sha256Hex(value: string | Uint8Array): Promise<string> {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   const digest = await crypto.subtle.digest("SHA-256", bytes.buffer as ArrayBuffer);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
