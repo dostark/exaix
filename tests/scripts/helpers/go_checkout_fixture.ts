@@ -5,13 +5,16 @@
  * @architectural-layer Test
  */
 import { assertEquals } from "@std/assert";
-import { dirname, join } from "@std/path";
+import { dirname, fromFileUrl, join } from "@std/path";
+import { goCheckout } from "../../../scripts/go_port/checkout.ts";
 
 export interface IRun {
   code: number;
   text: string;
 }
 
+export const ROOT = fromFileUrl(new URL("../../../", import.meta.url));
+export const checkout = await goCheckout(ROOT, Deno.env.get("EXAIX_REQUIRE_GO") === "1");
 export const GO = Deno.env.get("GO_BIN") ?? "go";
 export const GO_PATH = GO.includes("/") ? `${dirname(GO)}:${Deno.env.get("PATH") ?? ""}` : Deno.env.get("PATH") ?? "";
 export const TARGETS = ["linux/amd64", "linux/arm64", "darwin/arm64", "windows/amd64"];
@@ -49,6 +52,11 @@ export function git(cwd: string, ...args: string[]): Promise<IRun> {
 
 export function make(cwd: string, target: string, env: Record<string, string> = {}): Promise<IRun> {
   return run(cwd, "make", [target, `GO=${GO}`], { PATH: GO_PATH, ...env });
+}
+
+export function copy(dir: string): Promise<string> {
+  if (!checkout) throw new Error("The Go checkout is required for this case");
+  return copyCheckout(checkout, dir);
 }
 
 export async function copyCheckout(source: string, dir: string): Promise<string> {
