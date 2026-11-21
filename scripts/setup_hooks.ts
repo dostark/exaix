@@ -52,7 +52,7 @@ fi
 
 # A tooling-only change (Go-port scripts, their tests, or the docs pointer) does not
 # need the whole-tree product gates. Run the scoped gates and let CI cover the rest.
-STAGED_PATHS=\$(git diff --cached --name-only --diff-filter=ACMR) || exit 1
+STAGED_PATHS=\$(git diff --cached --name-only --diff-filter=ACMR --ignore-submodules=none) || exit 1
 TOOLING_PATHS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -Ev '^(scripts/go_port/|tests/scripts/go_port_|exaix-dev-docs$)' || true)
 if [ -n "$STAGED_PATHS" ] && [ -z "$TOOLING_PATHS" ]; then
   echo "🔧 Tooling-only change: running the scoped Go-port gates."
