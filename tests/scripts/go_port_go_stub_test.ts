@@ -98,10 +98,12 @@ Deno.test(
     ) assertStringIncludes(checkLine, target);
     for (
       const command of [
-        "go vet ./...",
-        "go test -race ./...",
-        "go mod tidy -diff",
-        "go mod verify",
+        "vet ./...",
+        "test -race ./...",
+        "mod tidy -diff",
+        "mod verify",
+        "tools/lint",
+        "tools/layercheck",
         "./cmd/exaix",
         "editionstub",
         "edition stub ok",
