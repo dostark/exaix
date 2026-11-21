@@ -508,6 +508,16 @@ parallelSafeTest("deployed-config-closure", async () => {
   assertWorkspaceLacks(stripped, "./unslop-ts");
 });
 
+Deno.test("fix(deploy): a task that runs a nested undeployed script is stripped from the deployed config", () => {
+  const stripped = stripDevOnlyConfig({
+    tasks: {
+      "go-port:conformance": "deno run -A scripts/go_port/conformance/generate.ts",
+      "db:setup": "deno run -A scripts/setup_db.ts",
+    },
+  });
+  assertEquals(Object.keys(stripped.tasks ?? {}), ["db:setup"]);
+});
+
 Deno.test("deployed-config-closure-rejects-a-missing-or-listed-member", () => {
   assertThrows(() => assertWorkspaceLacks({}, "./unslop-ts"), Error, "workspace list");
   assertThrows(

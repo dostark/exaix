@@ -48,7 +48,7 @@ export const DEPLOYED_SCRIPT_FILES: readonly string[] = [
 
 const DEV_ONLY_MEMBERS: readonly string[] = ["exaix-team/", "./unslop-ts"];
 const UNDEPLOYED_DIR_REFERENCES: readonly string[] = ["unslop-ts/", "packages/lint-policy/"];
-const SCRIPT_REFERENCE = /(?:^|[\s'"=])(?:\.\/)?scripts\/([^\s'"/]+\.ts)/g;
+const SCRIPT_REFERENCE = /(?:^|[\s'"=])(?:\.\/)?scripts\/([^\s'"]+\.ts)/g;
 
 /** True when a task command runs a script the deploy omits, the engine submodule, or the lint policy package. */
 function runsUndeployedFile(command: string): boolean {
