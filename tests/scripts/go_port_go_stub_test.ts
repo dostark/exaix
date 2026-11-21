@@ -87,10 +87,22 @@ Deno.test(
   { ignore: checkout === undefined },
   async () => {
     const workflow = await Deno.readTextFile(join(GO_ROOT, ".github", "workflows", "go.yml"));
+    const makefile = await Deno.readTextFile(join(GO_ROOT, "Makefile"));
     assertStringIncludes(workflow, 'go-version: "1.27.4"');
-    assertStringIncludes(workflow, "go build ./...");
-    assertStringIncludes(workflow, "GOWORK=off go build ./...");
-    assertStringIncludes(workflow, "go test ./...");
-    assertStringIncludes(workflow, "editionstub");
+    assertStringIncludes(workflow, "GOTOOLCHAIN: local");
+    assertStringIncludes(workflow, "fetch-depth: 0");
+    assertStringIncludes(workflow, "make ci");
+    assertStringIncludes(makefile, "check: check-index fmt vet tidy test build stub");
+    for (
+      const command of [
+        "go vet ./...",
+        "go test -race ./...",
+        "go mod tidy -diff",
+        "go mod verify",
+        "./cmd/exaix",
+        "editionstub",
+        "edition stub ok",
+      ]
+    ) assertStringIncludes(makefile, command);
   },
 );
