@@ -12,6 +12,15 @@ import { commitBase, copyCheckout, git, make, TARGETS } from "./helpers/go_check
 
 const ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const checkout = await goCheckout(ROOT, Deno.env.get("EXAIX_REQUIRE_GO") === "1");
+const COMMIT_MESSAGE = `feat(tooling): seed the hook check
+
+what: Exercise the installed tooling hook.
+rationale: The test isolates the pre-commit gate.
+tests: The hook runs in a disposable checkout.
+who: Fixture
+impact: tooling: validate the hook behavior
+`;
+
 function copy(dir: string): Promise<string> {
   if (!checkout) throw new Error("The Go checkout is required for this case");
   return copyCheckout(checkout, dir);
@@ -124,7 +133,8 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in an ordinary cl
     const bad = join(repo, "hook_seed.go");
     await Deno.writeTextFile(bad, "package seed\nfunc Bad( ){}\n");
     assertEquals((await git(repo, "add", "hook_seed.go")).code, 0);
-    const rejected = await git(repo, "commit", "-m", "bad change");
+    await Deno.writeTextFile(join(repo, "commit-message.txt"), COMMIT_MESSAGE);
+    const rejected = await git(repo, "commit", "-F", join(repo, "commit-message.txt"));
     assertNotEquals(rejected.code, 0);
     assertStringIncludes(rejected.text, "gofmt needs to format");
     await Deno.remove(bad);
@@ -132,7 +142,7 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in an ordinary cl
     const good = join(repo, "hook_ok.go");
     await Deno.writeTextFile(good, "package seed\n\n// Value is a documented value.\nvar Value = 1\n");
     await git(repo, "add", "-A");
-    const accepted = await git(repo, "commit", "-m", "clean change");
+    const accepted = await git(repo, "commit", "-F", join(repo, "commit-message.txt"));
     assertEquals(accepted.code, 0, accepted.text);
   });
 });
@@ -154,7 +164,8 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in a submodule cl
     const bad = join(sub, "hook_seed.go");
     await Deno.writeTextFile(bad, "package seed\nfunc Bad( ){}\n");
     assertEquals((await git(sub, "add", "hook_seed.go")).code, 0);
-    const rejected = await git(sub, "commit", "-m", "bad change");
+    await Deno.writeTextFile(join(sub, "commit-message.txt"), COMMIT_MESSAGE);
+    const rejected = await git(sub, "commit", "-F", join(sub, "commit-message.txt"));
     assertNotEquals(rejected.code, 0);
     assertStringIncludes(rejected.text, "gofmt needs to format");
     await Deno.remove(bad);
@@ -164,7 +175,7 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in a submodule cl
       "package seed\n\n// Value is a documented value.\nvar Value = 1\n",
     );
     await git(sub, "add", "-A");
-    const accepted = await git(sub, "commit", "-m", "clean change");
+    const accepted = await git(sub, "commit", "-F", join(sub, "commit-message.txt"));
     assertEquals(accepted.code, 0, accepted.text);
   });
 });

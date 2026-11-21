@@ -83,13 +83,14 @@ Deno.test("go-port-retired: spent one-shot harness files are gone and evidence r
   }
 });
 
-Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the decision", {
+Deno.test("go-port-docs-go-readme: the Go README records the current onboarding", {
   ignore: checkout === undefined,
 }, async () => {
   const readme = await read(GO_ROOT, "README.md");
   assertStringIncludes(readme, "Go 1.27.4");
-  assertStringIncludes(readme, "D24 returned **revise**");
-  assertStringIncludes(readme, "tools/exaport");
+  assertStringIncludes(readme, "Phase 246 added the Stage 0 foundation");
+  assertStringIncludes(readme, "make check");
+  assertStringIncludes(readme, "AGENTS.md");
 });
 
 Deno.test("go-port-docs-contracts: the plan names the implemented evidence contracts", async () => {
