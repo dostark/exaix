@@ -640,12 +640,26 @@ plan: exaix-dev-docs/planning/phase-134.md#6`;
         planErrors: [],
         changedFiles: ["exaix-team"],
         submoduleStagedFiles: [
-          "packages/portal-extractors/src/go_symbol_reference_extractor.ts",
-          "packages/portal-extractors/tests/go_symbol_reference_extractor_test.ts",
+          "exaix-team/packages/portal-extractors/src/go_symbol_reference_extractor.ts",
+          "exaix-team/packages/portal-extractors/tests/go_symbol_reference_extractor_test.ts",
         ],
       },
     });
     assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
+  it("rejects a file credited to a different code submodule", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["exaix-team/src/shared.ts"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["unslop-ts"],
+        submoduleStagedFiles: ["unslop-ts/src/shared.ts"],
+      },
+    });
+    assertEquals(result.success, false);
   });
 
   it("accepts a criterion path with a symbol suffix staged in the unslop-ts submodule", () => {
@@ -656,7 +670,7 @@ plan: exaix-dev-docs/planning/phase-134.md#6`;
         testPaths: [],
         planErrors: [],
         changedFiles: ["unslop-ts"],
-        submoduleStagedFiles: ["src/cli/commands/check.ts"],
+        submoduleStagedFiles: ["unslop-ts/src/cli/commands/check.ts"],
       },
     });
     assertEquals(result.success, true, result.errors?.join(", "));
@@ -670,7 +684,7 @@ plan: exaix-dev-docs/planning/phase-134.md#6`;
         testPaths: [],
         planErrors: [],
         changedFiles: ["exaix-team"],
-        submoduleStagedFiles: ["packages/portal-extractors/mod.ts"],
+        submoduleStagedFiles: ["exaix-team/packages/portal-extractors/mod.ts"],
       },
     });
     assertEquals(result.success, false);
@@ -852,20 +866,20 @@ describe("validatePlanStepDiff", () => {
     assertEquals(result.errors.some((e) => e.includes("Registry wired") && e.includes("not an added line")), true);
   });
 
-  it("blocks and asks to roll back the submodule when the pointer is out of sync", () => {
+  it("requests the staged plan pointer when the pointer is out of sync", () => {
     const added = items.slice();
     const result = validatePlanStepDiff(items, added, "out_of_sync");
     assertEquals(result.ok, false);
     assertEquals(
-      result.errors.some((e) => e.toLowerCase().includes("roll back") && e.toLowerCase().includes("sync")),
+      result.errors.some((e) => e.includes("staged gitlink") && e.includes("Plan sync")),
       true,
     );
   });
 
-  it("blocks and asks to roll back when the plan diff is unresolvable (unknown)", () => {
+  it("requests the recorded docs revision when the plan diff is unavailable", () => {
     const result = validatePlanStepDiff(items, [], "unknown");
     assertEquals(result.ok, false);
-    assertEquals(result.errors.some((e) => e.toLowerCase().includes("roll back")), true);
+    assertEquals(result.errors.some((e) => e.includes("recorded docs revision")), true);
   });
 });
 

@@ -12,6 +12,7 @@
  */
 
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { goCheckout } from "./checkout.ts";
 
 /** The six activities every arm records. */
 export interface IActivityHours {
@@ -86,7 +87,7 @@ interface ICostInput {
 }
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), "..", ".."));
-const EXAPORT = join(dirname(REPO_ROOT), "exaix-go", "tools", "exaport", "src", "main.ts");
+
 const PACKAGES = ["packages/shared", "packages/ai-google"] as const;
 const FAMILY: Record<string, string> = { "packages/shared": "utility", "packages/ai-google": "provider" };
 const ACTIVITIES: readonly TActivity[] = [
@@ -177,21 +178,21 @@ function extrapolate(packages: readonly IPackageCost[]): ICostComparison["extrap
   };
 }
 
-async function measure(packagePath: string, arm: TArm): Promise<IPackageCost> {
+async function measure(packagePath: string, arm: TArm, exaport: string): Promise<IPackageCost> {
   const start = performance.now();
   const args = arm === "converter-assisted"
     ? [
       "run",
       "-A",
-      EXAPORT,
+      exaport,
       `--root=${join(REPO_ROOT, packagePath)}`,
       "--format=json",
       "--convert",
       "--dry-run",
       `--package=${packagePath}`,
     ]
-    : ["run", "-A", EXAPORT, `--root=${join(REPO_ROOT, packagePath)}`, "--format=json"];
-  const result = await new Deno.Command("deno", { args, cwd: dirname(EXAPORT), stdout: "piped", stderr: "piped" })
+    : ["run", "-A", exaport, `--root=${join(REPO_ROOT, packagePath)}`, "--format=json"];
+  const result = await new Deno.Command("deno", { args, cwd: dirname(exaport), stdout: "piped", stderr: "piped" })
     .output();
   if (!result.success) throw new Error(`exaport ${arm} failed on ${packagePath}`);
   const seconds = (performance.now() - start) / 1000;
@@ -221,10 +222,13 @@ async function measure(packagePath: string, arm: TArm): Promise<IPackageCost> {
 }
 
 async function main(): Promise<number> {
+  const checkout = await goCheckout(REPO_ROOT, true);
+  if (!checkout) throw new Error("Missing Go checkout");
+  const exaport = join(checkout, "tools", "exaport", "src", "main.ts");
   const packages: IPackageCost[] = [];
   for (const packagePath of PACKAGES) {
-    packages.push(await measure(packagePath, "converter-assisted"));
-    packages.push(await measure(packagePath, "agent-only"));
+    packages.push(await measure(packagePath, "converter-assisted", exaport));
+    packages.push(await measure(packagePath, "agent-only", exaport));
   }
   const document: ICostComparison = {
     selection: { criteria: "small leaf package with existing tests and no native dependency", packages: [...PACKAGES] },

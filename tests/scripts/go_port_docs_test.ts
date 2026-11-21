@@ -10,9 +10,12 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 
+import { goCheckout } from "../../scripts/go_port/checkout.ts";
+
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const DOCS = join(REPO_ROOT, "exaix-dev-docs");
-const GO_ROOT = join(REPO_ROOT, "..", "exaix-go");
+const checkout = await goCheckout(REPO_ROOT, Deno.env.get("EXAIX_REQUIRE_GO") === "1");
+const GO_ROOT = checkout ?? join(REPO_ROOT, "exaix-go");
 
 async function read(...parts: readonly string[]): Promise<string> {
   return await Deno.readTextFile(join(parts[0], ...parts.slice(1)));
@@ -80,7 +83,9 @@ Deno.test("go-port-retired: spent one-shot harness files are gone and evidence r
   }
 });
 
-Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the decision", async () => {
+Deno.test("go-port-docs-go-readme: the Go README records the toolchain and the decision", {
+  ignore: checkout === undefined,
+}, async () => {
   const readme = await read(GO_ROOT, "README.md");
   assertStringIncludes(readme, "Go 1.27.4");
   assertStringIncludes(readme, "D24 returned **revise**");

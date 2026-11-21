@@ -1,0 +1,8 @@
+feat(tooling): record the verified plan step
+
+what: Commit the tooling plan and the corresponding Go source through the parent hook.
+rationale: Keep the parent gitlinks and the completed plan step synchronized so the recorded source can be checked from a fresh checkout.
+tests: Exercise the real Git child hooks, staged pointers and parent message validator.
+who: Codex
+impact: tooling: verify the recorded step
+plan: exaix-dev-docs/plan.md#1

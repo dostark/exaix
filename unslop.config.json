@@ -15,6 +15,10 @@
     ],
     "ignore": [
       {
+        "glob": "**/exaix-go/tools/exaport/**",
+        "reason": "The Go submodule owns the exaport prototype."
+      },
+      {
         "glob": "**/unslop-ts/**",
         "reason": "Engine repository, linted by its own CI."
       },
@@ -1727,6 +1731,7 @@
             "/exaix-dev-docs/evidence(/|$)"
           ],
           "extraEntries": [
+            "exaix-go/tools/exaport/src/main.ts",
             "apps/exactl/tests/helpers/approval_hang_probe.ts",
             "scripts/backup_repo.ts",
             "scripts/commit_plan_step.ts",

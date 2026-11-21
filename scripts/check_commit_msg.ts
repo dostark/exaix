@@ -9,6 +9,7 @@
  */
 
 import type { Opt, Reason } from "@exaix/core/types";
+import { changedChildFiles, gitlink, PLAN_CODE_SUBMODULES, readGit } from "./plan_git.ts";
 
 /** A reference to a plan doc + step, parsed from the commit's `plan:` field. */
 export interface IPlanRef {
@@ -43,7 +44,7 @@ interface IPlanValidation {
   testPaths: string[];
   planErrors: string[];
   changedFiles: string[];
-  /** Staged files of the plan's code submodules, by repository-relative path.
+  /** Files changed by staged gitlinks, including their code-submodule prefix.
    *  It is optional and defaults to none.
    *  A paid-edition step keeps its source in a submodule. */
   submoduleStagedFiles?: string[];
@@ -353,17 +354,9 @@ export function validatePlanStepDiff(
   const errors: string[] = [];
 
   if (sync === "out_of_sync") {
-    errors.push(
-      "Plan sync: the parent's staged submodule pointer does not match the plan doc's " +
-        "committed state — roll back the submodule's last commit and re-stage the plan " +
-        "changes together with the code so the phase file and the parent stay in sync.",
-    );
+    errors.push("Plan sync: check the staged gitlink and the plan changes it records before retrying.");
   } else if (sync === "unknown") {
-    errors.push(
-      "Plan sync: could not resolve the plan doc's diff (submodule state unavailable) — " +
-        "roll back the submodule's last commit and stage the plan changes alongside the " +
-        "code, then retry so the check can verify the step.",
-    );
+    errors.push("Plan sync: initialize the recorded docs revision and retry the plan-step commit.");
   }
 
   // Every claimed step item line must be an added line of the plan doc's diff.
@@ -534,16 +527,12 @@ export function validateCommitMsg(
     // Surface any structural errors from parsing the plan step verbatim.
     for (const e of pv.planErrors) errors.push(`Plan traceability: ${e}`);
 
-    const changed = new Set([...pv.changedFiles, ...(pv.submoduleStagedFiles ?? [])]);
-    /** A plan path may carry its submodule prefix (`exaix-team/x`), while the
-     *  submodule reports `x`. Accept either form. */
+    const children = pv.submoduleStagedFiles ?? [];
     const isChanged = (path: string): boolean => {
       const file = path.split(":")[0];
-      if (changed.has(file)) return true;
-      for (const sub of PLAN_CODE_SUBMODULES) {
-        if (file.startsWith(`${sub}/`) && changed.has(file.slice(sub.length + 1))) return true;
-      }
-      return false;
+      if (PLAN_CODE_SUBMODULES.some((sub) => file.startsWith(`${sub}/`))) return children.includes(file);
+      const matches = children.filter((name) => name.slice(name.indexOf("/") + 1) === file);
+      return Number(pv.changedFiles.includes(file)) + matches.length === 1;
     };
     for (const path of pv.criteriaPaths) {
       if (!isChanged(path)) {
@@ -586,88 +575,10 @@ export function validateCommitMsg(
 }
 
 /** The staged (`--cached`) changed-file paths, repo-root-relative, or [] on failure. */
-/** Submodules whose committed files a phase plan may reference.
- *  The path is repository-relative, for example `exaix-team/packages/x/src/y.ts`. */
-const PLAN_CODE_SUBMODULES = ["unslop-ts", "exaix-team", "exaix-enterprise"];
-
-/** Changed files of every code submodule the parent is committing. A paid-edition plan step keeps its source in a submodule, and those paths must pass the arrow-path check too.
- *  A staged diff comes first, then the submodule's last commit, because the pointer in this commit ships that committed work. */
-async function getSubmoduleStagedFiles(submodulePaths: readonly string[]): Promise<string[]> {
-  const files: string[] = [];
-  for (const sub of submodulePaths) {
-    const staged = await gitNameOnly(["diff", "--cached", "--name-only"], sub);
-    const head = staged.length > 0 ? staged : await gitNameOnly(["show", "--name-only", "--format=", "HEAD"], sub);
-    files.push(...head);
-  }
-  return files;
-}
-
-/** Reads newline-separated paths from one git command in `sub`. */
-async function gitNameOnly(args: string[], sub: string): Promise<string[]> {
-  try {
-    const output = await new Deno.Command("git", {
-      args: ["-C", sub, ...args],
-      env: { LD_LIBRARY_PATH: "" },
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    const text = new TextDecoder().decode(output.stdout).trim();
-    return text ? text.split("\n").map((f) => f.trim()).filter((f) => f.length > 0) : [];
-  } catch (_e) {
-    // An uninitialized submodule cannot contribute files.
-    return [];
-  }
-}
-
-async function getStagedFiles(): Promise<string[]> {
-  try {
-    const output = await new Deno.Command("git", {
-      args: ["diff", "--cached", "--name-only"],
-      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
-      env: { LD_LIBRARY_PATH: "" },
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    const text = new TextDecoder().decode(output.stdout).trim();
-    return text ? text.split("\n").map((f) => f.trim()).filter((f) => f.length > 0) : [];
-  } catch (_e) {
-    return [];
-  }
-}
-
-/** Env var names that git sets for every hook subprocess: GIT_DIR, GIT_INDEX_FILE and GIT_PREFIX. They point at the parent repo.
- *  If inherited, a nested `git -C <submodule>` call resolves against the parent repo. It then reports an empty diff.
- *  Deno.Command's `env` only merges overrides. Git treats GIT_DIR as an invalid empty path, so the keys must be deleted first. */
-const GIT_HOOK_ENV_VARS = [
-  "GIT_DIR",
-  "GIT_INDEX_FILE",
-  "GIT_WORK_TREE",
-  "GIT_PREFIX",
-  "GIT_COMMON_DIR",
-  "GIT_OBJECT_DIRECTORY",
-  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-] as const;
-
-/** Runs git in `cwd` (or the repo root) and returns trimmed stdout, or "" on failure.
- *  It deletes git's hook-context env vars before every spawn. A cross-repo `-C <submodule>` call then resolves from its own cwd.
- *  Deleting an absent key is a no-op. A missing `--allow-env` grant degrades to a no-op. */
+/** Read Git output for optional queries such as missing merge parents. */
 export async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
-  for (const name of GIT_HOOK_ENV_VARS) {
-    try {
-      Deno.env.delete(name);
-    } catch {
-      // Permission not granted for this specific key — best effort, see doc comment above.
-    }
-  }
   try {
-    const out = await new Deno.Command("git", {
-      args: cwd ? ["-C", cwd, ...args] : args,
-      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
-      env: { LD_LIBRARY_PATH: "" },
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    return out.success ? new TextDecoder().decode(out.stdout).trim() : "";
+    return (await readGit(args, cwd)).trim();
   } catch {
     return "";
   }
@@ -702,51 +613,26 @@ async function addedLinesFor(repo: IOwningRepo, range: string[]): Promise<string
     .filter((l) => l.length > 0);
 }
 
-/** Added plan-doc lines this commit contributes: the staged diff plus the last commit's diff (HEAD~1..HEAD).
- *  The union covers a plan doc staged with the code and a submodule that `commit_plan_step.ts` committed first. */
-async function planAddedLines(repo: IOwningRepo): Promise<string[]> {
-  const staged = await addedLinesFor(repo, ["--cached"]);
-  const lastCommit = await addedLinesFor(repo, ["HEAD~1", "HEAD"]);
-  return [...new Set([...staged, ...lastCommit])];
-}
-
-/** Sync status of the plan doc's owning repo. `unknown` means a submodule is unresolvable, not checked out or without HEAD.
- *  The `out_of_sync` status means neither the staged nor the last-commit diff changes the plan doc. Otherwise the status is `in_sync`. */
-async function planSyncStatus(repo: IOwningRepo, addedLines: string[]): Promise<PlanSyncStatus> {
-  if (repo.submodule) {
-    const head = await gitOut(["rev-parse", "HEAD"], repo.submodule);
-    if (!head) return "unknown";
-  }
-  return addedLines.length > 0 ? "in_sync" : "out_of_sync";
-}
-
 /** Resolves the plan-step validation payload for a commit whose `plan:` field names a doc and step.
  *  It reads the doc, the step's source and test paths, the item lines and the ledger symbols. It also reads the plan-doc diff and sync.
  *  `validateCommitMsg` enforces the full gate from the hook. A doc-read failure blocks the commit. */
-async function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): Promise<IPlanValidation> {
-  let docText: string;
-  try {
-    docText = Deno.readTextFileSync(planRef.docPath);
-  } catch (_e) {
-    return {
-      criteriaPaths: [],
-      testPaths: [],
-      planErrors: [
-        `plan doc "${planRef.docPath}" (from the plan: field) could not be read — ` +
-        `check the path is repo-root-relative and committed.`,
-      ],
-      changedFiles: stagedFiles,
-    };
-  }
-  const parsed = parsePlanStep(docText, planRef.step);
+async function resolvePlanValidation(planRef: IPlanRef): Promise<IPlanValidation> {
   const repo = await resolveOwningRepo(planRef.docPath);
-  const addedPlanLines = await planAddedLines(repo);
-  const planSync = await planSyncStatus(repo, addedPlanLines);
+  const tip = repo.submodule ? await gitlink(repo.submodule, true) : "";
+  const base = repo.submodule ? await gitlink(repo.submodule, false) : "";
+  if (repo.submodule && (!tip || !base)) throw new Error(`Missing plan gitlink for ${repo.submodule}`);
+  const docText = await readGit(["show", `${tip}:${repo.relPath}`], repo.submodule);
+  const parsed = parsePlanStep(docText, planRef.step);
+  const range = repo.submodule ? [base, tip] : ["--cached"];
+  const addedPlanLines = await addedLinesFor(repo, range);
+  const planSync = addedPlanLines.length ? "in_sync" : "out_of_sync";
   return {
     criteriaPaths: parsed.criteriaPaths,
     testPaths: parsed.testPaths,
     planErrors: parsed.errors,
-    changedFiles: stagedFiles,
+    changedFiles: (await readGit(["diff", "--cached", "--diff-filter=ACMRT", "--name-only", "-z"])).split("\0").filter(
+      Boolean,
+    ),
     deferredTokens: parsed.deferredTokens,
     ledgerSymbols: parseLedgerSymbols(docText),
     itemLines: parsed.itemLines,
@@ -778,16 +664,16 @@ if (import.meta.main) {
   try {
     const text = Deno.readTextFileSync(commitMsgFile);
 
-    const stagedFiles = await getStagedFiles();
+    const stagedFiles = (await readGit(["diff", "--cached", "--name-only", "-z"])).split("\0").filter(Boolean);
     const changedFileCount = stagedFiles.length;
 
     // Plan-step traceability: only engaged when the commit carries a `plan:` field.
     const planRef = parsePlanField(text);
-    const planValidation = planRef ? await resolvePlanValidation(planRef, stagedFiles) : undefined;
+    const planValidation = planRef ? await resolvePlanValidation(planRef) : undefined;
     if (planValidation) {
       // A paid-edition step keeps its source in a submodule, so include those
       // staged files in the plan's arrow-path check.
-      planValidation.submoduleStagedFiles = await getSubmoduleStagedFiles(PLAN_CODE_SUBMODULES);
+      planValidation.submoduleStagedFiles = await changedChildFiles(stagedFiles);
     }
 
     const mergeCommit = await isGitMergeCommit();

@@ -2,170 +2,158 @@
 /**
  * @module CommitPlanStep
  * @path scripts/commit_plan_step.ts
- * @description Convenience orchestrator for a plan-step commit that spans the parent repo
- *   AND the exaix-dev-docs submodule (where phase plan docs live). It stages nothing —
- *   it pre-flights that the plan doc's ✅/deferred lines are staged in their owning repo
- *   (failing fast before touching git), then performs the two commits (submodule first,
- *   then the parent pointer bump). The AUTHORITATIVE plan-step gate (paths + ledger +
- *   backticks + no `[ ]` + item-lines-in-plan-diff + submodule/parent sync) runs in the
- *   parent commit-msg hook via check_commit_msg.ts, so a plain `git commit` is enforced
- *   too — this script just avoids the submodule-committed-then-parent-blocked footgun and
- *   automates the two-repo commit sequence.
- *
- * Usage:
- *   deno run -A scripts/commit_plan_step.ts <commit-msg-file>            # validate only (default)
- *   deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit   # validate then commit both
- *
+ * @description Commits staged plan changes and child trees before recording their gitlinks in the parent.
+ * Usage: deno run -A scripts/commit_plan_step.ts <message-file> [--commit]
  * @architectural-layer Tooling
- * @dependencies [scripts/check_commit_msg.ts]
- * @related-files [scripts/check_commit_msg.ts, .claude/skills/submodule-workflow/SKILL.md]
+ * @dependencies [scripts/check_commit_msg.ts, scripts/plan_git.ts]
  */
 
-import type { Opt, Reason } from "@exaix/core/types";
-import { type IOwningRepo, type IPlanRef, parsePlanField, resolveOwningRepo } from "./check_commit_msg.ts";
+import { resolve } from "@std/path";
+import { parsePlanField, resolveOwningRepo } from "./check_commit_msg.ts";
+import { gitlink, GO_BOOTSTRAP, PLAN_CODE_SUBMODULES, readGit } from "./plan_git.ts";
 
-/** Submodules whose committed files a phase plan may reference by their own
- *  repository-relative path. */
-const PLAN_CODE_SUBMODULES = ["unslop-ts", "exaix-team", "exaix-enterprise"];
+interface IChild {
+  path: string;
+  branch: string;
+  base: string;
+  tree: string;
+  pointer: string;
+  result: string;
+}
 
-/** Run a git command in `cwd`; return trimmed stdout (empty on failure). */
-async function git(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
-  try {
-    const out = await new Deno.Command("git", {
-      args: cwd ? ["-C", cwd, ...args] : args,
-      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
-      env: { LD_LIBRARY_PATH: "" },
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    return out.success ? new TextDecoder().decode(out.stdout).trim() : "";
-  } catch (_e) {
-    return "";
+interface IReceipt {
+  branch: string;
+  base: string;
+  tree: string;
+  message: string;
+  children: IChild[];
+}
+
+const head = (cwd: string): Promise<string> => readGit(["rev-parse", "HEAD"], cwd);
+const branch = (cwd: string): Promise<string> => readGit(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
+const indexTree = (cwd: string): Promise<string> => readGit(["write-tree"], cwd);
+
+async function prepare(message: string, docPath: string): Promise<IReceipt> {
+  const doc = await resolveOwningRepo(docPath);
+  const docDiff = await readGit(["diff", "--cached", "--unified=0", "--", doc.relPath], doc.submodule);
+  if (!docDiff.split("\n").some((line) => line.startsWith("+") && !line.startsWith("+++"))) {
+    throw new Error(`No plan changes staged for ${docPath}`);
+  }
+  const children: IChild[] = [];
+  const paths = new Set([doc.submodule, ...PLAN_CODE_SUBMODULES]);
+  for (const path of paths) {
+    if (!path || !await gitlink(path, true)) continue;
+    const status = await readGit(["submodule", "status", "--", path]);
+    if (status.startsWith("-")) continue;
+    const pointer = await gitlink(path, true);
+    const base = await head(path);
+    const previous = await gitlink(path, false) || (path === "exaix-go" ? GO_BOOTSTRAP : "");
+    if (base !== pointer || pointer !== previous) throw new Error(`Unexpected base or staged pointer in ${path}`);
+    await checkWorktree(path);
+    const tree = await indexTree(path);
+    if (tree !== await readGit(["rev-parse", "HEAD^{tree}"], path)) {
+      children.push({ path, base, branch: await branch(path), tree, pointer, result: "" });
+    }
+  }
+  return { message, base: await head("."), tree: await indexTree("."), branch: await branch("."), children };
+}
+
+async function checkWorktree(path: string): Promise<void> {
+  const changed = await readGit(["diff", "--name-only", "-z"], path);
+  const untracked = await readGit(["ls-files", "--others", "--exclude-standard", "-z"], path);
+  if (changed || untracked) throw new Error(`Unstaged changes in ${path}`);
+}
+
+async function verify(receipt: IReceipt): Promise<void> {
+  if (await head(".") !== receipt.base || await branch(".") !== receipt.branch) throw new Error("Parent base changed");
+  const excludes = receipt.children.map((child) => `:(exclude,literal)${child.path}`);
+  const changes = await readGit(["diff", "--cached", "--name-only", "-z", receipt.tree, "--", ".", ...excludes]);
+  if (changes) throw new Error("Parent staged content changed since preflight");
+  for (const child of receipt.children) {
+    await checkWorktree(child.path);
+    if (await branch(child.path) !== child.branch || await indexTree(child.path) !== child.tree) {
+      throw new Error(`Child branch or staged content changed in ${child.path}`);
+    }
+    if (
+      child.result && (await readGit(["rev-parse", `${child.result}^`], child.path) !== child.base ||
+        await readGit(["rev-parse", `${child.result}^{tree}`], child.path) !== child.tree)
+    ) {
+      throw new Error(`Committed child differs from its staged input in ${child.path}`);
+    }
+    const current = await head(child.path);
+    if (current !== (child.result || child.base) || await gitlink(child.path, true) !== child.pointer) {
+      throw new Error(`Child revision or staged pointer changed in ${child.path}`);
+    }
   }
 }
 
-/** Added lines (`+` stripped, trimmed) of the plan doc's STAGED diff in its owning repo. */
-async function stagedAddedLines(repo: IOwningRepo): Promise<string[]> {
-  const diff = await git(["diff", "--cached", "--unified=0", "--", repo.relPath], repo.submodule);
-  return diff
-    .split("\n")
-    .filter((l) => l.startsWith("+") && !l.startsWith("+++"))
-    .map((l) => l.slice(1).trim())
-    .filter((l) => l.length > 0);
+async function save(path: string, receipt: IReceipt): Promise<void> {
+  await Deno.writeTextFile(path + ".new", JSON.stringify(receipt));
+  await Deno.rename(path + ".new", path);
 }
 
-interface IResolved {
-  planRef: IPlanRef;
-  repo: IOwningRepo;
-  stagedPlanLines: string[];
-}
-
-async function resolve(planRef: IPlanRef): Promise<IResolved | { error: string }> {
-  const repo = await resolveOwningRepo(planRef.docPath);
-  try {
-    Deno.readTextFileSync(planRef.docPath);
-  } catch (_e) {
-    return { error: `plan doc "${planRef.docPath}" could not be read (repo-root-relative + checked out?).` };
-  }
-  const stagedPlanLines = await stagedAddedLines(repo);
-  return { planRef, repo, stagedPlanLines };
-}
-
-// Pre-flight the plan-step commit before touching git. The authoritative validation is the
-// parent commit-msg hook (check_commit_msg.ts); this just fails fast when the plan doc's
-// ✅/deferred lines aren't staged, so we never commit the submodule and then get blocked at the parent.
-function preflightErrors(r: IResolved): string[] {
-  if (r.stagedPlanLines.length === 0) {
-    return [
-      `Plan sync: no plan-doc changes are staged in ${
-        r.repo.submodule ? `submodule "${r.repo.submodule}"` : "the repo"
-      } — stage the step's ✅/deferred lines (git ${
-        r.repo.submodule ? `-C ${r.repo.submodule} ` : ""
-      }add ${r.repo.relPath}) so they land together with the parent code. If you already ` +
-      `committed the submodule separately, roll it back: git -C ${r.repo.submodule ?? "."} reset --soft HEAD~1.`,
-    ];
-  }
-  return [];
-}
-
-/** Submodules that may hold a plan step's code instead of the parent repo. */
-async function codeSubmodulesWithStagedChanges(): Promise<string[]> {
-  const staged: string[] = [];
-  for (const sub of PLAN_CODE_SUBMODULES) {
-    const files = await git(["diff", "--cached", "--name-only"], sub);
-    if (files.length > 0) staged.push(sub);
-  }
-  return staged;
-}
-
-/** Commit the plan-doc submodule, then any code submodule, then the parent
- *  pointer + code, all with the same message. */
-async function performCommits(msgFile: string, repo: IOwningRepo): Promise<boolean> {
-  if (repo.submodule) {
-    const subCommit = await runGitInherit(["commit", "-F", msgFile], repo.submodule);
-    if (!subCommit) return false;
-    // Stage the pointer bump in the parent so it matches the new submodule HEAD.
-    const staged = await runGitInherit(["add", repo.submodule]);
-    if (!staged) return false;
-  }
-  for (const sub of await codeSubmodulesWithStagedChanges()) {
-    const applied = await runGitInherit(["commit", "-F", msgFile], sub);
-    if (!applied) return false;
-    if (!await runGitInherit(["add", sub])) return false;
-  }
-  return await runGitInherit(["commit", "-F", msgFile]);
-}
-
-/** Run git with inherited stdio (so hooks/output show); return success. */
-async function runGitInherit(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<boolean> {
-  const out = await new Deno.Command("git", {
-    args: cwd ? ["-C", cwd, ...args] : args,
-    // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+async function commit(messageFile: string, cwd: string): Promise<void> {
+  const { success } = await new Deno.Command("git", {
+    args: ["-C", cwd, "commit", "-F", messageFile],
     env: { LD_LIBRARY_PATH: "" },
     stdout: "inherit",
     stderr: "inherit",
-  }).output();
-  return out.success;
+  }).spawn().status;
+  if (!success) throw new Error(`Commit rejected in ${cwd}. Fix the hook failure and retry the same message.`);
+}
+
+async function run(messageFile: string, apply: boolean): Promise<void> {
+  const message = await Deno.readTextFile(messageFile);
+  const ref = parsePlanField(message);
+  if (!ref) throw new Error("A plan-step commit requires a plan: field");
+  const path = await readGit(["rev-parse", "--git-path", "plan-step-receipt.json"]);
+  using lock = await Deno.open(path + ".lock", { read: true, write: true, create: true });
+  await lock.lock(true);
+  let receipt: IReceipt;
+  try {
+    receipt = JSON.parse(await Deno.readTextFile(path)) as IReceipt;
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+    receipt = await prepare(message, ref.docPath);
+  }
+  if (receipt.message !== message) throw new Error("A different plan-step commit is pending");
+  await verify(receipt);
+  if (!apply) {
+    console.log("Plan-step preflight passed.");
+    return;
+  }
+  await save(path, receipt);
+  for (const child of receipt.children) {
+    if (!child.result) {
+      await commit(messageFile, child.path);
+      child.result = await head(child.path);
+      await save(path, receipt);
+      if (
+        await readGit(["rev-parse", "HEAD^"], child.path) !== child.base ||
+        await readGit(["rev-parse", "HEAD^{tree}"], child.path) !== child.tree
+      ) {
+        throw new Error(`Committed child differs from its staged input in ${child.path}`);
+      }
+    }
+    if (child.pointer !== child.result) {
+      await readGit(["update-index", "--cacheinfo", `160000,${child.result},${child.path}`]);
+      child.pointer = child.result;
+      await save(path, receipt);
+    }
+  }
+  await verify(receipt);
+  await commit(messageFile, ".");
+  console.log(`Parent ${receipt.base} -> ${await head(".")}`);
+  for (const child of receipt.children) console.log(`${child.path} ${child.base} -> ${child.result}`);
+  await Deno.remove(path);
 }
 
 if (import.meta.main) {
-  const msgFile = Deno.args[0];
-  const doCommit = Deno.args.includes("--commit");
-  if (!msgFile) {
-    console.error("Usage: deno run -A scripts/commit_plan_step.ts <commit-msg-file> [--commit]");
+  try {
+    if (!Deno.args[0]) throw new Error("Supply the plan-step message file");
+    await run(resolve(Deno.args[0]), Deno.args.includes("--commit"));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
     Deno.exit(1);
   }
-
-  const text = Deno.readTextFileSync(msgFile);
-  const planRef = parsePlanField(text);
-  if (!planRef) {
-    console.error("No `plan:` field in the commit message — commit_plan_step is only for plan-step commits.");
-    Deno.exit(1);
-  }
-
-  const r = await resolve(planRef);
-  if ("error" in r) {
-    console.error(`\n❌ Plan-step commit blocked:\n  - ${r.error}`);
-    Deno.exit(1);
-  }
-
-  // Fail fast on the commit-together violation before touching git. The FULL plan-step gate
-  // runs authoritatively in the parent commit-msg hook (check_commit_msg.ts) — this pre-flight
-  // just avoids committing the submodule and then getting blocked at the parent.
-  const errors = preflightErrors(r);
-  if (errors.length > 0) {
-    console.error("\n❌ Plan-step commit blocked:");
-    errors.forEach((e) => console.error(`  - ${e}`));
-    Deno.exit(1);
-  }
-
-  console.log("✅ Plan-step pre-flight OK (plan lines staged in the owning repo).");
-  if (!doCommit) {
-    console.log("   (validate-only — pass --commit to perform the submodule + parent commits;");
-    console.log("    the parent commit-msg hook runs the full plan-step gate.)");
-    Deno.exit(0);
-  }
-
-  const ok = await performCommits(msgFile, r.repo);
-  Deno.exit(ok ? 0 : 1);
 }
