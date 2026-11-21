@@ -25,8 +25,7 @@ export function barrelImportFindings(file: ISourceFile): IFinding[] {
           rule: "barrel-import",
           file: file.path,
           line: source.getLineAndCharacterOfPosition(node.getStart()).line + 1,
-          message:
-            `Import ${specifier} from the declaring submodule, not the package barrel.`,
+          message: `Import ${specifier} from the declaring submodule, not the package barrel.`,
           hazard: "mapping",
         });
       }

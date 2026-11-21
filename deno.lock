@@ -749,11 +749,6 @@
           "jsr:@std/path@^1.1.4"
         ]
       },
-      "scripts/go_port/exaport": {
-        "dependencies": [
-          "npm:typescript@6.0.3"
-        ]
-      },
       "unslop-ts": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",

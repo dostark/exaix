@@ -31,9 +31,7 @@ export function conversionPlan(
     files,
     construct_families: [...new Set(findings.map((finding) => finding.hazard))]
       .sort(),
-    hazards: findings.map((finding) =>
-      `${finding.rule}:${finding.file}:${finding.line}`
-    ),
+    hazards: findings.map((finding) => `${finding.rule}:${finding.file}:${finding.line}`),
     findings,
   };
 }

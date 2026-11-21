@@ -39,9 +39,7 @@ async function main(): Promise<number> {
     files = await loadSources(root);
   } catch (error) {
     usage(
-      `cannot read root '${root}': ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      `cannot read root '${root}': ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   const findings: IFinding[] = [];
