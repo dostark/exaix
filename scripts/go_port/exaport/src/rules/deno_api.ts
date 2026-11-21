@@ -9,6 +9,7 @@
  */
 import ts from "typescript";
 import type { ISourceFile } from "../loader.ts";
+import { traverse } from "./traverse.ts";
 
 /** One readiness finding. */
 export interface IFinding {
@@ -21,14 +22,8 @@ export interface IFinding {
 
 /** Reports direct Deno API calls that the platform seam must replace. */
 export function denoApiFindings(file: ISourceFile): IFinding[] {
-  const source = ts.createSourceFile(
-    file.path,
-    file.text,
-    ts.ScriptTarget.Latest,
-    true,
-  );
   const findings: IFinding[] = [];
-  const visit = (node: ts.Node): void => {
+  traverse(file, (node, source) => {
     if (
       ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) &&
       node.expression.text === "Deno"
@@ -41,8 +36,6 @@ export function denoApiFindings(file: ISourceFile): IFinding[] {
         hazard: "platform",
       });
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
+  });
   return findings;
 }

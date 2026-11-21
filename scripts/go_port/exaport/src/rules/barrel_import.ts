@@ -10,17 +10,12 @@
 import ts from "typescript";
 import type { IFinding } from "./deno_api.ts";
 import type { ISourceFile } from "../loader.ts";
+import { traverse } from "./traverse.ts";
 
 /** Reports imports of a package barrel instead of the declaring module. */
 export function barrelImportFindings(file: ISourceFile): IFinding[] {
-  const source = ts.createSourceFile(
-    file.path,
-    file.text,
-    ts.ScriptTarget.Latest,
-    true,
-  );
   const findings: IFinding[] = [];
-  const visit = (node: ts.Node): void => {
+  traverse(file, (node, source) => {
     if (
       ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)
     ) {
@@ -36,8 +31,6 @@ export function barrelImportFindings(file: ISourceFile): IFinding[] {
         });
       }
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
+  });
   return findings;
 }

@@ -1096,7 +1096,7 @@
           {
             "name": "source",
             "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
-            "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**", "scripts/go_port/exaport/**"],
+            "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/*.{ts,tsx,js,mjs,cjs}",
             "threshold": 1.15
           },
@@ -1109,8 +1109,7 @@
               "**/node_modules/**",
               "**/dist/**",
               "tests/integration/**",
-              "tests/scenario_framework/**",
-              "scripts/go_port/exaport/**"
+              "tests/scenario_framework/**"
             ],
             "pattern": "**/{tests,tests_node}/**/*.ts",
             "minLines": 10,
