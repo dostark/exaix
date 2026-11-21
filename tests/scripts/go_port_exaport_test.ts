@@ -9,28 +9,12 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { runDenoScript } from "./helpers/deno_script_runner.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const TOOL = join(REPO_ROOT, "scripts", "go_port", "exaport", "src", "main.ts");
 
-async function run(
-  args: readonly string[],
-  cwd: string,
-): Promise<{ code: number; stdout: string; stderr: string }> {
-  const result = await new Deno.Command("deno", {
-    args: ["run", "-A", TOOL, ...args],
-    cwd,
-    env: { ...Deno.env.toObject() },
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  const decoder = new TextDecoder();
-  return {
-    code: result.code,
-    stdout: decoder.decode(result.stdout),
-    stderr: decoder.decode(result.stderr),
-  };
-}
+const run = (args: readonly string[], cwd: string) => runDenoScript(TOOL, args, cwd);
 
 Deno.test("exaport-prototype-finding: direct Deno and barrel imports are reported", async () => {
   const dir = await Deno.makeTempDir({ prefix: "exaport_fixture_" });
