@@ -76,6 +76,10 @@
   },
   "ignore": [
     {
+      "glob": "**/scripts/go_port/exaport/**",
+      "reason": "The parent owns the exaport prototype."
+    },
+    {
       "glob": "**/unslop-ts/**",
       "reason": "Engine repository, linted by its own CI."
     },

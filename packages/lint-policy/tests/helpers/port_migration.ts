@@ -18,7 +18,7 @@ export interface ITrackedFileSource {
 }
 
 const EXCLUDE_PATTERN = /^(\s*)\/\/\s*style-exclude:([A-Z0-9_]+)\s*-\s*(.+)$/;
-const HISTORY_PREFIX = "exaix-dev-docs/planning/";
+const HISTORY_PREFIXES = ["exaix-dev-docs/planning/", "exaix-dev-docs/completed/", "exaix-dev-docs/cancelled/"];
 const BINARY_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".wasm", ".zip", ".DAT", ".pkl"];
 const BARE_ID_BOUNDARY_BEFORE = String.raw`(?<=[\[\`"'])`;
 const BARE_ID_BOUNDARY_AFTER = String.raw`(?=[\]\`"'])`;
@@ -117,7 +117,8 @@ export async function trackedTextFiles(
 ): Promise<Map<string, string>> {
   const files = new Map<string, string>();
   for (const path of await source.list()) {
-    const skipped = path.startsWith(HISTORY_PREFIX) || exemptPrefixes.some((prefix) => path.startsWith(prefix));
+    const skipped = HISTORY_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
+      exemptPrefixes.some((prefix) => path.startsWith(prefix));
     if (skipped || BINARY_EXTENSIONS.some((extension) => path.endsWith(extension))) continue;
     try {
       if (await source.isNonFile(path)) continue;

@@ -125,6 +125,8 @@ Deno.test("explicit_skips_stay_allowed_in_the_inventory", async () => {
     {
       "packages/a/src/x.ts": "export const a = 1;",
       "exaix-dev-docs/planning/old.md": new Error("never read"),
+      "exaix-dev-docs/completed/done.md": new Error("never read"),
+      "exaix-dev-docs/cancelled/dropped.md": new Error("never read"),
       "tests/fixtures/port/golden.json": new Error("never read"),
       "assets/logo.png": new Error("never read"),
       ".github/prompts": new Error("never read"),

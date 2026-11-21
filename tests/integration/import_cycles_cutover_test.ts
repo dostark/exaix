@@ -46,7 +46,12 @@ interface ICycleReport {
     readonly mixed_sccs: number;
     readonly files: number;
   };
-  readonly graph: { readonly complete: boolean; readonly code_files: number; readonly unresolved: number };
+  readonly graph: {
+    readonly complete: boolean;
+    readonly code_files: number;
+    readonly unresolved: number;
+    readonly unresolved_refs: readonly { readonly from: string; readonly specifier: string }[];
+  };
   readonly cycles: readonly {
     readonly id: string;
     readonly kind: string;
@@ -146,10 +151,13 @@ Deno.test("import-cycles-cutover-real: the real repository report records the co
   assertEquals(parsed.totals.files, 0);
   assertEquals(parsed.totals.type_only_sccs, 0);
   assertEquals(parsed.totals.mixed_sccs, parsed.cycles.filter((cycle) => cycle.kind === "mixed").length);
-  assertEquals(parsed.graph.unresolved, 9);
+  const allowed = new Set(baseline.allowed_unresolved.map((entry) => `${entry.from}\u0000${entry.specifier}`));
+  for (const reference of parsed.graph.unresolved_refs) {
+    assert(allowed.has(`${reference.from}\u0000${reference.specifier}`), `${reference.from} ${reference.specifier}`);
+  }
+  assertEquals(parsed.graph.unresolved, parsed.graph.unresolved_refs.length);
   assert(parsed.graph.code_files > 0);
   assertEquals(baseline.cycles.length, 0);
-  assertEquals(baseline.allowed_unresolved.length, 9);
   for (const entry of baseline.allowed_unresolved) assert(entry.reason.length > 0);
   assertEquals(parsed.cycles.filter((cycle) => cycle.kind === "runtime"), []);
 });

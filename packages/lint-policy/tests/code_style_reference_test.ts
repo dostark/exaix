@@ -11,6 +11,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
+const HISTORY_DIRS = ["planning/", "completed/", "cancelled/"];
 const GUIDE_PATH = "docs/CODE_STYLE.md";
 const GUIDE_NAME = GUIDE_PATH.slice(GUIDE_PATH.indexOf("/") + 1);
 const ROOT_REFERENCE = /(?<![\w/.-])(?:\.\.?\/)*CODE_STYLE\.md\b/;
@@ -37,7 +38,7 @@ Deno.test("active tracked files have no root guide path or numbered style citati
   const offenders: string[] = [];
   for (const repo of [".", "exaix-dev-docs", "exaix-team", "unslop-ts"]) {
     for (const path of await trackedFiles(repo)) {
-      if (repo === "exaix-dev-docs" && path.startsWith("planning/")) continue;
+      if (repo === "exaix-dev-docs" && HISTORY_DIRS.some((dir) => path.startsWith(dir))) continue;
       // Standalone engine tests use arbitrary catalog document names as fixture data.
       if (repo === "unslop-ts" && path.startsWith("tests/")) continue;
       const fullPath = join(REPO_ROOT, repo, path);
