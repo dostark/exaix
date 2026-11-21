@@ -62,6 +62,14 @@ const seeds = [
       await Deno.writeTextFile(join(repo, ".claude"), "not a link\n");
     },
   },
+  {
+    name: "unlabelled Deno command",
+    marker: "unlabelled parent Deno command",
+    apply: async (repo: string) => {
+      const path = join(repo, ".agents", "skills", "plan", "SKILL.md");
+      await Deno.writeTextFile(path, `${await Deno.readTextFile(path)}\nrun deno task leaked\n`);
+    },
+  },
 ];
 
 for (const seed of seeds) {
