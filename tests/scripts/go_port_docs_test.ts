@@ -7,9 +7,10 @@
  * @related-files [scripts/go_port/d24_decision.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
+import { withTempDir } from "@exaix/testing";
 
 import { goCheckout } from "../../scripts/go_port/checkout.ts";
 
@@ -84,13 +85,46 @@ Deno.test("go-port-retired: spent one-shot harness files are gone and evidence r
   }
 });
 
+const PURE_GO_FILES = new Set([
+  "deno.json",
+  "deno.lock",
+  "package.json",
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+]);
+const PURE_GO_EXTENSIONS = [".ts", ".tsx", ".js", ".mjs", ".cjs"];
+
+async function assertPureGoTree(root: string): Promise<void> {
+  for await (const entry of walk(root, { includeDirs: true })) {
+    if (entry.isDirectory) {
+      if (entry.name === "node_modules") assert(false, `Non-Go dependency tree: ${entry.path}`);
+      continue;
+    }
+    const extension = PURE_GO_EXTENSIONS.find((value) => entry.name.endsWith(value));
+    assert(!extension, `Non-Go source: ${entry.path}`);
+    assert(!PURE_GO_FILES.has(entry.name), `Non-Go metadata: ${entry.path}`);
+  }
+}
+
 Deno.test("go-port-pure-repo: the Go repository contains no Deno or TypeScript source", {
   ignore: checkout === undefined,
 }, async () => {
-  for await (const entry of walk(GO_ROOT, { includeDirs: false })) {
-    assert(!entry.path.endsWith(".ts") && !entry.path.endsWith(".tsx"), entry.path);
-    assert(!entry.path.endsWith("deno.json") && !entry.path.endsWith("deno.lock"), entry.path);
-  }
+  await assertPureGoTree(GO_ROOT);
+});
+
+Deno.test("go-port-pure-repo rejects a JavaScript tool", async () => {
+  await withTempDir(async (dir) => {
+    await Deno.writeTextFile(join(dir, "tool.js"), "console.log('tool');\n");
+    await assertRejects(() => assertPureGoTree(dir), Error, "tool.js");
+  });
+});
+
+Deno.test("go-port-pure-repo rejects npm metadata", async () => {
+  await withTempDir(async (dir) => {
+    await Deno.writeTextFile(join(dir, "package.json"), "{}\n");
+    await assertRejects(() => assertPureGoTree(dir), Error, "package.json");
+  });
 });
 
 Deno.test("go-port-docs-go-readme: the Go README records the current onboarding", {
