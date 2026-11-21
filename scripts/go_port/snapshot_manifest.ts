@@ -12,6 +12,7 @@
  */
 
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { isObjectValue, isString } from "./value_guards.ts";
 
 /** A JSON value that the manifest hash accepts. */
 export type TJsonValue = string | number | boolean | null | readonly TJsonValue[] | {
@@ -39,23 +40,24 @@ export const MAX_ENTRIES = 10_000;
 export const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 
 export function stable(value: TJsonValue): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
+  if (!isObjectValue(value)) return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
   const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
   return `{${entries.map(([key, child]) => `${JSON.stringify(key)}:${stable(child)}`).join(",")}}`;
 }
 
 export async function sha256Hex(value: string | Uint8Array): Promise<string> {
-  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
-  const digest = await crypto.subtle.digest("SHA-256", bytes.buffer as ArrayBuffer);
+  const bytes = isString(value) ? new TextEncoder().encode(value) : value;
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /** Hashes the normalized document. `created_at` and `content_hash` are excluded. */
-export async function contentHash(value: TJsonValue): Promise<string> {
-  const record = value as { readonly [key: string]: TJsonValue };
-  const { created_at: _created, content_hash: _hash, ...rest } = record;
-  return await sha256Hex(stable(rest as TJsonValue));
+export async function contentHash<TDocument extends object>(value: TDocument): Promise<string> {
+  const rest = Object.fromEntries(
+    Object.entries(value).filter(([key]) => key !== "created_at" && key !== "content_hash"),
+  );
+  return await sha256Hex(stable(rest));
 }
 
 /** Refuses a dirty worktree unless the caller explicitly allows it. */
@@ -169,7 +171,7 @@ export async function createManifest(
   const entries = Object.keys(submodules).length + Object.keys(lockfiles).length +
     Object.keys(scenarios).length + Object.keys(fixtures).length + Object.keys(images).length;
   assertBounds(entries, bytes);
-  return { ...manifest, content_hash: await contentHash(body as TJsonValue) };
+  return { ...manifest, content_hash: await contentHash(body) };
 }
 
 async function main(args: readonly string[]): Promise<number> {

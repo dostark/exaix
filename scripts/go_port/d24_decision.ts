@@ -135,7 +135,8 @@ export function decide(input: ID24Input): ID24Decision {
 }
 
 async function readJson<T>(name: string): Promise<T> {
-  return JSON.parse(await Deno.readTextFile(join(EVIDENCE_DIR, name))) as T;
+  const value: T = JSON.parse(await Deno.readTextFile(join(EVIDENCE_DIR, name)));
+  return value;
 }
 
 async function main(args: readonly string[]): Promise<number> {

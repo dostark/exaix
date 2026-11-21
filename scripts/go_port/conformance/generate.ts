@@ -64,8 +64,8 @@ const SUITES: Readonly<Record<string, readonly ICase[]>> = {
 };
 
 export async function loadManifest(path = MANIFEST_PATH): Promise<ISnapshotManifest> {
-  const manifest = JSON.parse(await Deno.readTextFile(path)) as ISnapshotManifest;
-  const digest = await contentHash(manifest as never);
+  const manifest: ISnapshotManifest = JSON.parse(await Deno.readTextFile(path));
+  const digest = await contentHash(manifest);
   if (digest !== manifest.content_hash) throw new Error("snapshot manifest digest does not match");
   if (!SHA.test(manifest.parent)) throw new Error("snapshot parent is not a full commit SHA");
   for (const [name, sha] of Object.entries(manifest.submodules)) {
@@ -123,7 +123,7 @@ console.log(JSON.stringify(results));
       stderr: "piped",
     }).output();
     if (!result.success) throw new Error(new TextDecoder().decode(result.stderr).trim() || "oracle adapter failed");
-    const results = JSON.parse(new TextDecoder().decode(result.stdout)) as ICaseResult[];
+    const results: ICaseResult[] = JSON.parse(new TextDecoder().decode(result.stdout));
     const expected = new Set(cases.map((item) => item.id));
     if (results.length !== cases.length || new Set(results.map((item) => item.id)).size !== cases.length) {
       throw new Error("oracle returned a duplicate or missing case");
@@ -185,9 +185,10 @@ async function publishGeneration(target: string, generation: IGeneration): Promi
     } else {
       await Deno.rename(generation.dir, dest);
     }
+    const generated: { suite: string } = JSON.parse(generation.manifest);
     const suite = stable({
       schema_version: 1,
-      suite: (JSON.parse(generation.manifest) as { suite: string }).suite,
+      suite: generated.suite,
       generation: generation.digest,
       generator_version: GENERATOR_VERSION,
     }) + "\n";

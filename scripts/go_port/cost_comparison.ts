@@ -12,6 +12,7 @@
  */
 
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { isNumber, isString } from "./value_guards.ts";
 
 /** The six activities every arm records. */
 export interface IActivityHours {
@@ -98,6 +99,10 @@ const ACTIVITIES: readonly TActivity[] = [
   "marker_resolution",
 ];
 
+function isActivity(value: string): value is TActivity {
+  return ACTIVITIES.some((activity) => activity === value);
+}
+
 function isTimestamp(value: string): boolean {
   return value !== "" && !Number.isNaN(Date.parse(value));
 }
@@ -108,7 +113,7 @@ function timeLogErrors(log: readonly { activity?: string; start?: string; end?: 
   if (log.length !== ACTIVITIES.length) errors.push("time_log: one entry per activity");
   const seen = new Set<string>();
   for (const entry of log) {
-    if (typeof entry.activity !== "string" || !ACTIVITIES.includes(entry.activity as TActivity)) {
+    if (!isString(entry.activity) || !isActivity(entry.activity)) {
       errors.push("time_log.activity");
       continue;
     }
@@ -116,10 +121,10 @@ function timeLogErrors(log: readonly { activity?: string; start?: string; end?: 
     seen.add(entry.activity);
     const start = entry.start;
     const end = entry.end;
-    if (typeof start !== "string" || !isTimestamp(start)) errors.push("time_log.start");
-    if (typeof end !== "string" || !isTimestamp(end)) errors.push("time_log.end");
+    if (!isString(start) || !isTimestamp(start)) errors.push("time_log.start");
+    if (!isString(end) || !isTimestamp(end)) errors.push("time_log.end");
     if (
-      typeof start === "string" && typeof end === "string" && isTimestamp(start) && isTimestamp(end) &&
+      isString(start) && isString(end) && isTimestamp(start) && isTimestamp(end) &&
       Date.parse(end) <= Date.parse(start)
     ) {
       errors.push("time_log: end must follow start");
@@ -141,25 +146,25 @@ export function validateCostComparison(raw: ICostInput): string[] {
     const extent = entry.extent;
     if (extent !== "dry-run" && extent !== "conversion") errors.push("packages.extent");
     for (const activity of ACTIVITIES) {
-      if (typeof entry.hours?.[activity] !== "number") errors.push(`packages.hours.${activity}`);
+      if (!isNumber(entry.hours?.[activity])) errors.push(`packages.hours.${activity}`);
       else if (extent === "conversion" && entry.hours[activity] <= 0) errors.push(`packages.hours.${activity}`);
     }
-    if (typeof entry.spend_usd !== "number" || entry.spend_usd < 0) errors.push("packages.spend_usd");
+    if (!isNumber(entry.spend_usd) || entry.spend_usd < 0) errors.push("packages.spend_usd");
     else if (extent === "conversion" && entry.spend_usd <= 0) errors.push("packages.spend_usd");
     if (!Array.isArray(entry.time_log)) errors.push("packages.time_log");
     else if (extent === "conversion") errors.push(...timeLogErrors(entry.time_log));
-    if (typeof entry.total !== "number" || entry.total <= 0) errors.push("packages.total");
-    if (!Array.isArray(entry.hazards) || entry.hazards.some((hazard) => typeof hazard !== "string")) {
+    if (!isNumber(entry.total) || entry.total <= 0) errors.push("packages.total");
+    if (!Array.isArray(entry.hazards) || entry.hazards.some((hazard) => !isString(hazard))) {
       errors.push("packages.hazards");
     }
-    if (typeof entry.construct_family !== "string" || entry.construct_family === "") {
+    if (!isString(entry.construct_family) || entry.construct_family === "") {
       errors.push("packages.construct_family");
     }
   }
   if (arms.size !== 2) errors.push("packages.arm: both arms are required");
   const low = raw.extrapolation?.low;
   const high = raw.extrapolation?.high;
-  if (typeof low !== "number" || typeof high !== "number" || low > high) errors.push("extrapolation");
+  if (!isNumber(low) || !isNumber(high) || low > high) errors.push("extrapolation");
   if (raw.extrapolation?.unit !== "agent-hours") errors.push("extrapolation.unit");
   if (raw.extrapolation?.basis === undefined || raw.extrapolation.basis === "") errors.push("extrapolation.basis");
   if (errors.length > 0) throw new Error(`cost comparison: ${errors.join("; ")}`);
@@ -195,9 +200,9 @@ async function measure(packagePath: string, arm: TArm, exaport: string): Promise
     .output();
   if (!result.success) throw new Error(`exaport ${arm} failed on ${packagePath}`);
   const seconds = (performance.now() - start) / 1000;
-  const parsed = JSON.parse(new TextDecoder().decode(result.stdout)) as {
+  const parsed: {
     findings?: readonly { rule?: string }[];
-  };
+  } = JSON.parse(new TextDecoder().decode(result.stdout));
   const hazards = [...new Set((parsed.findings ?? []).map((finding) => String(finding.rule ?? "unknown")))].sort();
   const hours: IActivityHours = {
     tool_development: 0,

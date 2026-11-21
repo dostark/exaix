@@ -180,11 +180,11 @@ async function run(command: readonly string[], cwd: string, env: Record<string, 
 async function main(args: readonly string[]): Promise<number> {
   const manifestPath = argValue(args, "manifest") ?? DEFAULT_MANIFEST;
   const target = resolve(argValue(args, "target") ?? DEFAULT_TARGET);
-  const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
+  const manifest: {
     content_hash: string;
     parent: string;
     submodules: Readonly<Record<string, string>>;
-  };
+  } = JSON.parse(await Deno.readTextFile(manifestPath));
   const errors = validateManifestRefs(manifest);
   if (errors.length > 0) {
     for (const error of errors) console.error(`❌ ${error}`);
@@ -214,9 +214,9 @@ async function main(args: readonly string[]): Promise<number> {
       { EXA_LLM_PROVIDER: "mock", ...snapshotEnv(target) },
     );
     commands.push(record);
-    const manifestRecord = JSON.parse(
+    const manifestRecord: { readonly outcome?: string } = JSON.parse(
       await Deno.readTextFile(join(target, "evidence", "run-manifest.json")),
-    ) as { readonly outcome?: string };
+    );
     smoke = {
       id: SMOKE_SCENARIO,
       verdict: smokeVerdict(manifestRecord),

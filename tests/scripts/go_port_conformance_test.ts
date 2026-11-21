@@ -14,7 +14,7 @@ import {
   prepareGeneration,
   verifySnapshot,
 } from "../../scripts/go_port/conformance/generate.ts";
-import { contentHash, sha256Hex, type TJsonValue } from "../../scripts/go_port/snapshot_manifest.ts";
+import { contentHash, sha256Hex } from "../../scripts/go_port/snapshot_manifest.ts";
 
 const ROOT = fromFileUrl(new URL("../../", import.meta.url));
 
@@ -72,7 +72,7 @@ async function buildManifest(
     fixtures: {},
     dirty: false,
   };
-  const manifest = { ...body, content_hash: await contentHash(body as TJsonValue) } as ISnapshotManifest;
+  const manifest = { ...body, content_hash: await contentHash(body) } as ISnapshotManifest;
   const manifestPath = join(dir, "manifest.json");
   await Deno.writeTextFile(manifestPath, `${JSON.stringify(manifest)}\n`);
   return { path, manifest, manifestPath };

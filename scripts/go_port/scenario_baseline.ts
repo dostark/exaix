@@ -18,6 +18,7 @@ import { loadScenarioCatalog } from "../../tests/scenario_framework/runner/scena
 import { selectScenariosForExecution } from "../../tests/scenario_framework/runner/modes.ts";
 import { ScenarioCiProfile } from "../../tests/scenario_framework/runner/config.ts";
 import { contentHash } from "./snapshot_manifest.ts";
+import { isString } from "./value_guards.ts";
 import { snapshotEnv } from "./preserve_snapshot.ts";
 
 /** The two verdict values a scenario can record. */
@@ -85,18 +86,19 @@ export function assertProfile(value: string): "ci-smoke" {
 export function parseBaseline(raw: IBaselineInput): IScenarioBaseline {
   const errors: string[] = [];
   if (raw.profile !== PROFILE) errors.push("profile: must be ci-smoke");
-  if (typeof raw.catalog_hash !== "string" || raw.catalog_hash === "") errors.push("catalog_hash");
-  if (typeof raw.run_id !== "string" || raw.run_id === "") errors.push("run_id");
-  if (typeof raw.started_at !== "string" || raw.started_at === "") errors.push("started_at");
+  if (!isString(raw.catalog_hash) || raw.catalog_hash === "") errors.push("catalog_hash");
+  if (!isString(raw.run_id) || raw.run_id === "") errors.push("run_id");
+  if (!isString(raw.started_at) || raw.started_at === "") errors.push("started_at");
   if (!Array.isArray(raw.verdicts) || raw.verdicts.length === 0) errors.push("verdicts: at least one");
   for (const verdict of raw.verdicts ?? []) {
-    if (typeof verdict.id !== "string" || verdict.id === "") errors.push("verdicts.id");
+    if (!isString(verdict.id) || verdict.id === "") errors.push("verdicts.id");
     if (verdict.verdict !== "pass" && verdict.verdict !== "fail") errors.push("verdicts.verdict");
-    if (typeof verdict.evidence_hash !== "string" || verdict.evidence_hash === "") {
+    if (!isString(verdict.evidence_hash) || verdict.evidence_hash === "") {
       errors.push("verdicts.evidence_hash");
     }
   }
   if (errors.length > 0) throw new Error(`baseline: ${errors.join("; ")}`);
+  // SAFETY: every required field was checked above, so the input has the baseline shape.
   return raw as IScenarioBaseline;
 }
 
@@ -188,8 +190,8 @@ async function readRunManifests(output: string): Promise<IScenarioVerdict[]> {
   try {
     for await (const entry of walk(output, { includeDirs: false })) {
       if (!entry.name.endsWith("run-manifest.json")) continue;
-      const raw = JSON.parse(await Deno.readTextFile(entry.path)) as IRunManifest;
-      if (typeof raw.scenarioId !== "string" || raw.scenarioId === "") continue;
+      const raw: IRunManifest = JSON.parse(await Deno.readTextFile(entry.path));
+      if (!isString(raw.scenarioId) || raw.scenarioId === "") continue;
       const verdict = raw.outcome === "success" ? "pass" : "fail";
       verdicts.push({
         id: raw.scenarioId,
@@ -211,9 +213,9 @@ async function main(args: readonly string[]): Promise<number> {
   };
   const snapshot = resolve(value("snapshot") ?? DEFAULT_SNAPSHOT);
   const output = resolve(value("output") ?? DEFAULT_OUTPUT);
-  const manifest = JSON.parse(
+  const manifest: { scenarios: Record<string, string> } = JSON.parse(
     await Deno.readTextFile(join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", "snapshot_manifest.json")),
-  ) as { scenarios: Record<string, string> };
+  );
   await Deno.remove(output, { recursive: true }).catch(() => {});
   await Deno.mkdir(output, { recursive: true });
   const catalog = await loadScenarioCatalog({ frameworkHome: join(snapshot, "tests", "scenario_framework") });

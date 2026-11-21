@@ -111,7 +111,7 @@ async function run(messageFile: string, apply: boolean): Promise<void> {
   await lock.lock(true);
   let receipt: IReceipt;
   try {
-    receipt = JSON.parse(await Deno.readTextFile(path)) as IReceipt;
+    receipt = JSON.parse(await Deno.readTextFile(path));
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
     receipt = await prepare(message, ref.docPath);
