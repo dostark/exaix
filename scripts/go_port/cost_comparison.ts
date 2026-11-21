@@ -12,7 +12,6 @@
  */
 
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
-import { goCheckout } from "./checkout.ts";
 
 /** The six activities every arm records. */
 export interface IActivityHours {
@@ -222,9 +221,7 @@ async function measure(packagePath: string, arm: TArm, exaport: string): Promise
 }
 
 async function main(): Promise<number> {
-  const checkout = await goCheckout(REPO_ROOT, true);
-  if (!checkout) throw new Error("Missing Go checkout");
-  const exaport = join(checkout, "tools", "exaport", "src", "main.ts");
+  const exaport = join(REPO_ROOT, "scripts", "go_port", "exaport", "src", "main.ts");
   const packages: IPackageCost[] = [];
   for (const packagePath of PACKAGES) {
     packages.push(await measure(packagePath, "converter-assisted", exaport));

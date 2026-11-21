@@ -8,6 +8,7 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { walk } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
 
 import { goCheckout } from "../../scripts/go_port/checkout.ts";
@@ -80,6 +81,15 @@ Deno.test("go-port-retired: spent one-shot harness files are gone and evidence r
   for (const name of ["benchmarks.json", "prerequisites.json", "phase214_ready.json"]) {
     const text = await read(DOCS, "evidence", "go-port", name);
     assert(text.length > 0, `${name} evidence should remain`);
+  }
+});
+
+Deno.test("go-port-pure-repo: the Go repository contains no Deno or TypeScript source", {
+  ignore: checkout === undefined,
+}, async () => {
+  for await (const entry of walk(GO_ROOT, { includeDirs: false })) {
+    assert(!entry.path.endsWith(".ts") && !entry.path.endsWith(".tsx"), entry.path);
+    assert(!entry.path.endsWith("deno.json") && !entry.path.endsWith("deno.lock"), entry.path);
   }
 });
 

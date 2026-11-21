@@ -15,8 +15,8 @@
     ],
     "ignore": [
       {
-        "glob": "**/exaix-go/tools/exaport/**",
-        "reason": "The Go submodule owns the exaport prototype."
+        "glob": "**/scripts/go_port/exaport/**",
+        "reason": "The parent owns the exaport prototype."
       },
       {
         "glob": "**/unslop-ts/**",
@@ -1731,7 +1731,7 @@
             "/exaix-dev-docs/evidence(/|$)"
           ],
           "extraEntries": [
-            "exaix-go/tools/exaport/src/main.ts",
+            "scripts/go_port/exaport/src/main.ts",
             "apps/exactl/tests/helpers/approval_hang_probe.ts",
             "scripts/backup_repo.ts",
             "scripts/commit_plan_step.ts",

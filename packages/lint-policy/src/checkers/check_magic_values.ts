@@ -185,7 +185,7 @@ async function main(): Promise<void> {
         /lint-policy[/\\]plugin\.ts$/,
         /[/\\]whole_tree[/\\]/,
         /[/\\]unslop-ts[/\\]/,
-        /[/\\]exaix-go[/\\]tools[/\\]exaport[/\\]/,
+        /[/\\]scripts[/\\]go_port[/\\]exaport[/\\]/,
       ],
     })
   ) {

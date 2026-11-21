@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "typescript": "npm:typescript@6.0.3"
+  }
+}
