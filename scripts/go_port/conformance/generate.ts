@@ -9,6 +9,7 @@ import { dirname, fromFileUrl, join, resolve, toFileUrl } from "@std/path";
 import { argValue } from "../cli_args.ts";
 import { assertTargetAllowed, cloneSnapshot, gitOutput } from "../preserve_snapshot.ts";
 import { contentHash, sha256Hex, stable, type TJsonValue } from "../snapshot_manifest.ts";
+import { schemasSuite } from "./schemas_corpus.ts";
 
 interface IManifestRefs {
   readonly parent: string;
@@ -65,7 +66,8 @@ export type ISuiteDefinition =
   | { readonly version: 1; readonly cases: readonly ICase[] }
   | {
     readonly version: 2;
-    readonly cases: readonly ICaseV2[];
+    /** The inputs, or a function that builds them from the verified snapshot. */
+    readonly cases: readonly ICaseV2[] | ((snapshot: string) => Promise<readonly ICaseV2[]>);
     readonly evaluate: (snapshot: string, cases: readonly ICaseV2[]) => Promise<readonly ICaseResultV2[]>;
   };
 
@@ -93,6 +95,7 @@ const SHA = /^[0-9a-f]{40}$/;
 const CASE_ID = /^[a-z0-9-]+$/;
 
 const SUITES: Readonly<Record<string, ISuiteDefinition>> = {
+  schemas: schemasSuite,
   "acceptance-bullets": {
     version: 1,
     cases: [
@@ -231,6 +234,7 @@ function documentOf(
 ): { readonly id: string; readonly body: TJsonValue } {
   if (definition.version === 2) {
     if (!isV2Result(item)) throw new Error(`case ${item.id}: a version 2 suite needs a reference result`);
+    if (typeof definition.cases === "function") throw new Error("the cases of a version 2 suite are not resolved");
     const source = definition.cases.find((entry) => entry.id === item.id);
     if (!source) throw new Error(`oracle returned an unknown case: ${item.id}`);
     if (!SCHEMA_NAME.test(source.schema)) throw new Error(`case ${item.id}: invalid schema name`);
@@ -321,11 +325,25 @@ export async function generateSuite(options: IGenerateOptions): Promise<string> 
   const definition = suites[options.suite];
   if (!definition) throw new Error(`unknown suite: ${options.suite}`);
   const snapshot = options.snapshot ?? "";
-  const results = definition.version === 1
-    ? await runOracle(snapshot, definition.cases)
-    : await definition.evaluate(snapshot, definition.cases);
-  const generation = await prepareGeneration(options.target, options.suite, results, manifest, suites);
-  await publishGeneration(options.target, generation);
+  if (definition.version === 1) {
+    const results = await runOracle(snapshot, definition.cases);
+    return await publish(options.target, options.suite, results, manifest, suites);
+  }
+  const cases = typeof definition.cases === "function" ? await definition.cases(snapshot) : definition.cases;
+  const results = await definition.evaluate(snapshot, cases);
+  const resolved: Readonly<Record<string, ISuiteDefinition>> = { ...suites, [options.suite]: { ...definition, cases } };
+  return await publish(options.target, options.suite, results, manifest, resolved);
+}
+
+async function publish(
+  target: string,
+  suite: string,
+  results: readonly (ICaseResult | ICaseResultV2)[],
+  manifest: ISnapshotManifest,
+  suites: Readonly<Record<string, ISuiteDefinition>>,
+): Promise<string> {
+  const generation = await prepareGeneration(target, suite, results, manifest, suites);
+  await publishGeneration(target, generation);
   return generation.digest;
 }
 
@@ -339,6 +357,7 @@ async function main(args: readonly string[]): Promise<number> {
   if (!snapshot) {
     snapshot = join(dirname(REPO_ROOT), "exaix-sandboxes", "phase-246-conformance", crypto.randomUUID());
     await assertTargetAllowed(REPO_ROOT, snapshot);
+    await Deno.mkdir(dirname(snapshot), { recursive: true });
     await cloneSnapshot(manifest, snapshot, REPO_ROOT);
     owned = true;
   }
