@@ -5,7 +5,7 @@
  * @architectural-layer Test
  */
 import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import { checkout, copy, GO, GO_PATH, run } from "./helpers/go_checkout_fixture.ts";
 
@@ -15,6 +15,22 @@ function check(repo: string, parent?: string): Promise<{ code: number; text: str
   return run(repo, GO, args, { PATH: GO_PATH });
 }
 
+async function initializeParent(parent: string): Promise<void> {
+  const docs = join(parent, "exaix-dev-docs");
+  await Deno.mkdir(join(docs, "planning"), { recursive: true });
+  for (
+    const path of [
+      "Exaix_Go_Port_Strategy.md",
+      "Exaix_Software_Factory_Design.md",
+      "security/Security_Concept_Doc_13_Security_Roadmap_and_Gap_Register.md",
+    ]
+  ) {
+    const target = join(docs, "dev", path);
+    await Deno.mkdir(dirname(target), { recursive: true });
+    await Deno.writeTextFile(target, "# Design\n");
+  }
+}
+
 Deno.test("go-agentsdoc: both layouts pass", { ignore: checkout === undefined }, async () => {
   await withTempDir(async (dir) => {
     const repo = await copy(dir);
@@ -22,7 +38,7 @@ Deno.test("go-agentsdoc: both layouts pass", { ignore: checkout === undefined },
     assertEquals(standalone.code, 0, standalone.text);
     assertStringIncludes(standalone.text, "agentsdoc: ok");
     const parent = join(dir, "parent");
-    await Deno.mkdir(join(parent, "exaix-dev-docs", "planning"), { recursive: true });
+    await initializeParent(parent);
     const linked = await check(repo, parent);
     assertEquals(linked.code, 0, linked.text);
     assertStringIncludes(linked.text, "agentsdoc: ok");
@@ -36,6 +52,15 @@ const seeds = [
     apply: async (repo: string) => {
       const path = join(repo, "AGENTS.md");
       await Deno.writeTextFile(path, `${await Deno.readTextFile(path)}\n[missing](missing.md)\n`);
+    },
+  },
+  {
+    name: "renamed heading",
+    marker: "missing heading or anchor",
+    apply: async (repo: string) => {
+      const path = join(repo, "docs", "tooling.md");
+      const text = await Deno.readTextFile(path);
+      await Deno.writeTextFile(path, text.replace("## Targets", "## Gate targets"));
     },
   },
   {
@@ -94,7 +119,7 @@ Deno.test("go-agentsdoc: a parent reference resolves only in parent mode", {
     const missing = await check(repo, parent);
     assertNotEquals(missing.code, 0);
     assertStringIncludes(missing.text, "external link missing from parent");
-    await Deno.mkdir(join(parent, "exaix-dev-docs", "planning"), { recursive: true });
+    await initializeParent(parent);
     const resolved = await check(repo, parent);
     assertEquals(resolved.code, 0, resolved.text);
   });
