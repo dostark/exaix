@@ -48,7 +48,7 @@ Core policy
 Plan-step commits (exception — commit both together, staged)
 
 A plan-step commit implements a step of a plan doc (exaix-dev-docs/planning/). Its parent
-message carries `plan:`, e.g. `plan: exaix-dev-docs/planning/phase-246-go-port-stage-0-go-engineering-foundation.md#6`.
+message carries `plan:`, e.g. `plan: exaix-dev-docs/completed/phase-246-go-port-stage-0-go-engineering-foundation.md#6`.
 For these, do NOT commit the submodule first:
 
 1. Stage the plan-doc changes in the submodule (`git -C exaix-dev-docs add planning/<phase>.md`).
