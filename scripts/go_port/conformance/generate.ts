@@ -8,7 +8,7 @@
 import { dirname, fromFileUrl, join, resolve, toFileUrl } from "@std/path";
 import { argValue } from "../cli_args.ts";
 import { assertTargetAllowed, cloneSnapshot, gitOutput } from "../preserve_snapshot.ts";
-import { contentHash, sha256Hex, stable } from "../snapshot_manifest.ts";
+import { contentHash, sha256Hex, stable, type TJsonValue } from "../snapshot_manifest.ts";
 
 interface IManifestRefs {
   readonly parent: string;
@@ -35,6 +35,40 @@ interface ICaseResult {
   readonly expected: TExpected;
 }
 
+export type TInputKind = "toml" | "yaml" | "json" | "text";
+
+export interface IIssue {
+  readonly path: readonly (string | number)[];
+  readonly code: string;
+}
+
+export type TExpectedV2 =
+  | { readonly kind: "value"; readonly value: TJsonValue }
+  | { readonly kind: "issues"; readonly issues: readonly IIssue[] }
+  | { readonly kind: "error"; readonly category: string };
+
+/** A version 2 case. `go` records a D28 divergence: the Go outcome that differs from the reference. */
+export interface ICaseV2 {
+  readonly id: string;
+  readonly schema: string;
+  readonly input: { readonly kind: TInputKind; readonly content: string };
+  readonly go?: TExpectedV2;
+}
+
+export interface ICaseResultV2 {
+  readonly id: string;
+  readonly reference: TExpectedV2;
+}
+
+/** A version 1 suite has string cases and one built-in oracle. A version 2 suite brings its own evaluator. */
+export type ISuiteDefinition =
+  | { readonly version: 1; readonly cases: readonly ICase[] }
+  | {
+    readonly version: 2;
+    readonly cases: readonly ICaseV2[];
+    readonly evaluate: (snapshot: string, cases: readonly ICaseV2[]) => Promise<readonly ICaseResultV2[]>;
+  };
+
 interface IGeneration {
   readonly dir: string;
   readonly digest: string;
@@ -46,21 +80,28 @@ interface IGenerateOptions {
   readonly target: string;
   readonly snapshot?: string;
   readonly manifest?: ISnapshotManifest;
+  readonly suites?: Readonly<Record<string, ISuiteDefinition>>;
 }
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), "..", "..", ".."));
 const MANIFEST_PATH = join(REPO_ROOT, "exaix-dev-docs", "evidence", "go-port", "snapshot_manifest.json");
-const GENERATOR_VERSION = "1";
+const GENERATOR_V1 = "1";
+const GENERATOR_V2 = "2";
+const INPUT_KINDS: readonly string[] = ["toml", "yaml", "json", "text"];
+const SCHEMA_NAME = /^[A-Za-z0-9_.-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 const CASE_ID = /^[a-z0-9-]+$/;
 
-const SUITES: Readonly<Record<string, readonly ICase[]>> = {
-  "acceptance-bullets": [
-    { id: "absent-heading", content: "## Other\n\n- ignored\n" },
-    { id: "dash-bullets", content: "## Acceptance\n\n- one\n- two\n" },
-    { id: "star-bullets", content: "## Success Criteria\n\n* one\n* two\n" },
-    { id: "subsequent-heading", content: "## Acceptance\n\n- one\n\n## Next\n\n- ignored\n" },
-  ],
+const SUITES: Readonly<Record<string, ISuiteDefinition>> = {
+  "acceptance-bullets": {
+    version: 1,
+    cases: [
+      { id: "absent-heading", content: "## Other\n\n- ignored\n" },
+      { id: "dash-bullets", content: "## Acceptance\n\n- one\n- two\n" },
+      { id: "star-bullets", content: "## Success Criteria\n\n* one\n* two\n" },
+      { id: "subsequent-heading", content: "## Acceptance\n\n- one\n\n## Next\n\n- ignored\n" },
+    ],
+  },
 };
 
 export async function loadManifest(path = MANIFEST_PATH): Promise<ISnapshotManifest> {
@@ -87,9 +128,7 @@ export async function verifySnapshot(snapshot: string, manifest: ISnapshotManife
   return errors;
 }
 
-async function runOracle(snapshot: string, suite: string): Promise<ICaseResult[]> {
-  const cases = SUITES[suite];
-  if (!cases) throw new Error(`unknown suite: ${suite}`);
+async function runOracle(snapshot: string, cases: readonly ICase[]): Promise<ICaseResult[]> {
   const oracle = join(snapshot, "packages", "core", "src", "planning", "delegate_brief.ts");
   const temp = await Deno.makeTempDir({ dir: dirname(snapshot), prefix: "conformance-adapter-" });
   const adapter = join(temp, "adapter.ts");
@@ -137,32 +176,103 @@ console.log(JSON.stringify(results));
   }
 }
 
-export async function prepareGeneration(
-  target: string,
-  suite: string,
-  results: readonly ICaseResult[],
-  manifest: ISnapshotManifest,
-): Promise<IGeneration> {
-  const cases = SUITES[suite];
-  if (!cases) throw new Error(`unknown suite: ${suite}`);
-  const temp = join(target, `.tmp-${crypto.randomUUID()}`);
-  await Deno.mkdir(join(temp, "cases"), { recursive: true });
+function expectedJson(expected: TExpectedV2): TJsonValue {
+  if (expected.kind === "value") return { kind: "value", value: expected.value };
+  if (expected.kind === "issues") {
+    return { kind: "issues", issues: expected.issues.map((entry) => ({ path: [...entry.path], code: entry.code })) };
+  }
+  return { kind: "error", category: expected.category };
+}
+
+function isV2Result(item: ICaseResult | ICaseResultV2): item is ICaseResultV2 {
+  return "reference" in item;
+}
+
+function assertExpectation(expected: TExpectedV2, where: string): void {
+  const kind: string = expected.kind;
+  if (kind === "value") return;
+  if (expected.kind === "issues") {
+    for (const entry of expected.issues) {
+      if (typeof entry.code !== "string" || entry.code.trim() === "") throw new Error(`${where}: issue without a code`);
+      for (const segment of entry.path) {
+        const valid = typeof segment === "string" || (Number.isInteger(segment) && segment >= 0);
+        if (!valid) throw new Error(`${where}: issue path segment is neither a string nor a non-negative integer`);
+      }
+    }
+    return;
+  }
+  if (expected.kind === "error") {
+    if (typeof expected.category !== "string" || expected.category.trim() === "") {
+      throw new Error(`${where}: error without a category`);
+    }
+    return;
+  }
+  throw new Error(`${where}: invalid expectation kind ${kind}`);
+}
+
+async function writeCaseFiles(
+  temp: string,
+  documents: readonly { readonly id: string; readonly body: TJsonValue }[],
+): Promise<{ id: string; file: string; sha256: string }[]> {
   const entries: { id: string; file: string; sha256: string }[] = [];
-  for (const item of results) {
+  for (const item of documents) {
     if (!CASE_ID.test(item.id)) throw new Error(`invalid case id: ${item.id}`);
-    const content = stable({
-      id: item.id,
-      content: cases.find((entry) => entry.id === item.id)?.content ?? "",
-      expected: item.expected,
-    }) + "\n";
+    const content = stable(item.body) + "\n";
     const file = `cases/${item.id}.json`;
     await Deno.writeTextFile(join(temp, file), content);
     entries.push({ id: item.id, file, sha256: await sha256Hex(content) });
   }
+  return entries;
+}
+
+function documentOf(
+  definition: ISuiteDefinition,
+  item: ICaseResult | ICaseResultV2,
+): { readonly id: string; readonly body: TJsonValue } {
+  if (definition.version === 2) {
+    if (!isV2Result(item)) throw new Error(`case ${item.id}: a version 2 suite needs a reference result`);
+    const source = definition.cases.find((entry) => entry.id === item.id);
+    if (!source) throw new Error(`oracle returned an unknown case: ${item.id}`);
+    if (!SCHEMA_NAME.test(source.schema)) throw new Error(`case ${item.id}: invalid schema name`);
+    if (!INPUT_KINDS.includes(source.input.kind)) throw new Error(`case ${item.id}: invalid input kind`);
+    assertExpectation(item.reference, `case ${item.id} reference`);
+    if (source.go) assertExpectation(source.go, `case ${item.id} go`);
+    const body: { [key: string]: TJsonValue } = {
+      id: item.id,
+      schema: source.schema,
+      input: { kind: source.input.kind, content: source.input.content },
+      reference: expectedJson(item.reference),
+    };
+    if (source.go) body.go = expectedJson(source.go);
+    return { id: item.id, body };
+  }
+  if (isV2Result(item)) throw new Error(`case ${item.id}: a version 1 suite needs an expected result`);
+  return {
+    id: item.id,
+    body: {
+      id: item.id,
+      content: definition.cases.find((entry) => entry.id === item.id)?.content ?? "",
+      expected: item.expected,
+    },
+  };
+}
+
+export async function prepareGeneration(
+  target: string,
+  suite: string,
+  results: readonly (ICaseResult | ICaseResultV2)[],
+  manifest: ISnapshotManifest,
+  suites: Readonly<Record<string, ISuiteDefinition>> = SUITES,
+): Promise<IGeneration> {
+  const definition = suites[suite];
+  if (!definition) throw new Error(`unknown suite: ${suite}`);
+  const temp = join(target, `.tmp-${crypto.randomUUID()}`);
+  await Deno.mkdir(join(temp, "cases"), { recursive: true });
+  const entries = await writeCaseFiles(temp, results.map((item) => documentOf(definition, item)));
   const body = stable({
-    schema_version: 1,
+    schema_version: definition.version,
     suite,
-    generator_version: GENERATOR_VERSION,
+    generator_version: definition.version === 1 ? GENERATOR_V1 : GENERATOR_V2,
     reference: { parent: manifest.parent, lockfile: manifest.lockfiles["deno.lock"] },
     cases: entries,
   }) + "\n";
@@ -185,12 +295,14 @@ async function publishGeneration(target: string, generation: IGeneration): Promi
     } else {
       await Deno.rename(generation.dir, dest);
     }
-    const generated: { suite: string } = JSON.parse(generation.manifest);
+    const generated: { suite: string; schema_version: number; generator_version: string } = JSON.parse(
+      generation.manifest,
+    );
     const suite = stable({
-      schema_version: 1,
+      schema_version: generated.schema_version,
       suite: generated.suite,
       generation: generation.digest,
-      generator_version: GENERATOR_VERSION,
+      generator_version: generated.generator_version,
     }) + "\n";
     const temporary = join(target, `.suite-${crypto.randomUUID()}.json`);
     await Deno.writeTextFile(temporary, suite);
@@ -205,8 +317,14 @@ export async function generateSuite(options: IGenerateOptions): Promise<string> 
   const manifest = options.manifest ?? await loadManifest();
   const errors = await verifySnapshot(options.snapshot ?? "", manifest);
   if (errors.length > 0) throw new Error(errors.join("; "));
-  const results = await runOracle(options.snapshot ?? "", options.suite);
-  const generation = await prepareGeneration(options.target, options.suite, results, manifest);
+  const suites = options.suites ?? SUITES;
+  const definition = suites[options.suite];
+  if (!definition) throw new Error(`unknown suite: ${options.suite}`);
+  const snapshot = options.snapshot ?? "";
+  const results = definition.version === 1
+    ? await runOracle(snapshot, definition.cases)
+    : await definition.evaluate(snapshot, definition.cases);
+  const generation = await prepareGeneration(options.target, options.suite, results, manifest, suites);
   await publishGeneration(options.target, generation);
   return generation.digest;
 }

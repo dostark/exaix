@@ -9,7 +9,9 @@ import { fromFileUrl, join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import {
   generateSuite,
+  type ICaseResultV2,
   type ISnapshotManifest,
+  type ISuiteDefinition,
   loadManifest,
   prepareGeneration,
   verifySnapshot,
@@ -144,5 +146,106 @@ Deno.test("go-port-conformance: an interrupted regeneration keeps the previous s
     ];
     await prepareGeneration(target, "acceptance-bullets", results, fake.manifest);
     assertEquals(await Deno.readTextFile(join(target, "suite.json")), before);
+  });
+});
+
+const GOLDEN_CASE =
+  '{"go":{"kind":"value","value":12},"id":"old-octal","input":{"content":"{\\"a\\":1}","kind":"json"},"reference":{"kind":"value","value":10},"schema":"Alpha"}\n';
+
+const FIXTURE_SUITES: Readonly<Record<string, ISuiteDefinition>> = {
+  fixture: {
+    version: 2,
+    cases: [{
+      id: "old-octal",
+      schema: "Alpha",
+      input: { kind: "json", content: '{"a":1}' },
+      go: { kind: "value", value: 12 },
+    }],
+    evaluate: (_snapshot, cases) =>
+      Promise.resolve(cases.map((item) => ({ id: item.id, reference: { kind: "value", value: 10 } }))),
+  },
+};
+
+interface ISelectionFile {
+  readonly schema_version: number;
+  readonly generator_version: string;
+  readonly generation: string;
+}
+
+interface IManifestFile {
+  readonly schema_version: number;
+  readonly cases: readonly { readonly id: string; readonly file: string; readonly sha256: string }[];
+}
+
+async function readSelection(path: string): Promise<ISelectionFile> {
+  return JSON.parse(await Deno.readTextFile(path));
+}
+
+async function readManifest(path: string): Promise<IManifestFile> {
+  return JSON.parse(await Deno.readTextFile(path));
+}
+
+Deno.test("go-port-conformance: acceptance-bullets regenerates byte-identical", async () => {
+  await withTempDir(async (dir) => {
+    const fake = await snapshot(dir);
+    const target = join(dir, "suite");
+    await generateSuite({ suite: "acceptance-bullets", target, snapshot: fake.path, manifest: fake.manifest });
+    const committedRoot = join(ROOT, "exaix-go", "testdata", "conformance", "acceptance-bullets");
+    const committed = await readSelection(join(committedRoot, "suite.json"));
+    const regenerated = await readSelection(join(target, "suite.json"));
+    assertEquals(regenerated.schema_version, 1);
+    assertEquals(regenerated.generator_version, "1");
+    const committedGeneration = join(committedRoot, "generations", committed.generation);
+    const regeneratedGeneration = join(target, "generations", regenerated.generation);
+    const committedManifest = await readManifest(join(committedGeneration, "manifest.json"));
+    const regeneratedManifest = await readManifest(join(regeneratedGeneration, "manifest.json"));
+    assertEquals(regeneratedManifest.cases, committedManifest.cases);
+    assertEquals(regeneratedManifest.schema_version, 1);
+    for await (const entry of Deno.readDir(join(committedGeneration, "cases"))) {
+      assertEquals(
+        await Deno.readTextFile(join(regeneratedGeneration, "cases", entry.name)),
+        await Deno.readTextFile(join(committedGeneration, "cases", entry.name)),
+      );
+    }
+  });
+});
+
+Deno.test("go-port-conformance: a version 2 suite emits typed cases with the reference and the Go outcome", async () => {
+  await withTempDir(async (dir) => {
+    const fake = await snapshot(dir);
+    const target = join(dir, "suite");
+    await generateSuite({
+      suite: "fixture",
+      target,
+      snapshot: fake.path,
+      manifest: fake.manifest,
+      suites: FIXTURE_SUITES,
+    });
+    const selection = await readSelection(join(target, "suite.json"));
+    assertEquals(selection.schema_version, 2);
+    assertEquals(selection.generator_version, "2");
+    const generation = join(target, "generations", selection.generation);
+    assertEquals((await readManifest(join(generation, "manifest.json"))).schema_version, 2);
+    assertEquals(await Deno.readTextFile(join(generation, "cases", "old-octal.json")), GOLDEN_CASE);
+  });
+});
+
+Deno.test("go-port-conformance: a version 2 case rejects an unknown expectation kind", async () => {
+  await withTempDir(async (dir) => {
+    const fake = await snapshot(dir);
+    const results: ICaseResultV2[] = JSON.parse('[{"id":"old-octal","reference":{"kind":"maybe"}}]');
+    await assertRejects(
+      () => prepareGeneration(dir, "fixture", results, fake.manifest, FIXTURE_SUITES),
+      Error,
+      "expectation kind",
+    );
+    const issues: ICaseResultV2[] = JSON.parse(
+      '[{"id":"old-octal","reference":{"kind":"issues","issues":[{"path":[1.5],"code":"x"}]}}]',
+    );
+    await assertRejects(
+      () => prepareGeneration(dir, "fixture", issues, fake.manifest, FIXTURE_SUITES),
+      Error,
+      "issue path",
+    );
   });
 });
