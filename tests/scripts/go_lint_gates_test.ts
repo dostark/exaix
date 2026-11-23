@@ -178,6 +178,21 @@ import _ "github.com/dostark/exaix-go/runtime"
     assertStringIncludes(failed.text, "depguard");
     assertStringIncludes(failed.text, "internal/schemas/disallowed_import_seed.go");
     await Deno.remove(seedPath);
+    const externalSeed = join(repo, "internal", "schemas", "disallowed_external_seed_test.go");
+    await Deno.writeTextFile(
+      externalSeed,
+      `package schemas_test
+
+import _ "github.com/dostark/exaix-go/internal/core/l0"
+`,
+    );
+    for (const [gate, diagnostic] of [["layercheck", "schemas"], ["lint", "depguard"]]) {
+      const blocked = await make(repo, gate, env);
+      assertNotEquals(blocked.code, 0, blocked.text);
+      assertStringIncludes(blocked.text, "internal/schemas/disallowed_external_seed_test.go");
+      assertStringIncludes(blocked.text, diagnostic);
+    }
+    await Deno.remove(externalSeed);
     const clean = await make(repo, "lint", env);
     assertEquals(clean.code, 0, clean.text);
     assertStringIncludes(clean.text, "0 issues.");
