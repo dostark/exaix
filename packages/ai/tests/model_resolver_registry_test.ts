@@ -101,7 +101,7 @@ Deno.test("[step134.2] preset resolution unchanged without registry", async () =
   const { cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
-    registerProvider("legacy-provider", { contextWindow: 8192 });
+    registerProvider("legacy-provider", { contextWindow: 32000 });
 
     const resolver = makeResolver();
     const result = await resolver.resolve({ model_size: "S" });

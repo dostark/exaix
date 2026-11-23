@@ -61,7 +61,7 @@ const PROVIDER_OLLAMA_CAPABILITIES = ["chat", "streaming"] as const;
 const PROVIDER_OLLAMA_STRENGTHS = ["simple", "local", "privacy"] as const;
 const PROVIDER_OLLAMA_COST_TIER = ProviderCostTier.FREE;
 
-const OLLAMA_CONTEXT_WINDOW = 8192;
+const OLLAMA_CONTEXT_WINDOW = 32_768;
 /** Local inference has no metered token cost. */
 const OLLAMA_COST_PER_MTok = 0;
 

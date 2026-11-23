@@ -614,9 +614,8 @@ Deno.test({
     "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint with EXA_EVAL_MODEL_SIZE=S and no explicit provider resolves via Ollama (GAP-1 free local S-tier candidate)",
   ...DISABLED_OPTS,
   fn: async () => {
-    // Ollama (contextWindow 8192, cost 0) is the only registered candidate meeting the S
-    // preset unconfigured — the intended zero-config default, not a resolution failure. Uses
-    // an unused port so this doesn't depend on a real local Ollama server.
+    // Ollama (contextWindow 32768, cost 0) is the only candidate that meets the S preset.
+    // This is the intended zero-config default. The unused port avoids a real Ollama server.
     await withEnv({
       EXA_EVAL_MODEL_SIZE: "S",
       EXA_LLM_BASE_URL: "http://127.0.0.1:11999",

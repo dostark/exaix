@@ -86,3 +86,14 @@ Deno.test("[model_sizes] the retired model_presets key is rejected and the error
   const message = result.success ? "" : result.error.issues.map((issue) => issue.message).join("; ");
   assertStringIncludes(message, "model_sizes");
 });
+
+Deno.test("[step132.2] default model_sizes match the current model tiers", () => {
+  const config = ConfigSchema.parse(MINIMAL_CONFIG);
+
+  assertEquals(config.model_sizes, {
+    S: { max_cost_per_mtok: 0.5, min_context_window: 32_000, supports_thinking: false },
+    M: { max_cost_per_mtok: 3, min_context_window: 128_000, supports_thinking: true },
+    L: { max_cost_per_mtok: 5, min_context_window: 200_000, supports_thinking: true },
+    XL: { max_cost_per_mtok: 10, min_context_window: 1_000_000, supports_thinking: true },
+  });
+});

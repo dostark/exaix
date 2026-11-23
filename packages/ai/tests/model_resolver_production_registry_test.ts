@@ -37,7 +37,7 @@ Deno.test("booted direct providers retain metadata while OpenRouter exposes a pe
       { provider: "anthropic", contextWindow: 1000000, supportsThinking: true },
       { provider: "openai", contextWindow: 1050000, supportsThinking: true },
       { provider: "google", contextWindow: 1000000, supportsThinking: true },
-      { provider: "ollama", contextWindow: 8192, supportsThinking: false },
+      { provider: "ollama", contextWindow: 32768, supportsThinking: false },
     ];
     for (const c of cases) {
       const meta = ProviderRegistry.getProviderMetadata(c.provider);

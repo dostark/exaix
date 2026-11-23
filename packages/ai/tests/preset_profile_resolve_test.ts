@@ -35,7 +35,7 @@ Deno.test("[step132.2] resolvePresetFromSize 'L' includes providers matching L p
   const { cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
-    registerProvider("big-model", { contextWindow: 200000, supportsThinking: true, costPerMtok: 10 });
+    registerProvider("big-model", { contextWindow: 200000, supportsThinking: true, costPerMtok: 5 });
     registerProvider("small-model", { contextWindow: 4096, supportsThinking: false, costPerMtok: 0.5 });
 
     const result = await resolvePresetFromSize("L");
@@ -50,7 +50,7 @@ Deno.test("[step132.2] resolvePresetFromSize 'S' excludes thinking models when t
   try {
     ProviderRegistry.clear();
     registerProvider("thinker", { contextWindow: 32000, supportsThinking: true, costPerMtok: 3 });
-    registerProvider("simple", { contextWindow: 8192, supportsThinking: false, costPerMtok: 0.5 });
+    registerProvider("simple", { contextWindow: 32000, supportsThinking: false, costPerMtok: 0.5 });
 
     const result = await resolvePresetFromSize("S");
     assertEquals(result.provider, "simple");

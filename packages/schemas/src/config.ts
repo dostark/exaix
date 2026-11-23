@@ -284,10 +284,10 @@ const ModelSizeProfileSchema = z.object({
 export type ModelSizeProfile = z.infer<typeof ModelSizeProfileSchema>;
 
 export const DEFAULT_MODEL_SIZE_PROFILES: Record<string, ModelSizeProfile> = {
-  S: { max_cost_per_mtok: 0.5, min_context_window: 8_192, supports_thinking: false },
-  M: { max_cost_per_mtok: 3, min_context_window: 32_000, supports_thinking: true },
-  L: { max_cost_per_mtok: 15, min_context_window: 128_000, supports_thinking: true },
-  XL: { max_cost_per_mtok: 75, min_context_window: 200_000, supports_thinking: true },
+  S: { max_cost_per_mtok: 0.5, min_context_window: 32_000, supports_thinking: false },
+  M: { max_cost_per_mtok: 3, min_context_window: 128_000, supports_thinking: true },
+  L: { max_cost_per_mtok: 5, min_context_window: 200_000, supports_thinking: true },
+  XL: { max_cost_per_mtok: 10, min_context_window: 1_000_000, supports_thinking: true },
 };
 
 export const ToolsConfigSchema = z.object({

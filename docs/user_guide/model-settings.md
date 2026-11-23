@@ -70,7 +70,7 @@ curate a **preferred list** per size so your favourite providers win before any 
 ```toml
 [model_sizes.M]
 max_cost_per_mtok = 3
-min_context_window = 32000
+min_context_window = 128000
 supports_thinking = true
 # Try these providers first, in order, for a size-M request (reason: preferred_list).
 candidates = ["anthropic", "ollama"]
