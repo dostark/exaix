@@ -160,3 +160,26 @@ Deno.test("go-lint-seeds: each rule seed fails and the clean tree is restored", 
     assertStringIncludes(clean.text, "0 issues.");
   });
 });
+
+Deno.test("go-lint-schemas-import: disallowed module under internal/schemas fails depguard", {
+  ignore: checkout === undefined,
+}, async () => {
+  await withTempDir(async (dir) => {
+    const repo = await copy(dir);
+    const env = cache(dir);
+    const seedPath = join(repo, "internal", "schemas", "disallowed_import_seed.go");
+    const source = `package schemas
+
+import _ "github.com/dostark/exaix-go/runtime"
+`;
+    await Deno.writeTextFile(seedPath, source);
+    const failed = await make(repo, "lint", env);
+    assertNotEquals(failed.code, 0, `schemas-import seed passed:\n${failed.text}`);
+    assertStringIncludes(failed.text, "depguard");
+    assertStringIncludes(failed.text, "internal/schemas/disallowed_import_seed.go");
+    await Deno.remove(seedPath);
+    const clean = await make(repo, "lint", env);
+    assertEquals(clean.code, 0, clean.text);
+    assertStringIncludes(clean.text, "0 issues.");
+  });
+});
