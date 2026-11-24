@@ -223,8 +223,7 @@ package-level configuration and restart/failure semantics:
   allowed only for data that files cannot keep crash-safe: a crash or a race between two writers
   could produce a wrong security result that an atomic rename or an exclusive create cannot prevent,
   and the record must commit in the same transaction as its journal event. Software Factory state
-  follows this rule: write-once content is a file, and every state change is a journal event
-  ([ADR-0001](docs/adr/0001-factory-state-in-files-and-journal-events.md)).
+  follows this rule: write-once content is a file, and every state change is a journal event.
 
 ### 2. **Separation of Concerns**
 

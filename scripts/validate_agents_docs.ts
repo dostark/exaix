@@ -20,6 +20,11 @@ export function isAgentEvidencePath(path: string): boolean {
   return path.startsWith("exaix-dev-docs/evidence/");
 }
 
+/** Decision records are not agent instructions. */
+export function isDecisionRecordPath(path: string): boolean {
+  return path.startsWith("exaix-dev-docs/adr/");
+}
+
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
   return match ? match[1] : null;
@@ -85,7 +90,8 @@ async function main() {
       for await (const entry of walk(dir, { exts: [".md"], maxDepth: 4 })) {
         if (entry.isFile) {
           if (
-            isAgentEvidencePath(entry.path) || entry.path.includes("/planning/") ||
+            isAgentEvidencePath(entry.path) || isDecisionRecordPath(entry.path) ||
+            entry.path.includes("/planning/") ||
             entry.path.startsWith("exaix-dev-docs/completed/") ||
             entry.path.startsWith("exaix-dev-docs/cancelled/") || entry.path.includes("/issues/") ||
             entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
