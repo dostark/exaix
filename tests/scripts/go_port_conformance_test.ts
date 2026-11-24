@@ -249,3 +249,24 @@ Deno.test("go-port-conformance: a version 2 case rejects an unknown expectation 
     );
   });
 });
+
+Deno.test("go-port-conformance: a version 2 outcome needs its value or issue list", async () => {
+  await withTempDir(async (dir) => {
+    const fake = await snapshot(dir);
+    const noValue: ICaseResultV2[] = JSON.parse('[{"id":"old-octal","reference":{"kind":"value"}}]');
+    await assertRejects(
+      () => prepareGeneration(dir, "fixture", noValue, fake.manifest, FIXTURE_SUITES),
+      Error,
+      "no value",
+    );
+    const noList: ICaseResultV2[] = JSON.parse('[{"id":"old-octal","reference":{"kind":"issues"}}]');
+    await assertRejects(
+      () => prepareGeneration(dir, "fixture", noList, fake.manifest, FIXTURE_SUITES),
+      Error,
+      "no issue list",
+    );
+    const nullValue: ICaseResultV2[] = JSON.parse('[{"id":"old-octal","reference":{"kind":"value","value":null}}]');
+    const prepared = await prepareGeneration(dir, "fixture", nullValue, fake.manifest, FIXTURE_SUITES);
+    assertEquals(typeof prepared.digest, "string");
+  });
+});

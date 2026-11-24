@@ -190,8 +190,12 @@ function isV2Result(item: ICaseResult | ICaseResultV2): item is ICaseResultV2 {
 
 function assertExpectation(expected: TExpectedV2, where: string): void {
   const kind: string = expected.kind;
-  if (kind === "value") return;
+  if (expected.kind === "value") {
+    if (expected.value === undefined) throw new Error(`${where}: value outcome has no value`);
+    return;
+  }
   if (expected.kind === "issues") {
+    if (!Array.isArray(expected.issues)) throw new Error(`${where}: issues outcome has no issue list`);
     for (const entry of expected.issues) {
       if (typeof entry.code !== "string" || entry.code.trim() === "") throw new Error(`${where}: issue without a code`);
       for (const segment of entry.path) {
