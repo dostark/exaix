@@ -1,0 +1,72 @@
+[system]
+root = "/srv/exaix"
+allow_net = ["api.example.com:443", "localhost"]
+version = "9.9.9"
+
+[memory.embedding]
+provider = "openai"
+model = "text-embed"
+dimension = 1024
+baseUrl = "http://127.0.0.1:9000"
+apiKey = "secret-ref"
+chunkSize = 10
+timeoutMs = 5000
+
+[ai_endpoints]
+ollama = "http://localhost:11434"
+openai = "https://api.example.com/v1"
+
+[ai_retry.providers.openai]
+max_attempts = 2
+backoff_base_ms = 500
+
+[ai_timeout.providers]
+openai = 20000
+
+[budget]
+cost_target_tokens_per_request = 6000
+
+max_flow_retry_cost_usd = 1.5
+
+[flow]
+max_gate_evaluations = 5
+namespace_prompt_max_bytes = 2048
+
+[provider_strategy.budgets]
+openai = 2.5
+anthropic = 4
+
+[provider_strategy.task_routing]
+code = ["anthropic", "openai"]
+
+[providers.openai]
+cost_tier = "paid"
+free_quota_requests_per_day = 100
+base_url = "https://api.example.com"
+timeout_ms = 5000
+rate_limit_rpm = 30
+
+[execution]
+summarization_model = "small"
+milestone_journal_path = "journal.ndjson"
+
+[[portals]]
+alias = "main"
+target_path = "/srv/portal"
+description = "d"
+default_branch = "dev"
+
+[[skills.roots]]
+kind = "project"
+path = "skills/project"
+
+[ai_anthropic]
+thinking_default = false
+
+[hitl]
+enabled = true
+
+[[hitl.mandatory_rules]]
+tool = "write_file"
+path_pattern = "src/.*"
+reason = "review"

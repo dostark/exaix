@@ -168,6 +168,7 @@
     "check:manifests": "deno run --allow-read scripts/check_step_manifests.ts exaix-dev-docs/planning/ --since 130",
     "check:reachability-ledger": "deno run --allow-read scripts/check_reachability_ledger.ts",
     "go-port:conformance": "deno run -A scripts/go_port/conformance/generate.ts",
+    "go-port:config-reference": "deno run -A scripts/go_port/config_reference.ts",
     "check:event-coverage": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts",
     "check:event-coverage:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts --staged --fail",
     "check:event-coverage:staged:visible": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts --staged --fail-on-tagged",
