@@ -1,3 +1,5 @@
+max_flow_retry_cost_usd = 1.5
+
 [system]
 root = "/srv/exaix"
 allow_net = ["api.example.com:443", "localhost"]
@@ -25,8 +27,6 @@ openai = 20000
 
 [budget]
 cost_target_tokens_per_request = 6000
-
-max_flow_retry_cost_usd = 1.5
 
 [flow]
 max_gate_evaluations = 5

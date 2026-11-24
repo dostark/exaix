@@ -27,6 +27,14 @@ export interface IConfigReference {
   readonly reference: IJsonObject;
   /** Dotted paths of leaves that keep their default because the decoder rejects every alternative. */
   readonly unchanged: readonly string[];
+  /** For each numeric leaf, whether the decoder accepts the value shifted by half a unit. */
+  readonly probes: readonly IFractionProbe[];
+}
+
+export interface IFractionProbe {
+  readonly path: readonly (string | number)[];
+  readonly value: number;
+  readonly accepted: boolean;
 }
 
 const REPO_ROOT = resolve(join(import.meta.dirname ?? ".", "..", ".."));
@@ -68,6 +76,16 @@ function collect(value, path, leaves) {
     value.forEach((item, index) => collect(item, [...path, index], leaves));
   } else leaves.push(path);
 }
+function get(root, path) {
+  let node = root;
+  for (const key of path) node = node[key];
+  return node;
+}
+function set(root, path, value) {
+  let node = root;
+  for (const key of path.slice(0, -1)) node = node[key];
+  node[path[path.length - 1]] = value;
+}
 const valid = (config) => ConfigSchema.safeParse(config).success;
 const defaults = ConfigSchema.parse({ system: { root: "." } });
 const base = merge(clone(defaults), input.supplement);
@@ -92,7 +110,19 @@ for (const path of leaves) {
   }
   if (!changed) { holder[last] = original; unchanged.push(dotted); }
 }
-console.log(JSON.stringify({ authored: base, defaults, reference: ConfigSchema.parse(base), unchanged }));
+const FRACTION = 0.5;
+const probes = [];
+for (const path of leaves) {
+  const original = get(base, path);
+  if (typeof original !== "number") continue;
+  const accepted = [original + FRACTION, original - FRACTION].some((candidate) => {
+    const trial = clone(base);
+    set(trial, path, candidate);
+    return valid(trial);
+  });
+  probes.push({ path, value: original, accepted });
+}
+console.log(JSON.stringify({ authored: base, defaults, reference: ConfigSchema.parse(base), unchanged, probes }));
 `;
 
 export async function generateConfigReference(
@@ -162,6 +192,7 @@ export async function writeConfigReference(
     authored: generated.reference,
   };
   await Deno.writeTextFile(join(target, "reference.json"), `${JSON.stringify(sortKeys(document), null, 1)}\n`);
+  await Deno.writeTextFile(join(target, "fractions.json"), `${JSON.stringify(generated.probes, null, 1)}\n`);
   return generated;
 }
 

@@ -16,13 +16,15 @@ function check(input: any): Issue[] {
   if (typeof input?.system?.root !== "string") issues.push({ path: ["system", "root"], message: "root" });
   const timeout = input?.limits?.timeout_ms;
   if (!Number.isInteger(timeout) || timeout < 1 || timeout > 100) issues.push({ path: ["limits", "timeout_ms"], message: "range" });
+  const ratio = input?.limits?.ratio;
+  if (typeof ratio !== "number" || ratio < 0 || ratio > 1) issues.push({ path: ["limits", "ratio"], message: "ratio" });
   if (typeof input?.flags?.enabled !== "boolean") issues.push({ path: ["flags", "enabled"], message: "bool" });
   if (input?.mode !== "fixed") issues.push({ path: ["mode"], message: "mode" });
   if (input?.optional !== undefined && typeof input.optional.name !== "string") issues.push({ path: ["optional", "name"], message: "name" });
   return issues;
 }
 function withDefaults(input: any) {
-  return { limits: { timeout_ms: 10 }, flags: { enabled: false }, mode: "fixed", ...input,
+  return { limits: { timeout_ms: 10, ratio: 0.5 }, flags: { enabled: false }, mode: "fixed", ...input,
     system: { root: input?.system?.root ?? "/cwd" } };
 }
 export const ConfigSchema = {
@@ -69,6 +71,9 @@ Deno.test("go-port-config-reference: changes every leaf the decoder accepts and 
     assertEquals(authored.system.root, ".", "the root stays as written");
     assertEquals(authored.mode, "fixed");
     assertEquals(generated.unchanged, ["mode"]);
+    const accepted = Object.fromEntries(generated.probes.map((probe) => [probe.path.join("."), probe.accepted]));
+    assertEquals(accepted["limits.timeout_ms"], false, "an integer field rejects a fractional value");
+    assertEquals(accepted["limits.ratio"], true, "a number field accepts a fractional value");
     assertEquals(generated.defaults.system, { root: "." });
     const reference: IFakeConfig = JSON.parse(JSON.stringify(generated.reference));
     assertEquals(reference.limits, authored.limits);
@@ -99,6 +104,7 @@ Deno.test("go-port-config-reference: writes the same bytes on every run, with so
     const document = JSON.parse(first);
     assertEquals(Object.keys(document), ["authored", "defaults", "referenceRevision"]);
     assertStringIncludes(await Deno.readTextFile(join(target, "authored.toml")), "[optional]");
+    assertStringIncludes(await Deno.readTextFile(join(target, "fractions.json")), "limits");
   });
 });
 
