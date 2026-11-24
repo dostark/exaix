@@ -509,7 +509,7 @@
       "scope": "test",
       "title": "Test Development Skill (#test-development)",
       "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "topics": [
         "testing",
         "tdd",
@@ -628,7 +628,7 @@
       "scope": "dev",
       "title": "TDD Workflow Skill (#tdd-workflow)",
       "short_summary": "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "topics": [
         "tdd",
         "testing",

@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.5.0"
+version: "1.5.1"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -206,8 +206,9 @@ Assertion sensitivity — a test that cannot fail is worse than no test
 
 Verification method selection — match the method to the defect
 
-  Default to an example-based test for one named behavior with a known input and
-  output. Choose another method only when it detects a defect the example misses.
+  For a general rule, test the property across a bounded set of generated inputs.
+  For reference parity, run both implementations and compare observable results.
+  Use an example when one named case captures the behavior.
 
   | Method               | Use when                                               | Required control                                                 |
   | -------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- |
@@ -216,6 +217,12 @@ Verification method selection — match the method to the defect
   | Differential         | A replacement must match an independent reference      | Expectation from the reference, investigate every disagreement  |
   | Fuzz                 | Malformed input is the defect model                    | Bounded iterations, fixed seed, minimized failing input          |
   | Mutation (selective) | Assertion sensitivity is uncertain                     | A named mutation set and bounded run; no new dependency          |
+
+  Generate ordinary cases, boundaries and combinations of independently varying fields.
+  Derive expected results from the contract or an independent oracle. For a config
+  override, vary the authored field and assert that the decoded field changes to its
+  value and the other fields retain their defaults. Print the failing input and seed.
+  Confirm RED against a defect the property is intended to detect.
 
   For each proposed test, record:
   - Behavior and the production entry point that must show it.

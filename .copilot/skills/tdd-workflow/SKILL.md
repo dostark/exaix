@@ -11,7 +11,7 @@ scope: dev
 title: "TDD Workflow Skill (#tdd-workflow)"
 description: Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, validate
 short_summary: "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change."
-version: "1.0.2"
+version: "1.0.3"
 topics: ["tdd", "testing", "red-green-refactor", "coverage", "helpers"]
 qwen_skill: tdd-workflow
 ---
@@ -52,6 +52,10 @@ RED
      - Assert behavior. Do not pin a literal count of a registry, corpus, or ceiling:
        derive it from its source or compare the explicit set (#test-development, anti-pattern 9).
      - Cover happy path, edge cases, errors.
+     - If a rule must hold across varying inputs, write a property test for it in RED.
+       Run it through the affected production entry point. Use a differential test when
+       the requirement is parity with an independent reference. Follow [test-development](../test-development/SKILL.md)
+       for generators, reproducible failures, and the assertion canary.
      - New test files need a module-header JSDoc (check:arch):
          /** @module XxxTest @path tests/... @description ... */
   5. Confirm RED. Run `deno test --allow-all <test-file>`. Never skip.

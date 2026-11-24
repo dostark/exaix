@@ -16,21 +16,23 @@ triggers:
 constraints:
   - Write the failing test BEFORE writing any source code (RED must come first)
   - TDD is non-negotiable -- no implementation without a prior failing test
-  - 'When the scope involves more than ~20 files, work in batches of 5-10'
-  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
+  - Use property tests for general input rules and differential checks for reference parity.
+  - "When the scope involves more than ~20 files, work in batches of 5-10"
+  - "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set"
 output_requirements:
-  - 'CONTEXT: Component, test helper selection, test file path'
-  - 'RED evidence: failing test run output (error type and line)'
-  - 'GREEN evidence: passing test run summary (N/N tests passing)'
+  - "CONTEXT: Component, test helper selection, test file path"
+  - "RED evidence: failing test run output (error type and line)"
+  - Name the property, production entry point, and failing input or seed when applicable.
+  - "GREEN evidence: passing test run summary (N/N tests passing)"
 quality_criteria:
   - name: tdd_compliance
     description: Tests were written before implementation for every behaviour change
     weight: 40
   - name: ci_gate_compliance
-    description: 'All CI gates pass before each commit (lint, type-check, style, arch, magic)'
+    description: "All CI gates pass before each commit (lint, type-check, style, arch, magic)"
     weight: 30
   - name: coverage_maintained
-    description: 'Line coverage does not drop below 70%, branch below 60%'
+    description: "Line coverage does not drop below 70%, branch below 60%"
     weight: 30
 related_skills:
   - test-development

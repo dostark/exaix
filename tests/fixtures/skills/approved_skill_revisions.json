@@ -19,15 +19,43 @@
     ]
   },
   {
+    "name": "tdd-workflow",
+    "approval_reference": "User direction to prescribe property tests in TDD",
+    "constraints_after": "TDD is non-negotiable -- no implementation without a prior failing test",
+    "constraint_additions": [
+      "Use property tests for general input rules and differential checks for reference parity."
+    ],
+    "output_requirements": [
+      "CONTEXT: Component, test helper selection, test file path",
+      "RED evidence: failing test run output (error type and line)",
+      "Name the property, production entry point, and failing input or seed when applicable.",
+      "GREEN evidence: passing test run summary (N/N tests passing)"
+    ]
+  },
+  {
     "name": "test-development",
     "source_commit": "275edc770",
+    "approval_reference": "User direction to prescribe property tests in TDD",
     "instructions_prefix": "```text\nKey points\n\n- A test that cannot fail is worse than no test \u2014 it certifies the subsystem as covered\n  and stops anyone looking again. Canary every test: break what it names, confirm red,\n  res",
-    "constraints_after": "Canary every new or edited test \u2014 break what it names, confirm red, restore",
-    "constraint_additions": [
-      "Choose a verification method only for a named defect; example-based tests remain the default",
+    "constraints": [
+      "Use shared helpers (initTestDbService, createCliTestContext)",
+      "Place tests per package/app/root boundary",
+      "Label security tests [security]",
+      "Use EXA_TEST_* env vars",
+      "No raw SQL table creation in tests",
+      "Canary every new or edited test \u2014 break what it names, confirm red, restore",
+      "Use generated property cases for a general rule and independent comparisons for reference parity.",
       "Record behavior, production entry point, independent oracle, substitutes, and what the test cannot establish",
       "Use deterministic seeds and bounded runs for property, fuzz, and mutation checks",
-      "Keep interaction checks when retry, ordering, or authorization is the contract"
+      "Keep interaction checks when retry, ordering, or authorization is the contract",
+      "Prefer useful assertion diagnostics without changing equality, identity, truth direction, messages, or evaluation count",
+      "Keep structured multiline fixtures in the owning test boundary and test constants through consumers or independent value contracts",
+      "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set",
+      "No tautologies: do not compute the expectation with the code under test or assert the test's own scaffolding.",
+      "No blind sleep where a readiness signal exists \u2014 poll the event (daemon.ready) or rely on the verifying command",
+      "Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)",
+      "Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution",
+      "Route daemon-boot, env-mutating, and wall-clock-ordered tests to SEQUENTIAL_FILES in scripts/test_parallel.ts"
     ],
     "output_requirements": [
       "Target test files created or modified",

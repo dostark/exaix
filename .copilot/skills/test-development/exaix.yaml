@@ -22,14 +22,14 @@ constraints:
   - Use EXA_TEST_* env vars
   - No raw SQL table creation in tests
   - "Canary every new or edited test — break what it names, confirm red, restore"
-  - Choose a verification method only for a named defect; example-based tests remain the default
+  - Use generated property cases for a general rule and independent comparisons for reference parity.
   - "Record behavior, production entry point, independent oracle, substitutes, and what the test cannot establish"
   - "Use deterministic seeds and bounded runs for property, fuzz, and mutation checks"
   - "Keep interaction checks when retry, ordering, or authorization is the contract"
   - "Prefer useful assertion diagnostics without changing equality, identity, truth direction, messages, or evaluation count"
   - "Keep structured multiline fixtures in the owning test boundary and test constants through consumers or independent value contracts"
   - "Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set"
-  - 'No tautologies: never restate a constant, derive the expectation from the input, assert the test''s own scaffolding, or test the runtime instead of our code'
+  - 'No tautologies: do not compute the expectation with the code under test or assert the test''s own scaffolding.'
   - No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command
   - Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)
   - "Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution"
