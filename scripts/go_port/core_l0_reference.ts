@@ -13,7 +13,9 @@ import {
   buildFuncHelpersFixture,
   buildPortalKnowledgeFixture,
 } from "./core_l0_behavior_reference.ts";
+import { buildCostFixture } from "./core_l0_cost_reference.ts";
 import { buildDataTypesFixture } from "./core_l0_data_types_reference.ts";
+import { buildRequestFixture } from "./core_l0_request_reference.ts";
 import { buildVocabularySymbols } from "./core_l0_vocabulary_symbols.ts";
 import {
   CAP_EXTENDED_LANG_EXTRACTION,
@@ -267,56 +269,6 @@ function buildParsingFixture(): object {
   };
 }
 
-function buildCostFixture(): object {
-  const defaultRates: Record<string, number> = {
-    [ProviderType.ANTHROPIC]: COST_RATE_ANTHROPIC,
-    [ProviderType.OPENAI]: COST_RATE_OPENAI,
-    [ProviderType.GOOGLE]: COST_RATE_GOOGLE,
-    [ProviderType.OLLAMA]: COST_RATE_OLLAMA,
-    [ProviderType.LLAMACPP]: COST_RATE_LLAMACPP,
-    [ProviderType.OPENROUTER]: COST_RATE_OPENROUTER,
-    [ProviderType.VERTEX]: COST_RATE_VERTEX,
-    [ProviderType.MOCK]: COST_RATE_MOCK,
-  };
-  const estimateCases = [
-    { provider: ProviderType.ANTHROPIC, tokens: 1000, prompt_tokens: 400 },
-    { provider: ProviderType.OPENAI, tokens: 2500, prompt_tokens: 1000 },
-    { provider: ProviderType.GOOGLE, tokens: 1000, prompt_tokens: 600 },
-    { provider: ProviderType.GOOGLE, tokens: 500, prompt_tokens: 800 },
-    { provider: ProviderType.OLLAMA, tokens: 10000, prompt_tokens: 5000 },
-  ].map((tc) => {
-    const rate = defaultRates[tc.provider] ?? 0;
-    const cost = tc.provider === ProviderType.GOOGLE
-      ? (Math.min(tc.prompt_tokens, tc.tokens) * COST_RATE_GOOGLE_INPUT +
-        (tc.tokens - Math.min(tc.prompt_tokens, tc.tokens)) * rate) / TOKENS_PER_COST_UNIT
-      : rate * (tc.tokens / TOKENS_PER_COST_UNIT);
-    return { ...tc, cost_usd: cost };
-  });
-
-  const splitCases = [
-    { input_per_mtok: 3.0, output_per_mtok: 15.0, prompt_tokens: 100000, completion_tokens: 50000 },
-    { input_per_mtok: 0.15, output_per_mtok: 0.6, prompt_tokens: 12345, completion_tokens: 6789 },
-  ].map((tc) => ({
-    ...tc,
-    cost_usd: (tc.input_per_mtok * tc.prompt_tokens) / TOKENS_PER_MTOK +
-      (tc.output_per_mtok * tc.completion_tokens) / TOKENS_PER_MTOK,
-  }));
-
-  const divergenceCases = [
-    { reported: 1.2, computed: 1.0, tolerance_pct: 15 },
-    { reported: 1.05, computed: 1.0, tolerance_pct: 15 },
-  ].map((tc) => {
-    const deltaPct = (Math.abs(tc.reported - tc.computed) / tc.computed) * PERCENT_SCALE;
-    return { ...tc, delta_pct: deltaPct, exceeds: deltaPct > tc.tolerance_pct };
-  });
-
-  return {
-    estimate_cases: estimateCases,
-    split_price_cases: splitCases,
-    divergence_cases: divergenceCases,
-  };
-}
-
 function buildCapabilitiesFixture(): object {
   const caps = [
     CAP_VOTING,
@@ -343,23 +295,6 @@ function buildCapabilitiesFixture(): object {
   return {
     capability_edition: CAPABILITY_EDITION,
     matrix,
-  };
-}
-
-function buildRequestFixture(): object {
-  const backoffCases = [
-    { base_ms: 1000, max_ms: 30000, multiplier: 2, jitter_factor: 0.25, attempt: 0, jitter_sample: 0.5 },
-    { base_ms: 1000, max_ms: 30000, multiplier: 2, jitter_factor: 0.25, attempt: 3, jitter_sample: 0.0 },
-    { base_ms: 1000, max_ms: 30000, multiplier: 2, jitter_factor: 0.25, attempt: 6, jitter_sample: 1.0 },
-  ].map((tc) => {
-    const raw = tc.base_ms * Math.pow(tc.multiplier, tc.attempt);
-    const capped = Math.min(raw, tc.max_ms);
-    const delay = capped + capped * tc.jitter_factor * tc.jitter_sample;
-    return { ...tc, delay_ms: delay };
-  });
-  return {
-    min_request_id_prefix_chars: MIN_REQUEST_ID_PREFIX_CHARS,
-    backoff_cases: backoffCases,
   };
 }
 

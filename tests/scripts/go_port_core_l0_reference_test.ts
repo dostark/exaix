@@ -203,3 +203,46 @@ Deno.test("go-port-core-l0-reference: an empty repairJSON call resets the refere
   repairJSON("");
   assertEquals(repairJSON(input).appliedRepairs, fresh);
 });
+
+interface ICostRequestFixtures {
+  cost: {
+    generation: Array<{ cost_source: string | null; divergence: object[]; stale: object[] }>;
+    budget: Array<{ steps: Array<{ allowed?: boolean }> }>;
+    grouping: { grouped: Array<{ groups: Array<{ estimatedCostUsd: number | null }> }> };
+  };
+  request: {
+    retry_configs: Array<{ valid: boolean }>;
+    retry_delays: Array<{ delay_ms: number }>;
+    milestone_projections: Array<{ event: { eventId: string } }>;
+  };
+}
+
+async function loadCostRequestFixtures(): Promise<ICostRequestFixtures> {
+  let fixtures: ICostRequestFixtures | undefined;
+  await withTempDir(async (dir) => {
+    await writeCoreL0Reference(ROOT, dir);
+    const read = async <T>(group: string): Promise<T> =>
+      JSON.parse(await Deno.readTextFile(join(dir, `${group}.json`))) as T;
+    fixtures = {
+      cost: await read<ICostRequestFixtures["cost"]>("cost"),
+      request: await read<ICostRequestFixtures["request"]>("request"),
+    };
+  });
+  assert(fixtures !== undefined);
+  return fixtures;
+}
+
+Deno.test("go-port-core-l0-reference: cost and request fixtures come from the real core code", async () => {
+  const { cost, request } = await loadCostRequestFixtures();
+  const sources = new Set(cost.generation.map((c) => c.cost_source));
+  for (const source of ["estimated", "registry_computed", "provider_reported"]) {
+    assert(sources.has(source), `no cost case resolves to ${source}`);
+  }
+  assert(cost.generation.some((c) => c.divergence.length > 0) && cost.generation.some((c) => c.stale.length > 0));
+  const decisions = cost.budget.flatMap((s) => s.steps.map((step) => step.allowed));
+  assert(decisions.includes(true) && decisions.includes(false));
+  assert(cost.grouping.grouped.every((g) => g.groups.some((row) => row.estimatedCostUsd === null)));
+  assert(request.retry_configs.some((c) => c.valid) && request.retry_configs.some((c) => !c.valid));
+  assert(new Set(request.retry_delays.map((c) => c.delay_ms)).size > 10);
+  assert(request.milestone_projections.every((c) => c.event.eventId === "99999999-8888-4777-8666-555555555555"));
+});
