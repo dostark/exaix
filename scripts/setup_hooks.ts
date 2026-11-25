@@ -41,19 +41,19 @@ if [ "\${HOOK_BYPASS_MAIN:-}" != "1" ]; then
   fi
 fi
 
-# A docs gitlink modification does not change parent source.
+# A docs or exaix-go gitlink modification does not change parent TypeScript source.
+# exaix-go runs its own make check pre-commit hook before the parent pointer advances.
 STAGED_CHANGES=\$(git diff --cached --raw --no-abbrev --no-renames --ignore-submodules=none) || exit 1
-DOCS_POINTER_CHANGE=\$(git diff --cached --raw --no-abbrev --no-renames --ignore-submodules=none -- exaix-dev-docs) || exit 1
-if [ "$STAGED_CHANGES" = "$DOCS_POINTER_CHANGE" ] &&
-  printf '%s\\n' "$STAGED_CHANGES" | grep -Eq '^:160000 160000 [0-9a-f]+ [0-9a-f]+ M[[:space:]]exaix-dev-docs$'; then
-  echo "✅ Docs submodule pointer only; no parent code gates apply. Commit-message validation still runs."
+NON_POINTER_CHANGES=\$(printf '%s\\n' "$STAGED_CHANGES" | grep -Ev '^:160000 160000 [0-9a-f]+ [0-9a-f]+ M[[:space:]](exaix-dev-docs|exaix-go)$' || true)
+if [ -n "$STAGED_CHANGES" ] && [ -z "$NON_POINTER_CHANGES" ]; then
+  echo "✅ Submodule pointer only (exaix-dev-docs/exaix-go); no parent code gates apply. Commit-message validation still runs."
   exit 0
 fi
 
-# A tooling-only change (Go-port scripts, their tests, or the docs pointer) does not
+# A tooling-only change (Go-port scripts, their tests, or docs/Go pointers) does not
 # need the whole-tree product gates. Run the scoped gates and let CI cover the rest.
 STAGED_PATHS=\$(git diff --cached --name-only --diff-filter=ACMR --ignore-submodules=none) || exit 1
-TOOLING_PATHS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -Ev '^(scripts/go_port/|tests/scripts/go_port_|exaix-dev-docs$)' || true)
+TOOLING_PATHS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -Ev '^(scripts/go_port/|tests/scripts/go_port_|exaix-dev-docs$|exaix-go$)' || true)
 if [ -n "$STAGED_PATHS" ] && [ -z "$TOOLING_PATHS" ]; then
   echo "🔧 Tooling-only change: running the scoped Go-port gates."
   STAGED_TS=\$(printf '%s\\n' "$STAGED_PATHS" | grep -E '\.ts$' || true)

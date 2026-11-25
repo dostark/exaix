@@ -219,6 +219,7 @@ describe("staged docs gitlink commits", () => {
       const firstSha = new TextDecoder().decode(first.stdout).trim();
       await git(["commit", "--allow-empty", "-m", "second"]);
       await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},exaix-dev-docs`]);
+      await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},exaix-go`]);
       await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},unslop-ts`]);
       await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},exaix-team`]);
       await Deno.writeTextFile(join(dir, "tracked.ts"), "export const value = 0;\n");
@@ -286,6 +287,48 @@ describe("staged docs gitlink commits", () => {
       assertFalse(calls.includes("task check:complexity"), calls);
       assertFalse(calls.includes("task lint"), calls);
       assertFalse(calls.includes("task fmt:check"), calls);
+    });
+  });
+
+  it("fix(hooks): exaix-go and exaix-dev-docs gitlink bumps skip parent TS gates and validate commit-msg", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      await stagePointer(git, "exaix-go");
+      assertEquals(await commitFixture(dir), true);
+      const calls = await Deno.readTextFile(join(dir, "calls.log"));
+      assertStringIncludes(calls, "task check:commit-msg");
+      assertFalse(calls.includes("task check:complexity"), calls);
+      assertFalse(calls.includes("task lint"), calls);
+      assertFalse(calls.includes("task fmt:check"), calls);
+    });
+  });
+
+  it("fix(hooks): an exaix-go gitlink-only bump skips parent TS gates and validates commit-msg", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-go");
+      assertEquals(await commitFixture(dir), true);
+      const calls = await Deno.readTextFile(join(dir, "calls.log"));
+      assertStringIncludes(calls, "task check:commit-msg");
+      assertFalse(calls.includes("task check:complexity"), calls);
+    });
+  });
+
+  it("fix(hooks): replacing exaix-go gitlink with a regular file keeps full checks", async () => {
+    await withHookFixture(async (dir, git) => {
+      await Deno.writeTextFile(join(dir, "exaix-go"), "regular file\n");
+      await git(["add", "exaix-go"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+    });
+  });
+
+  it("fix(hooks): mixed exaix-go gitlink and parent source changes still enforce code gates", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-go");
+      await Deno.writeTextFile(join(dir, "code.ts"), "export const value = 1;\n");
+      await git(["add", "code.ts"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
     });
   });
 
