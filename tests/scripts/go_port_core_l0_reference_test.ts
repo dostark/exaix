@@ -124,3 +124,24 @@ Deno.test("go-port-core-l0-reference: inventory records the config key of every 
     [...keys.keys()].filter((symbol) => kept.some((e) => e.symbol === symbol)).length,
   );
 });
+
+interface IDataTypesFixture {
+  readonly samples: { readonly [goType: string]: readonly object[] };
+  readonly tool_calls: readonly { readonly expected: { readonly name: string } }[];
+  readonly json_extract: readonly { readonly found: boolean }[];
+}
+
+Deno.test("go-port-core-l0-reference: data type fixture carries samples and helper cases", async () => {
+  let fixture: IDataTypesFixture | undefined;
+  await withTempDir(async (dir) => {
+    await writeCoreL0Reference(ROOT, dir);
+    fixture = JSON.parse(await Deno.readTextFile(join(dir, "data_types.json"))) as IDataTypesFixture;
+  });
+  assert(fixture !== undefined);
+  assert(Object.keys(fixture.samples).length > 30);
+  for (const [goType, samples] of Object.entries(fixture.samples)) {
+    assert(samples.length > 0, `${goType} has no sample`);
+  }
+  assert(fixture.tool_calls.some((c) => c.expected.name === "search_text"));
+  assert(fixture.json_extract.some((c) => !c.found) && fixture.json_extract.some((c) => c.found));
+});

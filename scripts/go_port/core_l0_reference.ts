@@ -7,6 +7,7 @@
  */
 import { join, resolve } from "@std/path";
 import { argValue } from "./cli_args.ts";
+import { buildDataTypesFixture } from "./core_l0_data_types_reference.ts";
 import { buildVocabularySymbols } from "./core_l0_vocabulary_symbols.ts";
 import {
   CAP_EXTENDED_LANG_EXTRACTION,
@@ -65,6 +66,7 @@ import {
 
 export const CORE_L0_REFERENCE_GROUPS: readonly string[] = [
   "vocabulary",
+  "data_types",
   "errors",
   "prompts",
   "parsing",
@@ -346,6 +348,7 @@ export async function writeCoreL0Reference(root: string, targetDir: string): Pro
   await Deno.mkdir(targetDir, { recursive: true });
   const generators: Record<string, () => object | Promise<object>> = {
     vocabulary: () => buildVocabularyFixture(root),
+    data_types: buildDataTypesFixture,
     errors: buildErrorsFixture,
     prompts: buildPromptsFixture,
     parsing: buildParsingFixture,
