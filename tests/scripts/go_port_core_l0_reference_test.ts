@@ -8,6 +8,11 @@ import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import { CORE_L0_REFERENCE_GROUPS, writeCoreL0Reference } from "../../scripts/go_port/core_l0_reference.ts";
+import {
+  extractConfigKeys,
+  type IVocabularySymbolRow,
+  type TTaggedJson,
+} from "../../scripts/go_port/core_l0_vocabulary_symbols.ts";
 
 const ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const COMMITTED_DIR = join(ROOT, "exaix-go", "internal", "core", "l0", "testdata", "reference");
@@ -46,4 +51,76 @@ Deno.test("go-port-core-l0-reference: committed manifest matches generated fixtu
   for (const group of CORE_L0_REFERENCE_GROUPS) {
     assert(Boolean(parsed.files[`${group}.json`]), `missing fixture ${group}.json`);
   }
+});
+
+interface IVocabularyFixture {
+  readonly symbols: readonly IVocabularySymbolRow[];
+}
+
+interface IInventoryEntry {
+  readonly module: string;
+  readonly symbol: string;
+  readonly class: string;
+  readonly step?: number;
+  readonly evidence: { readonly target?: string };
+}
+
+const KEPT_VOCABULARY_STEP = 3;
+
+async function generatedVocabulary(): Promise<readonly IVocabularySymbolRow[]> {
+  let symbols: readonly IVocabularySymbolRow[] = [];
+  await withTempDir(async (dir) => {
+    await writeCoreL0Reference(ROOT, dir);
+    const fixture = JSON.parse(await Deno.readTextFile(join(dir, "vocabulary.json"))) as IVocabularyFixture;
+    symbols = fixture.symbols;
+  });
+  return symbols;
+}
+
+Deno.test("go-port-core-l0-reference: vocabulary fixture carries a value for every kept Step 3 symbol", async () => {
+  const inventory = JSON.parse(
+    await Deno.readTextFile(join(ROOT, "exaix-go", "port", "inventory", "core-l0.json")),
+  ) as {
+    entries: IInventoryEntry[];
+  };
+  const kept = inventory.entries.filter((e) => e.class === "keep" && e.step === KEPT_VOCABULARY_STEP);
+  const rows = await generatedVocabulary();
+  assertEquals(rows.map((r) => `${r.module}#${r.symbol}`), kept.map((e) => `${e.module}#${e.symbol}`));
+  for (const entry of kept) {
+    const row = rows.find((r) => r.module === entry.module && r.symbol === entry.symbol);
+    assertEquals(row?.target, entry.evidence.target);
+  }
+});
+
+Deno.test("go-port-core-l0-reference: vocabulary fixture encodes enums, patterns, sets and absent values", async () => {
+  const rows = await generatedVocabulary();
+  const bySymbol = new Map(rows.map((r) => [r.symbol, r]));
+  assertEquals(bySymbol.get("TOKENS_PER_MTOK")?.value, 1_000_000);
+  const members = (symbol: string): { readonly [key: string]: TTaggedJson } =>
+    bySymbol.get(symbol)?.value as { readonly [key: string]: TTaggedJson };
+  assertEquals(members("CostGroupBy").MODEL, "model");
+  assertEquals(members("PriorityLevel").HIGH, 4);
+  assertEquals(Object.keys(members("PriorityLevel")), ["LOCAL", "LOW", "MEDIUM", "HIGH", "DEFAULT"]);
+  assertEquals(Object.keys(members("PORTAL_PREFIX_PATTERN")), ["$regexp", "flags"]);
+  assertEquals(Object.keys(members("FS_WRITE_EVENT_KINDS")), ["$set"]);
+});
+
+Deno.test("go-port-core-l0-reference: inventory records the config key of every configurable constant", async () => {
+  const inventory = JSON.parse(
+    await Deno.readTextFile(join(ROOT, "exaix-go", "port", "inventory", "core-l0.json")),
+  ) as {
+    entries: (IInventoryEntry & { readonly evidence: { readonly config_key?: string } })[];
+  };
+  const source = await Deno.readTextFile(join(ROOT, "packages", "core", "src", "types", "constants.ts"));
+  const keys = extractConfigKeys(source);
+  assert(keys.size > 0);
+  const kept = inventory.entries.filter((e) => e.class === "keep" && e.step === KEPT_VOCABULARY_STEP);
+  for (const entry of kept) {
+    const expected = entry.module.endsWith("types/constants.ts") ? keys.get(entry.symbol) : undefined;
+    assertEquals(entry.evidence.config_key, expected, `${entry.symbol} config key`);
+  }
+  assertEquals(
+    kept.filter((e) => e.evidence.config_key !== undefined).length,
+    [...keys.keys()].filter((symbol) => kept.some((e) => e.symbol === symbol)).length,
+  );
 });

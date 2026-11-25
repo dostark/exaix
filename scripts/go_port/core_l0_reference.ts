@@ -5,8 +5,9 @@
  * @description Generates deterministic JSON reference fixtures from the pinned a956e0c8a packages/core Layer 0 exports for Go differential tests.
  * Usage: deno run -A scripts/go_port/core_l0_reference.ts [--target=<dir>]
  */
-import { dirname, join, resolve } from "@std/path";
+import { join, resolve } from "@std/path";
 import { argValue } from "./cli_args.ts";
+import { buildVocabularySymbols } from "./core_l0_vocabulary_symbols.ts";
 import {
   CAP_EXTENDED_LANG_EXTRACTION,
   CAP_GUARDRAIL_ADVANCED,
@@ -84,7 +85,7 @@ async function sha256Hex(content: string): Promise<string> {
     .join("");
 }
 
-function buildVocabularyFixture(): object {
+async function buildVocabularyFixture(root: string): Promise<object> {
   return {
     editions: {
       solo: EDITION_SOLO,
@@ -120,6 +121,7 @@ function buildVocabularyFixture(): object {
       vertex: ProviderType.VERTEX,
       mock: ProviderType.MOCK,
     },
+    symbols: await buildVocabularySymbols(root),
   };
 }
 
@@ -340,10 +342,10 @@ function buildRequestFixture(): object {
   };
 }
 
-export async function writeCoreL0Reference(_root: string, targetDir: string): Promise<void> {
+export async function writeCoreL0Reference(root: string, targetDir: string): Promise<void> {
   await Deno.mkdir(targetDir, { recursive: true });
-  const generators: Record<string, () => object> = {
-    vocabulary: buildVocabularyFixture,
+  const generators: Record<string, () => object | Promise<object>> = {
+    vocabulary: () => buildVocabularyFixture(root),
     errors: buildErrorsFixture,
     prompts: buildPromptsFixture,
     parsing: buildParsingFixture,
@@ -354,7 +356,7 @@ export async function writeCoreL0Reference(_root: string, targetDir: string): Pr
   const files: Record<string, string> = {};
   for (const group of CORE_L0_REFERENCE_GROUPS) {
     const filename = `${group}.json`;
-    const body = `${JSON.stringify(generators[group](), null, 2)}\n`;
+    const body = `${JSON.stringify(await generators[group](), null, 2)}\n`;
     await Deno.writeTextFile(join(targetDir, filename), body);
     files[filename] = await sha256Hex(body);
   }
