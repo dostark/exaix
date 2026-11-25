@@ -6,6 +6,7 @@
  */
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
+import { repairJSON } from "@exaix/core/func";
 import { withTempDir } from "@exaix/testing";
 import { CORE_L0_REFERENCE_GROUPS, writeCoreL0Reference } from "../../scripts/go_port/core_l0_reference.ts";
 import {
@@ -144,4 +145,61 @@ Deno.test("go-port-core-l0-reference: data type fixture carries samples and help
   }
   assert(fixture.tool_calls.some((c) => c.expected.name === "search_text"));
   assert(fixture.json_extract.some((c) => !c.found) && fixture.json_extract.some((c) => c.found));
+});
+
+interface IBehaviorFixtures {
+  func_helpers: {
+    repair_json: Array<{ input: string; appliedRepairs: string[] }>;
+    transforms: { template: Array<{ error: string }>; extract: Array<{ error: string }> };
+    code_parser: { validate: Array<{ root: string; result: { valid: boolean } }> };
+  };
+  portal_knowledge: {
+    score: Array<{ entries: object[] }>;
+    adaptive: Array<{ result: { content: string; relevant: object[] } }>;
+  };
+  parsing: { extra: Array<{ error?: string }> };
+  errors: { kinds: { context_error_with_cause: { cause?: { name: string } } } };
+}
+
+async function loadBehaviorFixtures(): Promise<IBehaviorFixtures> {
+  let fixtures: IBehaviorFixtures | undefined;
+  await withTempDir(async (dir) => {
+    await writeCoreL0Reference(ROOT, dir);
+    const read = async <T>(group: string): Promise<T> =>
+      JSON.parse(await Deno.readTextFile(join(dir, `${group}.json`))) as T;
+    fixtures = {
+      func_helpers: await read<IBehaviorFixtures["func_helpers"]>("func_helpers"),
+      portal_knowledge: await read<IBehaviorFixtures["portal_knowledge"]>("portal_knowledge"),
+      parsing: await read<IBehaviorFixtures["parsing"]>("parsing"),
+      errors: await read<IBehaviorFixtures["errors"]>("errors"),
+    };
+  });
+  assert(fixtures !== undefined);
+  return fixtures;
+}
+
+Deno.test("go-port-core-l0-reference: behavior fixture carries accepted and rejected cases", async () => {
+  const fixture = await loadBehaviorFixtures();
+  const repairs = fixture.func_helpers.repair_json;
+  assert(repairs.some((c) => c.appliedRepairs.length === 0) && repairs.some((c) => c.appliedRepairs.length > 1));
+  assert(fixture.func_helpers.transforms.template.some((c) => c.error !== ""));
+  assert(fixture.func_helpers.transforms.extract.some((c) => c.error !== ""));
+  const validations = fixture.func_helpers.code_parser.validate;
+  assert(validations.some((c) => c.result.valid) && validations.some((c) => !c.result.valid));
+  assert(new Set(validations.map((c) => c.root)).size > 1, "path validation needs more than one portal root");
+  assert(fixture.portal_knowledge.score.some((c) => c.entries.length === 0));
+  assert(fixture.portal_knowledge.score.some((c) => c.entries.length > 0));
+  assert(fixture.portal_knowledge.adaptive.some((c) => c.result.content === ""));
+  assert(fixture.portal_knowledge.adaptive.some((c) => c.result.relevant.length > 0));
+  assert(fixture.parsing.extra.some((c) => c.error !== undefined) && fixture.parsing.extra.some((c) => !c.error));
+  assertEquals(fixture.errors.kinds.context_error_with_cause.cause?.name, "Error");
+});
+
+Deno.test("go-port-core-l0-reference: an empty repairJSON call resets the reference pattern state", () => {
+  const input = '{"a": 1,}';
+  repairJSON("");
+  const fresh = repairJSON(input).appliedRepairs;
+  repairJSON(input);
+  repairJSON("");
+  assertEquals(repairJSON(input).appliedRepairs, fresh);
 });

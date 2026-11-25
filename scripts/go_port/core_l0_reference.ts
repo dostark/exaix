@@ -7,6 +7,12 @@
  */
 import { join, resolve } from "@std/path";
 import { argValue } from "./cli_args.ts";
+import {
+  buildErrorKindCases,
+  buildFrontmatterCases,
+  buildFuncHelpersFixture,
+  buildPortalKnowledgeFixture,
+} from "./core_l0_behavior_reference.ts";
 import { buildDataTypesFixture } from "./core_l0_data_types_reference.ts";
 import { buildVocabularySymbols } from "./core_l0_vocabulary_symbols.ts";
 import {
@@ -69,6 +75,8 @@ export const CORE_L0_REFERENCE_GROUPS: readonly string[] = [
   "data_types",
   "errors",
   "prompts",
+  "func_helpers",
+  "portal_knowledge",
   "parsing",
   "cost",
   "capabilities",
@@ -147,6 +155,7 @@ function buildErrorsFixture(): object {
     not_found: { request_id: notFound.requestId, name: notFound.name, message: notFound.message },
     status_invalid: { request_id: invalidStatus.requestId, name: invalidStatus.name, message: invalidStatus.message },
     id_error: { name: idErr.name, message: idErr.message, matches: idErr.matches },
+    kinds: buildErrorKindCases(),
   };
 }
 
@@ -200,6 +209,7 @@ function buildPromptsFixture(): object {
 
   const counter = new TokenCounter();
   return {
+    skills_context: skillsContext,
     split_and_strip: [bodyWithExamples, bodyTrailingExamples, bodyNoExamples].map((body) => ({
       body,
       split: splitInstructionsAndExamples(body),
@@ -214,6 +224,14 @@ function buildPromptsFixture(): object {
       text,
       tokens: counter.countTokens(text),
     })),
+    empty_sections: {
+      null_context: renderSkillsSection(null),
+      null_critical: renderCriticalSkillsSection(null),
+      no_matches: renderSkillsSection({ ...skillsContext, matched: [] }),
+      only_critical_ordinary: renderSkillsSection({ ...skillsContext, matched: [skillsContext.matched[1]] }),
+      only_ordinary_critical: renderCriticalSkillsSection({ ...skillsContext, matched: [skillsContext.matched[0]] }),
+      omitted_note: renderSkillsSection({ ...skillsContext, matched: [skillsContext.matched[0]], totalAvailable: 9 }),
+    },
   };
 }
 
@@ -245,6 +263,7 @@ function buildParsingFixture(): object {
       status: parsed.request.status,
     },
     invalid: invalidCases,
+    extra: buildFrontmatterCases(),
   };
 }
 
@@ -351,6 +370,8 @@ export async function writeCoreL0Reference(root: string, targetDir: string): Pro
     data_types: buildDataTypesFixture,
     errors: buildErrorsFixture,
     prompts: buildPromptsFixture,
+    func_helpers: buildFuncHelpersFixture,
+    portal_knowledge: buildPortalKnowledgeFixture,
     parsing: buildParsingFixture,
     cost: buildCostFixture,
     capabilities: buildCapabilitiesFixture,
