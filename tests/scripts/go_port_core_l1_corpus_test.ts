@@ -1,26 +1,21 @@
 /**
  * @module GoPortCoreL1CorpusTest
  * @path tests/scripts/go_port_core_l1_corpus_test.ts
- * @description Exercises the core-l1 reference recorder and pins the committed configuration cases to their digests.
+ * @description Exercises the core-l1 reference recorder. The Go checkout verifies the committed cases itself.
  * @architectural-layer Test
  */
 import { assert, assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
-import { goCheckout } from "../../scripts/go_port/checkout.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
 import {
   CORE_L1_CONFIG_CASES,
-  CORE_L1_REFERENCE_DIR,
   recordConfigCases,
   writeCoreL1Reference,
 } from "../../scripts/go_port/core_l1_reference.ts";
 
-const ROOT = new URL("../../", import.meta.url).pathname;
-const checkout = await goCheckout(ROOT, Deno.env.get("EXAIX_REQUIRE_GO") === "1");
 const VALID_IDS = ["config-explicit-root", "config-explicit-root-alternate"];
 const INVALID_ID = "config-invalid-field";
-const SHA256_HEX_LENGTH = 64;
 
 /** A decoder that accepts four log levels and reports one issue category for any other value. */
 const FAKE_SCHEMA = `const LEVELS = ["debug", "info", "warn", "error"];
@@ -75,15 +70,6 @@ async function fakeSnapshot(dir: string, service: string = FAKE_SERVICE): Promis
   return root;
 }
 
-interface IObservation {
-  readonly id: string;
-  readonly outcome: string;
-  readonly log_level?: string;
-  readonly authored_root: string;
-  readonly resolved_root?: string;
-  readonly issues: readonly { readonly path: string; readonly code: string }[];
-}
-
 interface IManifestCase {
   readonly id: string;
   readonly input_sha256: string;
@@ -99,10 +85,6 @@ interface IManifest {
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function readObservation(dir: string, id: string): Promise<IObservation> {
-  return JSON.parse(await Deno.readTextFile(join(dir, id, "observation.json")));
 }
 
 async function readManifest(dir: string): Promise<IManifest> {
@@ -174,36 +156,4 @@ Deno.test("go-port-core-l1-corpus: authored log levels are constants that the ob
   const levels = VALID_IDS.map((id) => CORE_L1_CONFIG_CASES.find((entry) => entry.id === id)?.logLevel);
   assertEquals(levels, ["debug", "warn"]);
   assertNotEquals(levels[0], levels[1]);
-});
-
-Deno.test("go-port-core-l1-corpus: committed cases match their digests and the authored values", {
-  ignore: checkout === undefined,
-}, async () => {
-  const dir = join(checkout ?? "", CORE_L1_REFERENCE_DIR);
-  const manifest = await readManifest(dir);
-  assertEquals(manifest.reference_parent, CORE_L1_REFERENCE);
-  assertEquals(manifest.cases.map((entry) => entry.id), CORE_L1_CONFIG_CASES.map((entry) => entry.id));
-  const levels = new Set<string>();
-  for (const authored of CORE_L1_CONFIG_CASES) {
-    const entry = manifest.cases.find((candidate) => candidate.id === authored.id);
-    assert(entry !== undefined, `missing ${authored.id}`);
-    const inputBytes = await Deno.readFile(join(dir, authored.id, "exa.config.toml"));
-    const observationBytes = await Deno.readFile(join(dir, authored.id, "observation.json"));
-    assertEquals(entry.input_sha256.length, SHA256_HEX_LENGTH);
-    assertEquals(entry.input_sha256, await sha256Hex(inputBytes));
-    assertEquals(entry.observation_sha256, await sha256Hex(observationBytes));
-    const observation = await readObservation(dir, authored.id);
-    assertEquals(observation.id, authored.id);
-    assertEquals(observation.authored_root, authored.root);
-    if (authored.valid) {
-      assertEquals(observation.outcome, "valid");
-      assertEquals(observation.log_level, authored.logLevel);
-      assertEquals(observation.resolved_root, authored.root);
-      levels.add(authored.logLevel);
-    } else {
-      assertEquals(observation.outcome, "invalid");
-      assertEquals(observation.issues.map((issue) => issue.path), ["system.log_level"]);
-    }
-  }
-  assertEquals(levels.size, VALID_IDS.length, "the two valid files resolve to distinct authored log levels");
 });

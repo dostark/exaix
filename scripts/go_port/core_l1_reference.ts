@@ -56,7 +56,7 @@ export const CORE_L1_CONFIG_CASES: readonly ICoreL1ConfigCase[] = [
   { id: "config-invalid-field", root: "workspace", logLevel: "verbose", valid: false },
 ];
 
-export const CORE_L1_REFERENCE_DIR = join("internal", "core", "l1", "testdata", "reference");
+const CORE_L1_REFERENCE_DIR = join("internal", "core", "l1", "testdata", "reference");
 
 const INPUT_FILE = "exa.config.toml";
 const OBSERVATION_FILE = "observation.json";
