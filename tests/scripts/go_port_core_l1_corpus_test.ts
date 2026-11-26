@@ -10,6 +10,7 @@ import { withTempDir } from "@exaix/testing";
 import { fakeJournalRunner } from "./helpers/go_port_core_l1_journal_fake.ts";
 import { fakeBlueprintRunner, fakeContextRunner } from "./helpers/go_port_core_l1_loader_fake.ts";
 import { fakeProcessRunner } from "./helpers/go_port_core_l1_process_fake.ts";
+import { fakeExtraRunner } from "./helpers/go_port_core_l1_extras_fake.ts";
 import {
   PROCESS_SPECS,
   recordProcessCases,
@@ -18,6 +19,7 @@ import {
 import { JOURNAL_CASE_ID } from "../../scripts/go_port/core_l1_journal_reference.ts";
 import { BLUEPRINT_SPECS, CONTEXT_SPECS } from "../../scripts/go_port/core_l1_loader_reference.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
+import { CORE_L1_LOCKFILE } from "../../scripts/go_port/core_l1_case_reference.ts";
 import {
   CORE_L1_CONFIG_CASES,
   type IPinnedRunners,
@@ -30,6 +32,7 @@ const FAKE_RUNNERS: IPinnedRunners = {
   blueprint: fakeBlueprintRunner,
   context: fakeContextRunner,
   process: fakeProcessRunner,
+  extras: fakeExtraRunner,
 };
 const VALID_IDS = ["config-explicit-root", "config-explicit-root-alternate"];
 const INVALID_ID = "config-invalid-field";
@@ -172,6 +175,53 @@ Deno.test("go-port-core-l1-corpus: writes identical bytes on every run and a man
       const observation = await Deno.readFile(join(first, entry.id, "observation.json"));
       assertEquals(entry.input_sha256, await sha256Hex(input));
       assertEquals(entry.observation_sha256, await sha256Hex(observation));
+    }
+  });
+});
+
+Deno.test("go-port-core-l1-corpus: writes identical core-l1 cases and names the pinned source", async () => {
+  await withTempDir(async (dir) => {
+    const snapshot = await fakeSnapshot(dir);
+    const first = join(dir, "first");
+    const second = join(dir, "second");
+    await writeCoreL1Reference(snapshot, first, FAKE_RUNNERS);
+    await writeCoreL1Reference(snapshot, second, FAKE_RUNNERS);
+    const firstCases = await Deno.readTextFile(join(first, "core_l1_cases.json"));
+    assertEquals(firstCases, await Deno.readTextFile(join(second, "core_l1_cases.json")));
+    const corpus = JSON.parse(firstCases);
+    assertEquals(corpus.schema_version, 2);
+    assertEquals(corpus.suite, "core-l1");
+    assertEquals(corpus.reference.parent, CORE_L1_REFERENCE);
+    assertEquals(corpus.reference.lockfile, CORE_L1_LOCKFILE);
+    const ids = corpus.cases.map((entry: { id: string }) => entry.id);
+    for (
+      const required of [
+        ...CORE_L1_CONFIG_CASES.map((entry) => entry.id),
+        JOURNAL_CASE_ID,
+        "config-toml-writes",
+        "prompt-budget-enforced",
+        "prompt-budget-disabled",
+        "context-card-notes",
+        ...PROCESS_SPECS.map((spec) => spec.id),
+      ]
+    ) {
+      assert(ids.find((id: string) => id === required) !== undefined, `the corpus lacks ${required}`);
+    }
+    for (const entry of corpus.cases) {
+      assertEquals(entry.input.kind, "json");
+      const content = JSON.parse(entry.input.content);
+      assert(typeof content.operation === "string" && content.operation.length > 0, `${entry.id} has no operation`);
+      assert(!JSON.stringify(entry).includes(dir), `${entry.id} carries a host path`);
+      for (const seed of content.seed) {
+        assert(!seed.path.startsWith("/") && !seed.path.includes(".."), `${entry.id} has an unsafe seed path`);
+      }
+      assertEquals(entry.reference.kind, "value");
+      const needsAfterTree = ["config-load", "config-writes", "context-load", "context-card"].includes(
+        content.operation,
+      );
+      if (needsAfterTree) {
+        assert(Object.keys(entry.reference.value.after).length > 0, `${entry.id} has no after-tree`);
+      }
     }
   });
 });

@@ -21,6 +21,12 @@ import {
   type TContextRunner,
 } from "./core_l1_loader_reference.ts";
 import { pinnedProcessRunner, recordProcessCases, type TProcessRunner } from "./core_l1_process_reference.ts";
+import {
+  buildCoreL1Corpus,
+  pinnedExtraRunner,
+  type TExtraRunner,
+  writeCoreL1Corpus,
+} from "./core_l1_case_reference.ts";
 import { assertTargetAllowed, cloneSnapshot } from "./preserve_snapshot.ts";
 
 export interface ICoreL1ConfigCase {
@@ -66,6 +72,7 @@ export interface IPinnedRunners {
   readonly blueprint: TBlueprintRunner;
   readonly context: TContextRunner;
   readonly process: TProcessRunner;
+  readonly extras: TExtraRunner;
 }
 
 /** Authored independently of the pinned service. The recorder compares each observation with these values. */
@@ -167,6 +174,7 @@ const PINNED_RUNNERS: IPinnedRunners = {
   blueprint: pinnedBlueprintRunner,
   context: pinnedContextRunner,
   process: pinnedProcessRunner,
+  extras: pinnedExtraRunner,
 };
 
 interface IReferenceCase {
@@ -214,6 +222,13 @@ export async function writeCoreL1Reference(
   }
   const manifest = { schema_version: MANIFEST_SCHEMA_VERSION, reference_parent: CORE_L1_REFERENCE, cases };
   await Deno.writeTextFile(join(target, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  const extras = await runners.extras(snapshot);
+  const corpus = await buildCoreL1Corpus(
+    recorded.map(({ id, input, observation }) => ({ id, input, observation })),
+    extras,
+    CORE_L1_REFERENCE,
+  );
+  await writeCoreL1Corpus(target, corpus);
 }
 
 interface IVerifiedSnapshot {
