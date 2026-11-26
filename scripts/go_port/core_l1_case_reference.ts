@@ -81,6 +81,25 @@ const PORTAL_ENTRY = {
   execution_strategy: "worktree",
 } as const;
 const OPERATOR_NOTES = "Keep these operator notes.";
+const ACCESS_ROLE = "access-agent";
+const ACCESS_TOOLS = ["git_info", "read_file"];
+const ACCESS_BASE_TOOLS = [
+  "git_info",
+  "list_directory",
+  "read_file",
+  "search_files",
+  "search_memory",
+  "search_text",
+  "write_file",
+];
+const ACCESS_AGENT = `---
+name: Access Agent
+permitted_tools:
+  - read_file
+  - git_info
+---
+Body
+`;
 const FRAGMENT_ROLE = "fragment-agent";
 const FRAGMENT_AGENT = `---
 name: Fragment Agent
@@ -408,6 +427,46 @@ async function recordConfigWriteCase(snapshot: string): Promise<ICoreL1ExtraCase
   }
 }
 
+async function recordAccessCase(): Promise<ICoreL1ExtraCase> {
+  const seed: ICoreL1SeedFile[] = [{
+    path: join("Blueprints", "Agents", `${ACCESS_ROLE}.md`),
+    content: ACCESS_AGENT,
+  }];
+  return {
+    id: "blueprint-effective-access",
+    operation: "blueprint-access",
+    seed,
+    request: {
+      role: ACCESS_ROLE,
+      base: { tenant: "tenant-a", generation: 3, read: true, write: true, tools: ACCESS_BASE_TOOLS },
+    },
+    result: { read: true, write: false, read_only: true, tools: ACCESS_TOOLS },
+    after: await seedDigest(seed),
+  };
+}
+
+function recordPrecedenceCase(): ICoreL1ExtraCase {
+  return {
+    id: "config-startup-precedence",
+    operation: "config-precedence",
+    seed: [],
+    request: {
+      definition: {
+        key: "sample.setting",
+        kind: "text",
+        default_text: "default",
+        sources: ["explicit", "environment", "toml"],
+        env_key: "EXA_SAMPLE_SETTING",
+      },
+      override: "explicit",
+      environment: { EXA_SAMPLE_SETTING: "environment" },
+      toml: "toml",
+    },
+    result: { kind: "text", text: "explicit" },
+    after: {},
+  };
+}
+
 async function recordFragmentCase(snapshot: string): Promise<ICoreL1ExtraCase> {
   const root = await Deno.realPath(await Deno.makeTempDir({ prefix: "core-l1-fragments-" }));
   try {
@@ -474,6 +533,8 @@ async function recordCardCase(snapshot: string): Promise<ICoreL1ExtraCase> {
 export const pinnedExtraRunner: TExtraRunner = async (snapshot: string): Promise<readonly ICoreL1ExtraCase[]> => [
   await recordConfigWriteCase(snapshot),
   ...await promptBudgetCases(Deno.cwd()),
+  await recordAccessCase(),
+  recordPrecedenceCase(),
   await recordFragmentCase(snapshot),
   await recordCardCase(snapshot),
 ];

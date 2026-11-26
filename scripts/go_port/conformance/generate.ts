@@ -288,7 +288,7 @@ export async function prepareGeneration(
   return { dir: temp, digest: await sha256Hex(body), manifest: body };
 }
 
-async function publishGeneration(target: string, generation: IGeneration): Promise<void> {
+export async function publishGeneration(target: string, generation: IGeneration): Promise<void> {
   await Deno.mkdir(target, { recursive: true });
   const lock = await Deno.open(join(target, ".publish.lock"), { createNew: true, write: true }).catch(() => {
     throw new Error("another conformance writer holds the lock");
