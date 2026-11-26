@@ -1,6 +1,6 @@
 /**
- * @module CoreL1JournalFake
- * @path tests/scripts/helpers/core_l1_journal_fake.ts
+ * @module GoPortCoreL1JournalFake
+ * @path tests/scripts/helpers/go_port_core_l1_journal_fake.ts
  * @description Provides a fake journal runner that stores the requested calls as chained rows without the pinned service.
  * @architectural-layer Test
  */

@@ -13,7 +13,7 @@ import {
   recordJournalCase,
   type TJournalRunner,
 } from "../../scripts/go_port/core_l1_journal_reference.ts";
-import { fakeJournalRunner } from "./helpers/core_l1_journal_fake.ts";
+import { fakeJournalRunner } from "./helpers/go_port_core_l1_journal_fake.ts";
 
 const ASCII_MAX = 127;
 

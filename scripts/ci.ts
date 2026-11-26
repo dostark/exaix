@@ -21,6 +21,7 @@
 import { Command } from "@cliffy/command";
 import { EDITION_ENTERPRISE, EDITION_SOLO, EDITION_TEAM } from "@exaix/core";
 import { join, resolve } from "@std/path";
+import { changedPaths, planChangedCheck } from "./scoped_gates.ts";
 
 /**
  * Global dry-run state
@@ -113,9 +114,35 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check"], desc: "Type Checking" },
 ];
 
+/** Runs the file-scoped gates when only Go-port tooling changed. Returns false when the whole tree must run. */
+async function runChangedCheck(): Promise<boolean | undefined> {
+  const goPortTests: string[] = [];
+  for await (const entry of Deno.readDir("tests/scripts")) {
+    if (/^go_port_.*_test\.ts$/.test(entry.name)) goPortTests.push(`tests/scripts/${entry.name}`);
+  }
+  const plan = planChangedCheck(await changedPaths(), goPortTests.sort());
+  if (plan.kind === "empty") {
+    console.log("✅ No changed files; nothing to check.");
+    return true;
+  }
+  if (plan.kind === "full") {
+    console.log("ℹ️ The change reaches beyond Go-port tooling; running the whole-tree check.");
+    return undefined;
+  }
+  console.log("🔧 Go-port tooling only: running the file-scoped gates. Stage the files for the :staged checks.");
+  return await runParallel(plan.gates.map((gate) => ({ cmd: [...gate.cmd], desc: gate.desc })));
+}
+
 const checkCommand = new Command()
   .description("Run static analysis checks (fmt, lint, type-check)")
-  .action(async () => {
+  .option("--changed", "Run only the file-scoped gates when the change touches Go-port tooling alone", {
+    default: false,
+  })
+  .action(async (options) => {
+    if (options.changed) {
+      const scoped = await runChangedCheck();
+      if (scoped !== undefined) Deno.exit(scoped ? 0 : 1);
+    }
     const success = await runParallel(STATIC_CHECK_TASKS);
 
     const docsSuccess = await run(["deno", "task", "check:docs"], "Docs Drift Check");

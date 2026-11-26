@@ -7,7 +7,7 @@
 import { assert, assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
-import { fakeJournalRunner } from "./helpers/core_l1_journal_fake.ts";
+import { fakeJournalRunner } from "./helpers/go_port_core_l1_journal_fake.ts";
 import { JOURNAL_CASE_ID } from "../../scripts/go_port/core_l1_journal_reference.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
 import {

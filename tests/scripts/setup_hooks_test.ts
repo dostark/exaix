@@ -322,6 +322,25 @@ describe("staged docs gitlink commits", () => {
     });
   });
 
+  it("fix(hooks): a Go-port helper with the exaix-go gitlink runs only file-scoped static checks", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-go");
+      await Deno.mkdir(join(dir, "tests", "scripts", "helpers"), { recursive: true });
+      await Deno.writeTextFile(join(dir, "tests", "scripts", "helpers", "go_port_fixture.ts"), "export const a = 1;\n");
+      await git(["add", "tests/scripts/helpers/go_port_fixture.ts"]);
+      assertEquals(await commitFixture(dir), true);
+      const calls = await Deno.readTextFile(join(dir, "calls.log"));
+      assertStringIncludes(
+        calls,
+        "lint --rules-include=explicit-module-boundary-types tests/scripts/helpers/go_port_fixture.ts",
+      );
+      assertStringIncludes(calls, "fmt --check tests/scripts/helpers/go_port_fixture.ts");
+      for (const wholeTree of ["task lint", "task fmt:check", "task check:complexity", "task check:style"]) {
+        assertFalse(calls.includes(wholeTree), `${wholeTree}\n${calls}`);
+      }
+    });
+  });
+
   it("fix(hooks): mixed exaix-go gitlink and parent source changes still enforce code gates", async () => {
     await withHookFixture(async (dir, git) => {
       await stagePointer(git, "exaix-go");
