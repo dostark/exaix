@@ -6,6 +6,7 @@
  * Usage: deno run -A scripts/go_port/conformance/generate.ts [--suite=acceptance-bullets] [--target=<dir>]
  */
 import { dirname, fromFileUrl, join, resolve, toFileUrl } from "@std/path";
+import { z } from "zod";
 import { argValue } from "../cli_args.ts";
 import { assertTargetAllowed, cloneSnapshot, gitOutput } from "../preserve_snapshot.ts";
 import { contentHash, sha256Hex, stable, type TJsonValue } from "../snapshot_manifest.ts";
@@ -188,6 +189,9 @@ function isV2Result(item: ICaseResult | ICaseResultV2): item is ICaseResultV2 {
   return "reference" in item;
 }
 
+const NON_BLANK = z.string().trim().min(1);
+const ISSUE_PATH_SEGMENT = z.union([z.string(), z.number().nonnegative().refine(Number.isInteger)]);
+
 function assertExpectation(expected: TExpectedV2, where: string): void {
   const kind: string = expected.kind;
   if (expected.kind === "value") {
@@ -197,16 +201,16 @@ function assertExpectation(expected: TExpectedV2, where: string): void {
   if (expected.kind === "issues") {
     if (!Array.isArray(expected.issues)) throw new Error(`${where}: issues outcome has no issue list`);
     for (const entry of expected.issues) {
-      if (typeof entry.code !== "string" || entry.code.trim() === "") throw new Error(`${where}: issue without a code`);
+      if (!NON_BLANK.safeParse(entry.code).success) throw new Error(`${where}: issue without a code`);
       for (const segment of entry.path) {
-        const valid = typeof segment === "string" || (Number.isInteger(segment) && segment >= 0);
+        const valid = ISSUE_PATH_SEGMENT.safeParse(segment).success;
         if (!valid) throw new Error(`${where}: issue path segment is neither a string nor a non-negative integer`);
       }
     }
     return;
   }
   if (expected.kind === "error") {
-    if (typeof expected.category !== "string" || expected.category.trim() === "") {
+    if (!NON_BLANK.safeParse(expected.category).success) {
       throw new Error(`${where}: error without a category`);
     }
     return;

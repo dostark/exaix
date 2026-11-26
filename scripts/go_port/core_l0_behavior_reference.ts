@@ -135,9 +135,9 @@ function gitTrackingCases(): object[] {
 
 async function fitContextCases(): Promise<object[]> {
   const items = ["alpha beta", "x".repeat(60), "gamma", "delta epsilon zeta", "eta"];
-  const cases = [
+  const cases: { items: string[]; budget: number; delimiter: string | undefined }[] = [
     { items, budget: 0, delimiter: undefined },
-    { items: [] as string[], budget: 50, delimiter: undefined },
+    { items: [], budget: 50, delimiter: undefined },
     { items, budget: 10, delimiter: undefined },
     { items, budget: 30, delimiter: undefined },
     { items, budget: 200, delimiter: undefined },
@@ -290,13 +290,13 @@ export async function buildFuncHelpersFixture(): Promise<object> {
     fit_context_items: await fitContextCases(),
     redaction: redactionCases(),
     trusted_caller: [
-      ["role", ["role", "other"]],
-      ["", ["", "role"]],
-      ["missing", ["role"]],
-    ].map(([role, trusted]) => ({
+      { role: "role", trusted: ["role", "other"] },
+      { role: "", trusted: ["", "role"] },
+      { role: "missing", trusted: ["role"] },
+    ].map(({ role, trusted }) => ({
       agent_role: role,
       trusted_roles: trusted,
-      trusted: isTrustedDogfoodCaller(role as string, new Set(trusted as string[])),
+      trusted: isTrustedDogfoodCaller(role, new Set(trusted)),
     })),
     repair_json: repairCases(),
     transforms: transformCases(),

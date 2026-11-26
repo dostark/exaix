@@ -20,6 +20,7 @@ tests: The hook runs in a disposable checkout.
 who: Fixture
 impact: tooling: validate the hook behavior
 `;
+const VALID_HOOK_SOURCE = "package leaf\n\n// HookFixture exercises the installed hook.\nconst HookFixture = 1\n";
 
 function copy(dir: string): Promise<string> {
   if (!checkout) throw new Error("The Go checkout is required for this case");
@@ -139,8 +140,7 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in an ordinary cl
     assertStringIncludes(rejected.text, "gofmt needs to format");
     await Deno.remove(bad);
     await git(repo, "add", "-A");
-    const good = join(repo, "hook_ok.go");
-    await Deno.writeTextFile(good, "package seed\n\n// Value is a documented value.\nvar Value = 1\n");
+    await Deno.writeTextFile(join(repo, "internal", "leaf", "hook_ok.go"), VALID_HOOK_SOURCE);
     await git(repo, "add", "-A");
     const accepted = await git(repo, "commit", "-F", join(repo, "commit-message.txt"));
     assertEquals(accepted.code, 0, accepted.text);
@@ -171,8 +171,8 @@ Deno.test("go-make-hook: the installed hook blocks and accepts in a submodule cl
     await Deno.remove(bad);
     await git(sub, "add", "-A");
     await Deno.writeTextFile(
-      join(sub, "hook_ok.go"),
-      "package seed\n\n// Value is a documented value.\nvar Value = 1\n",
+      join(sub, "internal", "leaf", "hook_ok.go"),
+      VALID_HOOK_SOURCE,
     );
     await git(sub, "add", "-A");
     const accepted = await git(sub, "commit", "-F", join(sub, "commit-message.txt"));

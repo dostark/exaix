@@ -5,6 +5,7 @@
  * @description Infers Go types for tagged JSON vocabulary values and renders the Go declaration and literal for each constant.
  * Usage: imported by the Go-port scripts.
  */
+import { z } from "zod";
 import type { TTaggedJson } from "./core_l0_vocabulary_symbols.ts";
 
 export interface IGoDeclaration {
@@ -40,8 +41,32 @@ type TGoType =
 const UNKNOWN: TGoType = { kind: "unknown" };
 export const POINTER_HELPER = "vocabularyPointer";
 
+interface ITaggedRecord {
+  readonly [key: string]: TTaggedJson;
+}
+
+interface IRegexpTag {
+  readonly $regexp: string;
+  readonly flags: string;
+}
+
+const REGEXP_TAG = z.object({ $regexp: z.string(), flags: z.string() });
+
+function isTaggedArray(value: TTaggedJson): value is readonly TTaggedJson[] {
+  return Array.isArray(value);
+}
+
+function isTaggedRecord(value: TTaggedJson): value is ITaggedRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function isTagged(value: TTaggedJson, tag: string): boolean {
-  return typeof value === "object" && value !== null && !Array.isArray(value) && tag in value;
+  return isTaggedRecord(value) && tag in value;
+}
+
+function requireRecord(value: TTaggedJson, path: string): ITaggedRecord {
+  if (!isTaggedRecord(value)) throw new Error(`Expected a vocabulary record at ${path}`);
+  return value;
 }
 
 function fieldName(key: string): string {
@@ -59,21 +84,27 @@ function isAbsent(value: TTaggedJson): boolean {
 
 /** Infers the Go type of a tagged JSON value. */
 function inferType(value: TTaggedJson): TGoType {
-  if (isAbsent(value)) return { kind: "null" };
+  if (value === null || isTagged(value, "$undefined")) return { kind: "null" };
   if (isTagged(value, "$regexp")) return { kind: "regexp" };
   if (isTagged(value, "$set")) return { kind: "slice", elem: { kind: "string" } };
-  if (typeof value === "string") return { kind: "string" };
-  if (typeof value === "boolean") return { kind: "bool" };
-  if (typeof value === "number") return { kind: Number.isInteger(value) ? "int" : "float" };
-  if (Array.isArray(value)) return { kind: "slice", elem: value.map(inferType).reduce(unify, UNKNOWN) };
-  return inferObject(value as { readonly [key: string]: TTaggedJson });
+  switch (typeof value) {
+    case "string":
+      return { kind: "string" };
+    case "boolean":
+      return { kind: "bool" };
+    case "number":
+      return { kind: Number.isInteger(value) ? "int" : "float" };
+    default:
+      if (isTaggedArray(value)) return { kind: "slice", elem: value.map(inferType).reduce(unify, UNKNOWN) };
+      return inferObject(value);
+  }
 }
 
 function toField(m: { key: string; type: TGoType; nullable: boolean }): IGoField {
   return { key: m.key, goName: fieldName(m.key), type: m.type, nullable: m.nullable };
 }
 
-function inferObject(value: { readonly [key: string]: TTaggedJson }): TGoType {
+function inferObject(value: ITaggedRecord): TGoType {
   const members = Object.entries(value).map(([key, member]) => ({
     key,
     type: inferType(member),
@@ -192,32 +223,32 @@ function literal(value: TTaggedJson, type: TGoType, path: string, state: IRender
   const typeName = nameOf(type, path);
   switch (type.kind) {
     case "string":
-      return goString(value as string);
+      return goString(z.string().parse(value));
     case "regexp":
-      return goString((value as { $regexp: string }).$regexp);
+      return goString(REGEXP_TAG.parse(value).$regexp);
     case "int":
     case "float":
-      return String(value as number);
     case "bool":
       return String(value);
     case "slice":
       return `${typeName}{${sliceItems(value, type.elem, path, state)}}`;
     case "map":
-      return `${typeName}{${mapItems(value as { readonly [key: string]: TTaggedJson }, type.elem, path, state)}}`;
+      return `${typeName}{${mapItems(requireRecord(value, path), type.elem, path, state)}}`;
     case "struct":
-      return structLiteral(value as { readonly [key: string]: TTaggedJson }, type, path, state);
+      return structLiteral(requireRecord(value, path), type, path, state);
     default:
       return "nil";
   }
 }
 
 function sliceItems(value: TTaggedJson, elem: TGoType, path: string, state: IRenderState): string {
-  const items = isTagged(value, "$set") ? (value as { $set: TTaggedJson[] }).$set : (value as readonly TTaggedJson[]);
+  const items = isTaggedRecord(value) && "$set" in value ? value.$set : value;
+  if (!isTaggedArray(items)) throw new Error(`Expected a vocabulary array at ${path}`);
   return items.map((item) => literal(item, elem, path, state)).join(", ");
 }
 
 function mapItems(
-  value: { readonly [key: string]: TTaggedJson },
+  value: ITaggedRecord,
   elem: TGoType,
   path: string,
   state: IRenderState,
@@ -228,7 +259,7 @@ function mapItems(
 }
 
 function structLiteral(
-  value: { readonly [key: string]: TTaggedJson },
+  value: ITaggedRecord,
   type: Extract<TGoType, { kind: "struct" }>,
   path: string,
   state: IRenderState,
@@ -244,11 +275,7 @@ function structLiteral(
   return `${path}{${fields.join(", ")}}`;
 }
 
-function isRegexpList(value: TTaggedJson): boolean {
-  return Array.isArray(value) && value.length > 0 && value.every((v) => isTagged(v, "$regexp"));
-}
-
-function renderRegexp(name: string, value: { $regexp: string; flags: string }): IGoRender {
+function renderRegexp(name: string, value: IRegexpTag): IGoRender {
   const lines = [`// ${name} is a kept reference pattern source.`, `const ${name} = ${goString(value.$regexp)}`];
   const names = [name];
   if (value.flags !== "") {
@@ -259,7 +286,7 @@ function renderRegexp(name: string, value: { $regexp: string; flags: string }): 
   return { text: lines.join("\n"), names, tableExpression: `map[string]any{"$regexp": ${name}, "flags": ${flags}}` };
 }
 
-function renderRegexpList(name: string, value: readonly { $regexp: string; flags: string }[]): IGoRender {
+function renderRegexpList(name: string, value: readonly IRegexpTag[]): IGoRender {
   const sources = value.map((v) => goString(v.$regexp)).join(", ");
   const flags = value.map((v) => goString(v.flags)).join(", ");
   const text = [
@@ -274,8 +301,10 @@ function renderRegexpList(name: string, value: readonly { $regexp: string; flags
 
 /** Renders the Go declaration of one kept constant and the table expression that reads it back. */
 export function renderConstant(name: string, json: TTaggedJson): IGoRender {
-  if (isTagged(json, "$regexp")) return renderRegexp(name, json as { $regexp: string; flags: string });
-  if (isRegexpList(json)) return renderRegexpList(name, json as { $regexp: string; flags: string }[]);
+  if (isTagged(json, "$regexp")) return renderRegexp(name, REGEXP_TAG.parse(json));
+  if (isTaggedArray(json) && json.length > 0 && json.every((item) => isTagged(item, "$regexp"))) {
+    return renderRegexpList(name, REGEXP_TAG.array().parse(json));
+  }
   const type = inferType(json);
   const state: IRenderState = { declared: [], usesPointer: { value: false } };
   if (isScalarKind(type)) {
