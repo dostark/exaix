@@ -24,6 +24,7 @@ export async function runPinnedAdapter(
   source: string,
   request: string,
   extraEnv: Readonly<Record<string, string>>,
+  extraPermissions: readonly string[] = [],
 ): Promise<string> {
   const scratch = await Deno.makeTempDir({ prefix: "core-l1-adapter-" });
   try {
@@ -37,6 +38,7 @@ export async function runPinnedAdapter(
         "--allow-read",
         "--allow-env",
         "--allow-ffi",
+        ...extraPermissions,
         "--config",
         join(snapshot, "deno.json"),
         "--frozen",

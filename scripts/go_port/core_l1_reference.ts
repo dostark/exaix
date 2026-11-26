@@ -20,6 +20,7 @@ import {
   type TBlueprintRunner,
   type TContextRunner,
 } from "./core_l1_loader_reference.ts";
+import { pinnedProcessRunner, recordProcessCases, type TProcessRunner } from "./core_l1_process_reference.ts";
 import { assertTargetAllowed, cloneSnapshot } from "./preserve_snapshot.ts";
 
 export interface ICoreL1ConfigCase {
@@ -64,6 +65,7 @@ export interface IPinnedRunners {
   readonly journal: TJournalRunner;
   readonly blueprint: TBlueprintRunner;
   readonly context: TContextRunner;
+  readonly process: TProcessRunner;
 }
 
 /** Authored independently of the pinned service. The recorder compares each observation with these values. */
@@ -164,6 +166,7 @@ const PINNED_RUNNERS: IPinnedRunners = {
   journal: pinnedJournalRunner,
   blueprint: pinnedBlueprintRunner,
   context: pinnedContextRunner,
+  process: pinnedProcessRunner,
 };
 
 interface IReferenceCase {
@@ -190,10 +193,12 @@ export async function writeCoreL1Reference(
     ...await recordBlueprintCases(snapshot, runners.blueprint),
     ...await recordContextCases(snapshot, runners.context),
   ];
+  const process = await recordProcessCases(snapshot, runners.process);
   const recorded = [
     ...configCases,
     { ...journal, inputFile: JOURNAL_INPUT_FILE },
     ...loaders.map((entry) => ({ ...entry, inputFile: JOURNAL_INPUT_FILE })),
+    ...process.map((entry) => ({ ...entry, inputFile: JOURNAL_INPUT_FILE })),
   ];
   await Deno.mkdir(target, { recursive: true });
   const cases = [];

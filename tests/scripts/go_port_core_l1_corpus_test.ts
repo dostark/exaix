@@ -9,6 +9,12 @@ import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import { fakeJournalRunner } from "./helpers/go_port_core_l1_journal_fake.ts";
 import { fakeBlueprintRunner, fakeContextRunner } from "./helpers/go_port_core_l1_loader_fake.ts";
+import { fakeProcessRunner } from "./helpers/go_port_core_l1_process_fake.ts";
+import {
+  PROCESS_SPECS,
+  recordProcessCases,
+  validateProcessSpec,
+} from "../../scripts/go_port/core_l1_process_reference.ts";
 import { JOURNAL_CASE_ID } from "../../scripts/go_port/core_l1_journal_reference.ts";
 import { BLUEPRINT_SPECS, CONTEXT_SPECS } from "../../scripts/go_port/core_l1_loader_reference.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
@@ -23,6 +29,7 @@ const FAKE_RUNNERS: IPinnedRunners = {
   journal: fakeJournalRunner,
   blueprint: fakeBlueprintRunner,
   context: fakeContextRunner,
+  process: fakeProcessRunner,
 };
 const VALID_IDS = ["config-explicit-root", "config-explicit-root-alternate"];
 const INVALID_ID = "config-invalid-field";
@@ -157,6 +164,7 @@ Deno.test("go-port-core-l1-corpus: writes identical bytes on every run and a man
       JOURNAL_CASE_ID,
       ...BLUEPRINT_SPECS.map((spec) => spec.id),
       ...CONTEXT_SPECS.map((spec) => spec.id),
+      ...PROCESS_SPECS.map((spec) => spec.id),
     ]);
     for (const entry of manifest.cases) {
       const inputFile = entry.id.startsWith("config-") ? "exa.config.toml" : "input.json";
@@ -172,4 +180,54 @@ Deno.test("go-port-core-l1-corpus: authored log levels are constants that the ob
   const levels = VALID_IDS.map((id) => CORE_L1_CONFIG_CASES.find((entry) => entry.id === id)?.logLevel);
   assertEquals(levels, ["debug", "warn"]);
   assertNotEquals(levels[0], levels[1]);
+});
+
+Deno.test("go-port-core-l1-corpus: the process recorder keeps a relative cwd, key names only and bounded output", async () => {
+  await withTempDir(async (dir) => {
+    const snapshot = await fakeSnapshot(dir);
+    const recorded = await recordProcessCases(snapshot, fakeProcessRunner);
+    assertEquals(recorded.map((entry) => entry.id), PROCESS_SPECS.map((spec) => spec.id));
+    for (const entry of recorded) {
+      const input = JSON.parse(entry.input);
+      const observation = JSON.parse(entry.observation);
+      assert(!entry.input.includes(dir), "the input carries no host path");
+      assert(!entry.observation.includes(dir), "the observation carries no host path");
+      assertEquals(observation.cwd, input.cwd);
+      assertEquals(observation.environment_keys, input.environment.map((item: { key: string }) => item.key).sort());
+      assert(!entry.observation.includes('"on"'), "the observation carries no environment value");
+      assert(observation.stdout.length <= input.maxOutputBytes, "stdout is bounded");
+      assert(observation.stderr.length <= input.maxOutputBytes, "stderr is bounded");
+    }
+  });
+});
+
+Deno.test("go-port-core-l1-corpus: the process recorder rejects unsafe specs before a child runs", () => {
+  const base = {
+    id: "bad",
+    executable: "fixture",
+    args: [],
+    cwd: "work",
+    environment: [],
+    maxOutputBytes: 16,
+    timeoutMs: 1000,
+  };
+  const invalid = [
+    { ...base, cwd: "../escape" },
+    { ...base, cwd: "/tmp/escape" },
+    { ...base, environment: [{ key: "LD_PRELOAD", value: "x" }] },
+    { ...base, environment: [{ key: "API_KEY", value: "x" }] },
+    { ...base, environment: [{ key: "A", value: "x" }, { key: "A", value: "y" }] },
+    { ...base, maxOutputBytes: 0 },
+    { ...base, timeoutMs: 11 * 60 * 1000 },
+  ];
+  for (const spec of invalid) {
+    let threw = false;
+    try {
+      validateProcessSpec(spec);
+    } catch {
+      threw = true;
+    }
+    assert(threw, `the spec ${JSON.stringify(spec)} was accepted`);
+  }
+  validateProcessSpec({ ...base, cwd: "work" });
 });
