@@ -12,6 +12,14 @@ import { runPinnedAdapter } from "./core_l1_adapter.ts";
 import { CORE_L1_REFERENCE } from "./core_l1_exports.ts";
 import { loadManifest, verifySnapshot } from "./conformance/generate.ts";
 import { pinnedJournalRunner, recordJournalCase, type TJournalRunner } from "./core_l1_journal_reference.ts";
+import {
+  pinnedBlueprintRunner,
+  pinnedContextRunner,
+  recordBlueprintCases,
+  recordContextCases,
+  type TBlueprintRunner,
+  type TContextRunner,
+} from "./core_l1_loader_reference.ts";
 import { assertTargetAllowed, cloneSnapshot } from "./preserve_snapshot.ts";
 
 export interface ICoreL1ConfigCase {
@@ -49,6 +57,13 @@ interface IAdapterResult {
   readonly root?: string;
   readonly logLevel?: string;
   readonly issues?: readonly IConfigIssue[];
+}
+
+/** The runners that execute the pinned services. A test replaces them with fakes. */
+export interface IPinnedRunners {
+  readonly journal: TJournalRunner;
+  readonly blueprint: TBlueprintRunner;
+  readonly context: TContextRunner;
 }
 
 /** Authored independently of the pinned service. The recorder compares each observation with these values. */
@@ -145,6 +160,12 @@ async function sha256Hex(content: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+const PINNED_RUNNERS: IPinnedRunners = {
+  journal: pinnedJournalRunner,
+  blueprint: pinnedBlueprintRunner,
+  context: pinnedContextRunner,
+};
+
 interface IReferenceCase {
   readonly id: string;
   readonly inputFile: string;
@@ -156,7 +177,7 @@ interface IReferenceCase {
 export async function writeCoreL1Reference(
   snapshot: string,
   target: string,
-  journalRunner: TJournalRunner,
+  runners: IPinnedRunners,
 ): Promise<void> {
   const configCases: IReferenceCase[] = (await recordConfigCases(snapshot)).map((entry) => ({
     id: entry.id,
@@ -164,8 +185,16 @@ export async function writeCoreL1Reference(
     input: entry.input,
     observation: `${JSON.stringify(entry.observation, null, 2)}\n`,
   }));
-  const journal = await recordJournalCase(snapshot, journalRunner);
-  const recorded = [...configCases, { ...journal, inputFile: JOURNAL_INPUT_FILE }];
+  const journal = await recordJournalCase(snapshot, runners.journal);
+  const loaders = [
+    ...await recordBlueprintCases(snapshot, runners.blueprint),
+    ...await recordContextCases(snapshot, runners.context),
+  ];
+  const recorded = [
+    ...configCases,
+    { ...journal, inputFile: JOURNAL_INPUT_FILE },
+    ...loaders.map((entry) => ({ ...entry, inputFile: JOURNAL_INPUT_FILE })),
+  ];
   await Deno.mkdir(target, { recursive: true });
   const cases = [];
   for (const entry of recorded) {
@@ -212,7 +241,7 @@ async function main(args: readonly string[]): Promise<number> {
   const target = resolve(argValue(args, "target") ?? join(REPO_ROOT, DEFAULT_TARGET));
   const snapshot = await acquireSnapshot(argValue(args, "snapshot"));
   try {
-    await writeCoreL1Reference(snapshot.path, target, pinnedJournalRunner);
+    await writeCoreL1Reference(snapshot.path, target, PINNED_RUNNERS);
   } finally {
     await snapshot.dispose();
   }

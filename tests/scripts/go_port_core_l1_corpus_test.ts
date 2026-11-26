@@ -8,14 +8,22 @@ import { assert, assertEquals, assertNotEquals, assertRejects } from "@std/asser
 import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
 import { fakeJournalRunner } from "./helpers/go_port_core_l1_journal_fake.ts";
+import { fakeBlueprintRunner, fakeContextRunner } from "./helpers/go_port_core_l1_loader_fake.ts";
 import { JOURNAL_CASE_ID } from "../../scripts/go_port/core_l1_journal_reference.ts";
+import { BLUEPRINT_SPECS, CONTEXT_SPECS } from "../../scripts/go_port/core_l1_loader_reference.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
 import {
   CORE_L1_CONFIG_CASES,
+  type IPinnedRunners,
   recordConfigCases,
   writeCoreL1Reference,
 } from "../../scripts/go_port/core_l1_reference.ts";
 
+const FAKE_RUNNERS: IPinnedRunners = {
+  journal: fakeJournalRunner,
+  blueprint: fakeBlueprintRunner,
+  context: fakeContextRunner,
+};
 const VALID_IDS = ["config-explicit-root", "config-explicit-root-alternate"];
 const INVALID_ID = "config-invalid-field";
 
@@ -136,8 +144,8 @@ Deno.test("go-port-core-l1-corpus: writes identical bytes on every run and a man
     const snapshot = await fakeSnapshot(dir);
     const first = join(dir, "first");
     const second = join(dir, "second");
-    await writeCoreL1Reference(snapshot, first, fakeJournalRunner);
-    await writeCoreL1Reference(snapshot, second, fakeJournalRunner);
+    await writeCoreL1Reference(snapshot, first, FAKE_RUNNERS);
+    await writeCoreL1Reference(snapshot, second, FAKE_RUNNERS);
     assertEquals(
       await Deno.readTextFile(join(first, "manifest.json")),
       await Deno.readTextFile(join(second, "manifest.json")),
@@ -147,9 +155,11 @@ Deno.test("go-port-core-l1-corpus: writes identical bytes on every run and a man
     assertEquals(manifest.cases.map((entry) => entry.id), [
       ...CORE_L1_CONFIG_CASES.map((entry) => entry.id),
       JOURNAL_CASE_ID,
+      ...BLUEPRINT_SPECS.map((spec) => spec.id),
+      ...CONTEXT_SPECS.map((spec) => spec.id),
     ]);
     for (const entry of manifest.cases) {
-      const inputFile = entry.id === JOURNAL_CASE_ID ? "input.json" : "exa.config.toml";
+      const inputFile = entry.id.startsWith("config-") ? "exa.config.toml" : "input.json";
       const input = await Deno.readFile(join(first, entry.id, inputFile));
       const observation = await Deno.readFile(join(first, entry.id, "observation.json"));
       assertEquals(entry.input_sha256, await sha256Hex(input));
