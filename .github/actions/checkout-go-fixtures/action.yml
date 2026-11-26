@@ -1,0 +1,39 @@
+name: Checkout Go reference fixtures
+description: Check out the Go submodule revision recorded by the parent commit.
+inputs:
+  token:
+    description: A token with Contents read access to the Go submodule repository.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Find the Go submodule revision
+      id: gitlink
+      shell: bash
+      run: |
+        sha=$(git ls-files --stage -- exaix-go | awk '$1 == 160000 && $4 == "exaix-go" { print $2 }')
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout the pinned Go revision
+      if: steps.gitlink.outputs.sha != ''
+      uses: actions/checkout@v4
+      with:
+        repository: dostark/exaix-go
+        ref: ${{ steps.gitlink.outputs.sha }}
+        path: exaix-go
+        token: ${{ inputs.token }}
+        persist-credentials: false
+
+    - name: Register the Go checkout as a submodule
+      if: steps.gitlink.outputs.sha != ''
+      shell: bash
+      run: |
+        git submodule init exaix-go
+        git submodule absorbgitdirs exaix-go
+
+    - name: Set up the pinned Go toolchain
+      if: steps.gitlink.outputs.sha != ''
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: exaix-go/go.mod
+        cache: false

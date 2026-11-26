@@ -6,6 +6,7 @@
  * Usage: imported by the Go-port scripts.
  */
 import { join } from "@std/path";
+import { z } from "zod";
 import * as CoreRoot from "@exaix/core";
 import * as CoreTypes from "@exaix/core/types";
 
@@ -14,23 +15,7 @@ export type TTaggedJson = string | number | boolean | null | readonly TTaggedJso
   readonly [key: string]: TTaggedJson;
 };
 
-/** A runtime value that a core module exports. */
-export type TRuntimeValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | RegExp
-  | ReadonlySet<TRuntimeValue>
-  | readonly TRuntimeValue[]
-  | { readonly [key: string]: TRuntimeValue };
-
-/** A module namespace, which also exports functions and typed records next to its values. */
-interface IRuntimeModule {
-  // deno-lint-ignore exaix/no-unsafe-dictionary -- A module namespace mixes values, functions and typed records.
-  readonly [symbol: string]: TRuntimeValue | object;
-}
+type TRuntimeValue = string | number | boolean | null | undefined | object;
 
 export interface IVocabularySymbolRow {
   readonly module: string;
@@ -40,65 +25,65 @@ export interface IVocabularySymbolRow {
   readonly value: TTaggedJson;
 }
 
-interface IInventoryEntry {
-  readonly module: string;
-  readonly symbol: string;
-  readonly kind: string;
-  readonly class: string;
-  readonly step?: number;
-  readonly evidence: { readonly target?: string };
-}
-
 const KEPT_VOCABULARY_STEP = 3;
 const INVENTORY_PATH = join("exaix-go", "port", "inventory", "core-l0.json");
 const NUMERIC_KEY = /^-?\d+$/;
 const ENUM_KIND = "enum";
 
-function encodeObject(value: { readonly [key: string]: TRuntimeValue }): TTaggedJson {
-  const out: { [key: string]: TTaggedJson } = {};
-  for (const [key, member] of Object.entries(value)) out[key] = encodeValue(member);
-  return out;
-}
+const INVENTORY = z.object({
+  entries: z.array(z.object({
+    module: z.string(),
+    symbol: z.string(),
+    kind: z.string(),
+    class: z.string(),
+    step: z.number().optional(),
+    evidence: z.object({ target: z.string().optional() }),
+  })),
+});
 
 /** Encodes a runtime value as JSON, tagging the values that JSON cannot carry. */
 function encodeValue(value: TRuntimeValue): TTaggedJson {
   if (value === undefined) return { $undefined: true };
+  if (value === null) return null;
   if (value instanceof RegExp) return { $regexp: value.source, flags: value.flags };
   if (value instanceof Set) return { $set: [...value].map(encodeValue) };
   if (Array.isArray(value)) return value.map(encodeValue);
-  if (typeof value === "object" && value !== null) {
-    return encodeObject(value as { readonly [key: string]: TRuntimeValue });
+  switch (typeof value) {
+    case "object":
+      return Object.fromEntries(Object.entries(value).map(([key, member]) => [key, encodeValue(member)]));
+    case "number":
+      if (!Number.isFinite(value)) throw new Error("Unsupported non-finite number");
+      return value;
+    case "string":
+    case "boolean":
+      return value;
+    default:
+      throw new Error("Unsupported vocabulary value");
   }
-  if (typeof value === "number" && !Number.isFinite(value)) throw new Error("Unsupported non-finite number");
-  return value as TTaggedJson;
 }
 
 /** Returns the enum members without the reverse mapping that a numeric TypeScript enum adds. */
-function enumMembers(value: { readonly [key: string]: TRuntimeValue }): { readonly [key: string]: TRuntimeValue } {
-  const members: { [key: string]: TRuntimeValue } = {};
-  for (const [key, member] of Object.entries(value)) {
-    if (!NUMERIC_KEY.test(key)) members[key] = member;
-  }
-  return members;
+function encodeEnum(value: TRuntimeValue): TTaggedJson {
+  const members = z.record(z.string(), z.union([z.string(), z.number()])).parse(value);
+  return Object.fromEntries(Object.entries(members).filter(([key]) => !NUMERIC_KEY.test(key)));
 }
 
-const RUNTIME_EXPORTS: IRuntimeModule = { ...CoreRoot, ...CoreTypes };
+const RUNTIME_EXPORTS = new Map<string, TRuntimeValue>(Object.entries({ ...CoreRoot, ...CoreTypes }));
 
 /** Builds one fixture row per kept vocabulary inventory entry, in inventory order. */
 export async function buildVocabularySymbols(root: string): Promise<IVocabularySymbolRow[]> {
-  const inventory = JSON.parse(await Deno.readTextFile(join(root, INVENTORY_PATH))) as { entries: IInventoryEntry[] };
+  const inventory = INVENTORY.parse(JSON.parse(await Deno.readTextFile(join(root, INVENTORY_PATH))));
   const kept = inventory.entries.filter((e) => e.class === "keep" && e.step === KEPT_VOCABULARY_STEP);
   const rows: IVocabularySymbolRow[] = [];
   for (const entry of kept) {
-    const raw = RUNTIME_EXPORTS[entry.symbol] as TRuntimeValue;
+    const raw = RUNTIME_EXPORTS.get(entry.symbol);
     if (raw === undefined) throw new Error(`The core barrels do not export ${entry.symbol}`);
-    const value = entry.kind === ENUM_KIND ? enumMembers(raw as { readonly [key: string]: TRuntimeValue }) : raw;
     rows.push({
       module: entry.module,
       symbol: entry.symbol,
       kind: entry.kind,
       target: entry.evidence.target ?? "",
-      value: encodeValue(value),
+      value: entry.kind === ENUM_KIND ? encodeEnum(raw) : encodeValue(raw),
     });
   }
   return rows;

@@ -6,6 +6,7 @@
  * Usage: deno run -A scripts/go_port/core_l0_vocabulary_go.ts [--target=<leaf-dir>] [--fixture=<file>]
  */
 import { join, resolve } from "@std/path";
+import { z } from "zod";
 import { argValue } from "./cli_args.ts";
 import type { IVocabularySymbolRow } from "./core_l0_vocabulary_symbols.ts";
 import type { IGoDeclaration, IGoRender } from "./core_l0_vocabulary_go_types.ts";
@@ -76,9 +77,20 @@ function enumLabel(typeName: string): string {
   return typeName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
 }
 
+const ENUM_MEMBERS = z.record(z.string(), z.union([z.string(), z.number()]));
+const VOCABULARY_FIXTURE = z.object({
+  symbols: z.array(z.object({
+    module: z.string(),
+    symbol: z.string(),
+    kind: z.string(),
+    target: z.string(),
+    value: z.json(),
+  })),
+});
+
 function renderEnum(row: IVocabularySymbolRow, name: string): IGoRender {
-  const members = Object.entries(row.value as { readonly [key: string]: string | number });
-  const numeric = members.every(([, v]) => typeof v === "number");
+  const members = Object.entries(ENUM_MEMBERS.parse(row.value));
+  const numeric = members.every(([, v]) => z.number().safeParse(v).success);
   const base = numeric ? "int" : "string";
   const consts = members.map(([key, v]) => {
     const literal = numeric ? String(v) : JSON.stringify(v);
@@ -249,7 +261,7 @@ async function gofmt(source: string): Promise<string> {
 
 /** Generates, formats and returns the Go files for the committed fixture and leaf directory. */
 export async function buildVocabularyGoFiles(fixturePath: string, leafDir: string): Promise<IGoFile[]> {
-  const fixture = JSON.parse(await Deno.readTextFile(fixturePath)) as { symbols: IVocabularySymbolRow[] };
+  const fixture = VOCABULARY_FIXTURE.parse(JSON.parse(await Deno.readTextFile(fixturePath)));
   const files = generateVocabularyGo(fixture.symbols, await scanHandwritten(leafDir));
   return await Promise.all(files.map(async (f) => ({ name: f.name, content: await gofmt(f.content) })));
 }

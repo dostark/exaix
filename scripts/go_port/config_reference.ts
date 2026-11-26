@@ -8,6 +8,7 @@
  */
 import { dirname, join, resolve, toFileUrl } from "@std/path";
 import { parse, stringify } from "@std/toml";
+import { z } from "zod";
 import { argValue } from "./cli_args.ts";
 import { loadManifest, verifySnapshot } from "./conformance/generate.ts";
 import { assertTargetAllowed, cloneSnapshot } from "./preserve_snapshot.ts";
@@ -164,10 +165,14 @@ export async function generateConfigReference(
   }
 }
 
+function isJsonObject(value: JsonValue): value is IJsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /** Sorts object keys so that a regeneration produces identical bytes. */
 export function sortKeys(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(sortKeys);
-  if (value && typeof value === "object") {
+  if (isJsonObject(value)) {
     return Object.fromEntries(
       Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map((
         [key, child],
@@ -182,7 +187,7 @@ export async function writeConfigReference(
   supplementPath: string,
   target: string,
 ): Promise<IConfigReference> {
-  const supplement = parse(await Deno.readTextFile(supplementPath)) as IJsonObject;
+  const supplement = z.record(z.string(), z.json()).parse(parse(await Deno.readTextFile(supplementPath)));
   const generated = await generateConfigReference(root, supplement);
   await Deno.mkdir(target, { recursive: true });
   await Deno.writeTextFile(join(target, "authored.toml"), stringify(generated.authored));
