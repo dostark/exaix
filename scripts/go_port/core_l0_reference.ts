@@ -15,6 +15,7 @@ import {
 } from "./core_l0_behavior_reference.ts";
 import { buildCostFixture } from "./core_l0_cost_reference.ts";
 import { buildDataTypesFixture } from "./core_l0_data_types_reference.ts";
+import { buildPromptBudgetFixture } from "./core_l0_prompt_budget_reference.ts";
 import { buildRequestFixture } from "./core_l0_request_reference.ts";
 import { buildVocabularySymbols } from "./core_l0_vocabulary_symbols.ts";
 import {
@@ -83,6 +84,7 @@ export const CORE_L0_REFERENCE_GROUPS: readonly string[] = [
   "cost",
   "capabilities",
   "request",
+  "prompt_budget",
 ];
 
 const REFERENCE_PARENT = "a956e0c8a413919cd0be3099eaec83e2b100b9fc";
@@ -311,6 +313,7 @@ export async function writeCoreL0Reference(root: string, targetDir: string): Pro
     cost: buildCostFixture,
     capabilities: buildCapabilitiesFixture,
     request: buildRequestFixture,
+    prompt_budget: buildPromptBudgetFixture,
   };
   const files: Record<string, string> = {};
   for (const group of CORE_L0_REFERENCE_GROUPS) {
