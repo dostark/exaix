@@ -132,7 +132,7 @@ Deno.test("go-port-docs-go-readme: the Go README records the current onboarding"
 }, async () => {
   const readme = await read(GO_ROOT, "README.md");
   assertStringIncludes(readme, "Go 1.27.4");
-  assertStringIncludes(readme, "Phase 246 added the Stage 0 foundation");
+  assertStringIncludes(readme, "The module provides the public `sdk/` and `runtime/` packages");
   assertStringIncludes(readme, "make check");
   assertStringIncludes(readme, "AGENTS.md");
 });
