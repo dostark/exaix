@@ -5,11 +5,13 @@
  * @description Records the pinned ConfigService observations for the core-l1 configuration cases in real temporary roots and writes them with a digest manifest for the Go replay tests.
  * Usage: deno run -A scripts/go_port/core_l1_reference.ts [--snapshot=<dir>] [--target=<dir>]
  */
-import { dirname, join, relative, resolve, toFileUrl } from "@std/path";
+import { dirname, join, relative, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import { argValue } from "./cli_args.ts";
+import { runPinnedAdapter } from "./core_l1_adapter.ts";
 import { CORE_L1_REFERENCE } from "./core_l1_exports.ts";
 import { loadManifest, verifySnapshot } from "./conformance/generate.ts";
+import { pinnedJournalRunner, recordJournalCase, type TJournalRunner } from "./core_l1_journal_reference.ts";
 import { assertTargetAllowed, cloneSnapshot } from "./preserve_snapshot.ts";
 
 export interface ICoreL1ConfigCase {
@@ -60,14 +62,15 @@ const CORE_L1_REFERENCE_DIR = join("internal", "core", "l1", "testdata", "refere
 
 const INPUT_FILE = "exa.config.toml";
 const OBSERVATION_FILE = "observation.json";
+const JOURNAL_INPUT_FILE = "input.json";
 const MANIFEST_SCHEMA_VERSION = 1;
 const REPO_ROOT = resolve(join(import.meta.dirname ?? ".", "..", ".."));
 const DEFAULT_TARGET = join("exaix-go", CORE_L1_REFERENCE_DIR);
 const SANDBOX_NAME = "phase-249-core-l1-reference";
-const FORWARDED_ENV = ["HOME", "PATH", "DENO_DIR", "XDG_CACHE_HOME"];
 
 /** Runs in the snapshot: loads one file with the pinned service and wraps ConfigSchema to capture its issues. */
-const ADAPTER = `const [root, configPath] = Deno.args;
+const ADAPTER = `const [root, requestPath] = Deno.args;
+const { configPath } = JSON.parse(await Deno.readTextFile(requestPath));
 const schemaModule = await import(new URL("file://" + root + "/packages/schemas/src/config.ts").href);
 const { ConfigService } = await import(new URL("file://" + root + "/packages/core/src/config/service.ts").href);
 const schema = schemaModule.ConfigSchema;
@@ -92,41 +95,8 @@ function authoredInput(entry: ICoreL1ConfigCase): string {
   return `[system]\nroot = "${entry.root}"\nlog_level = "${entry.logLevel}"\n`;
 }
 
-function forwardedEnv(): Record<string, string> {
-  const env: Record<string, string> = { DENO_NO_UPDATE_CHECK: "1", LD_LIBRARY_PATH: "" };
-  for (const name of FORWARDED_ENV) {
-    const value = Deno.env.get(name);
-    if (value !== undefined) env[name] = value;
-  }
-  return env;
-}
-
-async function runAdapter(snapshot: string, adapter: string, configPath: string): Promise<IAdapterResult> {
-  const result = await new Deno.Command("deno", {
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "--config",
-      join(snapshot, "deno.json"),
-      "--frozen",
-      "--lock",
-      join(snapshot, "deno.lock"),
-      toFileUrl(adapter).href,
-      snapshot,
-      configPath,
-    ],
-    cwd: snapshot,
-    clearEnv: true,
-    env: forwardedEnv(),
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  if (!result.success) {
-    throw new Error(new TextDecoder().decode(result.stderr).trim() || "core-l1 reference adapter failed");
-  }
-  return JSON.parse(new TextDecoder().decode(result.stdout));
+async function runAdapter(snapshot: string, configPath: string): Promise<IAdapterResult> {
+  return JSON.parse(await runPinnedAdapter(snapshot, ADAPTER, JSON.stringify({ configPath }), {}));
 }
 
 function observe(entry: ICoreL1ConfigCase, tempRoot: string, result: IAdapterResult): IConfigObservation {
@@ -154,25 +124,18 @@ function observe(entry: ICoreL1ConfigCase, tempRoot: string, result: IAdapterRes
 
 /** Records every case against the pinned service, each in a new temporary root. */
 export async function recordConfigCases(snapshot: string): Promise<IRecordedConfigCase[]> {
-  const scratch = await Deno.makeTempDir({ prefix: "core-l1-adapter-" });
-  const adapter = join(scratch, "adapter.ts");
-  await Deno.writeTextFile(adapter, ADAPTER);
   const recorded: IRecordedConfigCase[] = [];
-  try {
-    for (const entry of CORE_L1_CONFIG_CASES) {
-      const tempRoot = await Deno.realPath(await Deno.makeTempDir({ prefix: `core-l1-${entry.id}-` }));
-      try {
-        const input = authoredInput(entry);
-        const configPath = join(tempRoot, INPUT_FILE);
-        await Deno.writeTextFile(configPath, input);
-        const result = await runAdapter(snapshot, adapter, configPath);
-        recorded.push({ id: entry.id, tempRoot, input, observation: observe(entry, tempRoot, result) });
-      } finally {
-        await Deno.remove(tempRoot, { recursive: true }).catch(() => {});
-      }
+  for (const entry of CORE_L1_CONFIG_CASES) {
+    const tempRoot = await Deno.realPath(await Deno.makeTempDir({ prefix: `core-l1-${entry.id}-` }));
+    try {
+      const input = authoredInput(entry);
+      const configPath = join(tempRoot, INPUT_FILE);
+      await Deno.writeTextFile(configPath, input);
+      const result = await runAdapter(snapshot, configPath);
+      recorded.push({ id: entry.id, tempRoot, input, observation: observe(entry, tempRoot, result) });
+    } finally {
+      await Deno.remove(tempRoot, { recursive: true }).catch(() => {});
     }
-  } finally {
-    await Deno.remove(scratch, { recursive: true }).catch(() => {});
   }
   return recorded;
 }
@@ -182,20 +145,37 @@ async function sha256Hex(content: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+interface IReferenceCase {
+  readonly id: string;
+  readonly inputFile: string;
+  readonly input: string;
+  readonly observation: string;
+}
+
 /** Writes the recorded cases and a manifest of their digests. Identical input produces identical bytes. */
-export async function writeCoreL1Reference(snapshot: string, target: string): Promise<void> {
-  const recorded = await recordConfigCases(snapshot);
+export async function writeCoreL1Reference(
+  snapshot: string,
+  target: string,
+  journalRunner: TJournalRunner,
+): Promise<void> {
+  const configCases: IReferenceCase[] = (await recordConfigCases(snapshot)).map((entry) => ({
+    id: entry.id,
+    inputFile: INPUT_FILE,
+    input: entry.input,
+    observation: `${JSON.stringify(entry.observation, null, 2)}\n`,
+  }));
+  const journal = await recordJournalCase(snapshot, journalRunner);
+  const recorded = [...configCases, { ...journal, inputFile: JOURNAL_INPUT_FILE }];
   await Deno.mkdir(target, { recursive: true });
   const cases = [];
   for (const entry of recorded) {
-    const observation = `${JSON.stringify(entry.observation, null, 2)}\n`;
     await Deno.mkdir(join(target, entry.id), { recursive: true });
-    await Deno.writeTextFile(join(target, entry.id, INPUT_FILE), entry.input);
-    await Deno.writeTextFile(join(target, entry.id, OBSERVATION_FILE), observation);
+    await Deno.writeTextFile(join(target, entry.id, entry.inputFile), entry.input);
+    await Deno.writeTextFile(join(target, entry.id, OBSERVATION_FILE), entry.observation);
     cases.push({
       id: entry.id,
       input_sha256: await sha256Hex(entry.input),
-      observation_sha256: await sha256Hex(observation),
+      observation_sha256: await sha256Hex(entry.observation),
     });
   }
   const manifest = { schema_version: MANIFEST_SCHEMA_VERSION, reference_parent: CORE_L1_REFERENCE, cases };
@@ -232,7 +212,7 @@ async function main(args: readonly string[]): Promise<number> {
   const target = resolve(argValue(args, "target") ?? join(REPO_ROOT, DEFAULT_TARGET));
   const snapshot = await acquireSnapshot(argValue(args, "snapshot"));
   try {
-    await writeCoreL1Reference(snapshot.path, target);
+    await writeCoreL1Reference(snapshot.path, target, pinnedJournalRunner);
   } finally {
     await snapshot.dispose();
   }

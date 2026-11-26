@@ -7,6 +7,8 @@
 import { assert, assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { withTempDir } from "@exaix/testing";
+import { fakeJournalRunner } from "./helpers/core_l1_journal_fake.ts";
+import { JOURNAL_CASE_ID } from "../../scripts/go_port/core_l1_journal_reference.ts";
 import { CORE_L1_REFERENCE } from "../../scripts/go_port/core_l1_exports.ts";
 import {
   CORE_L1_CONFIG_CASES,
@@ -134,17 +136,21 @@ Deno.test("go-port-core-l1-corpus: writes identical bytes on every run and a man
     const snapshot = await fakeSnapshot(dir);
     const first = join(dir, "first");
     const second = join(dir, "second");
-    await writeCoreL1Reference(snapshot, first);
-    await writeCoreL1Reference(snapshot, second);
+    await writeCoreL1Reference(snapshot, first, fakeJournalRunner);
+    await writeCoreL1Reference(snapshot, second, fakeJournalRunner);
     assertEquals(
       await Deno.readTextFile(join(first, "manifest.json")),
       await Deno.readTextFile(join(second, "manifest.json")),
     );
     const manifest = await readManifest(first);
     assertEquals(manifest.reference_parent, CORE_L1_REFERENCE);
-    assertEquals(manifest.cases.map((entry) => entry.id), CORE_L1_CONFIG_CASES.map((entry) => entry.id));
+    assertEquals(manifest.cases.map((entry) => entry.id), [
+      ...CORE_L1_CONFIG_CASES.map((entry) => entry.id),
+      JOURNAL_CASE_ID,
+    ]);
     for (const entry of manifest.cases) {
-      const input = await Deno.readFile(join(first, entry.id, "exa.config.toml"));
+      const inputFile = entry.id === JOURNAL_CASE_ID ? "input.json" : "exa.config.toml";
+      const input = await Deno.readFile(join(first, entry.id, inputFile));
       const observation = await Deno.readFile(join(first, entry.id, "observation.json"));
       assertEquals(entry.input_sha256, await sha256Hex(input));
       assertEquals(entry.observation_sha256, await sha256Hex(observation));
