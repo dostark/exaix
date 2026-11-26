@@ -81,6 +81,17 @@ const PORTAL_ENTRY = {
   execution_strategy: "worktree",
 } as const;
 const OPERATOR_NOTES = "Keep these operator notes.";
+const FRAGMENT_ROLE = "fragment-agent";
+const FRAGMENT_AGENT = `---
+name: Fragment Agent
+---
+Start {{include:shared}} {{include:missing}} {{include:loop}} End
+`;
+const FRAGMENT_FILES: Readonly<Record<string, string>> = {
+  "Blueprints/Fragments/shared.md": "Shared {{include:nested/deep}}",
+  "Blueprints/Fragments/nested/deep.md": "Deep",
+  "Blueprints/Fragments/loop.md": "Loop {{include:loop}}",
+};
 const HEX_RADIX = 16;
 
 interface IRecordedFixture {
@@ -268,7 +279,7 @@ function operationOf(id: string): string {
   fail(`unknown recorded operation for ${id}`);
 }
 
-function envelopeFromExtra(entry: ICoreL1ExtraCase): ICoreL1CaseEnvelope {
+async function envelopeFromExtra(entry: ICoreL1ExtraCase): Promise<ICoreL1CaseEnvelope> {
   const content = { operation: entry.operation, seed: entry.seed, request: entry.request };
   return {
     id: entry.id,
@@ -276,7 +287,7 @@ function envelopeFromExtra(entry: ICoreL1ExtraCase): ICoreL1CaseEnvelope {
     input: { kind: "json", content: `${JSON.stringify(content)}\n` },
     reference: {
       kind: "value",
-      value: { result: entry.result, before: {}, after: entry.after },
+      value: { result: entry.result, before: await seedDigest(entry.seed), after: entry.after },
     },
   };
 }
@@ -331,6 +342,30 @@ try {
 console.log(JSON.stringify({ steps: [{ kind: "ensure", outcome: "created" }, { kind: "update", outcome: "updated" }] }));
 `;
 
+const FRAGMENT_ADAPTER = `const [root, requestPath] = Deno.args;
+const request = JSON.parse(await Deno.readTextFile(requestPath));
+const { IBlueprintLoader } = await import(new URL("file://" + root + "/packages/core/src/blueprint/blueprint_loader.ts").href);
+const warnings = [];
+const realWarn = console.warn;
+console.warn = (...args) => { warnings.push(args.join(" ")); };
+let loaded;
+try {
+  const loader = new IBlueprintLoader({ blueprintsPath: request.agents, defaultModel: "gemini-3.8-flash" });
+  loaded = await loader.load(request.role);
+} finally {
+  console.warn = realWarn;
+}
+if (loaded === null) throw new Error("fragment fixture is absent");
+const normalized = warnings.map((warning) => {
+  const cyclic = /Circular inclusion detected for fragment: (.+)$/.exec(warning);
+  if (cyclic) return 'fragment "' + cyclic[1] + '" is cyclic';
+  const missing = /Failed to include fragment '([^']+)'/.exec(warning);
+  if (missing) return 'fragment "' + missing[1] + '" is missing';
+  return warning;
+});
+console.log(JSON.stringify({ prompt: loaded.systemPrompt, warnings: normalized }));
+`;
+
 const CARD_ADAPTER = `const [root, requestPath] = Deno.args;
 const request = JSON.parse(await Deno.readTextFile(requestPath));
 const { ContextCardGenerator } = await import(new URL("file://" + root + "/packages/core/src/context/context_card_generator.ts").href);
@@ -373,6 +408,40 @@ async function recordConfigWriteCase(snapshot: string): Promise<ICoreL1ExtraCase
   }
 }
 
+async function recordFragmentCase(snapshot: string): Promise<ICoreL1ExtraCase> {
+  const root = await Deno.realPath(await Deno.makeTempDir({ prefix: "core-l1-fragments-" }));
+  try {
+    const seed: ICoreL1SeedFile[] = [
+      { path: join("Blueprints", "Agents", `${FRAGMENT_ROLE}.md`), content: FRAGMENT_AGENT },
+      ...Object.entries(FRAGMENT_FILES).map(([path, content]) => ({ path, content })),
+    ];
+    for (const file of seed) {
+      const target = join(root, file.path);
+      await Deno.mkdir(join(target, ".."), { recursive: true, mode: 0o700 });
+      await Deno.writeTextFile(target, file.content, { mode: 0o600 });
+    }
+    const output = await runPinnedAdapter(
+      snapshot,
+      FRAGMENT_ADAPTER,
+      JSON.stringify({
+        role: FRAGMENT_ROLE,
+        agents: join(root, "Blueprints", "Agents"),
+      }),
+      {},
+    );
+    return {
+      id: "blueprint-fragments",
+      operation: "blueprint-fragments",
+      seed,
+      request: { role: FRAGMENT_ROLE },
+      result: JSON.parse(output) as TJson,
+      after: await treeDigest(root),
+    };
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+}
+
 async function recordCardCase(snapshot: string): Promise<ICoreL1ExtraCase> {
   const root = await Deno.realPath(await Deno.makeTempDir({ prefix: "core-l1-card-" }));
   try {
@@ -405,6 +474,7 @@ async function recordCardCase(snapshot: string): Promise<ICoreL1ExtraCase> {
 export const pinnedExtraRunner: TExtraRunner = async (snapshot: string): Promise<readonly ICoreL1ExtraCase[]> => [
   await recordConfigWriteCase(snapshot),
   ...await promptBudgetCases(Deno.cwd()),
+  await recordFragmentCase(snapshot),
   await recordCardCase(snapshot),
 ];
 
@@ -419,7 +489,7 @@ export async function buildCoreL1Corpus(
     if (KNOWN_DIVERGENCE.has(entry.id)) continue;
     cases.push(await envelopeOf(entry));
   }
-  for (const extra of extras) cases.push(envelopeFromExtra(extra));
+  for (const extra of extras) cases.push(await envelopeFromExtra(extra));
   return {
     schema_version: 2,
     suite: "core-l1",
