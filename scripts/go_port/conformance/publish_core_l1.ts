@@ -7,6 +7,7 @@
  */
 import { join, resolve } from "@std/path";
 import { argValue } from "./../cli_args.ts";
+import { CORE_L1_LOCKFILE } from "./../core_l1_case_reference.ts";
 import { CORE_L1_REFERENCE } from "./../core_l1_exports.ts";
 import {
   type ICaseResultV2,
@@ -27,20 +28,38 @@ const REQUIRED_IDS = [
   "config-explicit-root",
   "config-explicit-root-alternate",
   "config-invalid-field",
-  "config-startup-precedence",
-  "config-toml-writes",
   "journal-chained-rows",
-  "prompt-budget-enforced",
-  "prompt-budget-disabled",
   "blueprint-yaml-optional",
+  "blueprint-yaml-configured-model",
   "blueprint-yaml-explicit",
   "blueprint-plain-markdown",
   "blueprint-retired-toml",
-  "blueprint-fragments",
-  "blueprint-effective-access",
+  "blueprint-unknown-fields",
+  "blueprint-invalid-frontmatter",
+  "blueprint-invalid-yaml",
+  "blueprint-empty-frontmatter",
+  "blueprint-crlf-is-plain",
+  "blueprint-frontmatter-list",
+  "blueprint-missing-role",
   "context-budget-and-order",
-  "context-card-notes",
+  "context-drop-largest",
+  "context-drop-oldest",
+  "context-truncate-each",
+  "context-truncate-each-partial",
+  "context-truncate-each-insufficient",
+  "context-truncate-each-exact-100",
+  "context-exact-fit",
+  "context-per-file-cap",
+  "context-fractional-margin",
+  "context-local-agent",
+  "context-unicode-estimate",
+  "context-missing-and-empty",
   "process-request-outcomes",
+  "config-toml-writes",
+  "prompt-budget-enforced",
+  "prompt-budget-disabled",
+  "blueprint-fragments",
+  "context-card-notes",
 ];
 
 interface IRecordedCase {
@@ -65,9 +84,13 @@ async function readCorpus(): Promise<IRecordedCorpus> {
   const corpus = JSON.parse(await Deno.readTextFile(CASES_PATH)) as IRecordedCorpus;
   if (corpus.schema_version !== 2 || corpus.suite !== SUITE) fail("the recorded corpus has the wrong version or suite");
   if (corpus.reference.parent !== CORE_L1_REFERENCE) fail("the recorded corpus has the wrong parent");
+  if (corpus.reference.lockfile !== CORE_L1_LOCKFILE) fail("the recorded corpus has the wrong lockfile");
   const ids = new Set(corpus.cases.map((entry) => entry.id));
   const missing = REQUIRED_IDS.filter((id) => !ids.has(id));
   if (missing.length > 0) fail(`the recorded corpus lacks ${missing.join(", ")}`);
+  if (ids.size !== REQUIRED_IDS.length || ids.size !== corpus.cases.length) {
+    fail("the recorded corpus has unexpected or duplicate case IDs");
+  }
   return corpus;
 }
 
