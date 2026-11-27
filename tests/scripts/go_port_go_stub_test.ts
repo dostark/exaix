@@ -39,9 +39,9 @@ async function run(cwd: string, args: readonly string[]): Promise<IRun> {
 Deno.test("go-edition-stub-build: the module and separate edition stub build with GOWORK=off", {
   ignore: checkout === undefined,
 }, async () => {
-  const root = await run(GO_ROOT, ["build", "./..."]);
+  const root = await run(GO_ROOT, ["build", "-buildvcs=false", "./..."]);
   assertEquals(root.code, 0, root.stderr);
-  const stub = await run(join(GO_ROOT, "editionstub"), ["build", "./..."]);
+  const stub = await run(join(GO_ROOT, "editionstub"), ["build", "-buildvcs=false", "./..."]);
   assertEquals(stub.code, 0, stub.stderr);
 });
 
